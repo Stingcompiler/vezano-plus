@@ -265,7 +265,10 @@ async function verifyEverywhere(
   await expect(page).toHaveURL(/\/pos$/);
   // زرّ الدفع معطّل حتى تُقرأ السلة من Dexie — ننتظر تفعيله
   await expect(page.getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ }).first()).toBeEnabled();
-  await page.getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ }).first().click();
+  await page
+    .getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ })
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/pos\/pay$/);
   await page.getByRole("button", { name: "آجل" }).click();
   await expect(page).toHaveURL(/\/pos\/pay\/credit$/);
@@ -297,7 +300,10 @@ test("١٠٠ = ٤٠ نقداً + ٦٠ آجلاً: الأرقام نفسها في
   await expect(page).toHaveURL(/\/pos$/);
   // زرّ الدفع معطّل حتى تُقرأ السلة من Dexie — ننتظر تفعيله
   await expect(page.getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ }).first()).toBeEnabled();
-  await page.getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ }).first().click();
+  await page
+    .getByRole("button", { name: /متابعة إلى الدفع|تحصيل/ })
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/pos\/pay$/);
   await page.getByRole("button", { name: "آجل" }).click();
   await expect(page).toHaveURL(/\/pos\/pay\/credit$/);
