@@ -71,7 +71,6 @@ export function ExpiryClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">انتهاء الاشتراك</h2>
-            <span className="cat-head__hint">حالتان ناقصتان، وتحكمهما قائمة صريحة.</span>
           </div>
           <div className="acc-card__body">
             {state === "expired" && p && at ? (
@@ -110,22 +109,13 @@ export function ExpiryClient() {
                 <p className="acc-lead">
                   الموظف يرى أن الاشتراك انتهى وأثر ذلك على عمله، ولا يرى الفواتير ولا يجدّد.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>ما يراه</strong> · ما توقّف من وظائفه هو، لا حالة الحساب المالية. «تقرير
-                  المبيعات موقوف — الاشتراك منتهٍ» يكفيه.
-                </p>
               </Notice>
             ) : null}
 
             {state === "ready" ? (
               <Notice kind="info" title="ما يستمر وما يتوقف">
                 <p className="acc-lead">
-                  قائمتان صريحتان لا عبارة عامة: البيع والذمم والورديات والتصدير تستمر؛ السوق
-                  والتقارير الخادمية والحملات تتوقف.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لماذا صريحتان</strong> · «الأعمال الأساسية مستمرة» جملةٌ يفسّرها كلٌّ
-                  بهواه. القائمة تُنهي الجدل قبل وقوعه.
+                  البيع والذمم والورديات والتصدير تستمر؛ السوق والتقارير الخادمية والحملات تتوقف.
                 </p>
                 <p className="acc-choice__note">
                   <strong>لا حجب للبيانات</strong> · انتهاء الاشتراك لا يحجب دفترك عنك. التصدير يبقى

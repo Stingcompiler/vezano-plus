@@ -162,10 +162,7 @@ export function MarketProfileClient() {
                 <p className="acc-lead">
                   ملفٌ بلا منطقة خدمة لا يظهر في أي دليل — والناشر يظن نفسه منشوراً.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>الأثر لا الحقل</strong> · «بلا منطقة لن تظهر في نتائج أحد» — نسمّي العاقبة
-                  لا «حقل مطلوب». الحقل الإلزامي بلا سبب يُملأ عبثاً.
-                </p>
+                <p className="acc-choice__note">«بلا منطقة لن تظهر في نتائج أحد»</p>
               </Notice>
             ) : null}
             {state === "success" ? (

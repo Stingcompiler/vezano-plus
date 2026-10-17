@@ -227,8 +227,7 @@ export function ReturnClient({ id }: { id: string }) {
                   {partialDoc.decision_note ? ` — ${partialDoc.decision_note}` : ""}
                 </p>
                 <p className="acc-choice__note">
-                  الموافقة الجزئية حالة معلَنة (partial). ما لم يوافَق عليه يبقى في مخزونك وذمّتك،
-                  وبابه خلاف.
+                  الموافقة الجزئية حالة معلَنة. ما لم يوافَق عليه يبقى في مخزونك وذمّتك، وبابه خلاف.
                 </p>
               </Notice>
             ) : null}
@@ -425,8 +424,7 @@ export function ReturnClient({ id }: { id: string }) {
                 <p className="acc-choice__note">
                   <strong>لا خصم من الذمّة قبل التنفيذ</strong> · طلب المرتجع وحده لا يغيّر رصيداً.
                   الذمّة تتعدّل عند <strong>تنفيذ</strong> المرتجع بمستند عكسي موقَّع من الطرفين.
-                  قبل ذلك تبقى القيمة قائمة، ويُعرض للتاجر «مرتجع قيد الموافقة — لم يُخصم بعد» بلا
-                  إيهام.
+                  قبل ذلك تبقى القيمة قائمة.
                 </p>
               </>
             ) : null}

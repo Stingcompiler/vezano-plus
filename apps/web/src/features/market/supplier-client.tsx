@@ -194,10 +194,6 @@ export function SupplierClient({ id }: { id: string }) {
               <div className="cat-table pos-card">
                 <div className="cat-head">
                   <h2 className="cat-head__title">ماذا تعني «هوية متحققة» وماذا لا تعني</h2>
-                  <span className="cat-head__hint">
-                    نص الحدود ليس تنويهاً صغيراً: هو أهم سطر في الصفحة، فمن يقرأه يبني عليه قراراً
-                    مالياً.
-                  </span>
                 </div>
                 <div className="acc-card__body pub-cols">
                   <div>
@@ -230,8 +226,7 @@ export function SupplierClient({ id }: { id: string }) {
               <div className="cat-head">
                 <h2 className="cat-head__title">حقائق قابلة للتحقق — لا تقييم نجوم</h2>
                 <span className="cat-head__hint">
-                  لا تقييم بالنجوم في الإصدار الأول: رقم واحد من مراجعات قليلة يُفسد سمعة مورد أو
-                  يزيّنها بلا أساس. الحقائق أعلاه تُحتسب من طلبات فعلية مؤكدة من طرفين.
+                  الحقائق أعلاه تُحتسب من طلبات فعلية مؤكدة من طرفين.
                 </span>
               </div>
               <div className="acc-card__body home-kpis">

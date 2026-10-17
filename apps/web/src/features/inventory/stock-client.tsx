@@ -63,6 +63,8 @@ interface ServerRow {
 }
 
 interface Balances {
+  /** أصناف الكتالوج النشطة — يميّز «بلا رصيد» عن «لا أصناف» (فحص 2026-10-17 F10) */
+  readonly catalog_items?: number;
   readonly branch_id: string;
   readonly branches: readonly { readonly id: string; readonly name: string }[];
   readonly as_of: string;
@@ -123,6 +125,7 @@ export function StockClient() {
   const [failed, setFailed] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [localRows, setLocalRows] = useState<Row[] | null>(null);
+  const [localItemsCount, setLocalItemsCount] = useState(0);
   const [pending, setPending] = useState<Map<string, { deltaMilli: bigint; count: number }>>(
     new Map(),
   );
@@ -179,6 +182,7 @@ export function StockClient() {
       setCached(cache);
       setPending(pendingByItem(moves, branchId));
       setLocalRows(localRowsOf(items, balances));
+      setLocalItemsCount(items.length);
       if (!navigator.onLine) {
         setFetching(false);
         return;
@@ -223,6 +227,8 @@ export function StockClient() {
   }, [branchId, online]);
 
   const server = data ?? cached;
+  // بلا اتصال: الكتالوج المحلي؛ وإلا عدد الخادم (null = غير معروف)
+  const catalogCount = server?.catalog_items ?? (localItemsCount || null);
   const isDeviceBranch = ctx?.branchId === branchId;
   const source: Row[] | null =
     server && (online || !isDeviceBranch)
@@ -487,9 +493,6 @@ export function StockClient() {
                 <p className="acc-lead">
                   المواقع تَرِد واحداً واحداً، والمجموع لا يُعرض قبل اكتمالها.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا مجموع جزئي</strong> · مجموعٌ ناقص يُقرأ كاملاً ويُبنى عليه أمر شراء.
-                </p>
               </Notice>
             ) : null}
             {state === "partial" ? (
@@ -508,22 +511,23 @@ export function StockClient() {
             {state === "stale" ? (
               <Notice kind="warning" title="أرصدة قديمة">
                 <p className="acc-lead">من آخر مطابقة قبل ساعتين وقد بيع منها.</p>
-                <p className="acc-choice__note">
-                  <strong>الوقت مع الرقم</strong> · لا في الترويسة. صفحةٌ تُطبع للجرد تأخذ طابعها
-                  معها.
-                </p>
               </Notice>
             ) : null}
             {state === "offline" ? (
               <Notice kind="offline" title="أرصدة محلية">
                 <p className="acc-lead">أرصدة هذا الجهاز وما زامنه، ومعها ما لم يُرفع.</p>
-                <p className="acc-choice__note">
-                  <strong>الفرق عن partial</strong> · هنا لا اتصال أصلاً؛ وهناك اتصالٌ ومواقع لم
-                  تَرد. الأولى مفهومة والثانية تحتاج بياناً.
-                </p>
               </Notice>
             ) : null}
-            {state === "empty" ? (
+            {state === "empty" && catalogCount === 0 ? (
+              // فحص 2026-10-17 F10: الكتالوج نفسه فارغ — لا «أصناف بلا رصيد»
+              <Notice
+                kind="empty"
+                title="لا أصناف بعد"
+                action={<Button onClick={() => router.push("/catalog/new")}>أضف صنفاً</Button>}
+              >
+                <p className="acc-lead">الكتالوج فارغ — أضف أصنافك أولاً ثم أدخل أرصدتها.</p>
+              </Notice>
+            ) : state === "empty" ? (
               <Notice
                 kind="empty"
                 title="لا أرصدة"
@@ -538,10 +542,22 @@ export function StockClient() {
                   </>
                 }
               >
-                <p className="acc-lead">كتالوجٌ فيه أصناف بلا رصيد — محلٌّ لم يُدخل افتتاحياته.</p>
-                <p className="acc-choice__note">
-                  <strong>المسار</strong> · «أدخل افتتاحيات المخزون» أو «استلم بضاعة». والفراغ هنا
-                  بدايةٌ لا عطب.
+                <p className="acc-lead">
+                  {catalogCount ? (
+                    <>
+                      في الكتالوج <span className="sting-mono">{catalogCount}</span>{" "}
+                      {catalogCount === 1
+                        ? "صنف"
+                        : catalogCount === 2
+                          ? "صنفان"
+                          : catalogCount <= 10
+                            ? "أصناف"
+                            : "صنفاً"}{" "}
+                      بلا رصيد بعد — أدخل افتتاحياتها أو استلم بضاعة.
+                    </>
+                  ) : (
+                    "لا رصيد مسجّل في هذا الموقع بعد."
+                  )}
                 </p>
               </Notice>
             ) : null}
@@ -576,13 +592,8 @@ export function StockClient() {
               </span>
             </div>
             <p className="acc-choice__note">
-              <strong>لا عمود «إجمالي القطع».</strong> جمع كراتين وأكياس وحبات في رقم واحد يحتاج
-              معاملات تحويل لكل صنف، وبعضها تقديري. الإجماليات المعروضة بالقيمة المالية لا بالعدد.
-            </p>
-            <p className="acc-choice__note">
               <strong>معامل التحويل معلن ومحرَّر.</strong> «كرتونة = 12 حبة» رقم يكتبه صاحب المحل
-              ويظهر في بطاقة الصنف. لا نستنتجه من اسم العبوة ولا من وزنها. الرصيد بوحدة البيع،
-              والشراء يحوَّل بالمعامل المعلن عند الاستلام.
+              ويظهر في بطاقة الصنف. الرصيد بوحدة البيع، والشراء يحوَّل بالمعامل المعلن عند الاستلام.
             </p>
           </div>
         </div>

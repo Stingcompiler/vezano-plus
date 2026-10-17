@@ -398,10 +398,7 @@ export function MovementsClient() {
                       <div className="cat-error__why">{e.text}</div>
                     </div>
                   ))}
-                  <p className="cat-errors__foot">
-                    المبلغ يبقى كما كُتب والمؤشّر يذهب إلى السبب. لا نمسح رقماً صحيح الصياغة لأن
-                    قيمته كبيرة.
-                  </p>
+                  <p className="cat-errors__foot">المبلغ يبقى كما كُتب والمؤشّر يذهب إلى السبب.</p>
                 </div>
               ) : null}
 
@@ -422,8 +419,7 @@ export function MovementsClient() {
                     من دورة المحل إلى خارجها.
                   </p>
                   <p className="acc-lead">
-                    <strong>المخرج الحاضر</strong> · الحركة تُنسب لمن أذن بها لا لمن أدخلها، وكلاهما
-                    مذكور في السطر.
+                    الحركة تُنسب لمن أذن بها لا لمن أدخلها، وكلاهما مذكور في السطر.
                   </p>
                   {requested ? (
                     <p className="acc-lead" role="status">
@@ -534,10 +530,7 @@ export function MovementsClient() {
               loading={shift === undefined ? 3 : undefined}
             />
             {reversedIds.size ? (
-              <div className="cat-foot">
-                الحركة المعكوسة تبقى ومعها الأصلية مشطوبةً لا محذوفة. من راجع الدفتر بعد شهر يحتاج
-                أن يرى أن خطأً وقع وصُحِّح، لا دفتراً نظيفاً لم يقع فيه شيء.
-              </div>
+              <div className="cat-foot">الحركة المعكوسة تبقى ومعها الأصلية مشطوبةً لا محذوفة.</div>
             ) : null}
           </div>
         </div>

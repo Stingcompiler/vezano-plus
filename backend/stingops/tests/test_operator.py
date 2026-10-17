@@ -300,6 +300,7 @@ def test_outbound_and_market_verifications(ctx: dict[str, Any]) -> None:  # noqa
     # ---- PLT-06: طلب تحقق من المالك
     v = c.get("/api/platform/verifications", headers=oh).json()
     assert v["pending_count"] == 0 and v["requests"] == [] and v["avg_review_hours_week"] == 0
+    assert v["reviewed_week"] == 0  # VP12: لا عيّنة — الواجهة لا تعرض متوسطاً
     assert "التوثيق لا يشمل جودة السلع" in v["badge_text"]
     c.put(
         "/api/market/account",
@@ -486,6 +487,8 @@ def test_reports_suspension_appeal_and_disputes(
     # ---- PLT-08: لا خلافات = empty؛ ثم خلاف من استلام ناقص
     d = c.get("/api/platform/disputes", headers=op1).json()
     assert d["state"] == "empty" and d["open_count"] == 0
+    # VP12: بلا خلافات لا متوسط استجابة ولا «ضمن الهدف»
+    assert d["response_samples"] == 0 and d["within_target"] is False
     sh = _post(
         c,
         hb,

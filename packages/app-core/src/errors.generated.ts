@@ -407,6 +407,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "finance_required",
     },
   ],
+  "GET /api/platform/audit": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
   "GET /api/platform/demo-requests": [
     {
       status: 403,

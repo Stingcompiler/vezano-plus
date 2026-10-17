@@ -146,18 +146,11 @@ export function GrowPromoteClient() {
                 <p className="acc-lead">
                   ناشر الكتالوج يُعدّ العرض ولا يطلب تمويله — الطلب التزام مالي.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>المخرج</strong> · يُعدّه ويحفظه ويطلب من المالك إرساله، فلا يُهدر عمله.
-                </p>
               </Notice>
             ) : null}
             {state === "validation_error" ? (
               <Notice kind="warning" title="طلب بلا جمهور أو مدة">
                 <p className="acc-lead">الجمهور غير محدَّد أو المدة فارغة.</p>
-                <p className="acc-choice__note">
-                  <strong>لا افتراض</strong> · لا نفترض «كل المشترين» جمهوراً افتراضياً. الجمهور
-                  الواسع بلا اختيار صريح إنفاقٌ بلا قصد.
-                </p>
               </Notice>
             ) : null}
             {err && !["permission_denied", "audience_or_duration_required"].includes(err.code) ? (

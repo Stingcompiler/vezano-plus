@@ -268,10 +268,6 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                   <p className="acc-lead">
                     يُنشئ طرفاً سريعاً وقت البيع، ولا يعدّل بطاقة قائمة ولا حدّه الآجل.
                   </p>
-                  <p className="acc-choice__note">
-                    <strong>لماذا</strong> · تعديل البطاقة يمسّ طرفاً له دفتر. والإنشاء السريع حاجةُ
-                    لحظة البيع.
-                  </p>
                 </Notice>
               ) : null}
               {state === "success" ? (
@@ -293,10 +289,7 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
               ) : null}
               {state === "validation_error" && errors["phone"] === "similar" ? (
                 <Notice kind="warning" title="رقم هاتف يُشبه طرفاً قائماً">
-                  <p className="acc-lead">
-                    <strong>ننبّه ولا نمنع</strong> · قد يكون فرعاً ثانياً بنفس الرقم. نُظهر الطرف
-                    القائم ونسأل: هذا هو أم جديد؟
-                  </p>
+                  <p className="acc-lead">قد يكون فرعاً ثانياً بنفس الرقم.</p>
                 </Notice>
               ) : null}
 
@@ -336,10 +329,6 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                       </li>
                     ))}
                   </ul>
-                  <p className="acc-choice__note">
-                    <strong>لا دمج بالاسم</strong> · التقارب ليس دليل هوية. القرار للمستخدم والدمج
-                    له شاشته.
-                  </p>
                 </Notice>
               ) : dupes.length && !editing ? (
                 <Button variant="quiet" onClick={() => setReviewing(true)}>

@@ -187,7 +187,7 @@ test.describe("PLT-05", () => {
       state: "empty",
       texts: fromFrame("PLT-05", "empty", [
         "لا طابور إرسال الآن",
-        "كل ما أُرسل تأكّد تسليمه أو انتهى بحالة نهائية. هذا وضع سليم لا خطأ، فلا نعرض جدولاً فارغاً موحياً بعطل.",
+        "كل ما أُرسل تأكّد تسليمه أو انتهى بحالة نهائية. هذا وضع سليم لا خطأ",
       ]),
     });
   });
@@ -279,11 +279,12 @@ const ROWS = [
   }),
 ];
 const BADGE = "منشأة موثَّقة المستندات — التوثيق لا يشمل جودة السلع أو الالتزام بالتسليم";
-const LIST = (rows: unknown[], pending: number, avg = 4) => ({
+const LIST = (rows: unknown[], pending: number, avg = 4, reviewed = 6) => ({
   requests: rows,
   pending_count: pending,
   oldest_waiting_hours: 50,
   avg_review_hours_week: avg,
+  reviewed_week: reviewed,
   badge_text: BADGE,
   fetched_at: new Date().toISOString(),
 });
@@ -361,7 +362,7 @@ test.describe("PLT-06", () => {
         "رُفض الطلب مع بيان السبب. الحساب يبقى عاملاً بلا شارة.",
         "مرفوض",
         "نص الشارة ثابت ومعروض للمشتري:",
-        "«منشأة موثَّقة المستندات — التوثيق لا يشمل جودة السلع أو الالتزام بالتسليم». بلا هذا السطر تصبح الشارة ضماناً لم نقدّمه.",
+        "«منشأة موثَّقة المستندات — التوثيق لا يشمل جودة السلع أو الالتزام بالتسليم».",
         "تشغيل الإرسال",
         "صحة القنوات دون كشف مفاتيح أو أسرار مزوّدين",
         "عند نفاد الحصة لا نُسقط الرسائل صامتين.",
@@ -387,8 +388,6 @@ test.describe("PLT-06", () => {
       texts: fromFrame("PLT-06", "validation_error", [
         "مستند غير مقروء",
         "الصورة مشوّشة أو مقطوعة الأطراف.",
-        "لا رفض",
-        "نطلب إعادة الرفع بسبب محدّد: «الطرف الأيسر مقطوع». الرفض يُعيد التاجر إلى أول الطابور بلا ذنب.",
       ]),
     });
     await page.getByRole("button", { name: "تُحقّق من المنشأة" }).click();
@@ -397,9 +396,7 @@ test.describe("PLT-06", () => {
       state: "success",
       texts: fromFrame("PLT-06", "success", [
         "تُحقّق من المنشأة",
-        "نقول ما صار مسموحاً: النشر والبيع في السوق، والشارة على صفحتها.",
-        "الشارة تعني ما تقول",
-        "تحقّقٌ من هوية المنشأة لا شهادةُ جودة ولا ضمان. وهذا مكتوب حيث تُقرأ الشارة لا هنا فقط.",
+        "النشر والبيع في السوق، والشارة على صفحتها.",
       ]),
     });
     await expect(root).toContainText("قرّر طيب — تشغيل");
@@ -408,24 +405,27 @@ test.describe("PLT-06", () => {
     await expect(root).toContainText("موثَّقة");
   });
 
-  test("empty: كل الطلبات روجعت — متوسط المراجعة مقياس يُحاسَب عليه المشغّل لا تهنئة", async ({
-    page,
-  }, info) => {
+  // فحص 2026-10-17 VP12: «روجع كل شيء» بعيّنته، و«لم يصل طلب» حالة أخرى بلا متوسط
+  test("empty: لا منتظر — روجع N طلباً هذا الأسبوع بمتوسطه", async ({ page }, info) => {
     await page.route("**/api/platform/verifications", (route) =>
-      route.fulfill(json(200, LIST([ROWS[3]], 0, 4))),
+      route.fulfill(json(200, LIST([ROWS[3]], 0, 4, 6))),
     );
     await operatorLogin(page);
     await goSection(page, "طلبات التحقُّق");
-    await expectFrame(page, info, {
-      screenId: "PLT-06",
-      state: "empty",
-      texts: fromFrame("PLT-06", "empty", [
-        "لا طلبات",
-        "كل الطلبات روجعت. نعرض متوسط زمن المراجعة كمقياس خدمة.",
-        "المقياس لا التهنئة",
-        "«لا طلبات · متوسط المراجعة 4 ساعات هذا الأسبوع» — رقمٌ يُحاسَب عليه المشغّل.",
-      ]),
-    });
-    await expect(page.locator('[data-screen="PLT-06"]')).toContainText("0 بانتظار المراجعة");
+    await expectFrame(page, info, { screenId: "PLT-06", state: "empty", texts: [] });
+    const root = page.locator('[data-screen="PLT-06"]');
+    await expect(root).toContainText("0 بانتظار المراجعة");
+    await expect(root).toContainText("روجع 6 طلبات هذا الأسبوع بمتوسط 4 ساعات.");
+  });
+
+  test("empty: بلا مراجعات هذا الأسبوع — «لم يصل طلب» بلا متوسط", async ({ page }) => {
+    await page.route("**/api/platform/verifications", (route) =>
+      route.fulfill(json(200, LIST([], 0, 0, 0))),
+    );
+    await operatorLogin(page);
+    await goSection(page, "طلبات التحقُّق");
+    const root = page.locator('[data-screen="PLT-06"]');
+    await expect(root).toContainText("لم يصل طلب تحقّق هذا الأسبوع.");
+    await expect(root).not.toContainText("بمتوسط");
   });
 });

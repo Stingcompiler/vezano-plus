@@ -284,9 +284,6 @@ export function ImportClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استيراد بيانات</h2>
-            <span className="cat-head__hint">
-              مدخل البيانات الجملة. الخطر أن يُستورد الملف مرتين فيتضاعف كل شيء.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "loading" ? (
@@ -296,7 +293,7 @@ export function ImportClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>لا كتابة أثناء الفحص</strong> · يُقرأ كاملاً ويُعرض تقريره ثم يُكتب بعد
-                  موافقة. الكتابة التدريجية تجعل الإلغاء مستحيلاً.
+                  موافقة.
                 </p>
               </Notice>
             ) : null}
@@ -386,11 +383,11 @@ export function ImportClient() {
                   </p>
                   <p className="acc-choice__note">
                     <strong>المطابقة تُقترح لا تُفترض</strong> · النظام يخمّن من العناوين ويعرض
-                    تخمينه للتعديل. الافتراض الصامت يُدخل السعر في حقل التكلفة.
+                    تخمينه للتعديل.
                   </p>
                   <p className="acc-choice__note">
                     <strong>الوحدة إلزامية</strong> · صنفٌ بلا وحدة لا يُستورد — نفس قاعدة إنشاء
-                    الصنف. الاستيراد ليس باباً خلفياً يلتفّ على قواعد الإدخال.
+                    الصنف.
                   </p>
                 </Notice>
                 <div className="cat-form__actions">
@@ -545,10 +542,6 @@ export function ImportClient() {
                     </Button>
                   ) : null}
                 </div>
-                <p className="acc-choice__note">
-                  بعد الاستيراد تُعرض نتيجة مكتوبة: كم دخل، كم رُفض، وأين ملف المرفوضات. لا رسالة
-                  «تم» مجرّدة.
-                </p>
               </>
             ) : null}
             <div className="cat-form__actions">

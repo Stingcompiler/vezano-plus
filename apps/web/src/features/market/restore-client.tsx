@@ -167,11 +167,8 @@ export function RestoreClient({ id }: { id: string }) {
                   ) : null}
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نُعلن الجهل</strong> · حالةٌ قديمة تُعرض بلا وسم تُقرأ حالةً حاضرة.
-                </p>
-                <p className="acc-choice__note">
                   <strong>التنفيذ يتوقف</strong> · لا شحن ولا استلام على هذا الطلب حتى تنتهي
-                  المصالحة. فعلٌ على أساسٍ مشكوك يضاعف الضرر.
+                  المصالحة.
                 </p>
                 {p.restore_point ? (
                   <div className="acc-actions">
@@ -278,10 +275,6 @@ export function RestoreClient({ id }: { id: string }) {
                 <p className="acc-choice__note">
                   <strong>لا تحويل مالي صامت</strong> · الاستعادة لا تُنشئ قيداً ولا تُلغيه. كل فرق
                   يبقى بنداً معلَناً حتى يُقرَّر.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الأثر معروض</strong> · ما أُثبت وما حُجز وما يحتاج قراراً — ثلاث قوائم لا
-                  رسالة «تمت الاستعادة».
                 </p>
                 <div className="pub-cols">
                   <div>

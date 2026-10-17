@@ -244,9 +244,6 @@ export function ImportClient() {
                   <span className="sting-mono">{batch.ready_count}</span> سعراً سيتغيّر، أكبر ارتفاع{" "}
                   <span className="sting-mono">{batch.max_increase_pct}</span>٪.
                 </p>
-                <p className="acc-lead">
-                  <strong>الفرق لا القائمة</strong>
-                </p>
               </Notice>
             ) : null}
 
@@ -338,8 +335,7 @@ export function ImportClient() {
                   بالسعر الجديد وبعضها بالقديم.
                 </p>
                 <p className="acc-lead">
-                  <strong>لا نصف تسعيرة</strong> · الدفعة تُطبَّق كوحدة قابلة للتراجع: ما اكتمل يبقى
-                  وما انقطع يُلغى، ونعرض أين وقفنا وزرّ استئناف.
+                  الدفعة تُطبَّق كوحدة قابلة للتراجع: ما اكتمل يبقى وما انقطع يُلغى.
                 </p>
               </Notice>
             ) : null}

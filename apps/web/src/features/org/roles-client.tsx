@@ -204,10 +204,6 @@ export function RolesClient() {
                   مدير الفرع يرى أدوار فريقه ولا يعدّل المصفوفة — تعديلها يُغيّر ما يستطيعه كل موظف
                   في المنشأة.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لماذا لا حتى لفرعه</strong> · الأدوار معرّفة على مستوى المنشأة لا الفرع.
-                  تعديلٌ «لفرعه» يسري على الجميع، وهذا ليس ما يقصده.
-                </p>
               </Notice>
             ) : null}
 
@@ -220,9 +216,7 @@ export function RolesClient() {
             {state === "success" && saved ? (
               <Notice kind="success" title="حُفظت المصفوفة">
                 <p className="acc-lead">
-                  نقول الأثر بالعدد: «تغيّرت صلاحيات{" "}
-                  <span className="sting-mono">{saved.users}</span> موظفين». والحدود المالية بقيمها
-                  ونطاقها (يومي أو للعملية).
+                  تغيّرت صلاحيات <span className="sting-mono">{saved.users}</span> موظفين
                 </p>
                 <p className="acc-choice__note">
                   <strong>يسري فوراً</strong> · ومن كان في منتصف عمل يُطبَّق عليه عند فعله التالي لا
@@ -385,10 +379,6 @@ export function RolesClient() {
             ) : null}
 
             <h3 className="cat-head__title">الأدوار والصلاحيات — ما يراه كل دور بالضبط</h3>
-            <p className="acc-choice__note">
-              الصلاحية ليست قائمة مربّعات. كل بند هنا يُقرأ كجملة: «يستطيع فلان أن يفعل كذا فيقع أثر
-              كذا».
-            </p>
             <p className="acc-choice__note">
               <strong>لا يمكن إنشاء دور بلا مالك قادر على سحبه.</strong> ولا يمكن للمالك أن يسحب
               صلاحيته الأخيرة عن نفسه: المنشأة بلا مالك تصبح دفتراً لا يملك أحد حسم تعارضاته. ودعوة

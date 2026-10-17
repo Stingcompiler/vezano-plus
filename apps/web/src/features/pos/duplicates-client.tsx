@@ -225,7 +225,7 @@ export function DuplicatesClient() {
 
             {state === "empty" ? (
               <Notice kind="empty" title="لا اشتباهات">
-                <p className="acc-lead">حالة سويّة — القائمة تُفتح من تنبيه لا من تصفّح.</p>
+                <p className="acc-lead">حالة سويّة.</p>
               </Notice>
             ) : null}
 
@@ -238,10 +238,6 @@ export function DuplicatesClient() {
                   {state === "permission_denied" ? (
                     <>
                       <p className="acc-lead">القرار «هذا تكرار» يُنشئ مستنداً عكسياً بأثر مالي.</p>
-                      <p className="acc-lead">
-                        <strong>الكاشير يُبلغ</strong> · زرّ «أبلغ عن اشتباه» متاح له — الملاحظة من
-                        الميدان والقرار ممن يملك أثره.
-                      </p>
                       <p className="acc-lead">
                         الإلغاء يتطلب صلاحية مدير فرع أو مالك. الكاشير يرى الشاشة ويبلّغ فقط.
                       </p>
@@ -327,10 +323,6 @@ export function DuplicatesClient() {
                 <Notice kind="info" title="المستندان جنباً إلى جنب">
                   <p className="acc-lead">
                     نفس الصنف والكمية والدقائق من جهازين — بهويّتيهما وجهازيهما ومنفّذيهما.
-                  </p>
-                  <p className="acc-lead">
-                    <strong>الإجراء عكسي</strong> · «سجّل عكساً للثانية» لا «احذف». فقد يكون زبونان
-                    اشتريا الشيء نفسه فعلاً — والحذف يمحو بيعاً صحيحاً بلا أثر.
                   </p>
                   <p className="acc-choice__note">عمليتان متشابهتان ليستا بالضرورة خطأً.</p>
                 </Notice>

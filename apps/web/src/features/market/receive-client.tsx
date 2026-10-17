@@ -244,10 +244,6 @@ export function ReceiveClient({ id }: { id: string }) {
                   <strong>دفتران مستقلان</strong> · لا تسوية تلقائية ولا ترجيح. كلٌّ يقيّد ما يقرّ
                   به، والفرق محجوز حتى يُغلق.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>البابُ خلاف</strong> · المسار المعروض «افتح خلافاً بالأدلة» لا «صحّح
-                  الكمية». تصحيحُ رقمٍ يخفي نزاعاً.
-                </p>
               </Notice>
             ) : null}
             {state === "ready" && p?.shipment ? (

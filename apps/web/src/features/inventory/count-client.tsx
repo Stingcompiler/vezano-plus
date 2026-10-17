@@ -283,7 +283,7 @@ export function CountClient() {
                   </p>
                   <p className="acc-choice__note">
                     <strong>الإغلاق لا يُسوّي</strong> · الجرد يوثّق ما عُدّ؛ والتسوية تُحرّك
-                    المخزون وتحتاج اعتماداً. فصلهما يمنع تسوياتٍ بالسهو.
+                    المخزون وتحتاج اعتماداً.
                   </p>
                 </Notice>
                 <div className="shift-facts">
@@ -326,10 +326,6 @@ export function CountClient() {
             {state !== "success" ? (
               <>
                 <div className="inv-head">
-                  <span className="acc-choice__note">
-                    <strong>القاعدة نفسها</strong> · «لا تُرِ المتوقَّع قبل العدّ». والفرق يُعرض بعد
-                    تأكيد العدّ لا قبله.
-                  </span>
                   <span className="inv-head__chip">
                     <Status
                       state={!online ? "offline" : counted.length ? "pending_sync" : "empty"}
@@ -381,7 +377,7 @@ export function CountClient() {
                     </p>
                     <p className="acc-choice__note">
                       <strong>لا نسوّي ما لم يُعدّ</strong> · الأصناف غير المعدودة تبقى بأرصدتها ولا
-                      تُصفَّر. التسوية تمسّ المعدود وحده — وهذا أهم قرار في الشاشة.
+                      تُصفَّر. التسوية تمسّ المعدود وحده.
                     </p>
                   </Notice>
                 ) : null}

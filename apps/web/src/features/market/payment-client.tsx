@@ -209,10 +209,6 @@ export function PaymentClient({ id }: { id: string }) {
                   التحويل <span className="sting-mono">{dm(matched.transferred_on)}</span> ·
                   المطابقة <span className="sting-mono">{dm(matched.matched_at)}</span>.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>تاريخان لا واحد</strong> · المهلة بينهما هي ما يُتنازع عليه عادةً.
-                  إظهارهما يُغني عن الجدال.
-                </p>
               </Notice>
             ) : null}
             {state === "validation_error" && err ? (
@@ -235,10 +231,6 @@ export function PaymentClient({ id }: { id: string }) {
             {state === "partial" ? (
               <Notice kind="info" title="دفعة على طلبين">
                 <p className="acc-lead">تحويلٌ واحد يغطي طلبين — والتوزيع صريح يُدخله المستخدم.</p>
-                <p className="acc-choice__note">
-                  <strong>لا توزيع تلقائي</strong> · توزيعُ الدفعة على الأقدم افتراضاً يُنتج أعماراً
-                  وأرصدةً لم يقصدها أحد. من يدفع يقول على ماذا.
-                </p>
               </Notice>
             ) : null}
             {state === "stale" && stalePay && p ? (
@@ -410,8 +402,7 @@ export function PaymentClient({ id }: { id: string }) {
                     <h3 className="cat-head__title">إيصال مرفوع بحالته</h3>
                     <p className="acc-choice__note">
                       صورة التحويل ومبلغه وتاريخه، وشارة «مسجَّل — غير مطابق» حتى يُقرّ المورد.{" "}
-                      <strong>الرفع لا يُسدّد</strong> · الذمّة لا تنقص برفع إيصال. من يرى رصيده
-                      ناقصاً بمجرد الرفع يحسب نفسه بريئاً وهو مطالَب.
+                      <strong>الرفع لا يُسدّد</strong> · الذمّة لا تنقص برفع إيصال.
                     </p>
                     <TextField
                       label="المبلغ (بالقرش)"

@@ -176,9 +176,7 @@ export function CampaignApproveClient({ id }: { id: string }) {
           <div className="acc-card__body">
             {state === "saving" ? (
               <Notice kind="info" title="جارٍ الجدولة">
-                <p className="acc-lead">
-                  الجدولة تُسجَّل ولا تُرسل. الفرق مكتوب: «مجدولة ٨ ص غداً» لا «أُرسلت».
-                </p>
+                <p className="acc-lead">الجدولة تُسجَّل ولا تُرسل.</p>
               </Notice>
             ) : null}
             {state === "expired" && c && sched ? (
@@ -202,8 +200,7 @@ export function CampaignApproveClient({ id }: { id: string }) {
                   <span className="sting-mono">{sched.time}</span> والنظام كان متوقفاً.
                 </p>
                 <p className="acc-lead">
-                  <strong>لا إرسال متأخر تلقائياً</strong> · عرضُ «خصم اليوم» يصل بعد يومين إزعاجٌ
-                  لا تسويق. نسأل: أرسل الآن أم أعد الجدولة أم ألغِ.
+                  <strong>لا إرسال متأخر تلقائياً</strong> · نسأل: أرسل الآن أم أعد الجدولة أم ألغِ.
                 </p>
               </Notice>
             ) : null}
@@ -259,7 +256,6 @@ export function CampaignApproveClient({ id }: { id: string }) {
                 }
               >
                 <p className="acc-lead">
-                  نقول ما صار:{" "}
                   {c.status === "scheduled" && sched ? (
                     <>
                       مجدولة <span className="sting-mono">{sched.time}</span> {sched.rel}
@@ -279,8 +275,7 @@ export function CampaignApproveClient({ id }: { id: string }) {
                   ، وأين تُتابَع نتائجها — في «نتائج الحملة».
                 </p>
                 <p className="acc-lead">
-                  <strong>الإلغاء متاح</strong> · حتى لحظة الإرسال، وزرّه ظاهر هنا لا مخبوء في
-                  القائمة.
+                  <strong>الإلغاء متاح</strong> · حتى لحظة الإرسال.
                 </p>
               </Notice>
             ) : null}
@@ -289,15 +284,12 @@ export function CampaignApproveClient({ id }: { id: string }) {
               <div className="org-effects__row">
                 <div>
                   <h3 className="cat-head__title">كما ستصل الزبون</h3>
-                  <p className="acc-choice__note">
-                    معاينةٌ بشكل الرسالة على هاتفه، ومعها العدد والوقت والحصة بعد الإرسال.
-                  </p>
                   <div className="not-phone" aria-label="معاينة على الهاتف">
                     <div className="not-phone__from">{c.shop_name}</div>
                     <blockquote className="not-preview">{c.message}</blockquote>
                   </div>
                   <p className="acc-lead">
-                    <strong>الرقم الحاسم</strong> · «ستصل{" "}
+                    ستصل{" "}
                     <span className="sting-mono">{v?.audience.eligible ?? c.audience_count}</span>{" "}
                     زبوناً · تبقى{" "}
                     <span className="sting-mono">
@@ -307,7 +299,7 @@ export function CampaignApproveClient({ id }: { id: string }) {
                           (approved ? 0 : (v?.cost_messages ?? c.cost_messages)),
                       )}
                     </span>{" "}
-                    من حصتك». الاعتماد على معرفة الأثر لا على الثقة بالنظام.
+                    من حصتك
                   </p>
                   <p className="acc-choice__note">
                     <span className="sting-mono">{v?.cost_messages ?? c.cost_messages}</span> رسالة

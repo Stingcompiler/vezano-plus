@@ -319,8 +319,7 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
               مراجعة فروق الجرد وتسوية — لا فرق يُمرَّر بلا سبب مكتوب
             </h2>
             <span className="cat-head__hint">
-              الجرد يُنتج فروقاً؛ التسوية تُنشئ حركة بسبب وفاعل ومستند. ولا يوجد «قبول الكل» يمحو
-              أثر عشرين فرقاً بضغطة واحدة.
+              الجرد يُنتج فروقاً؛ التسوية تُنشئ حركة بسبب وفاعل ومستند.
             </span>
           </div>
           <div className="acc-card__body">
@@ -353,23 +352,11 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
 
             {state === "permission_denied" ? (
               <Notice kind="locked" title="من يعدّ ليس من يسوّي">
-                <p className="acc-lead">
-                  أمين المخزن أدخل العدّ، والتسوية تحتاج صلاحية مالية. الفصل مقصود: لو عدّ وسوّى
-                  الشخص نفسه صار النقص قابلاً للإخفاء بلا شاهد. يظهر له «أُرسلت الفروق للمراجعة» مع
-                  نسخة من عدّه.
-                </p>
+                <p className="acc-lead">أمين المخزن أدخل العدّ، والتسوية تحتاج صلاحية مالية.</p>
                 <Status state="pending_sync" label="أُرسلت الفروق للمراجعة" dot={false} />
               </Notice>
             ) : null}
-            {state === "validation_error" ? (
-              <Notice kind="error" title="فرق بلا سبب.">
-                <p className="acc-lead">
-                  لا نحفظ التسوية ولا نكتب «تسوية جرد» سبباً عامّاً — سبب الفرق هو الفرق الوحيد بين
-                  تصحيح مشروع وإخفاء نقص. نعرض قائمة أسباب مقترحة (تالف، سرقة، خطأ عدّ، خطأ استلام)
-                  مع حقل حرّ.
-                </p>
-              </Notice>
-            ) : null}
+            {state === "validation_error" ? <Notice kind="error" title="فرق بلا سبب." /> : null}
             {state === "success" && done ? (
               <Notice
                 kind="success"

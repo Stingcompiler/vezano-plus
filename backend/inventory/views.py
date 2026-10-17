@@ -15,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from catalog.models import Item
 from core import home
 from core.auth.tokens import AuthContext
 from core.models import Branch
@@ -84,6 +85,8 @@ class StockBalancesView(APIView):
                     "branches": [{"id": str(b.id), "name": b.name} for b in branches],
                     "as_of": timezone.now().isoformat().replace("+00:00", "Z"),
                     "rows": services.stock_rows(branch_id),
+                    # فحص 2026-10-17 F10: «أصناف بلا رصيد» غير «لا أصناف أصلاً»
+                    "catalog_items": Item.objects.filter(is_active=True).count(),
                 }
             )
 

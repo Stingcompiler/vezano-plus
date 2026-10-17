@@ -344,8 +344,7 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
                   والمرسل <span className="sting-mono">{formatQty(excess[0]!.sentMilli, 0)}</span>.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>لا نقبل الزيادة صامتين</strong> · قد يكون خطأ عدٍّ أو إرسالاً زائداً.
-                  تُسجَّل بسبب مكتوب وتُحال إلى مراجعة الفرق لا تُقبل بالسكوت.
+                  قد يكون خطأ عدٍّ أو إرسالاً زائداً. تُسجَّل بسبب مكتوب وتُحال إلى مراجعة الفرق.
                 </p>
               </Notice>
             ) : null}
@@ -426,8 +425,7 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
                       بقيمته ويُراجَع بقرار — والبضاعة قد تكون في الشاحنة أو سُرقت.
                     </p>
                     <p className="acc-choice__note">
-                      <strong>من يقرّر</strong> · المالك أو مدير أعلى من الفرعين. مديرُ أحدهما طرفٌ
-                      في الخلاف لا حكم.
+                      <strong>من يقرّر</strong> · المالك أو مدير أعلى من الفرعين.
                     </p>
                     <p className="acc-choice__note">
                       الفرق المحجوز <span className="sting-mono">{formatQty(diff, 0)}</span>{" "}
@@ -446,7 +444,7 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
                   </p>
                   <p className="acc-choice__note">
                     <strong>مخزون الطريق يُصفّى</strong> · ما استُلم يخرج من الطريق إلى الرصيد، وما
-                    بقي يبقى في الطريق موسوماً — لا يتبخّر ولا يُحتسب مرتين.
+                    بقي يبقى في الطريق موسوماً.
                   </p>
                 </Notice>
                 <div className="shift-facts">

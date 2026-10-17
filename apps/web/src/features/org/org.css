@@ -209,3 +209,8 @@
   min-inline-size: 2ch;
   text-align: center;
 }
+
+/* فحص 2026-10-17 F14 — أقسام الإعدادات */
+.org-settings__tabs {
+  margin-block-end: 16px;
+}

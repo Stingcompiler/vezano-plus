@@ -208,15 +208,12 @@ test.describe("NOT-05", () => {
         "معاينة واعتماد وجدولة",
         "آخر باب قبل الإرسال.",
         "كما ستصل الزبون",
-        "معاينةٌ بشكل الرسالة على هاتفه، ومعها العدد والوقت والحصة بعد الإرسال.",
-        "الرقم الحاسم",
         "زبوناً · تبقى",
-        "من حصتك». الاعتماد على معرفة الأثر لا على الثقة بالنظام.",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     const root = page.locator('[data-screen="NOT-05"]');
-    await expect(root).toContainText("«ستصل 42 زبوناً · تبقى 158 من حصتك»");
+    await expect(root).toContainText("ستصل 42 زبوناً · تبقى 158 من حصتك");
     await expect(root).toContainText("سكر أبيض كرتونة 12 كغ");
     const tmr = new Date();
     tmr.setDate(tmr.getDate() + 1);
@@ -240,10 +237,7 @@ test.describe("NOT-05", () => {
     await expectFrame(page, info, {
       screenId: "NOT-05",
       state: "saving",
-      texts: fromFrame("NOT-05", "saving", [
-        "جارٍ الجدولة",
-        "الجدولة تُسجَّل ولا تُرسل. الفرق مكتوب: «مجدولة ٨ ص غداً» لا «أُرسلت».",
-      ]),
+      texts: fromFrame("NOT-05", "saving", ["جارٍ الجدولة", "الجدولة تُسجَّل ولا تُرسل."]),
     });
     release();
     await expectFrame(page, info, {
@@ -251,10 +245,9 @@ test.describe("NOT-05", () => {
       state: "success",
       texts: fromFrame("NOT-05", "success", [
         "اعتُمدت",
-        "نقول ما صار: مجدولة",
         "، وأين تُتابَع نتائجها",
         "الإلغاء متاح",
-        "حتى لحظة الإرسال، وزرّه ظاهر هنا لا مخبوء في القائمة.",
+        "حتى لحظة الإرسال",
       ]),
     });
     await expect(root).toContainText("مجدولة 08:00 غداً · اعتمدها عثمان الطيب في 10:00");
@@ -306,14 +299,14 @@ test.describe("NOT-05", () => {
       texts: fromFrame("NOT-05", "expired", [
         "مضى وقت الإرسال",
         "لا إرسال متأخر تلقائياً",
-        "عرضُ «خصم اليوم» يصل بعد يومين إزعاجٌ لا تسويق. نسأل: أرسل الآن أم أعد الجدولة أم ألغِ.",
+        "نسأل: أرسل الآن أم أعد الجدولة أم ألغِ.",
       ]),
     });
     const root = page.locator('[data-screen="NOT-05"]');
     await expect(root).toContainText("حملة مجدولة لأمس 08:00 والنظام كان متوقفاً.");
     await page.getByRole("button", { name: "أرسل الآن", exact: true }).click();
     await expect(root).toHaveAttribute("data-state", "success");
-    await expect(root).toContainText("نقول ما صار: أُرسلت");
+    await expect(root).toContainText("أُرسلت");
   });
 });
 
@@ -410,13 +403,7 @@ test.describe("NOT-06", () => {
     await expectFrame(page, info, {
       screenId: "NOT-06",
       state: "empty",
-      texts: fromFrame("NOT-06", "empty", [
-        "نتائج حملة وإلغاؤها",
-        "ما وصل فعلاً. القاعدة: لا ندّعي علماً بما لا يُخبرنا به المزوّد.",
-        "لا نتائج بعد",
-        "نفرّق",
-        "«لم تصل نتائج بعد» لا «لم تصل لأحد». الأولى انتظار والثانية فشل.",
-      ]),
+      texts: fromFrame("NOT-06", "empty", ["نتائج حملة وإلغاؤها", "ما وصل فعلاً.", "لا نتائج بعد"]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     const root = page.locator('[data-screen="NOT-06"]');
@@ -436,7 +423,7 @@ test.describe("NOT-06", () => {
         "اكتملت جزئياً",
         "غير معروف",
         "القراءة غير مقيسة ولن تُعرض.",
-        "المزوّد يخبرنا أنه قبِل الرسالة، وأحياناً أنه سلّمها. لا يخبرنا أن أحداً قرأها. عرض «معدل القراءة» هنا سيكون رقماً مخترعاً تبني عليه قراراً تسويقياً خاطئاً.",
+        "المزوّد يخبرنا أنه قبِل الرسالة، وأحياناً أنه سلّمها. لا يخبرنا أن أحداً قرأها.",
         "الإخفاقات — 23 رسالة",
         "رقم غير صالح",
         "دائم — لا يُعاد الإرسال تلقائياً",
@@ -450,7 +437,7 @@ test.describe("NOT-06", () => {
         "14 دائم · 9 عابر",
         "غير محسومة",
         "انقطع عامل الجدولة",
-        "الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده. نقول ذلك قبل التأكيد لا بعده.",
+        "الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده.",
       ]),
     });
     await expect(root).not.toContainText("معدل القراءة:");
@@ -458,10 +445,7 @@ test.describe("NOT-06", () => {
     await expectFrame(page, info, {
       screenId: "NOT-06",
       state: "ready",
-      texts: fromFrame("NOT-06", "ready", [
-        "لا قراءة مفترضة",
-        "تسجيل القراءة افتراضاً يجعل التاجر يظنّ حملته ناجحة. الصمت أصدق من رقم مخترع.",
-      ]),
+      texts: fromFrame("NOT-06", "ready", ["لا قراءة مفترضة"]),
     });
     await expect(root).toContainText("298");
   });
@@ -518,19 +502,16 @@ test.describe("NOT-06", () => {
       state: "server_error",
       texts: fromFrame("NOT-06", "server_error", [
         "المزوّد لا يردّ",
-        "الحملة أُرسلت وحالة التسليم مجهولة. أسوأ من الفشل لأنه غموض.",
-        "نقولها كما هي",
-        "حالة التسليم غير معروفة — المزوّد لا يستجيب». ولا نُعيد الإرسال: قد تصل مرتين.",
+        "الحملة أُرسلت وحالة التسليم مجهولة.",
+        "ولا نُعيد الإرسال: قد تصل مرتين.",
       ]),
     });
     const root = page.locator('[data-screen="NOT-06"]');
-    await expect(root).toContainText("«أُرسلت 42 · حالة التسليم غير معروفة — المزوّد لا يستجيب»");
+    await expect(root).toContainText("أُرسلت 42 · حالة التسليم غير معروفة — المزوّد لا يستجيب");
     await expect(page.getByRole("button", { name: /إعادة محاولة/ })).toHaveCount(0);
     // الإلغاء بعد بدء الإرسال: يُقال قبل التأكيد، ثم نُفصّل
     await page.getByRole("button", { name: "إيقاف ما تبقّى" }).click();
-    await expect(root).toContainText(
-      "الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده. نقول ذلك قبل التأكيد لا بعده.",
-    );
+    await expect(root).toContainText("الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده.");
     await page.getByRole("button", { name: "أكّد الإيقاف" }).click();
     await expectFrame(page, info, {
       screenId: "NOT-06",
@@ -539,9 +520,8 @@ test.describe("NOT-06", () => {
         "أُلغيت الحملة",
         "ما أُرسل لا يُستردّ",
         "أُرسلت ولا تُستردّ ·",
-        "أُلغيت». الإلغاء الجزئي حقيقة تُقال.",
       ]),
     });
-    await expect(root).toContainText("«12 أُرسلت ولا تُستردّ · 30 أُلغيت»");
+    await expect(root).toContainText("12 أُرسلت ولا تُستردّ · 30 أُلغيت");
   });
 });

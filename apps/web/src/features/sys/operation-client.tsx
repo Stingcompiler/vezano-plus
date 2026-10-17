@@ -216,9 +216,6 @@ export function OperationClient({ operationId }: { operationId: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تفاصيل عملية متعثرة</h2>
-            <span className="cat-head__hint">
-              شاشة تشخيص لصاحب محل لا لمهندس: لماذا وقفت هذه العملية بعينها، وما الذي يفعله الآن.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "empty" && op !== undefined ? (
@@ -227,11 +224,7 @@ export function OperationClient({ operationId }: { operationId: string }) {
                 title="لا عمليات متعثرة"
                 action={<Button onClick={() => router.push("/sync")}>مركز المزامنة</Button>}
               >
-                <p className="acc-lead">
-                  الحالة الصحّية. يُفتح هذا غالباً من إشعارٍ قديم بعد أن حُلّت المشكلة تلقائياً.
-                </p>
                 <p className="acc-choice__note">
-                  <strong>نقول ما جرى</strong> ·{" "}
                   {lastFailure ? (
                     <>
                       لا شيء متعثر — آخر تعثّر كان{" "}
@@ -323,7 +316,7 @@ export function OperationClient({ operationId }: { operationId: string }) {
                 </p>
                 <p className="acc-choice__note">
                   <strong>التحويل</strong> · مسارها إلى «مراجعة التعارضات» حيث يُراجعها المالك
-                  بالنسختين. هنا نُظهر السبب والمسار لا الحلّ.
+                  بالنسختين.
                 </p>
               </Notice>
             ) : null}
@@ -350,10 +343,7 @@ export function OperationClient({ operationId }: { operationId: string }) {
                     <span className="acc-choice__note">{rejection.actionLabel}</span>
                   </div>
                 </div>
-                <p className="acc-choice__note">
-                  <strong>الفعل الواحد</strong> · لكل سبب مخرجٌ واحد واضح — لا قائمة خيارات على من
-                  لا يعرف الفرق بينها. الأصل محفوظ ولم يُعدّل.
-                </p>
+                <p className="acc-choice__note">الأصل محفوظ ولم يُعدّل.</p>
                 <div className="cat-form__actions">
                   <Button pos onClick={() => void act(rejection.action)} loading={busy}>
                     {rejection.actionLabel}
@@ -427,8 +417,7 @@ export function OperationClient({ operationId }: { operationId: string }) {
                   )}
                 </p>
                 <p className="acc-choice__note">
-                  <strong>لا قفز</strong> · تعود إلى موضعها الزمني لا إلى رأس الطابور. الترتيب
-                  الزمني هو ما يجعل الدفتر مقروءاً بعد شهر.
+                  <strong>لا قفز</strong> · تعود إلى موضعها الزمني لا إلى رأس الطابور.
                 </p>
               </Notice>
             ) : null}
@@ -458,10 +447,6 @@ export function OperationClient({ operationId }: { operationId: string }) {
                     </li>
                   ))}
                 </ul>
-                <p className="acc-choice__note">
-                  <strong>بلغة المحل</strong> · «الخادم رفض: الصنف المحذوف» لا «HTTP 422». الرمز
-                  التقني يبقى مطوياً خلف «تفاصيل للدعم».
-                </p>
                 <details className="sys-support">
                   <summary>تفاصيل للدعم</summary>
                   <p className="acc-choice__note">
@@ -471,10 +456,6 @@ export function OperationClient({ operationId }: { operationId: string }) {
                     <Button variant="quiet" onClick={() => void copy()}>
                       {copied ? "نُسخ" : "نسخ"}
                     </Button>
-                  </p>
-                  <p className="acc-choice__note">
-                    لا نعرض JSON ولا أثر مكدّس. سطر واحد يكفي الدعم، والباقي شرح بالعربية لما حدث
-                    ولماذا لم تضع الفاتورة.
                   </p>
                 </details>
               </>

@@ -268,8 +268,7 @@ export function ReportClient({ reportId = "" }: { reportId?: string }) {
                 <p className="acc-lead">رابط متابعة بلاغ فُتح من غير مقدِّمه.</p>
                 <p className="acc-choice__note">
                   <strong>هوية المبلّغ محفوظة</strong> · المبلَّغ عنه لا يرى من بلّغ، وغير المقدِّم
-                  لا يرى البلاغ أصلاً. كشفُ المبلّغين يقتل الإبلاغ في سوقٍ صغيرة يعرف الجميع فيها
-                  الجميع.
+                  لا يرى البلاغ أصلاً.
                 </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/market/reports")}>بلاغاتي</Button>
@@ -343,8 +342,7 @@ export function ReportClient({ reportId = "" }: { reportId?: string }) {
                 ) : null}
                 <p className="acc-choice__note">
                   <strong>البلاغ لا يُعلّق شيئاً بنفسه</strong> · التعليق قرار مراجِع بشري عند مشرف
-                  السوق. لو كان البلاغ يُخفي عرضاً تلقائياً لصار سلاحاً بيد منافس — عشرة بلاغات
-                  كاذبة تُخرج بائعاً من السوق بلا أن يراجعها أحد.
+                  السوق.
                 </p>
                 <div className="acc-actions">
                   <Button pos loading={busy} onClick={() => void submit()}>

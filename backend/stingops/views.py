@@ -678,6 +678,7 @@ class OperatorDisputeActionView(APIView):
 
 
 # ------------------------------------------------------------------ PLT-09/PLT-10 (T3.22)
+from stingops import audit as audit_svc  # noqa: E402
 from stingops import health as health_svc  # noqa: E402
 
 
@@ -691,6 +692,23 @@ class OperatorHealthView(APIView):
         if _operator(request) is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
         return Response(health_svc.health_payload())
+
+
+class OperatorAuditView(APIView):
+    """فحص 2026-10-17 VP13: سجل تدقيق المشغّلين — `?operator=&category=&tenant=&before=`."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None})
+    def get(self, request: Request) -> Response:
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        q = request.query_params
+        return Response(
+            audit_svc.audit_payload(
+                {k: str(q.get(k, "")) for k in ("operator", "category", "tenant", "before")}
+            )
+        )
 
 
 class OperatorBackupsView(APIView):

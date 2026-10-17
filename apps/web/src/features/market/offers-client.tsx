@@ -141,10 +141,9 @@ export function OffersClient() {
       <div className="sys mp" data-screen="MP-10" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
-            <h2 className="cat-head__title">عروض البائع الداخلية — أربع حالات لا حالتان</h2>
+            <h2 className="cat-head__title">عروض البائع الداخلية</h2>
             <span className="cat-head__hint">
-              منشور، مسودة، منتهٍ، مخفي. «المخفي» ليس محذوفاً و«المنتهي» ليس مخفياً — والخلط بينها
-              يجعل البائع يظنّ عرضاً يبيع وهو لا يظهر لأحد.
+              منشور، مسودة، منتهٍ، مخفي. «المخفي» ليس محذوفاً و«المنتهي» ليس مخفياً.
             </span>
           </div>
           <div className="acc-card__body">
@@ -164,10 +163,6 @@ export function OffersClient() {
                 <p className="acc-lead">
                   مع عدد ما تنتهي صلاحيته هذا الأسبوع — وهو سبب فتح الشاشة، والترتيب به لا بتاريخ
                   النشر.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الانتهاء هو العمل</strong> · عرضٌ منتهٍ يختفي من نتائج المشترين بصمت.
-                  العدّاد يجعل الفقد المؤجَّل مرئياً قبل وقوعه.
                 </p>
               </Notice>
             ) : null}
@@ -213,10 +208,7 @@ export function OffersClient() {
             ) : null}
 
             {data && data.total ? (
-              <p className="acc-choice__note">
-                <strong>لا زرّ «نشر كل المخزون».</strong> النشر اختيار صنف صنف مع جمهوره وسعره
-                وصلاحيته. من ينشر ٦٤٠ صنفاً بضغطة يكشف كلفته وتوفّره لمنافسيه بلا أن يقصد.
-              </p>
+              <p className="acc-choice__note">النشر اختيار صنف صنف مع جمهوره وسعره وصلاحيته.</p>
             ) : null}
           </div>
         </div>

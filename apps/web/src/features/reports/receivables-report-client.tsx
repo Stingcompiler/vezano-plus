@@ -215,10 +215,6 @@ export function ReceivablesReportClient() {
                     </>
                   ) : null}
                 </p>
-                <p className="acc-lead">
-                  <strong>لا رقم جزئي</strong> · لا نعرض مجموعاً يتزايد أمام العين. المجموع المالي
-                  يُقرأ مرة ويُحفظ في الذهن.
-                </p>
               </Notice>
             ) : null}
             {state === "stale" && p ? (
@@ -229,24 +225,18 @@ export function ReceivablesReportClient() {
                   يُزامن لا يظهر هنا.
                 </p>
                 <p className="acc-lead">
-                  <strong>الخطر المحدد</strong> · أن تطالب زبوناً سدّد. نقولها صراحةً: «قد لا تشمل
-                  سداداً وقع في فرع لم يُزامن» — لا تحذيراً عاماً.
+                  <strong>الخطر المحدد</strong> · أن تطالب زبوناً سدّد.
                 </p>
               </Notice>
             ) : null}
             {state === "empty" ? (
               <Notice kind="empty" title="لا ذمم">
+                {/* فحص 2026-10-17 F10: «لا ذمم» حقيقة؛ «كل البيع نقدي» استنتاج قد يكذب بلا مبيعات */}
                 <p className="acc-lead">
                   {side === "customers"
-                    ? "كل البيع نقدي ولا آجل. حالةٌ صحّية لمحلّ تجزئة، لا نقصَ بيانات."
+                    ? "لا ذمم مفتوحة على العملاء."
                     : "لا مستحقات مفتوحة على الموردين."}
                 </p>
-                {side === "customers" ? (
-                  <p className="acc-lead">
-                    <strong>نقولها كذلك</strong> · «لا ذمم مفتوحة — كل مبيعاتك نقدية». لا نقترح فتح
-                    البيع الآجل: قرارٌ تجاري ليس لنا.
-                  </p>
-                ) : null}
               </Notice>
             ) : null}
 

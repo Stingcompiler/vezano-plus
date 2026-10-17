@@ -357,13 +357,8 @@ export function ReviewClient({
                     على سعر ثم على بيانات طرف.
                   </p>
                   <p className="acc-choice__note">
-                    <strong>الترتيب بالأثر</strong> · تعارضٌ على{" "}
-                    <span className="sting-mono">400</span> ريال قبل تعارضٍ على هجاء اسم. الأقدم
-                    أولاً ترتيبٌ محايد، والمحايد هنا إهدار.
-                  </p>
-                  <p className="acc-choice__note">
                     <strong>ما لا يُحجز</strong> · التعارضات التي يحسمها النظام بأمان (طابعٌ مختلف
-                    لنفس القيمة) لا تصل هنا. حجزُ ما لا يحتاج قراراً يُعلّم المالك تجاهل الشاشة.
+                    لنفس القيمة) لا تصل هنا.
                   </p>
                   {failed === "list" ? (
                     <p className="acc-choice__note">تعذّر جلب القائمة من الخادم.</p>
@@ -500,8 +495,7 @@ export function ReviewClient({
                 ) : (
                   <Notice kind="info" title="حسم التعارض صلاحية مالك">
                     <p className="acc-lead">
-                      حسم التعارض صلاحية مالك. الكاشير يرى التعارض ويُبلّغ عنه ولا يحسمه — وهذه هي
-                      حالة permission_denied.
+                      حسم التعارض صلاحية مالك. الكاشير يرى التعارض ويُبلّغ عنه ولا يحسمه.
                     </p>
                     <p className="acc-choice__note">
                       النسختان محفوظتان كلتاهما. لا شيء ضاع، ولا شيء يُطبَّق حتى تقرّر.
@@ -525,7 +519,7 @@ export function ReviewClient({
                         اختار المالك نسخة الجهاز
                         {decided.balanceAfter ? (
                           <>
-                            . نقول أثر القرار بالأرقام: الرصيد صار{" "}
+                            . الرصيد صار{" "}
                             <span className="sting-mono">{formatMinor(decided.balanceAfter)}</span>
                           </>
                         ) : null}
@@ -548,7 +542,7 @@ export function ReviewClient({
                   </p>
                   <p className="acc-choice__note">
                     <strong>المرفوض يبقى</strong> · النسخة غير المختارة تبقى مقروءة في سجل التدقيق
-                    باسم من أدخلها. من راجع بعد شهر يحتاج أن يرى أن خلافاً وقع وحُسم.
+                    باسم من أدخلها.
                   </p>
                   <p className="acc-choice__note">
                     <strong>لا تراجع</strong> · الحسم نهائي. التصحيح بقرارٍ جديد يشير إليه — لا

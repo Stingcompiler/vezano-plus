@@ -275,11 +275,7 @@ export function OpenShiftClient() {
                   <p className="acc-lead">
                     الوردية مفتوحة على الجهاز والبيع يعمل. تُرفع عند عودة الشبكة.
                   </p>
-                ) : (
-                  <p className="acc-lead">
-                    رقمها ووقتها والمعدود الافتتاحي باسم من عدّ. والمسار الواحد: نقطة البيع.
-                  </p>
-                )}
+                ) : null}
                 <div className="shift-facts">
                   <div>
                     <span className="shift-facts__k">شهادة الفتح</span>

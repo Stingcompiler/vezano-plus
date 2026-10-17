@@ -356,9 +356,6 @@ export function InvoicesClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">قائمة الفواتير وتفاصيلها</h2>
-            <span className="cat-head__hint">
-              بحث وتاريخ وفرع ووضع مزامنة لكل صف، مع تمييز التاريخ المشكوك فيه.
-            </span>
           </div>
           <div className="acc-card__body">
             <div className="pos-inv__filters">
@@ -406,7 +403,7 @@ export function InvoicesClient() {
                 <p className="acc-lead">فواتير جهازه وورديته، لا كل الفرع ولا مجاميع اليوم.</p>
                 <p className="acc-lead">
                   <strong>المجاميع تقارير</strong> · مجموع مبيعات الفرع بابه «تقرير المبيعات»
-                  بصلاحيته. قائمة المراجعة اللحظية غير تقرير الأداء.
+                  بصلاحيته.
                 </p>
               </Notice>
             ) : null}
@@ -441,10 +438,6 @@ export function InvoicesClient() {
             {state === "pending_sync" ? (
               <Notice kind="info" title="عمود وضع المزامنة">
                 <p className="acc-lead">لكل فاتورة وضعها: محلي، في الطابور، مؤكَّد.</p>
-                <p className="acc-lead">
-                  <strong>قاعدة المفردات</strong> · القوائم تعرض pending_sync والنماذج تعرض
-                  saved_local — خلطهما يوهم أن الفعل خرج من الجهاز وهو لم يخرج.
-                </p>
               </Notice>
             ) : null}
             {state === "empty" ? (

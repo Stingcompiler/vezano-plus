@@ -242,8 +242,7 @@ export function CompareClient({ id }: { id: string }) {
           <div className="cat-head">
             <h2 className="cat-head__title">قبول عرض سعر — لا موافقة على نسخة قديمة</h2>
             <span className="cat-head__hint">
-              فرق النسخة معروض سطراً بسطر، والقبول يخص النسخة المعروضة وحدها. لا زرّ قبول قبل عرض
-              الفرق: القبول بضغطةٍ من قائمة يُنتج اتفاقاً لم يُقرأ. الشاشة تُجبر على المقابلة.
+              فرق النسخة معروض سطراً بسطر، والقبول يخص النسخة المعروضة وحدها.
             </span>
           </div>
           <div className="acc-card__body">
@@ -261,8 +260,7 @@ export function CompareClient({ id }: { id: string }) {
                   <span className="sting-mono">{accepted.agreed_version ?? ""}</span>.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نسخة لا مرجع</strong> · انتهاء الكتالوج بعد القبول لا يمسّ الاتفاق. مرجعٌ
-                  متحرّك يعني عقداً يتغيّر بلا توقيع.
+                  <strong>نسخة لا مرجع</strong> · انتهاء الكتالوج بعد القبول لا يمسّ الاتفاق.
                 </p>
               </Notice>
             ) : null}
@@ -297,10 +295,6 @@ export function CompareClient({ id }: { id: string }) {
                   الرابط المفتوح للإصدار <span className="sting-mono">{shown?.number ?? ""}</span>{" "}
                   والمورد أرسل الإصدار <span className="sting-mono">{superseded ?? ""}</span>.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>رفض صريح</strong> · لا نُحوّل القبول إلى الأحدث ضمناً. نعرض الإصدار الجديد
-                  وفرقه ونطلب قبولاً جديداً.
-                </p>
                 <div className="acc-actions">
                   <Button
                     onClick={() => {
@@ -321,10 +315,6 @@ export function CompareClient({ id }: { id: string }) {
                     {shown.valid_until.slice(8, 10)}/{shown.valid_until.slice(5, 7)}
                   </span>
                   .
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا قبول صامت</strong> · التأكيد الخادمي يمنع اعتباره سعراً حالياً.
-                  المعروض: «اطلب تأكيداً جديداً» لا «تابع».
                 </p>
                 <div className="acc-actions">
                   <Button pos loading={busy === "requote"} onClick={() => void requote()}>
@@ -516,10 +506,6 @@ export function CompareClient({ id }: { id: string }) {
                     </tr>
                   </tbody>
                 </table>
-                <p className="acc-choice__note">
-                  <strong>طلبك · عرض المورد · الفرق</strong> · ثلاثة أعمدة بالوحدة الأساسية، والفرق
-                  مسمّى: سعرٌ أعلى، كميةٌ أقل، رسمٌ مضاف، مدةٌ أطول.
-                </p>
                 {targetVersion?.valid_until && state !== "expired" ? (
                   <p className="acc-choice__note">
                     صلاحية النسخة <span className="sting-mono">{targetVersion.number}</span> تنتهي

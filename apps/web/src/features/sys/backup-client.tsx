@@ -186,9 +186,6 @@ export function BackupClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تصدير نسخة محلية</h2>
-            <span className="cat-head__hint">
-              مخرج الطوارئ في كل شاشة تخشى الفقد. يجب أن يعمل بلا اتصال وبلا صلاحية خادمية.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "server_error" ? (
@@ -197,12 +194,10 @@ export function BackupClient() {
                 title="فشل الرفع إلى التخزين"
                 action={<Button onClick={() => void share()}>شارك يدوياً</Button>}
               >
-                <p className="acc-lead">
-                  اختار رفع النسخة إلى تخزين سحابي وفشل الرفع. الملف المحلي سليم.
-                </p>
+                <p className="acc-lead">الملف المحلي سليم.</p>
                 <p className="acc-choice__note">
                   <strong>الملف باقٍ</strong> · في مجلد التنزيلات على هذا الجهاز باسم{" "}
-                  <span dir="auto">{result?.name}</span>. فشل قناةٍ واحدة لا يُلغي نسخةً أُنتجت.
+                  <span dir="auto">{result?.name}</span>.
                 </p>
               </Notice>
             ) : null}
@@ -220,7 +215,7 @@ export function BackupClient() {
               >
                 <p className="acc-lead">
                   النسخة تحتاج <span className="sting-mono">{mb(fullBytes)}</span> ميجابايت والمتاح{" "}
-                  <span className="sting-mono">{mb(free ?? 0)}</span>. نحسب قبل البدء لا في منتصفه.
+                  <span className="sting-mono">{mb(free ?? 0)}</span>.
                 </p>
                 <p className="acc-choice__note">
                   <strong>البديل</strong> · تصدير المعلّق وحده — وهو أهم ما في النسخة على أي حال.
@@ -232,14 +227,10 @@ export function BackupClient() {
               <>
                 <Notice kind="success" title="صُدّرت النسخة">
                   <p className="acc-lead">
-                    اسم الملف وحجمه ووقته ومحتواه بالأرقام. والأهم: ما زالت العمليات{" "}
-                    <span className="sting-mono">{result.counts.pending}</span> معلّقة — التصدير
-                    نسخٌ لا رفع.
+                    ما زالت العمليات <span className="sting-mono">{result.counts.pending}</span>{" "}
+                    معلّقة — التصدير نسخٌ لا رفع.
                   </p>
-                  <p className="acc-choice__note">
-                    <strong>لا نخلط</strong> · نقولها صراحةً لأن من صدّر قد يظنّ أنه «أنهى الموضوع».
-                    النسخة حمايةٌ من الفقد لا بديلٌ عن المزامنة.
-                  </p>
+                  <p className="acc-choice__note">النسخة حمايةٌ من الفقد لا بديلٌ عن المزامنة.</p>
                 </Notice>
                 <div className="shift-facts">
                   <div>
@@ -304,13 +295,11 @@ export function BackupClient() {
                     وبلا أسرار: لا رموز جلسات ولا مفاتيح.
                   </p>
                   <p className="acc-choice__note">
-                    <strong>يعمل بلا اتصال</strong> · وهذا سبب وجوده: من فقد الشبكة أو انتهت جلسته
-                    يحتاجه أكثر من غيره.
+                    <strong>يعمل بلا اتصال</strong>
                   </p>
                   <p className="acc-choice__note">
                     <strong>المعلّق مشمول</strong> · وموسوم بوضوح داخل الملف:{" "}
                     <span className="sting-mono">{counts?.pending ?? 0}</span> عمليات لم تُرفع.
-                    النسخة التي تُغفل المعلّق تُطمئن كذباً.
                   </p>
                 </Notice>
                 <div className="shift-facts">

@@ -261,8 +261,7 @@ export function ShareClient() {
                 </p>
                 <p className="acc-choice__note">
                   يسري حتى {link.expires_at ? <Day iso={link.expires_at} /> : "—"} ·{" "}
-                  <strong>جديدٌ لا إحياء</strong> · يُنشأ رابط جديد بعمر جديد؛ القديم لا يُمدَّد —
-                  تمديد رابطٍ خرج يفتح باباً لا يُعرف من وراءه.
+                  <strong>جديدٌ لا إحياء</strong> · يُنشأ رابط جديد بعمر جديد؛ القديم لا يُمدَّد.
                 </p>
                 <div className="acc-actions">
                   <Button onClick={() => void copy()}>انسخ الرابط</Button>
@@ -422,8 +421,8 @@ export function InviteOpenClient({ token }: { token: string }) {
               <Notice kind="warning" title="دعوة منتهية">
                 <p className="acc-lead">رابط الدعوة له عمر وانقضى.</p>
                 <p className="acc-choice__note">
-                  <strong>جديدٌ لا إحياء</strong> · يُنشأ رابط جديد بعمر جديد؛ القديم لا يُمدَّد —
-                  تمديد رابطٍ خرج يفتح باباً لا يُعرف من وراءه. اطلب من مرسله رابطاً جديداً.
+                  <strong>جديدٌ لا إحياء</strong> · يُنشأ رابط جديد بعمر جديد؛ القديم لا يُمدَّد.
+                  اطلب من مرسله رابطاً جديداً.
                 </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/market")}>السوق</Button>

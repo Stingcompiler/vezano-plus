@@ -194,8 +194,6 @@ test.describe("PLT-07", () => {
       texts: fromFrame("PLT-07", "validation_error", [
         "تعليق بلا سبب مصنَّف",
         "محاولة تعليق نشر بلا اختيار سبب من القائمة ولا نصّ للمعلَّق عليه.",
-        "السبب حقٌّ للمعلَّق عليه",
-        "تعليقٌ بلا سبب لا يُعترض عليه ولا يُصحَّح. القائمة المصنَّفة تجعل الاعتراض ممكناً والمراجعة متسقة.",
         "لا مساس بالدفاتر",
         "التعليق يمنع النشر الجديد ولا يمسّ طلباً قائماً ولا دفتر طرف",
       ]),
@@ -275,14 +273,15 @@ const ROWS = [
     limit_note: "المنصة تحفظ الصور المرفوعة فقط؛ الحكم على الجودة بين الطرفين لا علينا.",
   }),
 ];
-const PAYLOAD = (rows: unknown[], near: number) => ({
+const PAYLOAD = (rows: unknown[], near: number, samples = 12) => ({
   state: rows.length === 0 ? "empty" : near > 0 ? "partial" : "ready",
   disputes: rows,
   open_count: rows.length,
   near_limit_count: near,
   avg_response_hours: 6.5,
   response_target_hours: 8,
-  within_target: true,
+  within_target: samples > 0,
+  response_samples: samples,
   referred_week: 1,
   closed_30d: 9,
   intervention_days: 14,
@@ -401,7 +400,7 @@ test.describe("PLT-08", () => {
 
   test("empty: لا خلافات مفتوحة — وضع صحّي لا خطأ", async ({ page }, info) => {
     await page.route("**/api/platform/disputes", (route) =>
-      route.fulfill(json(200, PAYLOAD([], 0))),
+      route.fulfill(json(200, PAYLOAD([], 0, 0))),
     );
     await operatorLogin(page);
     await goSection(page, "الخلافات");
@@ -413,5 +412,9 @@ test.describe("PLT-08", () => {
         "وضع صحّي. السجل التاريخي للخلافات المُغلقة متاح للمراجعة، لكن لا صفوف نشطة الآن.",
       ]),
     });
+    // فحص 2026-10-17 VP12: بلا ردود مقيسة لا «0 ساعة» ولا «ضمن الهدف»
+    const root = page.locator('[data-screen="PLT-08"]');
+    await expect(root).toContainText("لا ردود في آخر 30 يوماً — لا متوسط يُقاس");
+    await expect(root).not.toContainText("ضمن الهدف المعلَن");
   });
 });

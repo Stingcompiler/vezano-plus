@@ -127,7 +127,7 @@ export function StorageClient({ blocked }: { blocked: string }) {
           <div className="cat-head">
             <h2 className="cat-head__title">مساحة الجهاز</h2>
             <span className="cat-head__hint">
-              كم بقي، وكم يكفي من أيام البيع بمعدّلك، وما الذي يشغل المساحة — والصور أولها غالباً.
+              كم بقي، وكم يكفي من أيام البيع بمعدّلك، وما الذي يشغل المساحة.
             </span>
           </div>
           <div className="acc-card__body">
@@ -171,13 +171,6 @@ export function StorageClient({ blocked }: { blocked: string }) {
               <Notice kind="error" title="المساحة لا تكفي لعملية" action={cleanupButton}>
                 <p className="acc-lead">
                   محاولة حفظ فاتورة والمساحة أقلّ من الحدّ الآمن. نمنع قبل الحفظ لا بعده.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا نجاح كاذب</strong> · الأسوأ من المنع أن نقبل ثم نفقد. المنع مؤلمٌ
-                  لحظةً، والفقد يُكتشف بعد أسبوع.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>مخرج فوري</strong> · زرٌّ حاضر ينفّذ الآن — الكاشير والزبون واقفان.
                 </p>
               </Notice>
             ) : null}
@@ -258,7 +251,7 @@ export function StorageClient({ blocked }: { blocked: string }) {
             </div>
             <p className="acc-choice__note">
               <strong>التنظيف الآمن</strong> · صور الأصناف تُحذف محلياً وتبقى على الخادم؛ الفواتير
-              المؤكَّدة القديمة كذلك. لا نعرض زرّ تنظيف يلمس معلّقاً.
+              المؤكَّدة القديمة كذلك.
             </p>
             {state === "ready" ? <div className="cat-form__actions">{cleanupButton}</div> : null}
             {cleaned !== null ? (

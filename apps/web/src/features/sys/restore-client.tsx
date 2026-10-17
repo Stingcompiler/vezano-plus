@@ -167,9 +167,7 @@ export function RestoreClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استعادة نسخة ومعاينتها</h2>
-            <span className="cat-head__hint">
-              أخطر فعل في النظام: يكتب فوق دفتر قائم. خمس حالات ناقصة، كلها حراسة.
-            </span>
+            <span className="cat-head__hint">أخطر فعل في النظام: يكتب فوق دفتر قائم.</span>
           </div>
           <div className="acc-card__body">
             {state === "server_error" && progress ? (
@@ -189,10 +187,10 @@ export function RestoreClient() {
                   </Button>
                 }
               >
-                <p className="acc-lead">أسوأ توقيت. الدفتر الآن نصف مستعاد.</p>
+                <p className="acc-lead">الدفتر الآن نصف مستعاد.</p>
                 <p className="acc-choice__note">
                   <strong>لا نترك نصفاً</strong> · الاستعادة تُطبَّق على دفعات قابلة للتراجع: ما
-                  اكتمل يبقى وما انقطع يُلغى كاملاً. ونعرض بالضبط أين وقفنا وزرّ استئناف.
+                  اكتمل يبقى وما انقطع يُلغى كاملاً.
                 </p>
                 <p className="acc-choice__note">
                   وقفنا عند الدفعة <span className="sting-mono">{progress.nextBatch}</span> من{" "}
@@ -205,15 +203,10 @@ export function RestoreClient() {
             {state === "success" && progress ? (
               <Notice kind="success" title="اكتملت الاستعادة">
                 <p className="acc-lead">
-                  ما أُضيف وما حُدّث بالأرقام: أُضيفت{" "}
-                  <span className="sting-mono">{progress.added}</span> عملية · حُدّثت{" "}
+                  أُضيفت <span className="sting-mono">{progress.added}</span> عملية · حُدّثت{" "}
                   <span className="sting-mono">{progress.updated}</span> أرصدة · لم يُحذف شيء.
                   ومعها: الكتابات الجديدة على هذا الجهاز تأخذ هوية جديدة — فلو استُعيد الملف مرتين
                   لم يتكرّر شيء.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>حماية التكرار</strong> · مذكورة في شاشة النجاح لا في وثيقة. من استعاد مرةً
-                  قد يعيدها ظنّاً أنها لم تكتمل.
                 </p>
               </Notice>
             ) : null}
@@ -231,8 +224,7 @@ export function RestoreClient() {
                   الفواتير تبقى محجوزة باسم الصنف الناقص ليقرّر المالك.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>ما نجح ثابت</strong> · ما نزل لا يُلغى لأن بعضه تعثّر. الاستعادة تتقدّم
-                  بما تستطيع وتُعلن ما عجزت عنه.
+                  <strong>ما نجح ثابت</strong> · ما نزل لا يُلغى لأن بعضه تعثّر.
                 </p>
               </Notice>
             ) : null}
@@ -348,10 +340,15 @@ export function RestoreClient() {
             {!done ? (
               <>
                 <Notice kind="info" title="معاينة قبل أي كتابة">
-                  <p className="acc-lead">
-                    الملف قُرئ ولم يُكتب حرفٌ بعد. نعرض ما فيه: المنشأة، والتاريخ، والعدد، وما الذي
-                    سيتغيّر مقارنةً بالحالي.
-                  </p>
+                  {/* فحص 2026-10-17 F10: «الملف قُرئ» بعد اختيار ملف فقط */}
+                  {envelope ? (
+                    <p className="acc-lead">
+                      الملف قُرئ ولم يُكتب حرفٌ بعد. نعرض ما فيه: المنشأة، والتاريخ، والعدد، وما
+                      الذي سيتغيّر مقارنةً بالحالي.
+                    </p>
+                  ) : (
+                    <p className="acc-lead">اختر ملف النسخة لعرض محتواه قبل أي كتابة.</p>
+                  )}
                   <p className="acc-choice__note">
                     <strong>لا استعادة كاملة عمياء</strong> · الاستعادة دمجٌ بالهويات لا إحلال.
                     الإحلال يمحو ما عمله الجهاز بعد النسخة.
@@ -417,11 +414,10 @@ export function RestoreClient() {
                         أرصدة · لن يُحذف شيء.
                       </p>
                       <p className="acc-choice__note">
-                        من يستعيد يخاف مما سيُفقد لا مما سيُضاف. منها{" "}
-                        <span className="sting-mono">{preview.addPending}</span> معلّق داخل النسخة ·{" "}
-                        <span className="sting-mono">{preview.addProjections}</span> مرجعيات جديدة ·{" "}
-                        <span className="sting-mono">{preview.heldOperations}</span> تشير إلى صنف
-                        غير موجود وستُحجز.
+                        منها <span className="sting-mono">{preview.addPending}</span> معلّق داخل
+                        النسخة · <span className="sting-mono">{preview.addProjections}</span>{" "}
+                        مرجعيات جديدة · <span className="sting-mono">{preview.heldOperations}</span>{" "}
+                        تشير إلى صنف غير موجود وستُحجز.
                       </p>
                     </Notice>
                     {state === "ready" ? (

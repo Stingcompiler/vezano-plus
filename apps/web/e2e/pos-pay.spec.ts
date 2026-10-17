@@ -338,11 +338,7 @@ test.describe("POS-05", () => {
     await expectFrame(page, info, {
       screenId: "POS-05",
       state: "saved_local",
-      texts: fromFrame("POS-05", "saved_local", [
-        "حُفظ على الجهاز",
-        "النجاح بلا اتصال يُسمّى باسمه: «محفوظ على هذا الجهاز — يُرفع عند الاتصال».",
-        "الباقي للعميل",
-      ]),
+      texts: fromFrame("POS-05", "saved_local", ["حُفظ على الجهاز", "الباقي للعميل"]),
     });
     await expect(page.locator(".pos-pay__change--big")).toContainText("400.00");
     const local = await readLocal(page);
@@ -384,7 +380,6 @@ test.describe("POS-05", () => {
         "يحتاج صلاحية تسعير — الكاشير لا يملكها",
         "تخطي الصنف وإكمال البيع",
         "يُباع الباقي، ويُسجَّل أن صنفاً سقط من العملية لنقص سعر",
-        "لن نقترح سعراً من متوسط أصناف أخرى ولا من آخر شراء: أي رقم نقترحه سيُقبل بالضغط ويصبح سعرك المعتمد بلا قرار منك.",
       ]),
     });
     await expect(page.getByRole("button", { name: "واعتماده سعراً للصنف" })).toHaveAttribute(

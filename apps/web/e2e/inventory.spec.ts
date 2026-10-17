@@ -277,7 +277,6 @@ const HEAD = [
   "التنبيه",
   "آخر حركة",
   "أصناف تحتاج انتباهاً",
-  "لا عمود «إجمالي القطع».",
   "معامل التحويل معلن ومحرَّر.",
   "الرصيد بوحدة البيع، والشراء يحوَّل بالمعامل المعلن عند الاستلام.",
 ];
@@ -369,8 +368,6 @@ test.describe("INV-01", () => {
       texts: fromFrame("INV-01", "loading", [
         "جمع المواقع",
         "المواقع تَرِد واحداً واحداً، والمجموع لا يُعرض قبل اكتمالها.",
-        "لا مجموع جزئي",
-        "مجموعٌ ناقص يُقرأ كاملاً ويُبنى عليه أمر شراء.",
       ]),
     });
     await expect(page.locator('[data-screen="INV-01"]')).toContainText("كل المواقع —");
@@ -398,25 +395,38 @@ test.describe("INV-01", () => {
     await expect(page.locator('[data-screen="INV-01"]')).toContainText("كل المواقع —");
   });
 
-  test("empty: لا أرصدة — بدايةٌ لا عطب، والمسار افتتاحيات أو استلام", async ({ page }, info) => {
+  test("empty: لا أرصدة — أصناف الكتالوج بلا رصيد بعددها، والمسار افتتاحيات أو استلام", async ({
+    page,
+  }, info) => {
     await seed(page);
     await balancesRoute(page, {
-      b1: { body: balances({ rows: [] }) },
-      b2: { body: balances({ branch_id: "b2", rows: [] }) },
+      b1: { body: balances({ rows: [], catalog_items: 14 }) },
+      b2: { body: balances({ branch_id: "b2", rows: [], catalog_items: 14 }) },
     });
     await login(page, "/inventory");
     await expectFrame(page, info, {
       screenId: "INV-01",
       state: "empty",
-      texts: fromFrame("INV-01", "empty", [
-        "لا أرصدة",
-        "كتالوجٌ فيه أصناف بلا رصيد — محلٌّ لم يُدخل افتتاحياته.",
-        "المسار",
-        "أدخل افتتاحيات المخزون",
-        "استلم بضاعة",
-        "والفراغ هنا بدايةٌ لا عطب.",
-      ]),
+      texts: fromFrame("INV-01", "empty", ["لا أرصدة", "أدخل افتتاحيات المخزون", "استلم بضاعة"]),
     });
+    // فحص 2026-10-17 F10: النص من البيانات لا افتراض «كتالوج فيه أصناف»
+    const root = page.locator('[data-screen="INV-01"]');
+    await expect(root).toContainText("في الكتالوج 14 صنفاً بلا رصيد بعد");
+  });
+
+  test("فحص 2026-10-17 F10: كتالوج فارغ — «لا أصناف بعد» ومدخل إضافة صنف، لا «أصناف بلا رصيد»", async ({
+    page,
+  }) => {
+    await seed(page);
+    await balancesRoute(page, {
+      b1: { body: balances({ rows: [], catalog_items: 0 }) },
+      b2: { body: balances({ branch_id: "b2", rows: [], catalog_items: 0 }) },
+    });
+    await login(page, "/inventory");
+    const root = page.locator('[data-screen="INV-01"]');
+    await expect(root).toContainText("الكتالوج فارغ — أضف أصنافك أولاً ثم أدخل أرصدتها.");
+    await expect(root).not.toContainText("بلا رصيد");
+    await expect(page.getByRole("button", { name: "أضف صنفاً" })).toBeVisible();
   });
 
   test("stale: المطابقة متعثّرة — أرصدة قديمة بوقتها مع كل رقم", async ({ page }, info) => {
@@ -429,8 +439,6 @@ test.describe("INV-01", () => {
       texts: fromFrame("INV-01", "stale", [
         "أرصدة قديمة",
         "من آخر مطابقة قبل ساعتين وقد بيع منها.",
-        "الوقت مع الرقم",
-        "لا في الترويسة. صفحةٌ تُطبع للجرد تأخذ طابعها معها.",
         "سكر",
       ]),
     });
@@ -454,8 +462,6 @@ test.describe("INV-01", () => {
       texts: fromFrame("INV-01", "offline", [
         "أرصدة محلية",
         "أرصدة هذا الجهاز وما زامنه، ومعها ما لم يُرفع.",
-        "الفرق عن partial",
-        "هنا لا اتصال أصلاً؛ وهناك اتصالٌ ومواقع لم تَرد. الأولى مفهومة والثانية تحتاج بياناً.",
         "سكر",
         "زيت 1 لتر",
       ]),
@@ -569,7 +575,6 @@ test.describe("INV-02", () => {
       state: "ready",
       texts: fromFrame("INV-02", "ready", [
         "سجل حركة الصنف",
-        "هذا هو الجواب على «كيف صار الرصيد كذا». لا سطر بلا مستند، والحركات المحفوظة محلياً معلَّمة بصراحة فلا تُقرأ كمؤكَّدة.",
         "سكر أبيض — كيس 1كغ · فرع بحري",
         "الرصيد الحالي",
         "آخر تحديث خادمي قبل",
@@ -584,8 +589,6 @@ test.describe("INV-02", () => {
         "مرتجع زبون",
         "افتتاحية",
         "مؤكَّد",
-        "الصفوف المعلّقة لا تُخفى ولا تُخلط.",
-        "الرصيد المعروض يفصل «مؤكَّد خادمياً» عن «معلّق هذا الجهاز» برقمين، لأن دمجهما في رقم واحد يعطي التاجر ثقة لا أساس لها عند تعارض لاحق",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
@@ -635,7 +638,7 @@ test.describe("INV-02", () => {
     await expectFrame(page, info, {
       screenId: "INV-02",
       state: "loading",
-      texts: fromFrame("INV-02", "loading", ["جلب الحركات", "مع المدى وعدد الحركات المتوقَّع."]),
+      texts: fromFrame("INV-02", "loading", ["جلب الحركات"]),
     });
     await expect(page.locator('[data-screen="INV-02"]')).toContainText("الحركات المتوقَّعة 4");
     await expect(page.locator('[data-screen="INV-02"]')).toHaveAttribute("data-state", "ready", {
@@ -655,13 +658,7 @@ test.describe("INV-02", () => {
     await expectFrame(page, info, {
       screenId: "INV-02",
       state: "empty",
-      texts: fromFrame("INV-02", "empty", [
-        "لا حركة",
-        "لا حركة في هذا المدى — آخرها",
-        "12 سبتمبر",
-        "نفرّق",
-        "«الصنف لم يتحرّك بعد» تختلف عن «لا حركة في هذا المدى — آخرها 12 سبتمبر». الأولى عن الصنف والثانية عن المرشّح.",
-      ]),
+      texts: fromFrame("INV-02", "empty", ["لا حركة", "لا حركة في هذا المدى — آخرها", "12 سبتمبر"]),
     });
     await page.unroute("**/api/inventory/items/i1/movements**");
     await movementsRoute(page, movements({ rows: [], total_count: 0, last_movement_at: "" }));

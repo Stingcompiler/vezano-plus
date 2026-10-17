@@ -5,6 +5,7 @@ from stingops.views import (
     OperatorAnnouncementsView,
     OperatorAppealActionView,
     OperatorAudiencePreviewView,
+    OperatorAuditView,
     OperatorBackupActionView,
     OperatorBackupsView,
     OperatorChannelStateView,
@@ -111,6 +112,7 @@ urlpatterns = [
     ),
     path("platform/health", OperatorHealthView.as_view(), name="platform-health"),
     path("platform/backups", OperatorBackupsView.as_view(), name="platform-backups"),
+    path("platform/audit", OperatorAuditView.as_view(), name="platform-audit"),
     path(
         "platform/backups/<uuid:backup_id>/<str:action>",
         OperatorBackupActionView.as_view(),

@@ -275,9 +275,7 @@ export function LinkItemsClient() {
                   مطابقة صنفٍ يُباع بالكرتون بصنفٍ يُخزَّن بالكيس بلا معامل بينهما.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نطلب المعامل</strong> · لا نخمّنه من الاسم. «
-                  {err.extra.offer_unit_name ?? "كرتون"} = كم {err.extra.unit_name ?? "كيساً"}؟»
-                  سؤالٌ واحد يمنع أن يدخل 10 كراتين مخزونك 10 أكياس.
+                  «{err.extra.offer_unit_name ?? "كرتون"} = كم {err.extra.unit_name ?? "كيساً"}؟»
                 </p>
               </Notice>
             ) : null}

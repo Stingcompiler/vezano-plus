@@ -199,9 +199,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تسجيل سداد أو رد مبلغ {title}</h2>
-            <span className="cat-head__hint">
-              وسيلة ومرجع وصلاحية وإيصال. التحويل البنكي لا يُسقط الذمة حتى المطابقة.
-            </span>
+            <span className="cat-head__hint">التحويل البنكي لا يُسقط الذمة حتى المطابقة.</span>
           </div>
           {party ? (
             <div className="acc-card__body">
@@ -237,10 +235,6 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                   <p className="acc-lead">
                     القبض يزيد النقد والردّ يُخرجه. الفعلان متعاكسان في الأثر فلا يتساويان في
                     الصلاحية.
-                  </p>
-                  <p className="acc-choice__note">
-                    <strong>نُظهر</strong> · تبويب «ردّ مبلغ» معطّلاً بسببه لا محذوفاً — الكاشير
-                    يعرف أن المسار موجود ويُطلب.
                   </p>
                   <p className="acc-choice__note">
                     «اطلب من {ctx?.ownerName || "المالك"}» بالمبلغ والسبب والطرف، فتوافق من جهازها
@@ -400,8 +394,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                         وطباعة جاهزة. نسخة للطرف ونسخة تبقى في المستندات.
                       </p>
                       <p className="acc-choice__note">
-                        <strong>لا يُحذف</strong> · التصحيح بسند عكس يشير إليه. سندُ قبضٍ يختفي يعني
-                        مالاً قُبض ولا أثر له.
+                        <strong>لا يُحذف</strong> · التصحيح بسند عكس يشير إليه.
                       </p>
                     </Notice>
                   ) : (
@@ -450,9 +443,6 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                         : `${n} عمليات معلقة من هذا الجهاز`
                     }
                   />
-                  <p className="acc-choice__note">
-                    المسار التالي: اطبع، أو سجّل سداداً لطرف آخر — لا عودة إلى نموذج فارغ بلا سياق.
-                  </p>
                   <div className="cat-form__actions">
                     <Button onClick={() => window.print()} pos>
                       اطبع

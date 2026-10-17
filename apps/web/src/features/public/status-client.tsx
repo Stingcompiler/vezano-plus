@@ -206,8 +206,7 @@ export function StatusClient() {
             >
               <p className="acc-choice__note">
                 آخر تحديث للصفحة نفسها مكتوب بوقته:{" "}
-                <span className="sting-mono">{hhmm(shown.checked_at)}</span>. صفحة حالة قديمة تقول
-                «كل شيء سليم» أسوأ من غيابها.
+                <span className="sting-mono">{hhmm(shown.checked_at)}</span>.
               </p>
             </Notice>
           ) : null}
@@ -217,11 +216,6 @@ export function StatusClient() {
               <p className="acc-lead">
                 آخر فحص آلي قبل <span className="sting-mono">{minutesAgo ?? 0}</span> دقيقة والمعتاد
                 كل دقيقة. الحالة المعروضة قد لا تكون الحالية.
-              </p>
-              <p className="acc-choice__note">
-                <strong>نعترف</strong> · «آخر فحص قبل{" "}
-                <span className="sting-mono">{minutesAgo ?? 0}</span> دقيقة — قد لا يعكس الوضع
-                الآن». صفحةٌ تقول «كل شيء يعمل» بناءً على فحصٍ قديم تكذب في أسوأ لحظة.
               </p>
             </Notice>
           ) : null}
@@ -292,8 +286,7 @@ export function StatusClient() {
           <div className="pb-card__head">
             <h2 className="pb-card__title">سجل التحديثات</h2>
             <p className="pb-card__hint">
-              لا أخضر دائم: نعرض تاريخ الأعطال السابقة ولو كانت قصيرة. صفحةٌ لم تُسجّل عطباً قط لا
-              يصدّقها أحد.
+              لا أخضر دائم: نعرض تاريخ الأعطال السابقة ولو كانت قصيرة.
             </p>
           </div>
           {shown && shown.events.length ? (
@@ -307,9 +300,7 @@ export function StatusClient() {
               ))}
             </ol>
           ) : (
-            <p className="acc-choice__note pb-card__empty">
-              لا أحداث مسجَّلة بعد — وهذا يُقال لا يُخفى.
-            </p>
+            <p className="acc-choice__note pb-card__empty">لا أحداث مسجَّلة بعد.</p>
           )}
         </div>
       </div>

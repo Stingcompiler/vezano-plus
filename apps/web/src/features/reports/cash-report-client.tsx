@@ -222,9 +222,7 @@ export function CashReportClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تقرير الصندوق والورديات</h2>
-            <span className="cat-head__hint">
-              النقد المتوقَّع مقابل المعدود عبر الورديات. حالته الفريدة: تعارضٌ في تقرير.
-            </span>
+            <span className="cat-head__hint">النقد المتوقَّع مقابل المعدود عبر الورديات.</span>
           </div>
           <div className="acc-card__body">
             <div className="pos-inv__filters">
@@ -321,7 +319,7 @@ export function CashReportClient() {
                   {p.totals.excluded_conflicts === 1
                     ? "«وردية واحدة خارج المجموع — بانتظار الحسم»"
                     : `${p.totals.excluded_conflicts} ورديات خارج المجموع — بانتظار الحسم`}
-                  . مجموعٌ يبتلع تعارضاً يُخفيه.
+                  .
                 </p>
                 <ul className="acc-choice__note">
                   {conflicts.map((r) => (
@@ -351,10 +349,6 @@ export function CashReportClient() {
               <>
                 <section className="rep-head" aria-label="الفوارق">
                   <h3 className="cat-head__title">ورديات الأسبوع — {p.range.label}</h3>
-                  <p className="acc-choice__note">
-                    لكل وردية: المتوقَّع والمعدود والفارق ومن عدّ. والفوارق مجموعةٌ في الأعلى لأنها
-                    سبب فتح التقرير.
-                  </p>
                   <div className="home-kpis rep-kpis">
                     <div className="home-kpi">
                       <div className="home-kpi__label">صافي الفوارق</div>

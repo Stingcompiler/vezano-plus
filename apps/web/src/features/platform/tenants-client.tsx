@@ -72,6 +72,16 @@ const agoWord = (iso: string) => {
 const tenantsWord = (n: number) =>
   n === 1 ? "مستأجر واحد" : n === 2 ? "مستأجران" : n <= 10 ? `${n} مستأجرين` : `${n} مستأجراً`;
 
+const FILTERS = [
+  ["all", "كل الاستحقاقات"],
+  ["active", "نشط"],
+  ["trial", "تجريبي"],
+  ["due14", "الاستحقاق خلال 14 يوماً"],
+  ["late", "متأخرو السداد"],
+  ["sync_stuck", "مزامنة متعثّرة"],
+  ["suspended", "موقوفون"],
+] as const;
+
 /** PLT-02 — المستأجرون (08-D4/18-D13 ready · 39-D31 loading/empty/permission_denied): القائمة لا تكشف دفاتر. */
 export function TenantsClient() {
   const router = useRouter();
@@ -193,10 +203,6 @@ export function TenantsClient() {
                   يرى الاستحقاق والباقة وتاريخ الدفع، ولا يرى مبيعات المستأجر ولا عملاءه ولا أصنافه.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>الحدّ الصريح</strong> · حالة التشغيل والفوترة مرئية، ودفتر الأعمال لا. هذا
-                  حدٌّ تعاقدي يُرسم في الواجهة لا سياسةً مكتوبة.
-                </p>
-                <p className="acc-choice__note">
                   <strong>حتى للدعم</strong> · موظف الدعم يرى تشخيصاً بلا بيانات — ولا باباً خلفياً
                   إلى الدفاتر.
                 </p>
@@ -218,17 +224,7 @@ export function TenantsClient() {
                   onChange={(e) => setQ(e.target.value)}
                 />
                 <div className="pos-chips" role="group" aria-label="الاستحقاق">
-                  {(
-                    [
-                      ["all", "كل الاستحقاقات"],
-                      ["active", "نشط"],
-                      ["trial", "تجريبي"],
-                      ["due14", "الاستحقاق خلال 14 يوماً"],
-                      ["late", "متأخرو السداد"],
-                      ["sync_stuck", "مزامنة متعثّرة"],
-                      ["suspended", "موقوفون"],
-                    ] as const
-                  ).map(([k, label]) => (
+                  {FILTERS.map(([k, label]) => (
                     <button
                       key={k}
                       type="button"
@@ -242,11 +238,32 @@ export function TenantsClient() {
               </>
             ) : null}
             {state === "empty" && data ? (
-              <Notice kind="empty" title="لا مستأجرين مطابقين">
-                <p className="acc-lead">مرشّحٌ لا يطابق (مثلاً: متأخرو السداد وقد سدّد الجميع).</p>
-                <p className="acc-choice__note">
-                  <strong>نقول ما فُحص</strong> · «لا متأخرين —{" "}
-                  <span className="sting-mono">{data.total}</span>{" "}
+              // فحص 2026-10-17 VP12: الفراغ يصف التصفية الفعلية (بحث أو مرشّح) بعددٍ من الخادم
+              <Notice
+                kind="empty"
+                title={
+                  q.trim()
+                    ? `لا نتيجة لـ«${q.trim()}»`
+                    : filter !== "all"
+                      ? `لا مستأجرين في «${FILTERS.find(([k]) => k === filter)?.[1] ?? ""}»`
+                      : "لا مستأجرين بعد"
+                }
+                action={
+                  q.trim() || filter !== "all" ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setQ("");
+                        setFilter("all");
+                      }}
+                    >
+                      أظهر كل المستأجرين
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <p className="acc-lead">
+                  على المنصّة <span className="sting-mono">{data.total}</span>{" "}
                   {data.total === 1
                     ? "مستأجر"
                     : data.total === 2
@@ -254,7 +271,7 @@ export function TenantsClient() {
                       : data.total <= 10
                         ? "مستأجرين"
                         : "مستأجراً"}{" "}
-                  نشطاً». الفراغ مع العدد خبرٌ جيد، وبلا عدد يبدو عطباً.
+                  إجمالاً.
                 </p>
               </Notice>
             ) : null}
@@ -271,10 +288,7 @@ export function TenantsClient() {
                           ? "متاجر"
                           : "متجراً"}
                   </strong>
-                  <span className="acc-choice__note">
-                    {tenantsWord(data.shown)} في هذا المرشّح · لا عمود للمبيعات في هذه الشاشة ولن
-                    يوجد.
-                  </span>
+                  <span className="acc-choice__note">{tenantsWord(data.shown)} في هذا المرشّح</span>
                 </div>
                 <Table
                   caption="المستأجرون"
@@ -283,9 +297,7 @@ export function TenantsClient() {
                   rowKey={(t) => t.id}
                   onOpenRow={(t) => router.push(`/platform/tenants/${t.id}`)}
                 />
-                <p className="acc-choice__note">
-                  <strong>حد الوصول</strong> · لا زر «دخول كالمالك». {data.access_rule}
-                </p>
+                <p className="acc-choice__note">{data.access_rule}</p>
                 <p className="acc-choice__note">
                   ما يلزم المشغّل لتشغيل الخدمة: الاشتراك، الأجهزة، صحة المزامنة، حجم التخزين. أرقام
                   التاجر ملكه، والدعم يراها فقط بإذن مؤقت منه يُسجَّل في «تفاصيل المستأجر».

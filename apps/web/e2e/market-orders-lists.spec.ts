@@ -176,7 +176,6 @@ test.describe("ORD-03", () => {
     await expect(root).toContainText("الفلتر يُخفي 1");
     await expect(root).not.toContainText("موردون بالجملة — تجريبي");
     await expect(root).not.toContainText("إجمالي كل الطلبات:");
-    await expect(root).toContainText("لا عمود «إجمالي كل الطلبات»");
     await expect(root).toContainText("PO-2041 · سكر أبيض كرتونة 12×1كغ ×40 · شاي ×15");
     await expect(root).toContainText("17,020.00 SDG");
     await expect(root).toContainText("قبل ساعة");
@@ -189,11 +188,7 @@ test.describe("ORD-03", () => {
     await expectFrame(page, info, {
       screenId: "ORD-03",
       state: "stale",
-      texts: fromFrame("ORD-03", "stale", [
-        "حالات من آخر مطابقة",
-        "الوقت مع كل صفّ",
-        "لا في الترويسة وحدها. «مؤكَّد» عمرها ساعة قد تكون «مشحون» الآن، ومن يقرأها يقرّر نقلاً.",
-      ]),
+      texts: fromFrame("ORD-03", "stale", ["حالات من آخر مطابقة"]),
     });
     await expect(root).toContainText("، وقد شُحن طلبٌ أو انتهت مهلة عرض.");
     await context.setOffline(false);
@@ -216,13 +211,7 @@ test.describe("ORD-03", () => {
     await expectFrame(page, info, {
       screenId: "ORD-03",
       state: "empty",
-      texts: fromFrame("ORD-03", "empty", [
-        "لا طلبات",
-        "منشأةٌ لم تشترِ من السوق بعد.",
-        "المسار",
-        "مدخل السوق",
-        "والفراغ هنا بدايةٌ لا عطب — الشراء المحلي قائمٌ بلا سوق.",
-      ]),
+      texts: fromFrame("ORD-03", "empty", ["لا طلبات", "منشأةٌ لم تشترِ من السوق بعد."]),
     });
     rows = [
       ORDER({
@@ -334,8 +323,6 @@ test.describe("ORD-04", () => {
       texts: fromFrame("ORD-04", "loading", [
         "جلب الطلبات الواردة",
         "مع عدد المهل التي تنتهي اليوم، والترتيب بالمهلة لا بتاريخ الورود.",
-        "المهلة هي العمل",
-        "الطلب بلا رد ضررٌ على الطرفين: المشتري ينتظر والمورد يخسر. القائمة تُرتَّب بما يحرق.",
       ]),
     });
     released = true;
@@ -346,7 +333,6 @@ test.describe("ORD-04", () => {
       state: "ready",
       texts: fromFrame("ORD-04", "ready", [
         "طلبات المورد — المهلة تنقضي، وعدم الرد حالة لا فراغ",
-        "شاشة المورد الواردة: كل طلب بمهلة رد ظاهرة. انقضاء المهلة يُوسم «لم يُرد عليه» صراحةً عند الطرفين، ولا يُقرأ قبولاً ولا رفضاً.",
         "الطلب والمشتري",
         "المحتوى",
         "المهلة",

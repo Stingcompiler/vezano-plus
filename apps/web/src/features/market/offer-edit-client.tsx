@@ -239,10 +239,6 @@ export function OfferEditClient({ id }: { id?: string }) {
                   ناشر الكتالوج يحرّر المسودة، والنشر النهائي بصلاحية أعلى إن ضُبط كذلك في «الأدوار
                   والصلاحيات».
                 </p>
-                <p className="acc-choice__note">
-                  <strong>فصل مقصود</strong> · سعرٌ يخرج للسوق باسم المنشأة التزامٌ تجاري — الفصل
-                  بين من يكتب ومن يعتمد قاعدةُ السجل نفسها.
-                </p>
               </Notice>
             ) : null}
 
@@ -260,10 +256,6 @@ export function OfferEditClient({ id }: { id?: string }) {
                 <h3 className="cat-head__title">
                   عرض جديد{form.public_name ? ` — ${form.public_name}` : ""}
                 </h3>
-                <p className="acc-choice__note">
-                  <strong>لا نشر كل المخزون</strong> · زرّ «انشر الكتالوج كله» غير موجود عمداً —
-                  النشر قرارٌ صنفاً صنفاً بسعرٍ مقصود. والرصيد الداخلي لا يُنشر أبداً.
-                </p>
                 <SelectField
                   label="الصنف من كتالوجك"
                   value={form.item_id}

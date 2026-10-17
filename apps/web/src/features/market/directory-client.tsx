@@ -210,9 +210,6 @@ export function DirectoryClient() {
                       ? "لا منشآت منشورة بعد."
                       : "لا مخازن في هذه الفئة بمنطقتك."}
                 </p>
-                <p className="acc-choice__note">
-                  <strong>المخرج المعروض</strong> · وسّع المنطقة أو الفئة — بأزرار تحمل أثرها.
-                </p>
                 <div className="acc-actions">
                   {area ? (
                     <Button

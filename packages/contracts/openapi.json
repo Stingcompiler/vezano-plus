@@ -8040,6 +8040,28 @@
         }
       }
     },
+    "/api/platform/audit": {
+      "get": {
+        "operationId": "platform_audit_retrieve",
+        "description": "فحص 2026-10-17 VP13: سجل تدقيق المشغّلين — `?operator=&category=&tenant=&before=`.",
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformAuditResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/backups": {
       "get": {
         "operationId": "platform_backups_retrieve",
@@ -18634,6 +18656,9 @@
             },
             "type": "array"
           },
+          "catalog_items": {
+            "type": "integer"
+          },
           "rows": {
             "items": {
               "additionalProperties": false,
@@ -18726,7 +18751,7 @@
             "type": "array"
           }
         },
-        "required": ["branch_id", "branches", "as_of", "rows"],
+        "required": ["branch_id", "branches", "as_of", "rows", "catalog_items"],
         "type": "object"
       },
       "GetInventoryCountSessionsResponse": {
@@ -46143,6 +46168,115 @@
         "required": ["appeal"],
         "type": "object"
       },
+      "GetPlatformAuditResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "label"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "action_label": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "operator_id": {
+                  "type": "string"
+                },
+                "operator_name": {
+                  "type": "string"
+                },
+                "tenant_id": {
+                  "type": "string"
+                },
+                "tenant_name": {
+                  "type": "string"
+                },
+                "ticket_ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "at",
+                "operator_id",
+                "operator_name",
+                "tenant_id",
+                "tenant_name",
+                "action",
+                "action_label",
+                "detail",
+                "ticket_ref"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "filters": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "string"
+              },
+              "tenant": {
+                "type": "string"
+              }
+            },
+            "required": ["operator", "category", "tenant"],
+            "type": "object"
+          },
+          "next_before": {
+            "type": "string"
+          },
+          "operators": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "name"],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["entries", "next_before", "operators", "categories", "filters"],
+        "type": "object"
+      },
       "GetPlatformBackupsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -46953,6 +47087,9 @@
           "referred_week": {
             "type": "integer"
           },
+          "response_samples": {
+            "type": "integer"
+          },
           "response_target_hours": {
             "type": "integer"
           },
@@ -46970,6 +47107,7 @@
           "near_limit_count",
           "avg_response_hours",
           "response_target_hours",
+          "response_samples",
           "within_target",
           "referred_week",
           "closed_30d",
@@ -51136,6 +51274,9 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "reviewed_week": {
+            "type": "integer"
           }
         },
         "required": [
@@ -51143,6 +51284,7 @@
           "pending_count",
           "oldest_waiting_hours",
           "avg_review_hours_week",
+          "reviewed_week",
           "badge_text",
           "fetched_at"
         ],

@@ -284,10 +284,6 @@ export function SalesReportClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تقرير المبيعات — الرقم ومعه وقته</h2>
-            <span className="cat-head__hint">
-              في نظامٍ تعمل أجهزته بلا اتصال، «مبيعات اليوم» ليست رقماً واحداً بل رقمٌ مع بيانِ ما
-              دخل فيه وما لم يدخل بعد.
-            </span>
           </div>
           <div className="acc-card__body">
             <div className="pos-inv__filters">
@@ -368,17 +364,16 @@ export function SalesReportClient() {
                   يرى أرقام فرعه كاملةً ولا يرى الفروع الأخرى ولا المقارنة بينها.
                 </p>
                 <p className="acc-lead">
-                  <strong>لا نُخفي وجودها</strong> ·{" "}
                   {denied === "role"
                     ? `التقرير للمالك ومدير الفرع — ${roleName || "هذا الدور"} يرى نطاقه في قائمة الفواتير.`
-                    : `«تُعرض أرقام ${p?.branch_name || "فرعك"} — المقارنة بين الفروع للمالك». معرفةُ أن ثمّة أكثر ليست إفشاءً.`}
+                    : `تُعرض أرقام ${p?.branch_name || "فرعك"} — المقارنة بين الفروع للمالك.`}
                 </p>
               </Notice>
             ) : null}
             {state === "loading" ? (
               <Notice kind="info" title="جارٍ الحساب">
                 <p className="acc-lead">
-                  مع اسم المدى وعدد الفروع. التقرير يُحسب لا يُقرأ جاهزاً —{" "}
+                  التقرير يُحسب لا يُقرأ جاهزاً —{" "}
                   {range === "today"
                     ? "اليوم"
                     : range === "yesterday"
@@ -406,10 +401,6 @@ export function SalesReportClient() {
                 <p className="acc-lead">
                   لا اتصال الآن، والتقرير من بيانات الجهاز المحلية. حُسب في{" "}
                   <span className="sting-mono">{hhmm(p.computed_at)}</span>.
-                </p>
-                <p className="acc-lead">
-                  <strong>لا نمنع القراءة</strong> · نُظهره بوقته ووسمه. منعُ تقرير لأن الشبكة ساقطة
-                  يُعطّل عملاً لأجل دقّةٍ قد لا تلزم.
                 </p>
               </Notice>
             ) : null}
@@ -640,9 +631,8 @@ export function SalesReportClient() {
                   <Button onClick={() => void exportCsv()}>صدِّر CSV</Button>
                 </div>
                 <p className="acc-choice__note">
-                  <strong>لا عمود تكلفة ولا هامش هنا — قرار معتمد</strong>: الإيراد والمرتجعات
-                  ووسائل الدفع أساسية، والتكلفة تحتاج سياسة معتمدة وتظهر في «تقرير الهامش» مقفلةً
-                  حتى تُعتمد.
+                  <strong>لا عمود تكلفة ولا هامش هنا</strong>: الإيراد والمرتجعات ووسائل الدفع
+                  أساسية، والتكلفة تحتاج سياسة معتمدة وتظهر في «تقرير الهامش» مقفلةً حتى تُعتمد.
                 </p>
               </>
             ) : null}

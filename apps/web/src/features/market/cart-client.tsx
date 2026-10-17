@@ -177,10 +177,6 @@ export function CartClient() {
             {state === "empty" ? (
               <Notice kind="empty" title="سلة فارغة">
                 <p className="acc-lead">حالةٌ سويّة — الشراء من السوق ليس عملاً يومياً.</p>
-                <p className="acc-choice__note">
-                  <strong>المسار</strong> · «ابحث في السوق» أو «موردون تتابعهم». ولا اقتراح إعادة
-                  توريد: ذاك مؤجَّل إلى مرحلة النموّ.
-                </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/market/search")}>
                     ابحث في السوق
@@ -241,7 +237,7 @@ export function CartClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>الموافقة صريحة</strong> · يُعرض السعران القديم والجديد والفرق، ويُطلب
-                  قبولٌ سطراً سطراً. الترقية الصامتة للسعر سرقةٌ بالسهو.
+                  قبولٌ سطراً سطراً.
                 </p>
               </Notice>
             ) : null}
@@ -254,14 +250,6 @@ export function CartClient() {
                     : anyShort
                       ? "قسمٌ تحت حدّه الأدنى — الحدّ يُعرض بالفارق لا بالرفض."
                       : "صنفٌ مطلوب بوحدة والعرض بوحدة أخرى."}
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا مقارنة بالوحدة المختلفة</strong> · كرتونة 12 عند مورد و24 عند آخر لا
-                  تُقارَن بالسعر. نعرض السعر للوحدة الأساسية ونسمّي الفرق.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الحدّ الأدنى يُعرض بالفارق</strong> · «ناقص 340 للوصول إلى الحدّ» لا
-                  «الطلب مرفوض» — المشتري يحتاج المسافة لا الرفض.
                 </p>
               </Notice>
             ) : null}
@@ -437,12 +425,7 @@ export function CartClient() {
                   وشروط تنفيذه، ولكل قسم زرّ إرسال مستقل.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>طلبان لا طلب</strong> · الإرسال يُنشئ طلباً لكل مورد. طلبٌ واحد لموردين
-                  يعني مسؤوليةً مشتركة لا تقبلها منشأتان مستقلتان.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا مجموع كلّي</strong> · لا نعرض «إجمالي السلة» عبر الموردين: رقمٌ لا
-                  يُدفع لأحد، ورسومُ كل مورد تُحسب على قسمه.
+                  <strong>طلبان لا طلب</strong> · الإرسال يُنشئ طلباً لكل مورد.
                 </p>
               </>
             ) : null}

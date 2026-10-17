@@ -370,7 +370,9 @@ def disputes_payload() -> dict[str, Any]:
         "near_limit_count": near,
         "avg_response_hours": avg,
         "response_target_hours": RESPONSE_TARGET_HOURS,
-        "within_target": avg <= RESPONSE_TARGET_HOURS,
+        # فحص 2026-10-17 VP12: بلا عيّنة لا متوسط ولا «ضمن الهدف»
+        "response_samples": len(samples),
+        "within_target": bool(samples) and avg <= RESPONSE_TARGET_HOURS,
         "referred_week": referred_week,
         "closed_30d": closed_30,
         "intervention_days": INTERVENTION_DAYS,

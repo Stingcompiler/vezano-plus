@@ -221,9 +221,6 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
             <h2 className="cat-head__title">
               مشاركة كشف حساب{stmt ? <> {stmt.party.name}</> : null}
             </h2>
-            <span className="cat-head__hint">
-              معاينة الحقول والجمهور قبل المشاركة، بلا وعد بالتسليم.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "permission_denied" ? (
@@ -231,16 +228,11 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                 <p className="acc-lead">
                   الكاشير يطبع نسخةً للطرف الحاضر، ولا يرسل الكشف برابط خارجي.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>الفرق</strong> · الطباعة للحاضر الذي يعرف رقمه؛ والرابط قد يُعاد توجيهه.
-                  الأخير قرار مالك.
-                </p>
               </Notice>
             ) : null}
 
             {state === "loading" ? (
               <Notice kind="info" title="جارٍ التوليد">
-                <p className="acc-lead">مع عدد الصفحات المتوقَّع ومعاينة الأولى.</p>
                 {stmt ? (
                   <p className="acc-choice__note">
                     الصفحات المتوقَّعة <span className="sting-mono">{expectedPages}</span> ·{" "}
@@ -255,7 +247,6 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                 <p className="acc-lead">الكشف طويل أو الخادم تعثّر.</p>
                 <p className="acc-choice__note">
                   <strong>البديل</strong> · مدى أقصر، أو طباعة مباشرة من الشاشة بلا توليد ملف.
-                  والطرف قد يكون واقفاً ينتظر.
                 </p>
                 <div className="cat-form__actions">
                   {failReason === "too_long" || rng === "all" ? (

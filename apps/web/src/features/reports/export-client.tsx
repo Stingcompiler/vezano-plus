@@ -231,8 +231,7 @@ export function ExportClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">تصدير تقرير ومعاينته</h2>
             <span className="cat-head__hint">
-              الورقة التي تخرج من النظام إلى محاسبٍ أو بنك. معاينةٌ للصفحة الأولى كما ستُطبع بالضبط:
-              الترويسة والاتجاه والأرقام.
+              معاينةٌ للصفحة الأولى كما ستُطبع بالضبط: الترويسة والاتجاه والأرقام.
             </span>
           </div>
           <div className="acc-card__body">
@@ -325,7 +324,7 @@ export function ExportClient() {
                           : <span className="sting-mono">{preview.expected_pages}</span> صفحات
                         </>
                       ) : null}
-                      . تقرير ثلاثة أشهر قد يبلغ أربعين صفحة.
+                      .
                     </p>
                   </Notice>
                 ) : null}
@@ -333,8 +332,7 @@ export function ExportClient() {
                   <Notice kind="warning" title="التصدير متوقف">
                     <p className="acc-lead">
                       النطاق المطلوب <span className="sting-mono">{tooWide.months}</span> شهراً وحدّ
-                      التصدير <span className="sting-mono">{tooWide.limit}</span>. نقول الحدّ ونعرض
-                      بديلين بدل رسالة «فشل التصدير».
+                      التصدير <span className="sting-mono">{tooWide.limit}</span>.
                     </p>
                     <ul className="acc-choice__note">
                       <li>
@@ -411,8 +409,7 @@ export function ExportClient() {
                   >
                     <p className="acc-lead">التقرير كبير أو الخادم تعثّر. لا ملف ناقص يُنزَّل.</p>
                     <p className="acc-lead">
-                      <strong>البديل</strong> · مدى أقصر، أو صيغة CSV أخفّ. نقترح البديل ولا نكتفي
-                      بالاعتذار.
+                      <strong>البديل</strong> · مدى أقصر، أو صيغة CSV أخفّ.
                     </p>
                   </Notice>
                 ) : null}
@@ -438,18 +435,10 @@ export function ExportClient() {
                         {done.range.start} – {done.range.end}
                       </span>
                     </p>
-                    <p className="acc-choice__note">
-                      اسم الملف وحجمه وعدد صفحاته ومداه. والمدى في اسم الملف نفسه لا في محتواه وحده.{" "}
-                      <strong>لماذا في الاسم</strong> · لأنه سيُرسل بالبريد ويُحفظ بين عشرة ملفات.
-                      ملفٌ اسمه «تقرير.pdf» ضائع بعد أسبوع.
-                    </p>
                   </Notice>
                 ) : null}
 
                 <h3 className="cat-head__title">المعاينة قبل التصدير</h3>
-                <p className="acc-choice__note">
-                  لأن الخطأ يُكتشف بعد الإرسال إلى المحاسب عادةً، وحينها تكون الورقة خرجت.
-                </p>
                 <DocPreview
                   title={`معاينة ${label}`}
                   textAlternative={
