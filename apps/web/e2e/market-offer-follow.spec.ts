@@ -160,7 +160,6 @@ test.describe("MP-05", () => {
         "تفاصيل عرض",
         "السعر بشروطه كاملة",
         "السعر وصلاحيته المؤكَّدة، والحد الأدنى، والوحدة بتحويلها، والجمهور، وتاريخ آخر تأكيد من الناشر.",
-        "الشراء يتحقق أولاً",
       ]),
     });
     const root = page.locator('[data-screen="MP-05"]');
@@ -187,8 +186,6 @@ test.describe("MP-05", () => {
       texts: fromFrame("MP-05", "stale", [
         "صلاحية تحتاج تأكيداً",
         "المعروض من الكاش وصلاحيته على الحدّ.",
-        "الشراء يتحقق أولاً",
-        "زر الإضافة إلى السلة يجلب تأكيداً خادمياً قبل التثبيت — انتهاء عامل الجدولة عند المنصة لا يجعل المنتهي سعراً حالياً",
       ]),
     });
     await context.setOffline(false);
@@ -278,8 +275,6 @@ test.describe("MP-05", () => {
       texts: fromFrame("MP-05", "empty", [
         "لم يعد هذا العرض متاحاً",
         "الناشر أخفاه أو حذفه بعد أن وصل الرابط.",
-        "لا نسخة قديمة",
-        "عرضُ آخر نسخة محفوظة يُغري بطلبٍ على سعرٍ لم يعد قائماً.",
       ]),
     });
     const root = page.locator('[data-screen="MP-05"]');
@@ -299,11 +294,10 @@ test.describe("MP-05", () => {
     await expectFrame(page, info, {
       screenId: "MP-05",
       state: "permission_denied",
-      texts: fromFrame("MP-05", "permission_denied", ["رفضٌ لا يصف"]),
+      texts: fromFrame("MP-05", "permission_denied", []),
     });
     const root = page.locator('[data-screen="MP-05"]');
     await expect(root).toContainText("لم يعد هذا العرض متاحاً");
-    await expect(root).toContainText("لا اسم ولا سعر — الصيغة نفسها لغير الموجود");
     await expect(root).not.toContainText("سكر");
     await expect(root).not.toContainText("خاص");
   });
@@ -433,7 +427,6 @@ test.describe("MP-06", () => {
         "المتابعة اشتراك B2B يصل تسويق المورد إلى المنشأة — قرارها لمن يملك ملفها لا لكل مستخدم.",
         "الإلغاء بحدوده",
         "إلغاء المتابعة يوقف التسويق ولا يمحو أحداث الطلبات القائمة المخوَّلة",
-        "فعلان مختلفان لا زرّ واحد.",
       ]),
     });
     await expect(page.locator('[data-screen="MP-06"]')).not.toContainText("لا تتابع أحداً بعد");

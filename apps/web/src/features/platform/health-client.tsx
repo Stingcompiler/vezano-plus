@@ -155,10 +155,6 @@ export function HealthClient() {
             {state === "loading" ? (
               <Notice kind="info" title="جلب المؤشرات">
                 <p className="acc-lead">مؤشرات حيّة لا مخزّنة، مع وقت آخر قياس.</p>
-                <p className="acc-choice__note">
-                  <strong>لا كاش هنا</strong> · لوحةٌ تقول «كل شيء سليم» بناءً على قياس قديم هي أخطر
-                  ما في غرفة العمليات.
-                </p>
               </Notice>
             ) : null}
             {state === "stale" && data ? (
@@ -175,7 +171,7 @@ export function HealthClient() {
                   {failed
                     ? "تعذّر القياس الأخير — المعروض من آخر قياس ناجح"
                     : "المعروض من قياس مضى عليه أكثر من دقيقة"}{" "}
-                  ({hhmm(data.measured_at)}). لا نقول «سليم» بناءً على قياس قديم.
+                  ({hhmm(data.measured_at)}).
                 </p>
               </Notice>
             ) : null}

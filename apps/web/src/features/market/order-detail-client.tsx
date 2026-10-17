@@ -212,19 +212,11 @@ export function OrderDetailClient({ id }: { id: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تفاصيل الطلب وسجل الإصدارات — سلّم الكميات</h2>
-            <span className="cat-head__hint">
-              الشاشة التي يُفتحها الطرفان عند الخلاف. أربعة أرقام لكل سطر، كلٌّ منها يعني فعلاً
-              مختلفاً — وخلطها يصنع ديناً لم يقع.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "permission_denied" ? (
               <Notice kind="empty" title="الرابط لم يعد صالحاً">
                 <p className="acc-lead">لا طلب بهذا الرابط، أو لم يعد ضمن ما يُعرض لك.</p>
-                <p className="acc-choice__note">
-                  <strong>رفض عام</strong> · لا اسم مورد ولا صنف ولا سعر ولا حتى «هذا الطلب موجود».
-                  وجودُ المستند سِرٌّ أيضاً.
-                </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/market/orders")}>طلباتي</Button>
                 </div>
@@ -234,10 +226,6 @@ export function OrderDetailClient({ id }: { id: string }) {
               <Notice kind="info" title="بناء الخط الزمني">
                 <p className="acc-lead">
                   الخط يُبنى من أحداث الطرفين مرتَّبةً، ولا تُعرض حالة الطلب قبل اكتمال السلسلة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا حالة جزئية</strong> · حالةٌ محسوبة من نصف الأحداث تُظهر «مؤكَّد» لطلبٍ
-                  شُحن. والحالة هنا تُقرأ قراراً.
                 </p>
               </Notice>
             ) : null}
@@ -288,10 +276,6 @@ export function OrderDetailClient({ id }: { id: string }) {
                       <span className="sting-mono">{agreed.number}</span> لا الأحدث. والإصدار{" "}
                       <span className="sting-mono">{latest.number}</span> يُعرض اقتراحاً يحتاج
                       قبولاً جديداً.
-                    </p>
-                    <p className="acc-choice__note">
-                      <strong>لا إخفاء</strong> · الإصداران معروضان معاً بفرقهما. إخفاء الأحدث يجعل
-                      المورد يتصرف على أساسٍ لا يراه المشتري.
                     </p>
                     <table className="pur-lines">
                       <thead>

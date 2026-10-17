@@ -41,6 +41,7 @@ interface Payload {
   pending_count: number;
   oldest_waiting_hours: number;
   avg_review_hours_week: number;
+  reviewed_week: number;
   badge_text: string;
 }
 
@@ -149,14 +150,28 @@ export function VerificationsClient() {
               </Notice>
             ) : null}
             {state === "empty" && data ? (
-              <Notice kind="success" title="لا طلبات">
-                <p className="acc-lead">كل الطلبات روجعت. نعرض متوسط زمن المراجعة كمقياس خدمة.</p>
-                <p className="acc-choice__note">
-                  <strong>المقياس لا التهنئة</strong> · «لا طلبات · متوسط المراجعة{" "}
-                  <span className="sting-mono">{data.avg_review_hours_week}</span>{" "}
-                  {hoursUnit(data.avg_review_hours_week)} هذا الأسبوع» — رقمٌ يُحاسَب عليه المشغّل.
-                </p>
-              </Notice>
+              // فحص 2026-10-17 VP12: «لم يصل طلب» غير «روجع كل شيء»، والمتوسط بعيّنته فقط
+              data.reviewed_week ? (
+                <Notice kind="success" title="لا طلبات منتظرة">
+                  <p className="acc-lead">
+                    روجع <span className="sting-mono">{data.reviewed_week}</span>{" "}
+                    {data.reviewed_week === 1
+                      ? "طلب"
+                      : data.reviewed_week === 2
+                        ? "طلبان"
+                        : data.reviewed_week <= 10
+                          ? "طلبات"
+                          : "طلباً"}{" "}
+                    هذا الأسبوع بمتوسط{" "}
+                    <span className="sting-mono">{data.avg_review_hours_week}</span>{" "}
+                    {hoursUnit(data.avg_review_hours_week)}.
+                  </p>
+                </Notice>
+              ) : (
+                <Notice kind="empty" title="لا طلبات تحقّق">
+                  <p className="acc-lead">لم يصل طلب تحقّق هذا الأسبوع.</p>
+                </Notice>
+              )
             ) : null}
             {state === "validation_error" ? (
               <Notice
@@ -170,12 +185,6 @@ export function VerificationsClient() {
                       ? "الطلب محسوم من قبل — لا قرار ثانٍ عليه."
                       : err}
                 </p>
-                {err === "reasons_required" ? (
-                  <p className="acc-choice__note">
-                    <strong>لا رفض</strong> · نطلب إعادة الرفع بسبب محدّد: «الطرف الأيسر مقطوع».
-                    الرفض يُعيد التاجر إلى أول الطابور بلا ذنب.
-                  </p>
-                ) : null}
               </Notice>
             ) : null}
             {state === "success" && decided ? (
@@ -203,14 +212,10 @@ export function VerificationsClient() {
               >
                 <p className="acc-lead">
                   {decided.status === "verified"
-                    ? "نقول ما صار مسموحاً: النشر والبيع في السوق، والشارة على صفحتها."
+                    ? "النشر والبيع في السوق، والشارة على صفحتها."
                     : decided.status === "needs_more"
                       ? "الرفض يُعيد التاجر إلى أول الطابور بلا ذنب."
                       : "الحساب يبقى عاملاً بلا شارة."}
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الشارة تعني ما تقول</strong> · تحقّقٌ من هوية المنشأة لا شهادةُ جودة ولا
-                  ضمان. وهذا مكتوب حيث تُقرأ الشارة لا هنا فقط.
                 </p>
                 <p className="acc-choice__note">
                   {decided.name} · قرّر {decided.reviewer_name} ·{" "}
@@ -263,8 +268,7 @@ export function VerificationsClient() {
                   ))}
                 </ul>
                 <p className="acc-choice__note">
-                  نص الشارة ثابت ومعروض للمشتري: «{data.badge_text}». بلا هذا السطر تصبح الشارة
-                  ضماناً لم نقدّمه.
+                  نص الشارة ثابت ومعروض للمشتري: «{data.badge_text}».
                 </p>
                 <h3 className="cat-head__title">تشغيل الإرسال</h3>
                 <p className="acc-choice__note">

@@ -244,7 +244,6 @@ test.describe("INV-03", () => {
         "شاي أسود",
         "كرتونة 24×250غ",
         "علبة",
-        "التحويل معروض صريحاً: 15 × 24 = 360. لا نخبّئ الحساب.",
         "التكلفة",
         "الافتتاحي يحمل تكلفةً تُدخَل يدوياً وتُوسم «يدوية»، وتُستبدل بأول مستند شراء حقيقي.",
       ]),
@@ -269,8 +268,6 @@ test.describe("INV-03", () => {
       texts: fromFrame("INV-03", "success", [
         "سُجّلت الافتتاحيات",
         "عدد الأصناف والكميات وقيمتها، ومستندٌ واحد يجمعها قابل للطباعة والمراجعة.",
-        "مستند لا حركات متفرّقة",
-        "ليُراجَع ويُتراجع عنه كوحدة. افتتاحياتٌ مبثوثة لا يُعرف أيّها كان معاً.",
       ]),
     });
     await expect(root.locator(".shift-facts__v").first()).toHaveText("2");
@@ -325,9 +322,7 @@ test.describe("INV-03", () => {
         "سكر أبيض",
       ]),
     });
-    await expect(page.locator("body")).toContainText(
-      "كما في «الرصيد الافتتاحي للطرف»: الافتتاحي مرة واحدة وقبل أول حركة.",
-    );
+    await expect(page.locator("body")).not.toContainText("كما في «الرصيد الافتتاحي للطرف»");
   });
 
   test("permission_denied: أمين المخزن يُدخل ولا يعتمد — «أُرسلت للاعتماد»", async ({
@@ -354,10 +349,7 @@ test.describe("INV-03", () => {
     await expectFrame(page, info, {
       screenId: "INV-03",
       state: "permission_denied",
-      texts: fromFrame("INV-03", "permission_denied", [
-        "أُرسلت للاعتماد",
-        "أمين المخزن يُدخل الافتتاحيات ولا يعتمدها. الاعتماد يُنشئ رصيداً يُحسب عليه كل شيء بعده، فهو صلاحية المالك أو من فوّضه. يظهر للأمين «أُرسلت للاعتماد» لا زرّ رمادي بلا تفسير.",
-      ]),
+      texts: fromFrame("INV-03", "permission_denied", ["أُرسلت للاعتماد"]),
     });
     await expect(page.locator('[data-screen="INV-03"]')).toContainText("مسودة — 1 صنفاً · هبة");
   });
@@ -394,7 +386,7 @@ test.describe("INV-03", () => {
     await expectFrame(page, info, {
       screenId: "INV-03",
       state: "success",
-      texts: fromFrame("INV-03", "success", ["سُجّلت الافتتاحيات", "مستند لا حركات متفرّقة"]),
+      texts: fromFrame("INV-03", "success", ["سُجّلت الافتتاحيات"]),
     });
     await expect(root.locator(".shift-facts__v").first()).toHaveText("3");
   });
@@ -428,13 +420,10 @@ test.describe("INV-04", () => {
         "اتركه فارغاً إن لم تعرفه الآن",
         "لا نفرض وحدة تكلفة.",
         "من يستلم كرتونة ولا يعرف سعر الحبّة يُدخل الكمية وحدها، والاستلام يكتمل. حساب تكلفة الوحدة يبقى معروضاً كأمر اختياري في",
-        "— لا سدّاً يمنع دخول البضاعة.",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
-    await expect(page.locator("body")).toContainText(
-      "كأمر اختياري في «التكلفة والهامش» — لا سدّاً يمنع دخول البضاعة.",
-    );
+    await expect(page.locator("body")).not.toContainText("لا سدّاً يمنع");
     const root = page.locator('[data-screen="INV-04"]');
     await expect(root).toContainText("40 كرتونة 12×1كغ = 480 كيس");
     await page.getByRole("button", { name: "تسجيل الاستلام" }).click();
@@ -452,8 +441,6 @@ test.describe("INV-04", () => {
       texts: fromFrame("INV-04", "success", [
         "استُلمت البضاعة",
         "الأصناف والكميات والموقع، وأثرها: المخزون زاد والتكلفة تحرّكت.",
-        "المسار التالي",
-        "واحد: «استلام آخر». من يستلم شحنةً يستلم عشراً — لا نُعيده إلى قائمة.",
         "استلام آخر",
       ]),
     });
@@ -545,9 +532,7 @@ test.describe("INV-04", () => {
     await expect(page.locator('[data-screen="INV-04"]')).toContainText(
       "حُفظ على الجهاز — لم يُرفع بعد",
     );
-    await expect(page.locator('[data-screen="INV-04"]')).toContainText(
-      "الاستلام يعمل بلا شبكة. الرصيد المحلي يتحدّث فوراً، والحالة تقول «محفوظ على هذا الجهاز» لا «تم». لا نعرض تأكيداً خادمياً لم يحدث.",
-    );
+    await expect(page.locator('[data-screen="INV-04"]')).not.toContainText("والحالة تقول");
     await context.setOffline(false);
     await expect(page.locator('[data-screen="INV-04"]')).toContainText(
       "عملية واحدة معلقة من هذا الجهاز",

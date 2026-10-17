@@ -152,12 +152,7 @@ export function MixedClient() {
                     </p>
                   </Notice>
                 ) : state === "success" ? (
-                  <Notice kind="success" title="ثلاث وجهات معلنة">
-                    <p className="acc-lead">
-                      <strong>لا «تم استلام 100»</strong> · المئة لم تُستلم — استُلم 40 والتُزم
-                      بـ60. لفظ الاستلام على الآجل يطمس الفرق الذي بُني عليه الكشف كله.
-                    </p>
-                  </Notice>
+                  <Notice kind="success" title="ثلاث وجهات معلنة" />
                 ) : (
                   <Notice kind="success" title="مختلط بلا اتصال">
                     <p className="acc-lead">النقد في الدرج فعلاً والدين في المعلّق.</p>
@@ -342,12 +337,7 @@ export function MixedClient() {
                   ) : null}
                 </div>
                 {touched && !matched ? (
-                  <Notice kind="error" title="الأجزاء لا تساوي الإجمالي">
-                    <p className="acc-lead">
-                      <strong>الفارق يُعرض ولا يُوزَّع</strong> · توزيع الفارق صامتاً على الآجل
-                      يُنشئ ديناً لم يوافق عليه أحد — والتقريب واحد على كل منصة.
-                    </p>
-                  </Notice>
+                  <Notice kind="error" title="الأجزاء لا تساوي الإجمالي" />
                 ) : null}
 
                 {(creditMinor ?? 0n) > 0n && party ? (

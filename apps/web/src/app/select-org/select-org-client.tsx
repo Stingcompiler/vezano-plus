@@ -216,9 +216,7 @@ export function SelectOrgClient() {
                     </Link>
                   </div>
                 }
-              >
-                حسابٌ أُنشئ ولم يُنشئ منشأة ولم تصله دعوة.
-              </Notice>
+              />
             ) : null}
 
             {rows && rows.length > 0 && state !== "permission_denied"

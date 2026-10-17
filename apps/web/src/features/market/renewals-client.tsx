@@ -195,7 +195,7 @@ export function RenewalsClient() {
 
             <p className="acc-choice__note">
               <strong>الوصف لا يجدّد</strong> · تعديل وصفٍ أو صورة لا يجدّد تأكيد السعر. التجديد
-              إقرارٌ سعري له زرّه — وإلا صار كل تحريرٍ تمديداً خفياً.
+              إقرارٌ سعري له زرّه.
             </p>
 
             {data ? (

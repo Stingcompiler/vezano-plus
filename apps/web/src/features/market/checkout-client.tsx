@@ -238,10 +238,6 @@ export function CheckoutClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مراجعة الطلب قبل الإرسال — من يتحمل ماذا</h2>
-            <span className="cat-head__hint">
-              الشاشة الوحيدة التي تُقرأ قبل التزام مالي، فكل رقم فيها بمصدره وكل مسؤولية باسم
-              صاحبها.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "success" && order ? (
@@ -258,8 +254,7 @@ export function CheckoutClient() {
                   إبقاءه أو إلغاءه.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>أُرسل ليست قُبل</strong> · لا التزام مالي ولا حجز مخزون الآن. نقول
-                  «بانتظار رد المورد» لا «تم الطلب» — الثانية تُفهم تأكيداً.
+                  <strong>أُرسل ليست قُبل</strong> · لا التزام مالي ولا حجز مخزون الآن.
                 </p>
               </Notice>
             ) : null}
@@ -269,7 +264,7 @@ export function CheckoutClient() {
                 <p className="acc-lead">الشبكة قُطعت أثناء الإرسال، ولا نعرف هل وصل الطلب.</p>
                 <p className="acc-choice__note">
                   <strong>المعرّف محفوظ</strong> · إعادة المحاولة تُرسل الطلب نفسه بمعرّفه لا طلباً
-                  جديداً. ومسار «استعلم عن الحالة» معروض.
+                  جديداً.
                 </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => void submit()}>
@@ -301,8 +296,7 @@ export function CheckoutClient() {
                     العرض بعملة أخرى وحساب المنشأة بعملة واحدة غير قابلة للتبديل.
                   </p>
                   <p className="acc-choice__note">
-                    <strong>لا تحويل ضمني</strong> · نمنع التأكيد ولا نحوّل بسعر صرف مفترض. سعر
-                    الصرف التزامٌ مالي لا تقديرٌ في واجهة.
+                    <strong>لا تحويل ضمني</strong> · نمنع التأكيد ولا نحوّل بسعر صرف مفترض.
                   </p>
                 </Notice>
               ) : rejected ? (
@@ -462,11 +456,6 @@ export function CheckoutClient() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-                <p className="acc-choice__note">
-                  <strong>طلب أو طلب سعر</strong> · فعلان مختلفان لا صيغتان: طلبٌ على سعر مؤكَّد
-                  قائم، أو طلب سعرٍ بلا التزام سعري. <strong>المسؤوليات معروضة</strong> · من ينقل،
-                  ومن يحمل الرسوم، وأين التسليم، ومهلة رد المورد — قبل الإرسال لا في الخلاف.
-                </p>
                 {state !== "expired" ? (
                   <div className="acc-actions">
                     <Button

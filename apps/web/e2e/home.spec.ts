@@ -551,15 +551,34 @@ test.describe("HOME-03", () => {
     await expectFrame(page, info, {
       screenId: "HOME-03",
       state: "empty",
-      texts: fromFrame("HOME-03", "empty", [
-        "لا نتائج",
-        "بلا تطابق",
-        "البحث في الفروع الأخرى",
-        "إنشاء مستند بهذا الرقم",
-      ]),
+      texts: fromFrame("HOME-03", "empty", ["لا نتائج", "بلا تطابق"]),
     });
     await expect(page.getByLabel("بحث", { exact: true })).toHaveValue("فاتورة 9923");
-    await expect(page.locator('[data-screen="HOME-03"]')).not.toContainText("تحقّق من الإملاء");
+    const root = page.locator('[data-screen="HOME-03"]');
+    await expect(root).not.toContainText("تحقّق من الإملاء");
+    // فحص 2026-10-17 F10: رقمٌ لا يُقترح له «إنشاء»، ولا زرّ بلا فعل للفروع (البحث يشملها)
+    await expect(root).not.toContainText("إنشاء مستند بهذا الرقم");
+    await expect(root).not.toContainText("البحث في الفروع الأخرى");
+    await expect(root).not.toContainText("صنفاً جديداً");
+  });
+
+  test("فحص 2026-10-17 F10: نصٌّ بلا نتائج يقترح إضافته صنفاً — ويفتح نموذج الصنف بالاسم", async ({
+    page,
+  }) => {
+    await toSearch(
+      page,
+      {
+        ...SEARCH,
+        query: "سكر",
+        groups: SEARCH.groups.map((g) => ({ ...g, results: [] })),
+        total: 0,
+        kinds_with_results: 0,
+        suggestions: { nearest: [], other_branches: true, create: true },
+      },
+      "سكر",
+    );
+    await page.getByRole("button", { name: "أضف «سكر» صنفاً جديداً" }).click();
+    await expect(page).toHaveURL(/\/catalog\/new\?name=%D8%B3%D9%83%D8%B1$/);
   });
 
   test("permission_denied: العدد ونوعه بلا محتوى — ومدخل الطلب", async ({ page }, info) => {

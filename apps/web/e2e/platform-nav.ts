@@ -19,6 +19,7 @@ export const PLATFORM_SECTIONS = [
   "الصحة",
   "النسخ",
   "المشغّلون",
+  "سجل التدقيق",
 ] as const;
 
 /**
@@ -27,7 +28,10 @@ export const PLATFORM_SECTIONS = [
  */
 export async function goSection(page: Page, name: string) {
   await clickInDrawer(page, () =>
-    page.getByRole("button", { name, exact: true }).first().click({ timeout: 10_000 }),
+    page
+      .getByRole("navigation", { name: "أقسام المشغّل" })
+      .getByRole("link", { name, exact: true })
+      .click({ timeout: 10_000 }),
   );
 }
 

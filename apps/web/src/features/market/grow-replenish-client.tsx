@@ -247,14 +247,6 @@ export function GrowReplenishClient() {
                 <p className="acc-lead">
                   أمين المخزن يرى الاقتراح — هو أدرى بما على الرفّ — ولا يحوّله إلى أمر شراء.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>المخرج</strong> · «أرسل الاقتراح إلى {data.ask_name || "المالك"}»
-                  بملاحظاته على الكميات. معرفته بالرفّ أدقّ من الحساب، فلا تُهدَر.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>العمود المحجوب</strong> · القيمة التقديرية محجوبة كما في «أوامر الشراء» —
-                  وللسبب نفسه.
-                </p>
               </Notice>
             ) : null}
             {forwarded ? (
@@ -278,9 +270,8 @@ export function GrowReplenishClient() {
                   يُقال.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نقول</strong> · «فُحص{" "}
-                  <span className="sting-mono">{data.checked_count ?? 0}</span> صنفاً · لا شيء يحتاج
-                  توريداً اليوم · الفحص التالي {data.next_check ?? "غداً 6 ص"}».
+                  «فُحص <span className="sting-mono">{data.checked_count ?? 0}</span> صنفاً · لا شيء
+                  يحتاج توريداً اليوم · الفحص التالي {data.next_check ?? "غداً 6 ص"}».
                 </p>
               </Notice>
             ) : null}
@@ -326,9 +317,8 @@ export function GrowReplenishClient() {
                   </Button>
                 </div>
                 <p className="acc-choice__note">
-                  <strong>لا شيء يُطلب حتى تختار</strong> · لا صندوق اختيار محدَّداً سلفاً ولا «اختر
-                  الكل» بارزاً. الاقتراح يصير أمر شراء باختيار صريح، والكميات تبقى قابلة للتعديل قبل
-                  ذلك وبعده.
+                  <strong>لا شيء يُطلب حتى تختار</strong> · الاقتراح يصير أمر شراء باختيار صريح،
+                  والكميات تبقى قابلة للتعديل قبل ذلك وبعده.
                 </p>
                 <Table
                   caption="اقتراح التوريد"

@@ -342,9 +342,7 @@ export function PrintClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">ربط طابعة ويب وتجربة عربية</h2>
-            <span className="cat-head__hint">
-              الطباعة من المتصفح أضعف من الأصلية. ثلاث حالات ناقصة.
-            </span>
+            <span className="cat-head__hint">الطباعة من المتصفح أضعف من الأصلية.</span>
           </div>
           <div className="acc-card__body">
             {state === "validation_error" && blocked ? (
@@ -361,8 +359,7 @@ export function PrintClient() {
                   الإيصال معدٌّ لعرض <span className="sting-mono">{width}</span> ملم والمختار A4.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نمنع قبل الطباعة</strong> · الطباعة الخاطئة تُتلف ورقاً ووقتاً أمام
-                  الزبون، ولا تُكتشف إلا بعد خروجها.
+                  <strong>نمنع قبل الطباعة</strong>
                 </p>
               </Notice>
             ) : null}
@@ -372,10 +369,7 @@ export function PrintClient() {
                 <p className="acc-lead">
                   نسأل عن النتيجة: هل اتصلت الحروف؟ هل ظهر الباركود؟ الجواب يضبط الإعداد.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا نفترض</strong> · المتصفح يقول «أُرسل للطباعة» ولا يعرف ما خرج. سؤالٌ
-                  واحد أصدق من ادّعاء.
-                </p>
+                <p className="acc-choice__note">المتصفح يقول «أُرسل للطباعة» ولا يعرف ما خرج.</p>
                 <ul className="acc-choice__note">
                   {CHECKS.map((c, i) => (
                     <li key={c}>
@@ -424,9 +418,7 @@ export function PrintClient() {
             ) : null}
 
             <h3 className="cat-head__title">طابعات هذا الجهاز</h3>
-            <p className="acc-lead">
-              نطبع صفحة تجربة عربية ونسألك عن النتيجة. الحكم حكمك لا حكمنا.
-            </p>
+            <p className="acc-lead">نطبع صفحة تجربة عربية ونسألك عن النتيجة.</p>
             <Table
               caption="طابعات هذا الجهاز"
               columns={columns}
@@ -451,8 +443,8 @@ export function PrintClient() {
                 </Button>
               ) : (
                 <p className="acc-choice__note">
-                  Web Bluetooth غير متاح هنا (المتصفح لا يدعمه أو البلوتوث مطفأ) — لا نعرض زراً
-                  لقدرة لا نملكها. طابعات Bluetooth الكلاسيكية وUSB والشبكة تُطبع بتعريف النظام.
+                  Web Bluetooth غير متاح هنا (المتصفح لا يدعمه أو البلوتوث مطفأ). طابعات Bluetooth
+                  الكلاسيكية وUSB والشبكة تُطبع بتعريف النظام.
                 </p>
               )}
               <Button variant="secondary" onClick={() => setAdding((v) => !v)}>
@@ -511,19 +503,10 @@ export function PrintClient() {
               ]}
             />
 
-            <h3 className="cat-head__title">لماذا لا نقول «مدعومة»؟</h3>
-            <p className="acc-choice__note">
-              تشكيل العربية واتجاهها يعتمدان على خطوط الطابعة ومعيار التحكم فيها، وطابعتان بنفس
-              الاسم التجاري قد تختلفان. الحرف المقطّع لا يُكتشف برمجياً — يُكتشف بعينك على ورقة. حتى
-              يُحسم التوافق نعرض نتيجة تجربتك على جهازك، لا قائمة توافق مخترعة.
-            </p>
-
             <h3 className="cat-head__title">طرازات مثبتة بالاختبار</h3>
             <p className="acc-choice__note">نعرض ما جُرّب فعلاً ولا نَعِد بكل طابعة.</p>
             {testedRows.length === 0 ? (
-              <p className="acc-choice__note">
-                لم يُثبَّت طراز بعد — الاعتماد بعد ورقة على جهازين تُسجَّل في ملف الأدلة.
-              </p>
+              <p className="acc-choice__note">لم يُثبَّت طراز بعد</p>
             ) : (
               <ul className="acc-choice__note">
                 {testedRows.map((t) => (
@@ -536,9 +519,7 @@ export function PrintClient() {
             )}
 
             <h3 className="cat-head__title">الطابعة والتجربة العربية</h3>
-            <p className="acc-choice__note">
-              تجربةٌ بنصّ عربي متصل ورقم لاتيني وباركود معاً — لأن العطب يظهر في أحدها لا في كلّها.
-            </p>
+            <p className="acc-choice__note">تجربةٌ بنصّ عربي متصل ورقم لاتيني وباركود معاً.</p>
             <h3 className="cat-head__title">صفحة التجربة — ما نطبعه ونسألك أن تتحققه</h3>
             <div id="web03-print-area" className="web03-print" data-mode="text">
               <div className="web03-print__text">

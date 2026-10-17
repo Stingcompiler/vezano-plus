@@ -183,10 +183,6 @@ export function RecoverClient() {
                   يُسأل الخادم عن حالة الطلب بمعرّفه المحفوظ، ويُعرض ما لديه: لم يصل، أو وصل
                   ومؤكَّد، أو وصل ومُلغى.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا زرّ «أعد الإنشاء»</strong> · الإنشاء البديل يُنتج طلبين عند المورد.
-                  المعروض «استعلم» ثم «أعد إرسال نفسه».
-                </p>
                 {op && !attempt ? (
                   <p className="acc-choice__note">لا مسودة محفوظة لهذا المعرّف على هذا الجهاز.</p>
                 ) : null}
@@ -213,8 +209,7 @@ export function RecoverClient() {
                   بحمولة والجهاز يحمله بأخرى.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>لا كتابة فوق</strong> · التعارض يُحجَز ويُعرض الفرق للمراجعة. الكتابة فوق
-                  نسخة الخادم تمحو ما رآه المورد.
+                  <strong>لا كتابة فوق</strong> · التعارض يُحجَز ويُعرض الفرق للمراجعة.
                 </p>
                 <table className="pur-lines">
                   <thead>
@@ -289,10 +284,6 @@ export function RecoverClient() {
                   <span className="sting-mono">{order.number_label}</span> ·{" "}
                   {order.list_status_label} ·{" "}
                   <span className="sting-mono">{hhmm(order.updated_at)}</span>
-                </p>
-                <p className="acc-choice__note">
-                  <strong>نقول إن الأول وصل</strong> · لا «أُرسل بنجاح» فحسب. المستخدم كان يخشى
-                  الازدواج، فالجواب عن خشيته لا عن الفعل.
                 </p>
               </Notice>
             ) : null}

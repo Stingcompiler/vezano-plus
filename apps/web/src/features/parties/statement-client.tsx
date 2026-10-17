@@ -508,40 +508,25 @@ export function StatementClient({ partyId }: { partyId: string }) {
             ) : null}
             {state === "loading" ? (
               <Notice kind="info" title="جارٍ الحساب">
-                <p className="acc-lead">
-                  الكشف يُحسب من كل الحركات ولا يُقرأ جاهزاً. مع عدد الحركات في المدى.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا رصيد جزئي</strong> · الرصيد الجاري لا يُعرض قبل اكتمال السلسلة — رقمٌ
-                  وسيط في كشف حساب يُقرأ ويُصدَّق.
-                </p>
+                <p className="acc-lead">الكشف يُحسب من كل الحركات ولا يُقرأ جاهزاً.</p>
               </Notice>
             ) : null}
             {state === "empty" ? (
               <Notice kind="empty" title="طرفٌ بلا حركات">
                 <p className="acc-lead">أُنشئ ولم يُبع له ولا سُدّد منه.</p>
                 <p className="acc-choice__note">
-                  <strong>المسار</strong> · «سجّل رصيداً افتتاحياً» أو «ابدأ بيعاً آجلاً». والفراغ
-                  هنا بدايةٌ لا نقص.
+                  <strong>المسار</strong> · «سجّل رصيداً افتتاحياً» أو «ابدأ بيعاً آجلاً».
                 </p>
               </Notice>
             ) : null}
             {state === "stale" ? (
               <Notice kind="warning" title="كشفٌ من آخر مطابقة">
                 <p className="acc-lead">قبل ساعتين، وقد سدّد الطرف في فرع آخر.</p>
-                <p className="acc-choice__note">
-                  <strong>لا يُطبع بلا وسم</strong> · الطباعة تحمل «محدَّث 3:40 م» في الترويسة.
-                  ورقةٌ بلا وقت تُقرأ لحظيةً بعد أسبوع.
-                </p>
               </Notice>
             ) : null}
             {state === "offline" ? (
               <Notice kind="offline" title="كشف محلي">
                 <p className="acc-lead">من بيانات الجهاز، ومعه ما لم يُرفع موسوماً سطراً سطراً.</p>
-                <p className="acc-choice__note">
-                  <strong>التركيب معلَن</strong> · «خادمي 340 + معلّق 100 = 440». المجموع وحده يُوهم
-                  بتأكيدٍ لم يحصل.
-                </p>
               </Notice>
             ) : null}
             {state === "pending_sync" ? (
@@ -573,10 +558,6 @@ export function StatementClient({ partyId }: { partyId: string }) {
                 المزامنة. الفواتير المنشأة في فرع آخر تدخل الرصيد المؤسسي دون أن تُعرض تفاصيلها هنا.
               </p>
             ) : null}
-            <p className="acc-choice__note">
-              لا جدول أعمار ديون: يُعرض «آخر سداد» و«أقدم حركة غير مسدَّدة» تاريخاً فقط. الأعمار
-              تحتاج توزيع كل دفعة على فواتيرها، ومن لم يوزّع يُنتج أعماراً مخترعة.
-            </p>
             <div className="cat-form__actions">
               <Button variant="quiet" onClick={() => router.push(`/parties/${partyId}`)}>
                 بطاقة الطرف

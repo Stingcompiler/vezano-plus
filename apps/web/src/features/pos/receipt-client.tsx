@@ -215,7 +215,6 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
                   <p className="acc-lead">البيع محفوظ محلياً وينتظر دوره.</p>
                   <p className="acc-lead">
                     <strong>الإيصال لا ينتظر</strong> · يُطبع الآن بوسم «محفوظ على الجهاز» في ذيله.
-                    الزبون لا يقف على المزامنة، والوسم يحفظ صدق الورقة.
                   </p>
                 </Notice>
               ) : null}
@@ -255,7 +254,7 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
                   </p>
                   <p className="acc-lead">
                     <strong>البيع لا يُلغى</strong> · الرفض يذهب إلى مراجعة العمليات المتعثرة ولا
-                    يمسّ إيصالاً سُلّم. النقد قُبض والبضاعة خرجت — الورقة صادقة والمشكلة إدارية.
+                    يمسّ إيصالاً سُلّم.
                   </p>
                 </Notice>
               ) : null}

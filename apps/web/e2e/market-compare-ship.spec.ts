@@ -246,16 +246,10 @@ test.describe("ORD-07", () => {
       return route.fulfill(json(200, DETAIL_ACCEPTED));
     });
     await login(page, "/market/orders/po1/compare", /\/market\/orders\/po1\/compare$/);
-    await expect(page.getByText("طلبك · عرض المورد · الفرق")).toBeVisible();
     await expectFrame(page, info, {
       screenId: "ORD-07",
       state: "ready",
-      texts: fromFrame("ORD-07", "ready", [
-        "طلبك · عرض المورد · الفرق",
-        "ثلاثة أعمدة بالوحدة الأساسية، والفرق مسمّى: سعرٌ أعلى، كميةٌ أقل، رسمٌ مضاف، مدةٌ أطول.",
-        "لا زرّ قبول قبل عرض الفرق",
-        "القبول بضغطةٍ من قائمة يُنتج اتفاقاً لم يُقرأ. الشاشة تُجبر على المقابلة.",
-      ]),
+      texts: fromFrame("ORD-07", "ready", []),
     });
     const root = page.locator('[data-screen="ORD-07"]');
     await expect(root).toContainText("Q-2041 — مخزن البركة");
@@ -270,7 +264,6 @@ test.describe("ORD-07", () => {
         "الإصدار المقبول يُثبَّت نسخةً من الاتفاق: كمياته وأسعاره ورسومه ومدته كما كانت لحظة القبول.",
         "نسخة لا مرجع",
         "انتهاء الكتالوج بعد القبول لا يمسّ الاتفاق",
-        "مرجعٌ متحرّك يعني عقداً يتغيّر بلا توقيع.",
       ]),
     });
     expect(posted).toEqual([2]);
@@ -361,12 +354,7 @@ test.describe("ORD-07", () => {
     await expectFrame(page, info, {
       screenId: "ORD-07",
       state: "validation_error",
-      texts: fromFrame("ORD-07", "validation_error", [
-        "قبول إصدار ليس الأحدث",
-        "رفض صريح",
-        "لا نُحوّل القبول إلى الأحدث ضمناً",
-        "نعرض الإصدار الجديد وفرقه ونطلب قبولاً جديداً.",
-      ]),
+      texts: fromFrame("ORD-07", "validation_error", ["قبول إصدار ليس الأحدث"]),
     });
     const root = page.locator('[data-screen="ORD-07"]');
     await expect(root).toContainText("الرابط المفتوح للإصدار 2 والمورد أرسل الإصدار 3.");
@@ -374,12 +362,7 @@ test.describe("ORD-07", () => {
     await expectFrame(page, info, {
       screenId: "ORD-07",
       state: "expired",
-      texts: fromFrame("ORD-07", "expired", [
-        "انتهت صلاحية العرض أثناء المراجعة",
-        "لا قبول صامت",
-        "التأكيد الخادمي يمنع اعتباره سعراً حالياً",
-        "المعروض: «اطلب تأكيداً جديداً» لا «تابع».",
-      ]),
+      texts: fromFrame("ORD-07", "expired", ["انتهت صلاحية العرض أثناء المراجعة"]),
     });
     await expect(page.getByRole("button", { name: "قبول — مغلق" })).toHaveAttribute(
       "aria-disabled",

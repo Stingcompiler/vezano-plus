@@ -206,7 +206,7 @@ export function CustomerClient({ mode = "sale" }: { mode?: "sale" | "ledger" } =
                 <p className="acc-lead">البحث في أطراف الجهاز، والإنشاء السريع محلي.</p>
                 <p className="acc-lead">
                   <strong>التشابه يُفحص لاحقاً</strong> · فحص «الرقم مسجَّل على طرف آخر» يكتمل عند
-                  المزامنة، وقد ينتج مراجعة دمج. نقولها عند الإنشاء لا نفاجئ بها بعده.
+                  المزامنة، وقد ينتج مراجعة دمج.
                 </p>
               </Notice>
             ) : null}

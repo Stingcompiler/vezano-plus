@@ -357,10 +357,6 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                   <p className="acc-lead">
                     المرتجع يبدأ باختيار الأصل، وكل سطر يعرض المباع والمرتَجع سابقاً والمتاح رده.
                   </p>
-                  <p className="acc-choice__note">
-                    <strong>السقف معروض</strong> · «بيع 5 — رُدّ 2 — المتاح 3». بلا هذا العمود
-                    يُكتشف التجاوز عند الخطأ لا قبله.
-                  </p>
                 </Notice>
 
                 <Table
@@ -385,10 +381,6 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                         {trimQty(overRow.available, overRow.line.decimal_places)}
                       </span>
                       .
-                    </p>
-                    <p className="acc-lead">
-                      <strong>الأصل ناقص المردود</strong> · السقف تراكمي عبر كل مرتجعات الفاتورة —
-                      وإلا صار المرتجع باباً لإخراج نقدٍ بلا بضاعة.
                     </p>
                   </Notice>
                 ) : null}
@@ -501,10 +493,6 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                 {state === "success" ? (
                   <Notice kind="success" title="سُجّل المرتجع">
                     <p className="acc-lead">مستندٌ مستقل يشير إلى أصله، والأصل باقٍ كما كان.</p>
-                    <p className="acc-lead">
-                      <strong>وجهة الرد معلنة</strong> · نقدٌ من الصندوق، أو تخفيض ذمّة، والتالف إلى
-                      الحجر — الثلاثة في شاشة النجاح لا في افتراض القارئ.
-                    </p>
                   </Notice>
                 ) : (
                   <Notice kind="offline" title="مرتجع بلا اتصال">

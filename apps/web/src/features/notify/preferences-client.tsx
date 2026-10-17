@@ -181,17 +181,14 @@ export function PreferencesClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تفضيلات التنبيه</h2>
-            <span className="cat-head__hint">
-              قناتان ونوعان. التشغيلي غير قابل للإطفاء لأنه يخصّ مالك وذمم.
-            </span>
+            <span className="cat-head__hint">التشغيلي غير قابل للإطفاء لأنه يخصّ مالك وذمم.</span>
           </div>
           <div className="acc-card__body">
             {state === "validation_error" ? (
               <Notice kind="warning" title="قناة بلا وجهة">
                 <p className="acc-lead">فُعّل تنبيه البريد ولا بريد في الحساب.</p>
                 <p className="acc-lead">
-                  <strong>لا نحفظ تفضيلاً معطّلاً</strong> · حفظُه يجعله يظنّ أن التنبيهات ستصل وهي
-                  لن تصل. نطلب البريد هنا في مكانه.
+                  <strong>لا نحفظ تفضيلاً معطّلاً</strong> · نطلب البريد هنا في مكانه.
                 </p>
               </Notice>
             ) : null}
@@ -202,20 +199,15 @@ export function PreferencesClient() {
                 </p>
                 <p className="acc-lead">
                   <strong>الحدّ المُعلن</strong> · التنبيهات الخادمية تتبع التفضيل القديم حتى يُرفع.
-                  نقولها لا نتركها تُكتشف.
                 </p>
               </Notice>
             ) : null}
             {state === "success" && saved ? (
               <Notice kind="success" title="حُفظت">
                 <p className="acc-lead">
-                  نقول ما صار فعّالاً بالعدّ: <span className="sting-mono">{saved.in_app}</span>{" "}
-                  تنبيهات على التطبيق · <span className="sting-mono">{saved.email}</span> بالبريد ·{" "}
+                  <span className="sting-mono">{saved.in_app}</span> تنبيهات على التطبيق ·{" "}
+                  <span className="sting-mono">{saved.email}</span> بالبريد ·{" "}
                   <span className="sting-mono">{saved.sms}</span> برسالة نصية.
-                </p>
-                <p className="acc-lead">
-                  <strong>لا رسالة مجردة</strong> · «حُفظت التغييرات» لا تُطمئن من جاء يضبط ما يصله.
-                  العدد يُطمئن.
                 </p>
               </Notice>
             ) : null}

@@ -662,9 +662,7 @@ export function PosClient() {
         ) : null}
         {state === "offline" ? (
           <Notice kind="offline" title="بيع بلا اتصال">
-            <p className="acc-lead">
-              البيع كامل الوظيفة: بحث وباركود وتسعير وحفظ محلي — الحالة الأصلية للنظام لا استثناؤه.
-            </p>
+            <p className="acc-lead">البيع كامل الوظيفة: بحث وباركود وتسعير وحفظ محلي.</p>
             <p className="acc-lead">
               <strong>ما يتغيّر فقط</strong> · شارة «محفوظ محلياً» على كل فاتورة جديدة، وأرصدة
               موسومة بآخر مطابقة. لا وظيفة تُحجب.
@@ -679,10 +677,6 @@ export function PosClient() {
         {state === "stale" ? (
           <Notice kind="warning" title="أرصدة قديمة أثناء البيع">
             <p className="acc-lead">جهاز آخر يبيع من نفس المخزون.</p>
-            <p className="acc-lead">
-              <strong>تنبيه لا منع</strong> · آخر قطعة قد تُباع مرتين — نعرض «الرصيد قد يكون أقل»
-              ولا نمنع البيع: البضاعة أمام الكاشير أصدق من الرقم.
-            </p>
           </Notice>
         ) : null}
         {state === "loading" ? (

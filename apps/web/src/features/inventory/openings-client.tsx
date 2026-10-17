@@ -186,7 +186,7 @@ export function OpeningsClient() {
         unit: u.name,
         qty: q === null ? "—" : formatQty(q, u.decimalPlaces),
         base: "—",
-        note: "افتتاحي على صنف له حركات — كما في «الرصيد الافتتاحي للطرف»: الافتتاحي مرة واحدة وقبل أول حركة.",
+        note: "افتتاحي على صنف له حركات — الافتتاحي مرة واحدة وقبل أول حركة.",
         bad: true,
       };
     }
@@ -221,7 +221,7 @@ export function OpeningsClient() {
       unit: u.name,
       qty: formatQty(q, u.decimalPlaces),
       base: `${formatQty(base, baseDp)} ${it.base_unit_name}`,
-      note: `التحويل معروض صريحاً: ${formatQty(q, u.decimalPlaces)} × ${formatQty(factor, baseDp)} = ${formatQty(base, baseDp)}. لا نخبّئ الحساب.`,
+      note: `التحويل معروض صريحاً: ${formatQty(q, u.decimalPlaces)} × ${formatQty(factor, baseDp)} = ${formatQty(base, baseDp)}.`,
       bad: false,
     };
   });
@@ -379,10 +379,6 @@ export function OpeningsClient() {
                   <p className="acc-lead">
                     عدد الأصناف والكميات وقيمتها، ومستندٌ واحد يجمعها قابل للطباعة والمراجعة.
                   </p>
-                  <p className="acc-choice__note">
-                    <strong>مستند لا حركات متفرّقة</strong> · ليُراجَع ويُتراجع عنه كوحدة.
-                    افتتاحياتٌ مبثوثة لا يُعرف أيّها كان معاً.
-                  </p>
                 </Notice>
                 <div className="shift-facts">
                   <div>
@@ -415,8 +411,7 @@ export function OpeningsClient() {
               <Notice kind="locked" title="أُرسلت للاعتماد">
                 <p className="acc-lead">
                   أمين المخزن يُدخل الافتتاحيات ولا يعتمدها. الاعتماد يُنشئ رصيداً يُحسب عليه كل شيء
-                  بعده، فهو صلاحية المالك أو من فوّضه. يظهر للأمين «أُرسلت للاعتماد» لا زرّ رمادي
-                  بلا تفسير.
+                  بعده، فهو صلاحية المالك أو من فوّضه.
                 </p>
                 {submitted ? (
                   <p className="acc-choice__note">
@@ -429,9 +424,7 @@ export function OpeningsClient() {
 
             {state === "validation_error" && hasMovementError ? (
               <Notice kind="error" title="افتتاحي على صنف له حركات">
-                <p className="acc-lead">
-                  كما في «الرصيد الافتتاحي للطرف»: الافتتاحي مرة واحدة وقبل أول حركة.
-                </p>
+                <p className="acc-lead">الافتتاحي مرة واحدة وقبل أول حركة.</p>
                 <p className="acc-choice__note">
                   <strong>المخرج</strong> · تسوية جرد بسبب مكتوب — وهي الطريق الصحيح لتصحيح رصيد له
                   تاريخ.

@@ -269,9 +269,8 @@ export function PriceClient({ itemId }: { itemId: string }) {
               >
                 <p className="acc-lead">سعرٌ يُدخَل أقلّ من متوسط التكلفة — بيعٌ بخسارة.</p>
                 <p className="acc-lead">
-                  <strong>ننبّه ولا نمنع</strong> · الهامش{" "}
-                  <span className="sting-mono">{formatMinor(belowCost.margin_minor)}</span> · متوسط
-                  التكلفة{" "}
+                  الهامش <span className="sting-mono">{formatMinor(belowCost.margin_minor)}</span> ·
+                  متوسط التكلفة{" "}
                   <span className="sting-mono">{formatMinor(belowCost.average_cost_minor)}</span>
                 </p>
               </Notice>

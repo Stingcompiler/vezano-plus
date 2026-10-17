@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Frame } from "@sting/ui-web";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef } from "react";
 
@@ -29,6 +30,7 @@ export type PlatformSection =
   | "entitlements"
   | "demo"
   | "operators"
+  | "audit"
   | "plans"
   | "password";
 
@@ -81,6 +83,7 @@ const GROUPS: readonly { readonly title: string; readonly items: readonly NavIte
       { id: "health", label: "الصحة" },
       { id: "backups", label: "النسخ" },
       { id: "operators", label: "المشغّلون" },
+      { id: "audit", label: "سجل التدقيق" },
     ],
   },
 ];
@@ -100,12 +103,15 @@ const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
   m0: "/platform/m0",
   demo: "/platform/demo-requests",
   operators: "/platform/operators",
+  audit: "/platform/audit",
   plans: "/platform/plans",
 };
 
-/** القائمة الجانبية للمشغّل — أزرار (الجلسة في الذاكرة؛ تحميل رابط يعيد إلى الدخول) بأنماط C-NAV. */
+/**
+ * القائمة الجانبية للمشغّل بأنماط C-NAV — روابط حقيقية: الجلسة تبقى بعد التحميل (§١٦٨) فيُفتح القسم
+ * في تبويب ويظهر في سجل المتصفح (فحص 2026-10-17 VP13).
+ */
 export function PlatformNav({ current }: { current: PlatformSection }) {
-  const router = useRouter();
   const listRef = useRef<HTMLUListElement | null>(null);
   // على الهاتف الشريط يتمرّر أفقياً — القسم الحالي يظهر داخل المرئي
   useEffect(() => {
@@ -120,15 +126,14 @@ export function PlatformNav({ current }: { current: PlatformSection }) {
           <li key={g.title || "top"} className={g.title ? "c-nav__section" : undefined}>
             {g.title ? <div className="c-nav__group">{g.title}</div> : null}
             {g.items.map((it) => (
-              <button
+              <Link
                 key={it.id}
-                type="button"
+                href={HREF[it.id]}
                 className="c-nav__item plt-nav__item"
                 aria-current={current === it.id ? "page" : undefined}
-                onClick={() => router.push(HREF[it.id])}
               >
                 {it.label}
-              </button>
+              </Link>
             ))}
           </li>
         ))}

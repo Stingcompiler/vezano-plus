@@ -198,21 +198,17 @@ export function DevicesClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">قائمة الأجهزة وتفاصيلها</h2>
-            <span className="cat-head__hint">حالتان ناقصتان. الجهاز عهدةٌ عليها عمل.</span>
+            <span className="cat-head__hint">الجهاز عهدةٌ عليها عمل.</span>
           </div>
           <div className="acc-card__body">
             {state === "loading" ? (
               <Notice kind="info" title="جلب الأجهزة">
-                <p className="acc-lead">مع حالة المزامنة لكل جهاز — وهي سبب فتح الشاشة غالباً.</p>
+                <p className="acc-lead">مع حالة المزامنة لكل جهاز.</p>
               </Notice>
             ) : null}
             {state === "empty" ? (
               <Notice kind="empty" title="لا أجهزة مسجّلة">
                 <p className="acc-lead">منشأة أُنشئت ولم يُهيّأ عليها جهاز بعد.</p>
-                <p className="acc-choice__note">
-                  <strong>المسار</strong> · «جهّز هذا الجهاز». والأغلب أن من يقرأ هذا يقرؤه على
-                  الجهاز الذي يريد تهيئته.
-                </p>
                 {/* فحص 2026-10-17 F03: الإجراء نفسه لا وصفه فقط */}
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/setup-device")}>جهّز هذا الجهاز</Button>
@@ -261,8 +257,7 @@ export function DevicesClient() {
                   للمالك بعد أن يراه مكتوباً.
                 </p>
                 <p className="acc-choice__note">
-                  الجهاز غير المتصل ليس معطّلاً؛ لعله يبيع محلياً الآن. نعرض آخر اتصال ناجح وعدد ما
-                  لم يُرفع بعد، بلا وصف «متصل» كاذب.
+                  الجهاز غير المتصل ليس معطّلاً؛ لعله يبيع محلياً الآن.
                 </p>
               </>
             ) : null}

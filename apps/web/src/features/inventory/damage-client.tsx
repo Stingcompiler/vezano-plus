@@ -184,10 +184,6 @@ export function DamageClient({ itemId }: { itemId: string }) {
                   أمين المخزن يُهلك حتى حدٍّ معرَّف في «الأدوار والصلاحيات»، وما فوقه يحتاج اعتماد
                   المالك.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لماذا حدّ</strong> · الهالك خسارةٌ مباشرة وبابٌ لإخفاء نقص. الحدّ يوازن
-                  بين تسهيل العمل ومنع الإفراط.
-                </p>
                 {denied.cap ? (
                   <p className="acc-choice__note">
                     الحدّ <span className="sting-mono">{formatMinor(denied.cap)}</span> · القيمة{" "}
@@ -208,8 +204,8 @@ export function DamageClient({ itemId }: { itemId: string }) {
                   .
                 </p>
                 <p className="acc-choice__note">
-                  <strong>الحدّ من الرصيد</strong> · ولو كان الرصيد خاطئاً. تصحيحه بالجرد لا بالهالك
-                  — وإلا صار الهالك باباً لتصحيح الأرصدة بلا أثر.
+                  <strong>الحدّ من الرصيد</strong> · ولو كان الرصيد خاطئاً. تصحيحه بالجرد لا
+                  بالهالك.
                 </p>
               </Notice>
             ) : null}

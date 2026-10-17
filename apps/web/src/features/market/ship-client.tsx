@@ -303,8 +303,7 @@ export function ShipClient({ id }: { id: string }) {
                 <p className="acc-choice__note">
                   كل شحنة تحمل مرجعاً خاصاً <span className="sting-mono">SH-01/02/03</span> ومستند
                   تسليم منفصلاً. المشتري يستلم بمرجع الشحنة لا بالطلب كله، فيكون واضحاً أيّ شحنة
-                  نقصت وأيّها وصلت سليمة. بلا هذا المرجع يصبح فرق الكمية بلا عنوان ويُحسب جدلاً بين
-                  طرفين.
+                  نقصت وأيّها وصلت سليمة.
                 </p>
                 {d.shipments.length ? (
                   <ul className="cus-list">

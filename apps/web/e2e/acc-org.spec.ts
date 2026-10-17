@@ -126,12 +126,7 @@ test.describe("ACC-03", () => {
     await expectFrame(page, info, {
       screenId: "ACC-03",
       state: "empty",
-      texts: fromFrame("ACC-03", "empty", [
-        "لا منشأة بعد",
-        "حسابٌ أُنشئ ولم يُنشئ منشأة ولم تصله دعوة.",
-        "أنشئ منشأتك",
-        "عندي دعوة",
-      ]),
+      texts: fromFrame("ACC-03", "empty", ["لا منشأة بعد", "أنشئ منشأتك", "عندي دعوة"]),
     });
     const a = page.getByRole("link", { name: "أنشئ منشأتك" });
     const b = page.getByRole("link", { name: "عندي دعوة" });

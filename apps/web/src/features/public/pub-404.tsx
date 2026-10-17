@@ -25,11 +25,7 @@ export function Pub404({ state }: { state: State }) {
           <div className="acc-card__body">
             {state === "empty" ? (
               <Notice kind="empty" title="الصفحة غير موجودة">
-                <p className="acc-lead">رابط خاطئ أو محتوى حُذف. لا رسم طريف ولا اعتذار طويل.</p>
-                <p className="acc-choice__note">
-                  <strong>مخارج بحسب من هو</strong> · ثلاثة: الصفحة الرئيسية، دخول التطبيق، السوق.
-                  زائرٌ ضالّ أحدُ ثلاثة، ولكلٍّ بابه.
-                </p>
+                <p className="acc-lead">رابط خاطئ أو محتوى حُذف.</p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/")}>
                     الصفحة الرئيسية
@@ -46,10 +42,6 @@ export function Pub404({ state }: { state: State }) {
                   هذا الرابط منتهٍ أو غير متاح لك. لا نقول إن كان موجوداً أصلاً، ولا لمن يخص، ولا ما
                   نوعه — وهذا مقصود: لو غيّرنا النص حسب وجود المستند لصار هذا الاختلاف نفسه تسريباً
                   يُستعمل للتنصت على ما لدى غيرك.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>نص واحد لثلاث حالات:</strong> رابط منتهٍ، رابط لمنشأة أخرى، رابط لا وجود
-                  له. الثلاثة تعطي هذه الصفحة بالحرف نفسه وبزمن استجابة متقارب.
                 </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/")}>
@@ -68,14 +60,6 @@ export function Pub404({ state }: { state: State }) {
             {state === "permission_denied" ? (
               <Notice kind="locked" title="موجودة ولا تملك فتحها">
                 <p className="acc-lead">هذه الصفحة تخصّ منشأة أخرى.</p>
-                <p className="acc-choice__note">
-                  صفحة منشأة أخرى أو مستند لا يخصّه. لا نقول «غير موجودة» — كذبةٌ، ولا نصفها —
-                  إفشاء.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الصيغة</strong> · «هذه الصفحة تخصّ منشأة أخرى» بلا اسم ولا محتوى، مع «ادخل
-                  بحسابك» — فقد يكون مخوّلاً بحسابٍ آخر.
-                </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/login")}>
                     ادخل بحسابك

@@ -102,10 +102,7 @@ test.describe("CUS-03", () => {
     await expectFrame(page, info, {
       screenId: "CUS-03",
       state: "loading",
-      texts: fromFrame("CUS-03", "loading", [
-        "جلب الرسائل",
-        "خفيفة كسابقتها. الزبون على بيانات الجوال غالباً.",
-      ]),
+      texts: fromFrame("CUS-03", "loading", ["جلب الرسائل"]),
     });
     released = true;
     release();
@@ -121,7 +118,6 @@ test.describe("CUS-03", () => {
         "من مخزن البركة · قبل 4 أيام",
         "عرض انتهى",
         "انتهى",
-        "كل رسالة تحمل اسم مرسلها. لا رسالة من محل لم يتابعه، ولا رسالة من المنصة تتنكّر باسم المحل.",
       ]),
     });
     await page.getByRole("button", { name: "خصم نهاية الأسبوع" }).click();
@@ -131,13 +127,7 @@ test.describe("CUS-03", () => {
     await expectFrame(page, info, {
       screenId: "CUS-03",
       state: "expired",
-      texts: fromFrame("CUS-03", "expired", [
-        "عرض انتهى",
-        "رسالة عن خصم انتهى",
-        "تبقى مقروءةً موسومة «انتهى».",
-        "لا نمحو",
-        "الزبون قد يأتي بالورقة أو بالرسالة. وجودها موسومةً يجعل الحوار في المحل ممكناً.",
-      ]),
+      texts: fromFrame("CUS-03", "expired", ["عرض انتهى"]),
     });
   });
 
@@ -152,12 +142,7 @@ test.describe("CUS-03", () => {
     await expectFrame(page, info, {
       screenId: "CUS-03",
       state: "empty",
-      texts: fromFrame("CUS-03", "empty", [
-        "لا رسائل بعد",
-        "اشترك للتوّ ولم يُرسل المحل شيئاً.",
-        "لا نعتذر",
-        "«لم يرسل المحل رسائل بعد — ستصلك هنا» وكفى. الفراغ هنا انتظارٌ لا عطب.",
-      ]),
+      texts: fromFrame("CUS-03", "empty", ["لا رسائل بعد", "اشترك للتوّ ولم يُرسل المحل شيئاً."]),
     });
     await page.route(/\/api\/portal\/abc12345\/messages\/other\/read/, (route) =>
       route.fulfill(json(403, { detail: "permission_denied" })),
@@ -169,8 +154,6 @@ test.describe("CUS-03", () => {
       texts: fromFrame("CUS-03", "permission_denied", [
         "رسالة لمشترك آخر",
         "رابط رسالة فُتح بجهاز ليس صاحب الاشتراك.",
-        "لا نُظهر المحتوى",
-        "ولا اسم المشترك. الرسالة قد تحمل عرضاً خاصاً به.",
       ]),
     });
     await expect(page.getByText("خصم 10%")).toHaveCount(0);
@@ -243,8 +226,6 @@ test.describe("CUS-04", () => {
       texts: fromFrame("CUS-04", "validation_error", [
         "ألغى كل القنوات وبقي مشتركاً",
         "أوقف كل قناة والاشتراك قائم — حالةٌ بلا معنى: مشتركٌ لا يصله شيء.",
-        "نسأل عن القصد",
-        "«أوقفتَ كل القنوات — هل تريد إلغاء الاشتراك؟» والإلغاء بضغطة. لا نُبقيه في سجلّ لا ينفعه ولا ينفع المحل.",
       ]),
     });
     await page.getByRole("button", { name: "إلغاء الاشتراك", exact: true }).click();
@@ -292,12 +273,7 @@ test.describe("CUS-05", () => {
     await expectFrame(page, info, {
       screenId: "CUS-05",
       state: "ready",
-      texts: fromFrame("CUS-05", "ready", [
-        "شرح الحالة ومخرجها",
-        "شاشةٌ تُشرح فيها الحالة وتُعرض بدائلها: إذن مرفوض فالرسائل تصل بالبريد، أو اشتراك انتهى فالتجديد بضغطة.",
-        "البديل لا الاعتذار",
-        "لكل منع طريقٌ ثانٍ. صفحةٌ تقول «لا تستطيع» ثم تصمت أسوأ من عدمها.",
-      ]),
+      texts: fromFrame("CUS-05", "ready", ["شرح الحالة ومخرجها"]),
     });
     variant = "denied";
     await page.goto("/portal/abc12345/status");
@@ -317,17 +293,7 @@ test.describe("CUS-05", () => {
     await expectFrame(page, info, {
       screenId: "CUS-05",
       state: "expired",
-      texts: fromFrame("CUS-05", "expired", [
-        "انتهت صلاحية الرابط",
-        "اذهب لصفحة المحل",
-        "نقول متى انتهى",
-        "لا «حدث خطأ» غامضة",
-        "ونعرض الوجهة البديلة",
-        "صفحة المحل نفسها تعمل",
-        "ولا نكشف ما لا يخصّك",
-        "رابط محل آخر يعطي الرسالة نفسها",
-        "الانتهاء حالة متوقَّعة لا عطل. الشاشة تعطي مخرجاً بدل أن تترك الزبون في طريق مسدود.",
-      ]),
+      texts: fromFrame("CUS-05", "expired", ["انتهت صلاحية الرابط", "اذهب لصفحة المحل"]),
     });
   });
 });

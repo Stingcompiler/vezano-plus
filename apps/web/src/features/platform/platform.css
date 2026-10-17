@@ -1094,3 +1094,32 @@
     inline-size: 100%;
   }
 }
+
+/* فحص 2026-10-17 VP13 — سجل التدقيق: تصفية في سطر يلتفّ، والمستأجر زرّ يصفّي به */
+.plt-audit__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-block-end: 12px;
+}
+.plt-audit__filters > .c-field {
+  min-inline-size: 180px;
+  flex: 1 1 180px;
+}
+.plt-audit__chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 44px;
+}
+.plt-audit__tenant {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--color-brand-strong);
+  text-decoration: underline;
+  cursor: pointer;
+  min-block-size: 32px;
+}

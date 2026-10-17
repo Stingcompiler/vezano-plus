@@ -225,10 +225,7 @@ export function LinkDocumentsClient() {
             {state === "empty" && data ? (
               <Notice kind="success" title="لا فروق">
                 <p className="acc-lead">كل مستندات السوق طابقت نظائرها المحلية. حالةٌ صحّية.</p>
-                <p className="acc-choice__note">
-                  <strong>نقول العدد</strong> · «{docsWord(data.linked_count)} · لا فروق». الفراغ
-                  الذي يذكر ما فُحص يُطمئن، والفارغ الصامت يُقلق.
-                </p>
+                <p className="acc-choice__note">«{docsWord(data.linked_count)} · لا فروق».</p>
               </Notice>
             ) : null}
             {err && err !== "permission_denied" ? (

@@ -191,26 +191,24 @@ test.describe("ORG-09", () => {
       state: "ready",
       texts: fromFrame("ORG-09", "ready", [
         "إعدادات المنشأة واللغة والقوالب — لا محاسبة عامة ولا محرّر برمجي",
-        "القوالب تُحرَّر بحقول مسمّاة ومعاينة فورية. لا صندوق شيفرة يكتب فيه التاجر منطقاً، ولا إعدادات محاسبية عامة تتجاوز الدفتر.",
-        "قالب الإيصال — حقول مسمّاة",
-        "لا حقل شيفرة هنا.",
-        "التخصيص عبر حقول وقوائم فقط. أي منطق يحتاجه التاجر يُصبح ميزة نبنيها، لا نصاً يكتبه ويكسر إيصاله بلا من يصلحه.",
+        "القوالب تُحرَّر بحقول مسمّاة ومعاينة فورية.",
         "معاينة فورية",
         "بقالة النيل — تجريبي",
         "شكراً لزيارتكم",
         "اسم المنشأة",
-        "سطر الترويسة",
-        "سطر الختام",
-        "عرض الورق",
         "اللغة وأرقام الإيصال",
-        "إعداد المنشأة — نمط الأرقام",
-        "مبدّل واحد للنظام كله · لا إعداد لكل شاشة",
         "لاتيني بعرض ثابت — المعتمد",
         "أرقام عربية في كل شيء",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     const root = page.locator('[data-screen="ORG-09"]');
+    // فحص 2026-10-17 F14: أقسام — «عام» أولاً، والإيصال والدفع والملكية كلٌّ بقسمه
+    const tabs = page.getByRole("tablist", { name: "أقسام الإعدادات" });
+    await expect(tabs.getByRole("tab")).toHaveText(["عام", "الإيصال", "الدفع", "الملكية"]);
+    await expect(tabs.getByRole("tab", { name: "عام" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByLabel("سطر الختام")).toHaveCount(0);
+    await expect(root).not.toContainText("نقل ملكية المنشأة");
     await expect(root).toContainText("58mm · حرارية");
     await expect(root).toContainText("سكر 1كغ ×2");
     await expect(root).toContainText("420.00");
@@ -223,11 +221,13 @@ test.describe("ORG-09", () => {
       state: "validation_error",
       texts: fromFrame("ORG-09", "validation_error", ["نص أطول من عرض الورق", "معاينة فورية"]),
     });
-    await expect(root).toContainText(
-      "اسم المنشأة يتجاوز عرض 58mm. نُعلم قبل الحفظ ونعرض كيف سيُقطع فعلياً — لا نحفظ ثم نتركه يكتشف ذلك عند أول طباعة.",
-    );
+    await expect(root).toContainText("اسم المنشأة يتجاوز عرض 58mm.");
     await expect(page.getByRole("button", { name: "حفظ", exact: true })).toBeDisabled();
     await page.getByLabel("اسم المنشأة").fill("بقالة النيل — تجريبي");
+    await tabs.getByRole("tab", { name: "الإيصال" }).click();
+    await expect(root).toContainText("قالب الإيصال — حقول مسمّاة");
+    await expect(page.getByLabel("سطر الترويسة")).toBeVisible();
+    await expect(page.getByLabel("عرض الورق")).toBeVisible();
     await page.getByLabel("سطر الختام").fill("شكراً لتعاملكم");
     await expect(root).toContainText("شكراً لتعاملكم"); // المعاينة فورية
     await page.getByRole("button", { name: "حفظ", exact: true }).click();
@@ -249,6 +249,7 @@ test.describe("ORG-09", () => {
     await page.getByRole("button", { name: "أعد التحميل ثم عدّل" }).click();
     await expect(root).toHaveAttribute("data-state", "ready");
     // نقل الملكية (20-D15): الطلب يُحجب بمانع معلَن — وردية مفتوحة ومعلّق غير مرفوع
+    await tabs.getByRole("tab", { name: "الملكية" }).click();
     await page.getByLabel("المالك الجديد").selectOption("u2");
     await page.getByRole("button", { name: "اطلب نقل الملكية" }).click();
     await expectFrame(page, info, {
@@ -307,6 +308,7 @@ test.describe("ORG-09", () => {
     );
     await login(page, "/org/settings");
     const root = page.locator('[data-screen="ORG-09"]');
+    await page.getByRole("tab", { name: "الملكية" }).click();
     await expect(root).toContainText("طلب نقل قائم");
     await expect(root).toContainText("من عثمان الطيب إلى سميّة عبد الله · ينقضي في 09:00");
     await page.getByRole("button", { name: "أؤكّد استلام الملكية" }).click();
@@ -352,7 +354,7 @@ test.describe("ORG-10", () => {
       state: "loading",
       texts: fromFrame("ORG-10", "loading", [
         "جلب السجل",
-        "مع المدى المختار وعدد الأحداث المتوقَّع. السجل قد يبلغ آلاف الأسطر.",
+        "مع المدى المختار وعدد الأحداث المتوقَّع.",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
@@ -362,7 +364,7 @@ test.describe("ORG-10", () => {
       state: "ready",
       texts: fromFrame("ORG-10", "ready", [
         "سجل التدقيق — فاعل ووقت وسبب، ولا تعديل",
-        "السجل الذي يمكن تعديله ليس سجلاً. يُقرأ ويُصفّى ويُصدَّر، ولا يُحرَّر ولو من المالك.",
+        "يُقرأ ويُصفّى ويُصدَّر، ولا يُحرَّر ولو من المالك.",
         "لا زر تعديل ولا زر حذف في هذه الشاشة.",
         "التصحيح يُسجَّل كقيد جديد يشير إلى الأول. من يرى السجل يحدَّد بالدور: الكاشير يرى أفعاله وحدها، والمدير يرى فرعه، والمالك يرى الكل.",
         "أحدث الأفعال",
@@ -429,7 +431,6 @@ test.describe("ORG-10", () => {
       texts: fromFrame("ORG-10", "empty", [
         "لا أحداث في المدى",
         "المدى بلا أحداث مسجّلة — والسبب المرشّح غالباً.",
-        "لا نقول «لا سجل»",
       ]),
     });
     const root = page.locator('[data-screen="ORG-10"]');

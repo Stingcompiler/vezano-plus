@@ -207,10 +207,6 @@ export function LegalClient() {
         <section className="pb-hero">
           <span className="pb-eyebrow">مسودة — بانتظار مراجعة قانونية</span>
           <h1 className="pb-hero__title">الشروط وسياسة الخصوصية</h1>
-          <p className="pb-hero__sub">
-            النص الذي يلتزم به المستخدم أمام القانون لا يكتبه مصمم. الهيكل والعناوين والمواضع
-            مصمَّمة، والنص نفسه ينتظر مراجعة مختص.
-          </p>
         </section>
 
         <div className="pb-layout">
@@ -218,9 +214,6 @@ export function LegalClient() {
             <div className="pb-card pb-card--pad pb-index-card">
               <p className="pb-kicker">
                 <strong>الفهرس قبل النصّ</strong>
-              </p>
-              <p className="pb-card__hint">
-                من يفتح الشروط يقصد بنداً بعينه غالباً — سياسة الاسترجاع مثلاً — لا يقرأ من أوّلها.
               </p>
               <nav className="pub-index" aria-label="فهرس الوثيقة">
                 {index.map((s, i) => (
@@ -242,14 +235,7 @@ export function LegalClient() {
           </aside>
 
           <div className="pb-main">
-            {state === "loading" ? (
-              <Notice kind="info" title="جلب الوثيقة">
-                <p className="acc-lead">
-                  وثائق طويلة تُحمَّل بأقسامها. الفهرس يظهر أولاً فيبدأ القارئ التنقّل قبل اكتمال
-                  النصّ.
-                </p>
-              </Notice>
-            ) : null}
+            {state === "loading" ? <Notice kind="info" title="جلب الوثيقة" /> : null}
 
             {state === "phase_locked" ? (
               <PhaseLocked kind="M3" title="شروط السوق" explanation={MARKET_LOCK}>

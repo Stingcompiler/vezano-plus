@@ -274,8 +274,7 @@ export function CustomersClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">قائمة العملاء</h2>
             <span className="cat-head__hint">
-              بحث وأسماء بديلة ورصيد مخوَّل. الكاشير يرى رصيد العميل الذي يبيع له فقط، ولا يرى قائمة
-              الذمم كاملة.
+              الكاشير يرى رصيد العميل الذي يبيع له فقط، ولا يرى قائمة الذمم كاملة.
             </span>
           </div>
           <div className="acc-card__body">
@@ -287,10 +286,6 @@ export function CustomersClient() {
               >
                 <p className="acc-lead">
                   يرى الطرف ورصيده وقت البيع، ولا يرى القائمة كاملةً بأرصدتها.
-                </p>
-                <p className="acc-lead">
-                  <strong>لماذا</strong> · القائمة الكاملة صورةٌ مالية للمنشأة. رؤية رصيد من أمامك
-                  حاجةُ عمل؛ رؤية الجميع ليست كذلك.
                 </p>
               </Notice>
             ) : (
@@ -329,10 +324,6 @@ export function CustomersClient() {
                       المحلي فوراً ثم تُطابَق الأرصدة. الأسماء لا تنتظر الخادم؛ الأرصدة تُوسم حتى
                       تُطابَق.
                     </p>
-                    <p className="acc-choice__note">
-                      <strong>التفريق مقصود</strong> · الكاشير يبحث عن اسم ليبيع، فلا يُحبَس على
-                      رصيدٍ لم يصل.
-                    </p>
                   </Notice>
                 ) : null}
                 {state === "offline" ? (
@@ -340,27 +331,18 @@ export function CustomersClient() {
                     <p className="acc-lead">
                       الأسماء كاملة والأرصدة من آخر مطابقة، ومعها ما لم يُرفع من هذا الجهاز.
                     </p>
-                    <p className="acc-choice__note">
-                      <strong>الرصيد مركّب</strong> · «خادمي 1,240 + معلّق على جهازك 100 = 1,340» —
-                      نعرض التركيب لا المجموع وحده.
-                    </p>
                   </Notice>
                 ) : null}
                 {state === "stale" ? (
                   <Notice kind="warning" title="أرصدة قديمة">
                     <p className="acc-lead">المطابقة متعثّرة وقد سدّد طرفٌ في فرع آخر.</p>
-                    <p className="acc-choice__note">
-                      <strong>الخطر المحدد</strong> · أن تُطالب من سدّد. الوقت مع كل رصيد لا في
-                      ترويسة الصفحة.
-                    </p>
                   </Notice>
                 ) : null}
                 {state === "empty" ? (
+                  // فحص 2026-10-17 F10: لا استنتاج «محل نقدي» — قد لا يكون بيعٌ أصلاً
                   <Notice kind="empty" title="لا عملاء">
-                    <p className="acc-lead">محلٌّ نقدي بالكامل. حالةٌ سويّة لا نقص.</p>
-                    <p className="acc-choice__note">
-                      <strong>لا نُلحّ</strong> · العميل يُنشأ حين يُباع له آجلاً. إنشاء قائمة عملاء
-                      مسبقاً عملٌ لا يحتاجه أحد.
+                    <p className="acc-lead">
+                      لا عملاء مسجّلون بعد. العميل يُنشأ حين يُباع له آجلاً، أو من «عميل جديد».
                     </p>
                   </Notice>
                 ) : null}

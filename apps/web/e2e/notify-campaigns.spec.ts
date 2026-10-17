@@ -204,7 +204,7 @@ test.describe("NOT-03", () => {
       texts: fromFrame("NOT-03", "loading", [
         "قائمة الحملات",
         "جلب الحملات",
-        "مع الحصة الشهرية وهي تُحسب — فهي أول ما يُنظر إليه قبل إنشاء حملة.",
+        "مع الحصة الشهرية وهي تُحسب",
       ]),
     });
     release();
@@ -237,9 +237,6 @@ test.describe("NOT-03", () => {
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     const root = page.locator('[data-screen="NOT-03"]');
-    await expect(root).toContainText(
-      "أربع درجات لا واحدة. عرض «366 وصلت» بينما 47 فشلت يجعلك تحاسب حملة نجحت نصفها.",
-    );
     await expect(root).toContainText("42");
     await expect(root).toContainText(
       "زبوناً أذنوا باستقبال رسائلك — لا 88 زبوناً في دفترك. الفرق بينهما هو الإذن.",
@@ -276,7 +273,7 @@ test.describe("NOT-03", () => {
       state: "empty",
       texts: fromFrame("NOT-03", "empty", [
         "لا حملات",
-        "لم تُنشأ حملة بعد. نعرض الحصة المتاحة وعدد المشتركين الفعلي.",
+        "لم تُنشأ حملة بعد.",
         "الرقم الصادق",
         "زبوناً أذنوا باستقبال رسائلك» — لا «",
         "زبوناً في دفترك». الفرق بينهما هو الإذن.",
@@ -295,7 +292,6 @@ test.describe("NOT-03", () => {
     await expect(root).toContainText(
       "يرى الحملات والحصة المتبقية، ولا يرى تكلفتها ولا فاتورة الباقة.",
     );
-    await expect(root).toContainText("الحصة عددٌ يحتاجه ليخطّط، والتكلفة رقمٌ مالي للمالك.");
     // الكاشير: الشاشة محجوبة
     mode = "cashier";
     await navTo(page, "الوارد", { exact: true });
@@ -424,7 +420,7 @@ test.describe("NOT-04", () => {
     await expect(root).toContainText(
       "أنت تنشئ الحملة، والاعتماد والجدولة يحتاجان صلاحية منفصلة في",
     );
-    await expect(root).toContainText(". الفصل متعمَّد.");
+    await expect(root).not.toContainText("الفصل متعمَّد");
   });
 
   test("empty: لا جمهور مطابق مع تفصيل السبب؛ permission_denied: جمهور خارج منشأتك يُرفض بلا تسريب", async ({
@@ -461,12 +457,7 @@ test.describe("NOT-04", () => {
     await expectFrame(page, info, {
       screenId: "NOT-04",
       state: "empty",
-      texts: fromFrame("NOT-04", "empty", [
-        "لا جمهور مطابق",
-        "نُفصّل السبب",
-        "منهم أذن",
-        "معرفة أيّ الشرطين أفرغ القائمة هي ما يُصلح الحملة.",
-      ]),
+      texts: fromFrame("NOT-04", "empty", ["لا جمهور مطابق", "منهم أذن"]),
     });
     await expect(root).toContainText("المرشّح (زبائن اشتروا خلال 90 يوماً) لا يطابق أحداً.");
     await expect(root).toContainText("12 زبائن اشتروا خلال 90 يوماً · 0 منهم أذن.");
@@ -479,8 +470,7 @@ test.describe("NOT-04", () => {
       texts: fromFrame("NOT-04", "permission_denied", [
         "جمهور خارج منشأتك",
         "محاولة اختيار شريحة تشمل زبائن منشأة أخرى على نفس الجهاز.",
-        "رفض بلا تسريب",
-        "لا نقول كم عددهم ولا من هم. «الجمهور محصور بزبائن منشأتك» — والعدد وحده خبر.",
+        "الجمهور محصور بزبائن منشأتك",
       ]),
     });
     await expect(root).not.toContainText("412");

@@ -225,11 +225,18 @@ export function SearchClient() {
                           <span className="sting-mono">{n}</span>
                         </Button>
                       ))}
-                      {result.suggestions.other_branches ? (
-                        <Button variant="secondary">البحث في الفروع الأخرى</Button>
-                      ) : null}
-                      {result.suggestions.create ? (
-                        <Button variant="secondary">إنشاء مستند بهذا الرقم</Button>
+                      {/* فحص 2026-10-17 F10: الاقتراح بحسب المدخل — نصٌّ بلا أرقام قد يكون صنفاً
+                          جديداً؛ رقمٌ لا يُقترح له إنشاء (نوع المستند مجهول). البحث يشمل كل الفروع
+                          أصلاً فلا زرّ «الفروع الأخرى». */}
+                      {result.suggestions.create && !/\d/.test(result.query) ? (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            router.push(`/catalog/new?name=${encodeURIComponent(result.query)}`)
+                          }
+                        >
+                          أضف «{result.query}» صنفاً جديداً
+                        </Button>
                       ) : null}
                     </div>
                   </Notice>

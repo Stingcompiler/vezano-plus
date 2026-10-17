@@ -136,10 +136,6 @@ export function GrowSuppliersClient() {
                   ثلاثة هياكل بمواضع الأرقام الثلاثة. لا نُظهر رقماً جزئياً يتغيّر أمام العين —
                   القارئ يتذكّر أول رقم رآه.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا نُظهر</strong> · قيماً وسيطة ولا صفراً مؤقتاً. «71%» بعد ثانيتين خيرٌ
-                  من «0%» ثم «71%».
-                </p>
                 <dl className="mp-preview" aria-hidden="true">
                   <dt>التزام بالمواعيد</dt>
                   <dd>
@@ -201,10 +197,6 @@ export function GrowSuppliersClient() {
                 <p className="acc-lead">
                   مورد جديد بمستندين. لا نحسب نسبة التزام من مستندين ونعرضها كأنها حكم — «50%» من
                   اثنين ليست معلومة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>نعرض</strong> · المستندين كما هما بتواريخهما، وسطر: «تُحسب المؤشرات بعد{" "}
-                  <span className="sting-mono">{suppliers[0]!.min_docs}</span> مستندات».
                 </p>
               </Notice>
             ) : null}
@@ -269,11 +261,7 @@ export function GrowSuppliersClient() {
                         </li>
                       ))}
                     </ul>
-                    <p className="acc-choice__note">
-                      حساب من {docsWord(s.documents)} — لا درجة إجمالية ولا نجوم. الرقم الواحد الذي
-                      يلخّص مورداً يُخفي أيَّ الثلاثة ساء — والقرار يختلف: من يتأخر يُطلب منه
-                      مبكراً، ومن يُرَدّ إليه كثيراً يُراجَع صنفه، ومن يتذبذب سعره يُثبَّت بعقد.
-                    </p>
+                    <p className="acc-choice__note">حساب من {docsWord(s.documents)}</p>
                   </section>
                 ))
               : null}

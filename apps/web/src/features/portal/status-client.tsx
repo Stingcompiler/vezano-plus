@@ -66,21 +66,11 @@ export function PortalStatusClient({ slug }: { slug: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h1 className="cat-head__title">إذن مرفوض أو اشتراك منتهٍ</h1>
-            <span className="cat-head__hint">
-              شاشةٌ تُشرح فيها الحالة وتُعرض بدائلها: إذن مرفوض فالرسائل تصل بالبريد، أو اشتراك
-              انتهى فالتجديد بضغطة.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "ready" ? (
               <Notice kind="success" title="شرح الحالة ومخرجها">
-                <p className="acc-lead">
-                  اشتراكك في {me?.shop_name ?? "المحل"} قائم ولا منع. لكل منع طريقٌ ثانٍ. صفحةٌ تقول
-                  «لا تستطيع» ثم تصمت أسوأ من عدمها.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>البديل لا الاعتذار</strong> · الصفحة في وضعها المعتاد قبل أن يقع منع.
-                </p>
+                <p className="acc-lead">اشتراكك في {me?.shop_name ?? "المحل"} قائم ولا منع.</p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push(`/portal/${slug}/inbox`)}>
                     رسائل المحل
@@ -132,14 +122,6 @@ export function PortalStatusClient({ slug }: { slug: string }) {
               >
                 <p className="acc-lead">
                   اشتراكك انتهى — التراجع كان متاحاً 7 أيام، بعدها تحتاج الرابط أو QR من جديد.
-                </p>
-                <p className="acc-lead">
-                  <strong>نقول متى انتهى</strong> · لا «حدث خطأ» غامضة.{" "}
-                  <strong>ونعرض الوجهة البديلة</strong> · صفحة المحل نفسها تعمل.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>ولا نكشف ما لا يخصّك</strong> · رابط محل آخر يعطي الرسالة نفسها. الانتهاء
-                  حالة متوقَّعة لا عطل. الشاشة تعطي مخرجاً بدل أن تترك الزبون في طريق مسدود.
                 </p>
               </Notice>
             ) : null}

@@ -297,8 +297,7 @@ export function StockReportClient() {
             {state === "loading" ? (
               <Notice kind="info" title="جارٍ الجمع">
                 <p className="acc-lead">
-                  الأرصدة من مواقع متعددة. نعرض المواقع وهي تَرِد واحداً واحداً لا شريطاً مبهماً —{" "}
-                  {labelOf(range, custom)}
+                  الأرصدة من مواقع متعددة — {labelOf(range, custom)}
                   {p?.branch ? ` · ${p.branch.name}` : ""}.
                 </p>
               </Notice>
@@ -308,10 +307,6 @@ export function StockReportClient() {
                 <p className="acc-lead">
                   الأرصدة قديمة <Ago iso={p.computed_at} /> وقد بيع منها. حُسبت في{" "}
                   <span className="sting-mono">{hhmm(p.computed_at)}</span>.
-                </p>
-                <p className="acc-lead">
-                  <strong>الوقت مع كل رصيد</strong> · لا في رأس الصفحة وحده. من يطبع صفحةً واحدة من
-                  التقرير يأخذ معه الطابع الزمني.
                 </p>
               </Notice>
             ) : null}
@@ -337,8 +332,7 @@ export function StockReportClient() {
                 </p>
                 {p.last_movement_date ? (
                   <p className="acc-lead">
-                    <strong>نقول السبب</strong> · لا حركة في {p.range.label} — آخر حركة{" "}
-                    <DayCell iso={p.last_movement_date} />.
+                    لا حركة في {p.range.label} — آخر حركة <DayCell iso={p.last_movement_date} />.
                   </p>
                 ) : null}
               </Notice>
@@ -374,10 +368,6 @@ export function StockReportClient() {
                     . حُسب في <span className="sting-mono">{hhmm(p.computed_at)}</span>.
                   </p>
                 ) : null}
-                <p className="acc-choice__note">
-                  <strong>نشملها ونسمها</strong> · إخفاؤها يجعل الرقم مخالفاً لما على الرفّ. وعرضها
-                  بلا وسم يجعله يبدو مؤكَّداً. الحلّ الثالث: تُعرض بوسم.
-                </p>
               </Notice>
             ) : null}
 

@@ -177,16 +177,13 @@ export function CampaignNewClient() {
                   <p className="acc-lead">
                     محاولة اختيار شريحة تشمل زبائن منشأة أخرى على نفس الجهاز.
                   </p>
-                  <p className="acc-lead">
-                    <strong>رفض بلا تسريب</strong> · لا نقول كم عددهم ولا من هم. «الجمهور محصور
-                    بزبائن منشأتك» — والعدد وحده خبر.
-                  </p>
+                  <p className="acc-lead">الجمهور محصور بزبائن منشأتك</p>
                 </Notice>
               ) : (
                 <Notice kind="locked" title="إنشاء الحملة صلاحية">
                   <p className="acc-lead">
                     إنشاء الحملات للمالك ومدير الفرع («الأدوار والصلاحيات»). أنت تنشئ الحملة،
-                    والاعتماد والجدولة يحتاجان صلاحية منفصلة في «اعتماد الحملة». الفصل متعمَّد.
+                    والاعتماد والجدولة يحتاجان صلاحية منفصلة في «اعتماد الحملة».
                   </p>
                 </Notice>
               )
@@ -218,7 +215,6 @@ export function CampaignNewClient() {
                   يطابق أحداً.
                 </p>
                 <p className="acc-lead">
-                  <strong>نُفصّل السبب</strong> ·{" "}
                   {preview.audience.segments
                     .filter((s) => s.selected)
                     .map((s) => (
@@ -226,8 +222,7 @@ export function CampaignNewClient() {
                         <span className="sting-mono">{s.count}</span> {s.label} ·{" "}
                       </span>
                     ))}
-                  <span className="sting-mono">{preview.audience.consented}</span> منهم أذن. معرفة
-                  أيّ الشرطين أفرغ القائمة هي ما يُصلح الحملة.
+                  <span className="sting-mono">{preview.audience.consented}</span> منهم أذن.
                 </p>
               </Notice>
             ) : null}
@@ -329,7 +324,7 @@ export function CampaignNewClient() {
                       <Button variant="quiet" onClick={() => router.push("/notify/campaigns")}>
                         اعتماد الحملة
                       </Button>
-                      . الفصل متعمَّد.
+                      .
                     </p>
                   ) : null}
                 </div>

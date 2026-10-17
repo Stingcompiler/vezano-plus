@@ -142,13 +142,9 @@ export function MarginReportClient() {
             {state === "permission_denied" ? (
               <Notice kind="locked" title="الشاشة كلها محجوبة">
                 <p className="acc-lead">
-                  كما في «التكلفة والهامش»: من يرى الهامش يرى التكلفة بالطرح، فالحجب الجزئي هنا وهمٌ
-                  لا سياسة.
+                  كما في «التكلفة والهامش»: من يرى الهامش يرى التكلفة بالطرح.
                 </p>
-                <p className="acc-lead">
-                  <strong>تبقى مرئية في القائمة</strong> · بقفل ظاهر. الموظف يعرف أن ثمّة تقريراً
-                  يطلبه إن احتاجه.{denied ? ` دورك: ${denied}.` : ""}
-                </p>
+                {denied ? <p className="acc-lead">دورك: {denied}.</p> : null}
               </Notice>
             ) : null}
 
@@ -194,12 +190,9 @@ export function MarginReportClient() {
             {state === "empty" && p && p.missing ? (
               <>
                 <Notice kind="empty" title="تقرير الهامش — غير متاح بعد">
+                  <p className="acc-lead">بلا تكلفة مسجَّلة لا يوجد هامش.</p>
                   <p className="acc-lead">
-                    <strong>الهامش — نمتنع عن الرقم بدل تخمينه</strong> · بلا تكلفة مسجَّلة لا يوجد
-                    هامش. نعرض ما ينقص وكيف يُستكمل، ولا نضع رقماً مبنياً على سعر افتراضي.
-                  </p>
-                  <p className="acc-lead">
-                    <strong>فارغ بسبب</strong> · الهامش = البيع ناقص التكلفة. تكلفة{" "}
+                    الهامش = البيع ناقص التكلفة. تكلفة{" "}
                     <span className="sting-mono">{p.missing.uncosted_items}</span> صنفاً من{" "}
                     <span className="sting-mono">{p.missing.sold_items}</span> غير مسجَّلة، فأي رقم
                     نعرضه الآن سيكون مبنياً على أصناف بلا تكلفة — ويبدو دقيقاً وهو ليس كذلك.
@@ -231,8 +224,7 @@ export function MarginReportClient() {
                   <h3 className="cat-head__title">الهامش بالفرع والمجموعة</h3>
                   <p className="acc-choice__note">
                     <strong>وقت السياسة</strong> · التكلفة {p.policy_label}، ومكتوبٌ في رأس التقرير
-                    أيّ سياسة وُلّد بها. المقارنة بالنسب لا بالمبالغ وحدها — فرعٌ أصغر بهامش أعلى قد
-                    يكون الأفضل. {p.range.label} · حُسب في{" "}
+                    أيّ سياسة وُلّد بها. {p.range.label} · حُسب في{" "}
                     <span className="sting-mono">{hhmm(p.computed_at)}</span> · المبيعات{" "}
                     <span className="sting-mono">{formatMinor(salesTotal)}</span>
                   </p>

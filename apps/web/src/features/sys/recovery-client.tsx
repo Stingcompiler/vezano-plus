@@ -177,10 +177,7 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استرداد جهاز مسحوب</h2>
-            <span className="cat-head__hint">
-              جهاز سُحب وصوله وعليه عمل لم يُرفع. السحب قرار إداري والعمل أمانة مال — والشاشة تفصل
-              بينهما.
-            </span>
+            <span className="cat-head__hint">جهاز سُحب وصوله وعليه عمل لم يُرفع.</span>
           </div>
           <div className="acc-card__body">
             {devices.length > 1 ? (
@@ -207,10 +204,7 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
 
             {!selected && data ? (
               <Notice kind="empty" title="لا أجهزة مسحوبة عليها عمل">
-                <p className="acc-lead">
-                  كل الأجهزة فعّالة أو سُوّي ما عليها. الشاشة تُفتح حين يُسحب جهاز وعليه عمل لم
-                  يُرفع.
-                </p>
+                <p className="acc-lead">كل الأجهزة فعّالة أو سُوّي ما عليها.</p>
               </Notice>
             ) : null}
 
@@ -221,8 +215,7 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
                   إلى من أنشأها لا إلى من استردّها — والفرق بينهما مسجّل في السجل.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>والجهاز</strong> · يبقى مسحوباً. نقولها في شاشة النجاح لئلا يُظنّ أن
-                  الاسترداد أعاده للخدمة.
+                  <strong>والجهاز</strong> · يبقى مسحوباً.
                 </p>
                 {result.duplicate > 0 ? (
                   <p className="acc-choice__note">
@@ -308,8 +301,7 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
                       مدير الفرع سحب الجهاز ولا يسترد عمله: الاسترداد يقرأ عمليات موظف آخر بتفصيلها.
                     </p>
                     <p className="acc-choice__note">
-                      <strong>ما يراه المدير</strong> · العدد والقيمة الإجمالية بلا تفصيل — يكفي لأن
-                      يعرف أن ثمّة ما يُسترد فيطلبه.
+                      <strong>ما يراه المدير</strong> · العدد والقيمة الإجمالية بلا تفصيل.
                     </p>
                   </Notice>
                 ) : null}
@@ -361,9 +353,6 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
                 {state === "ready" && selected.held_count > 0 ? (
                   <>
                     <h3 className="cat-head__title">ما على الجهاز المسحوب</h3>
-                    <p className="acc-choice__note">
-                      عدد العمليات المعلّقة ونوعها وقيمتها وآخر نشاط. القرار يحتاج هذه الأرقام.
-                    </p>
                     <ul className="sys-recent" aria-label="العمل المحجوز">
                       {items.map((i) => {
                         const d = describeOperation(asStored(i));

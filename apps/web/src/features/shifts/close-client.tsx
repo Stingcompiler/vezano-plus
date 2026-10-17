@@ -199,12 +199,8 @@ export function CloseShiftClient() {
                   مطلوب. الفراغ ليس صفراً: «لم أعدّ» تختلف عن «عددتُ فوجدتُ صفراً».
                 </p>
                 <p className="acc-lead">
-                  <strong>نفرّق بينهما</strong> · كل فئة تحتاج إدخالاً صريحاً ولو كان صفراً. الحقل
-                  الفارغ يُعلَّم ولا يُحسب صفراً بالنيابة.
-                </p>
-                <p className="acc-lead">
-                  <strong>لا نجمع الناقص</strong> · لا نعرض «المعدود» ما دامت فئة بلا إدخال — مجموعٌ
-                  ناقص يُقرأ كاملاً ويُبنى عليه الفارق.
+                  كل فئة تحتاج إدخالاً صريحاً ولو كان صفراً. الحقل الفارغ يُعلَّم ولا يُحسب صفراً
+                  بالنيابة.
                 </p>
               </Notice>
             ) : null}
@@ -248,8 +244,7 @@ export function CloseShiftClient() {
                   </div>
                 </div>
                 <div className="shift-hidden">
-                  <strong>المتوقَّع محجوب.</strong> يظهر بعد تأكيد العدّ، ومعه الفارق. الترتيب هو
-                  الضمانة — لا رسالة تحذير ولا سياسة مكتوبة.
+                  <strong>المتوقَّع محجوب.</strong> يظهر بعد تأكيد العدّ، ومعه الفارق.
                 </div>
                 <div className="cat-form__actions">
                   <Button onClick={() => void confirm()} loading={busy} financial>

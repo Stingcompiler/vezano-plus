@@ -231,9 +231,7 @@ export function SyncCenterClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">حالة المزامنة</h2>
-            <span className="cat-head__hint">
-              محفوظ محلياً · معلّق · مؤكد · محجوز. كل بند بأثره المالي لا برسالة تقنية.
-            </span>
+            <span className="cat-head__hint">محفوظ محلياً · معلّق · مؤكد · محجوز.</span>
           </div>
           <div className="acc-card__body">
             {state === "offline" ? (
@@ -258,10 +256,6 @@ export function SyncCenterClient() {
                 <p className="acc-lead">
                   الشبكة تعمل والخادم يردّ بخطأ. ثلاث محاولات متباعدة ثم وقوف — والطابور محفوظ كما
                   هو.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا إعادة بلا حدّ</strong> · التكرار الأبدي يُخفي العطب أسبوعاً حتى يُكتشف
-                  بجردٍ لا يطابق. الوقوف المعلَن أصدق من محاولةٍ صامتة.
                 </p>
                 <p className="acc-choice__note">
                   <strong>البيع مستمر</strong> · POS لا يتوقف. الطابور يكبر ويُعرض عدده، والعمل لا
@@ -295,10 +289,6 @@ export function SyncCenterClient() {
                 <p className="acc-lead">
                   رُفعت <span className="sting-mono">{justSynced}</span> عملية
                 </p>
-                <p className="acc-choice__note">
-                  <strong>نقول العدد</strong> · «رُفعت <span className="sting-mono">12</span> عملية»
-                  لا «تمت المزامنة». العدد هو ما كان يقلقه.
-                </p>
               </Notice>
             ) : null}
 
@@ -322,10 +312,6 @@ export function SyncCenterClient() {
                     "لم تحدث بعد"
                   )}
                   . لا معلّق عندك ولا تأكيد أن ما عند الخادم وصلك.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>ما نعرضه</strong> · وقت آخر مطابقة ناجحة بارزاً، و«طابق الآن»، وتحذير أن
-                  أرقام اليوم قد تنقصها مبيعات أجهزة أخرى.
                 </p>
               </Notice>
             ) : null}

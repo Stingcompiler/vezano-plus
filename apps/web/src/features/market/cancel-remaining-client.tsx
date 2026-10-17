@@ -219,9 +219,7 @@ export function CancelRemainingClient({ id }: { id: string }) {
                 <h3 className="cat-head__title">
                   إلغاء متبقّي الطلب <span className="sting-mono">{d.order.number_label}</span>
                 </h3>
-                <p className="acc-choice__note">
-                  اقرأ ما سيُلغى وما سيبقى قبل التأكيد. هذا الجدول هو الحوار نفسه لا ملحقاً له.
-                </p>
+                <p className="acc-choice__note">اقرأ ما سيُلغى وما سيبقى قبل التأكيد.</p>
                 <table className="pur-lines">
                   <thead>
                     <tr>

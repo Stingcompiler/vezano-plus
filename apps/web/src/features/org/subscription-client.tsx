@@ -256,21 +256,11 @@ export function SubscriptionClient() {
             <h2 className="cat-head__title">
               الاشتراك والباقات — ما تفتحه الباقة وما لا تفتحه، بلا إخفاء
             </h2>
-            <span className="cat-head__hint">
-              الميزة غير المتاحة تُعرض رمادية مع سبب، لا تُخفى فيظنّ التاجر أنها غير موجودة. وحدّ
-              الأجهزة رقم صريح لا مفاجأة عند الجهاز السابع.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "loading" ? (
               <Notice kind="info" title="جلب الاشتراك">
-                <p className="acc-lead">
-                  حالة الاشتراك من الخادم دائماً. رقمٌ قديم هنا يعني قراراً مالياً على معلومة قديمة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا كاش للاستحقاق</strong> · تاريخ الاستحقاق والمبلغ يُقرآن حيّين. والشاشة
-                  تُفتح مرةً في الشهر — فثانيتان مقبولتان.
-                </p>
+                <p className="acc-lead">حالة الاشتراك من الخادم دائماً.</p>
                 {failed ? (
                   <Button variant="secondary" onClick={() => void load()}>
                     أعد المحاولة
@@ -563,8 +553,7 @@ export function SubscriptionClient() {
                   <Notice kind="info" title="لو انتهى الاشتراك">
                     <p className="acc-lead">
                       البيع والطباعة والجرد تستمر. ما يتوقف: نشر عروض السوق، والحملات، وتقارير
-                      الفترات الطويلة. التفصيل الكامل في «ما يحدث عند الانتهاء» — وهذه الشاشة تعرض
-                      القائمة قبل الانتهاء لا بعده.
+                      الفترات الطويلة. التفصيل الكامل في «ما يحدث عند الانتهاء».
                     </p>
                     <Button variant="quiet" onClick={() => router.push("/org/subscription/expiry")}>
                       ما يحدث عند الانتهاء
@@ -575,7 +564,6 @@ export function SubscriptionClient() {
                 {p.can_see_amounts ? (
                   <>
                     <h3 className="cat-head__title">الباقات</h3>
-                    <p className="acc-choice__note">حدود صريحة بالأرقام، لا «غير محدود» بنجمة</p>
                     <ul className="acc-choice__note">
                       {p.plans.map((pl) => (
                         <li key={pl.code} className="org-effects__row">

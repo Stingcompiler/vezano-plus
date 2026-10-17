@@ -229,10 +229,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مستند الشراء واعتماده — الاعتماد توقيع على مبلغ</h2>
-            <span className="cat-head__hint">
-              هنا يتحرّك المخزون وتتحرّك الذمّة. المستند يُعرض كما سيُحفظ تماماً — بأرقامه وفروقه عن
-              الأمر — والاعتماد فعلٌ باسمٍ ووقت لا ضغطةُ مرور.
-            </span>
+            <span className="cat-head__hint">هنا يتحرّك المخزون وتتحرّك الذمّة.</span>
           </div>
           <div className="acc-card__body">
             {denied ? (
@@ -270,10 +267,9 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                 </p>
                 {doc.diff_count && doc.status !== "approved" ? (
                   <p className="acc-lead">
-                    الفروق تُعرض ولا تُخفى في تفصيل. من يعتمد يوقّع على{" "}
+                    من يعتمد يوقّع على{" "}
                     <span className="sting-mono">{formatMinor(doc.total_minor)}</span> لا على{" "}
-                    <span className="sting-mono">{formatMinor(doc.order_estimated_minor)}</span> —
-                    والرقمان متجاوران هنا لأن الفارق هو ما يُعتمد عليه.
+                    <span className="sting-mono">{formatMinor(doc.order_estimated_minor)}</span>.
                   </p>
                 ) : null}
               </div>
@@ -299,10 +295,8 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                 }
               >
                 <p className="acc-lead">
-                  <strong>نُظهر الرقمين</strong> · حدّك{" "}
-                  <span className="sting-mono">{wholeMinor(doc.approval.limit_minor)}</span> وهذا{" "}
-                  <span className="sting-mono">{wholeMinor(doc.total_minor)}</span>. الرسالة التي
-                  تقول «لا تملك صلاحية» بلا رقم تجعله يحاول مرة أخرى.
+                  حدّك <span className="sting-mono">{wholeMinor(doc.approval.limit_minor)}</span>{" "}
+                  وهذا <span className="sting-mono">{wholeMinor(doc.total_minor)}</span>.
                 </p>
                 <p className="acc-lead">
                   <strong>الإحالة</strong> · «أحِل إلى {doc.referred_to_name || "المالك"}» ترسل
@@ -356,10 +350,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                   </Button>
                 }
               >
-                <p className="acc-lead">
-                  تحرّك المخزون وتحرّكت الذمّة الآن. ثلاثة آثار تُعلَن صراحةً لا تُترك ليكتشفها
-                  المستخدم.
-                </p>
+                <p className="acc-lead">تحرّك المخزون وتحرّكت الذمّة الآن.</p>
                 <p className="acc-lead">
                   <strong>المخزون</strong> · {stockSentence(doc.effects)}
                 </p>
@@ -383,8 +374,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                   <span className="sting-mono">{doc.due_days}</span> يوماً.
                 </p>
                 <p className="acc-choice__note">
-                  اعتمده {doc.approved_by_name}. المسارات: سجّل دفعة، أنشئ مرتجعاً، اطبع المستند.
-                  الاعتماد لا يُلغى — يُعكس بمستند مضادّ.
+                  اعتمده {doc.approved_by_name}. الاعتماد لا يُلغى — يُعكس بمستند مضادّ.
                 </p>
               </Notice>
             ) : null}

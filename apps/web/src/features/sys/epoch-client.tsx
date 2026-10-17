@@ -126,7 +126,7 @@ export function EpochClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">مصالحة بعد تغيّر جيل الخادم</h2>
             <span className="cat-head__hint">
-              الخادم استُعيد إلى نقطة أقدم، فصار عند الأجهزة عملٌ لا يعرفه. أندر الحالات وأخطرها.
+              الخادم استُعيد إلى نقطة أقدم، فصار عند الأجهزة عملٌ لا يعرفه.
             </span>
           </div>
           <div className="acc-card__body">
@@ -170,12 +170,8 @@ export function EpochClient() {
                   كانت «مؤكَّدة» وصارت غير معروفة.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نعترف بالأمر</strong> · «الخادم استُعيد إلى نقطة سابقة — عملك سليم على
-                  جهازك ولم يعد عنده». لا نلوم الشبكة ولا نُخفي خلف رسالة مزامنة عامة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا نمسح ولا نرفع تلقائياً</strong> · رفعٌ أعمى قد يُنتج ازدواجاً مع ما نجا
-                  عند الخادم. المصالحة تُقارن بالهويات الأصلية أولاً.
+                  <strong>لا نمسح ولا نرفع تلقائياً</strong> · المصالحة تُقارن بالهويات الأصلية
+                  أولاً.
                 </p>
               </Notice>
             ) : null}
@@ -208,14 +204,18 @@ export function EpochClient() {
                   عملية بما عند الخادم: ما نجا يُترك، وما فُقد يُرفع، وما اختلف يُحجز.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>العدّاد ثلاثي</strong> · موجودة · سترفع · للمراجعة — والبيع مستمر أثناء
-                  ذلك.
+                  موجودة · سترفع · للمراجعة — والبيع مستمر أثناء ذلك.
                 </p>
                 <Status state="saving" label="جارٍ" />
               </Notice>
             ) : null}
 
-            {state === "success" ? (
+            {state === "success" && !outcome && !reconciled && loaded ? (
+              // فحص 2026-10-17 F10: لا «تمّت المصالحة» حين لم تجرِ مصالحة أصلاً
+              <Notice kind="info" title="لا مصالحة مطلوبة">
+                <p className="acc-lead">لا تغيّر جيلٍ معلّقاً على هذا الجهاز.</p>
+              </Notice>
+            ) : state === "success" ? (
               <Notice kind="success" title="تمّت المصالحة">
                 <p className="acc-lead">
                   استقرّ الدفتران.{" "}

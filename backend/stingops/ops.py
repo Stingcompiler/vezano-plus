@@ -292,6 +292,8 @@ def verifications_payload() -> dict[str, Any]:
         "pending_count": len(pending),
         "oldest_waiting_hours": max((r["waiting_hours"] for r in pending), default=0),
         "avg_review_hours_week": int(avg_h),
+        # فحص 2026-10-17 VP12: عيّنة المتوسط — صفرٌ بلا مراجعات ليس «سرعة»
+        "reviewed_week": len(reviewed),
         "badge_text": BADGE_TEXT,
         "fetched_at": _iso(now),
     }

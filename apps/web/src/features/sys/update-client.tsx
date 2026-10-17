@@ -217,10 +217,6 @@ export function UpdateClient({ updated }: { updated: string }) {
                   <span className="sting-mono">{pending}</span> عملية ما زالت في الطابور بترتيبها.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نقول ذلك أولاً</strong> · قبل أي ذكر لمزايا الإصدار. من حدّث وعنده معلّق
-                  يسأل عنه لا عن الجديد.
-                </p>
-                <p className="acc-choice__note">
                   من{" "}
                   <span className="sting-mono" dir="ltr">
                     {record.from}
@@ -254,8 +250,7 @@ export function UpdateClient({ updated }: { updated: string }) {
                   التنزيل أو التركيب تعثّر. الإصدار القديم يعمل كما كان والمعلّق سليم.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>الرجوع الآمن</strong> · هو السلوك الافتراضي لا خياراً. تطبيقٌ نصف محدَّث
-                  على دفتر مالٍ حالةٌ لا نسمح بوجودها.
+                  <strong>الرجوع الآمن</strong> · هو السلوك الافتراضي لا خياراً.
                 </p>
               </Notice>
             ) : null}
@@ -263,12 +258,11 @@ export function UpdateClient({ updated }: { updated: string }) {
             {state === "pending_sync" ? (
               <Notice kind="warning" title="حدّث بعد رفع المعلّق">
                 <p className="acc-lead">
-                  <span className="sting-mono">{pending}</span> عملية معلّقة والتحديث ينتظر. لا نمنع
-                  — نُرتّب.
+                  <span className="sting-mono">{pending}</span> عملية معلّقة والتحديث ينتظر.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>الترتيب المقترح</strong> · ارفع ثم حدّث. وزرّه واحد ينفّذ الاثنين بالترتيب
-                  بلا أن يعود المستخدم مرتين.
+                  <strong>الترتيب المقترح</strong> · ارفع ثم حدّث. وزرّه واحد ينفّذ الاثنين
+                  بالترتيب.
                 </p>
                 <p className="acc-choice__note">
                   <strong>التحديث رغم المعلّق</strong> · متاح بتأكيد يقول المخاطرة صراحةً: التحديث
@@ -354,13 +348,8 @@ export function UpdateClient({ updated }: { updated: string }) {
 
             {state === "ready" && available ? (
               <Notice kind="info" title="تحديث متاح">
-                <p className="acc-lead">
-                  رقم الإصدار وما فيه، ثم السؤال الحاسم: كم عملية معلّقة الآن؟ صفرٌ يعني تحديثاً
-                  آمناً، وغيره يعني قراراً.
-                </p>
                 <p className="acc-choice__note">
-                  <strong>لا تحديث إجباري فوري</strong> · التحديث في منتصف يوم بيعٍ مزدحم قرارٌ سيئ
-                  ولو كان الإصدار أفضل. نقترح «بعد إقفال الوردية».
+                  <strong>لا تحديث إجباري فوري</strong> · نقترح «بعد إقفال الوردية».
                 </p>
                 {confirmRisk ? (
                   <p className="acc-choice__note">

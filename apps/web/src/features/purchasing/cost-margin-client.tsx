@@ -53,7 +53,7 @@ interface Report {
 }
 
 const LOCK_EXPLANATION =
-  "المنشأة لم تفعّل وحدة الشراء الداخلي. لا تكلفة محسوبة لأن لا مستندات شراء أصلاً — والقفل هنا صدقٌ لا منع.";
+  "المنشأة لم تفعّل وحدة الشراء الداخلي. لا تكلفة محسوبة لأن لا مستندات شراء أصلاً.";
 
 /** «14%» حين يكون صحيحاً، وإلا بمنزلتين — بلا تقريب مخفٍ. */
 const pct = (bp: number) => (bp % 100 === 0 ? `${bp / 100}%` : `${(bp / 100).toFixed(2)}%`);
@@ -68,11 +68,11 @@ const itemsWord = (n: number) =>
 function noteText(r: Row): ReactNode {
   switch (r.note) {
     case "unit_mismatch":
-      return `الوحدتان مختلفتان: التكلفة لل${r.cost_unit_name ?? ""} والسعر لل${r.base_unit_name ?? ""}. لا نحسب هامشاً من وحدتين — نُظهر شرطة ونطلب ضبط التحويل.`;
+      return `الوحدتان مختلفتان: التكلفة لل${r.cost_unit_name ?? ""} والسعر لل${r.base_unit_name ?? ""}. لا نحسب هامشاً من وحدتين.`;
     case "single_doc":
       return "مبنيّ على مستند واحد — المتوسط يصير ذا معنى بعد ثلاثة.";
     case "negative":
-      return "بيع بخسارة. قد يكون مقصوداً — والشاشة لا تحكم.";
+      return "بيع بخسارة. قد يكون مقصوداً.";
     case "manual":
       return "تكلفة افتتاحية يدوية — تُستبدل بأول مستند حقيقي.";
     case "cost_rose": {
@@ -219,21 +219,7 @@ export function CostMarginClient() {
           <div className="acc-card__body">
             {state === "permission_denied" ? (
               <Notice kind="locked" title="الشاشة كلها محجوبة">
-                <p className="acc-lead">
-                  الاستثناء الوحيد في النظام: هنا نحجب الشاشة لا عموداً منها. كل رقم فيها يقود إلى
-                  التكلفة — والهامش يكشفها بالطرح.
-                </p>
-                <p className="acc-lead">
-                  <strong>لماذا لا نحجب عموداً</strong> · إخفاء التكلفة وإبقاء الهامش والسعر يعني
-                  إعطاءها: التكلفة = السعر ÷ (1 + الهامش). الحجب الجزئي هنا وهمٌ لا سياسة.
-                </p>
-                <p className="acc-lead">
-                  <strong>ما يبقى</strong> · الشاشة تظهر في القائمة بقفل مرئي لا تختفي — الموظف يعرف
-                  أن ثمّة تقريراً يطلبه إن احتاجه.
-                </p>
-                <p className="acc-choice__note">
-                  للمالك والمحاسب فقط، والقائمة معرّفة في ORG لا في الكود.
-                </p>
+                <p className="acc-choice__note">للمالك والمحاسب فقط.</p>
               </Notice>
             ) : null}
 
@@ -248,18 +234,6 @@ export function CostMarginClient() {
               >
                 <Notice kind="locked" title="الشراء الداخلي غير مفعّل">
                   <p className="acc-lead">{LOCK_EXPLANATION}</p>
-                  <p className="acc-lead">
-                    <strong>صيغة «مشروط»</strong> · الوحدة مبنيّة وتنتظر مفتاحاً في يد المالك: «فعّل
-                    الشراء الداخلي» زرٌّ حاضر، لا «تواصل مع المبيعات».
-                  </p>
-                  <p className="acc-lead">
-                    <strong>ما نُريه خلف القفل</strong> · لقطة حقيقية بأرقام تجريبية موسومة «مثال» —
-                    القرار بالتفعيل يحتاج أن يرى ما سيحصل عليه.
-                  </p>
-                  <p className="acc-choice__note">
-                    يفترق هذا عن قفل المرحلة: ذاك قرار منتج لم يُفتح بعد، وهذا مفتاح في يد المالك
-                    الآن.
-                  </p>
                 </Notice>
                 {table("مثال — التكلفة والهامش")}
               </PhaseLocked>
@@ -272,15 +246,8 @@ export function CostMarginClient() {
                   تكلفة.
                 </p>
                 <p className="acc-lead">
-                  <strong>نقول السبب</strong> · «التكلفة تُبنى من مستندات الشراء، ولم يُسجَّل مستند
-                  بعد» — لا «لا بيانات».
-                </p>
-                <p className="acc-lead">
                   <strong>المخرج</strong> · سجّل مستند شراء، أو أدخل تكلفة افتتاحية يدوية تُوسم
                   «يدوية» وتُستبدل بأول مستند حقيقي.
-                </p>
-                <p className="acc-choice__note">
-                  الجدول يُعرض بأعمدته فارغةً ليُفهم ما الذي سيملؤه، لا رسالة في وسط شاشة بيضاء.
                 </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/purchasing/orders")}>
@@ -297,13 +264,6 @@ export function CostMarginClient() {
                   <span className="acc-choice__note">مرئية للمالك والمحاسب</span>
                 </div>
                 {table("التكلفة والهامش")}
-                {state === "ready" ? (
-                  <p className="acc-choice__note">
-                    الهامش السالب يُعرض بلونه ولا يُنبَّه عليه بنافذة: بيعٌ بخسارة قد يكون قراراً
-                    واعياً (تصريف قارب الانتهاء) وقد يكون سهواً. الشاشة تُري ولا تحكم — والحكم في يد
-                    من يملك السعر.
-                  </p>
-                ) : null}
                 {rows.some((r) => !r.cost_minor) ? (
                   <div className="acc-choice">
                     <p className="acc-choice__note">تكلفة افتتاحية يدوية لصنف بلا مستند:</p>

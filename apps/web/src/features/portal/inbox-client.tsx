@@ -121,19 +121,11 @@ export function InboxClient({ slug }: { slug: string }) {
             </span>
           </div>
           <div className="acc-card__body">
-            {state === "loading" ? (
-              <Notice kind="info" title="جلب الرسائل">
-                <p className="acc-lead">خفيفة كسابقتها. الزبون على بيانات الجوال غالباً.</p>
-              </Notice>
-            ) : null}
+            {state === "loading" ? <Notice kind="info" title="جلب الرسائل" /> : null}
 
             {state === "empty" ? (
               <Notice kind="empty" title="لا رسائل بعد">
                 <p className="acc-lead">اشترك للتوّ ولم يُرسل المحل شيئاً.</p>
-                <p className="acc-choice__note">
-                  <strong>لا نعتذر</strong> · «لم يرسل المحل رسائل بعد — ستصلك هنا» وكفى. الفراغ هنا
-                  انتظارٌ لا عطب.
-                </p>
               </Notice>
             ) : null}
 
@@ -148,10 +140,6 @@ export function InboxClient({ slug }: { slug: string }) {
                 }
               >
                 <p className="acc-lead">رابط رسالة فُتح بجهاز ليس صاحب الاشتراك.</p>
-                <p className="acc-choice__note">
-                  <strong>لا نُظهر المحتوى</strong> · ولا اسم المشترك. الرسالة قد تحمل عرضاً خاصاً
-                  به.
-                </p>
               </Notice>
             ) : null}
 
@@ -171,12 +159,6 @@ export function InboxClient({ slug }: { slug: string }) {
                   {opened.expired ? " · انتهى" : ""}
                 </p>
                 <p className="acc-lead">{opened.message}</p>
-                {opened.expired ? (
-                  <p className="acc-choice__note">
-                    <strong>لا نمحو</strong> · رسالة عن خصم انتهى. تبقى مقروءةً موسومة «انتهى».
-                    الزبون قد يأتي بالورقة أو بالرسالة. وجودها موسومةً يجعل الحوار في المحل ممكناً.
-                  </p>
-                ) : null}
               </Notice>
             ) : null}
 
@@ -204,10 +186,6 @@ export function InboxClient({ slug }: { slug: string }) {
                     </li>
                   ))}
                 </ul>
-                <p className="acc-choice__note">
-                  كل رسالة تحمل اسم مرسلها. لا رسالة من محل لم يتابعه، ولا رسالة من المنصة تتنكّر
-                  باسم المحل. يظهر المنتهي رماديّاً بكلمة «انتهى» لا يختفي فجأة.
-                </p>
               </>
             ) : null}
 

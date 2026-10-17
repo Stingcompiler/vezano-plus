@@ -212,10 +212,6 @@ export function LinkReceiptsClient() {
                 <p className="acc-lead">
                   الاستلام فيه صنف لم يُطابَق بعد، فلا يُعرف أيّ مخزون يدخل.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا نُنشئ تلقائياً</strong> · إنشاء صنف من اسم المورد يملأ كتالوجك بأسماء
-                  غيرك. نطلب المطابقة أو الإنشاء الصريح.
-                </p>
                 <ul className="cus-list">
                   {(pv.unmapped.length
                     ? pv.unmapped

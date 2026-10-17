@@ -251,20 +251,12 @@ export function MarketHomeClient() {
           {state === "offline" ? (
             <Notice kind="offline" title="السوق يحتاج اتصالاً">
               <p className="acc-lead">بخلاف POS — أسعار الآخرين لا تُخزَّن صادقةً على جهازك.</p>
-              <p className="acc-choice__note">
-                <strong>نقولها ونحفظ العمل</strong> · «السوق يعمل بالاتصال» مع ما يبقى متاحاً:
-                مسودات سلتك وطلباتك المحفوظة. صفحةٌ بيضاء تُقرأ عطلاً في التطبيق كله.
-              </p>
             </Notice>
           ) : null}
           {state === "stale" && snapshot ? (
             <Notice kind="warning" title="عروض من آخر جلب">
               <p className="acc-lead">
                 الاتصال متقطع والمعروض من الكاش — <Ago iso={snapshot.at} />.
-              </p>
-              <p className="acc-choice__note">
-                <strong>الصلاحية مع كل عرض</strong> · عرضٌ انتهت صلاحيته في الكاش يسقط من العرض ولا
-                يُعرض بسعره القديم — التأكيد الخادمي وحده يجعل السعر حالياً.
               </p>
             </Notice>
           ) : null}

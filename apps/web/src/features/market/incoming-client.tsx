@@ -180,8 +180,8 @@ export function IncomingClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">طلبات المورد — المهلة تنقضي، وعدم الرد حالة لا فراغ</h2>
             <span className="cat-head__hint">
-              شاشة المورد الواردة: كل طلب بمهلة رد ظاهرة. انقضاء المهلة يُوسم «لم يُرد عليه» صراحةً
-              عند الطرفين، ولا يُقرأ قبولاً ولا رفضاً.
+              كل طلب بمهلة رد ظاهرة. انقضاء المهلة يُوسم «لم يُرد عليه» صراحةً عند الطرفين، ولا
+              يُقرأ قبولاً ولا رفضاً.
             </span>
           </div>
           <div className="acc-card__body">
@@ -189,10 +189,6 @@ export function IncomingClient() {
               <Notice kind="info" title="جلب الطلبات الواردة">
                 <p className="acc-lead">
                   مع عدد المهل التي تنتهي اليوم، والترتيب بالمهلة لا بتاريخ الورود.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>المهلة هي العمل</strong> · الطلب بلا رد ضررٌ على الطرفين: المشتري ينتظر
-                  والمورد يخسر. القائمة تُرتَّب بما يحرق.
                 </p>
               </Notice>
             ) : null}

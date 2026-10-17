@@ -193,9 +193,6 @@ export function OfferDetailClient({ id }: { id: string }) {
             {state === "permission_denied" ? (
               <Notice kind="empty" title="لم يعد هذا العرض متاحاً">
                 <p className="acc-lead">لا عرض بهذا الرابط، أو لم يعد ضمن ما يُعرض لك.</p>
-                <p className="acc-choice__note">
-                  <strong>رفضٌ لا يصف</strong> · لا اسم ولا سعر — الصيغة نفسها لغير الموجود.
-                </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/market/search")}>ابحث في السوق</Button>
                 </div>
@@ -206,10 +203,6 @@ export function OfferDetailClient({ id }: { id: string }) {
               <>
                 <Notice kind="empty" title="لم يعد هذا العرض متاحاً">
                   <p className="acc-lead">الناشر أخفاه أو حذفه بعد أن وصل الرابط.</p>
-                  <p className="acc-choice__note">
-                    <strong>لا نسخة قديمة</strong> · عرضُ آخر نسخة محفوظة يُغري بطلبٍ على سعرٍ لم
-                    يعد قائماً.
-                  </p>
                 </Notice>
                 <h3 className="cat-head__title">عروض الناشر القائمة — {o.seller_name}</h3>
                 {o.others.length ? (
@@ -281,19 +274,13 @@ export function OfferDetailClient({ id }: { id: string }) {
                     <p className="acc-lead">هذا السعر لم يعد مؤكداً</p>
                     <p className="acc-choice__note">
                       صلاحية العرض انتهت {o.valid_until ? <Until dateIso={o.valid_until} /> : "—"}.
-                      الوسم من الخادم — وإن تأخّر عامل الجدولة فبأثر رجعي. الرقم أدناه{" "}
-                      <strong>آخر سعر معروف</strong> ولا يصلح لتأكيد طلب.
+                      الرقم أدناه <strong>آخر سعر معروف</strong> ولا يصلح لتأكيد طلب.
                     </p>
                   </Notice>
                 ) : null}
                 {state === "stale" ? (
                   <Notice kind="warning" title="صلاحية تحتاج تأكيداً">
                     <p className="acc-lead">المعروض من الكاش وصلاحيته على الحدّ.</p>
-                    <p className="acc-choice__note">
-                      <strong>الشراء يتحقق أولاً</strong> · زر الإضافة إلى السلة يجلب تأكيداً
-                      خادمياً قبل التثبيت — انتهاء عامل الجدولة عند المنصة لا يجعل المنتهي سعراً
-                      حالياً.
-                    </p>
                   </Notice>
                 ) : null}
 
@@ -478,10 +465,6 @@ export function OfferDetailClient({ id }: { id: string }) {
                     </Button>
                   )}
                 </div>
-                <p className="acc-choice__note">
-                  <strong>الشراء يتحقق أولاً</strong> · الإضافة تجلب تأكيداً خادمياً قبل التثبيت؛
-                  سعرٌ بلا عمر يُقرأ لحظياً — وهذه شاشةُ قرارِ شراء.
-                </p>
                 <div className="acc-actions">
                   {signedIn ? (
                     <>
