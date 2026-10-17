@@ -287,6 +287,43 @@ h3 {
   .c-frame--sidebar .c-nav {
     padding: 10px 8px 24px;
   }
+  /* رأس الدرج: اسم الإطار وزرّ إغلاق ظاهر ثابت أعلى القائمة (فحص 2026-10-17 F07) */
+  .c-frame--sidebar .c-frame__nav-head {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--color-sidebar);
+    border-block-end: 1px solid var(--color-border);
+  }
+}
+.c-frame__nav-head {
+  display: none;
+}
+.c-frame__nav-title {
+  font-weight: var(--font-weight-semibold);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c-frame__nav-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: var(--layout-touchTarget);
+  min-block-size: var(--layout-touchTarget);
+  font-size: 18px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  cursor: pointer;
 }
 /* على الحاسوب لا درج: الشريط الجانبي ثابت */
 @media (min-width: 834px) {

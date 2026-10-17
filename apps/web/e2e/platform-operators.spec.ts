@@ -254,10 +254,12 @@ test.describe("PLT-15", () => {
   test("الدعم: وسم «قراءة فقط» معلن في الترويسة", async ({ page }) => {
     await operatorLogin(page, "support");
     await expect(page.locator(".plt-badge--support")).toHaveText("الدعم — قراءة فقط");
-    // النصّ المرسوم باقٍ
+    // النصّ المرسوم باقٍ على الحاسوب؛ الهاتف بترويسة قصيرة (فحص 2026-10-17 VP11)
     await expect(page.locator(".plt-banner__hint")).toHaveText(
       "إطار منفصل عن تطبيق المتاجر · كل فتح سجل يُدقَّق",
     );
+    if ((page.viewportSize()?.width ?? 0) < 834)
+      await expect(page.locator(".plt-banner__hint")).toBeHidden();
   });
 });
 

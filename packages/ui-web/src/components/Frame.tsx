@@ -57,6 +57,17 @@ export function Frame({
   }, [back]);
   const rootRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  // فحص 2026-10-17 F07/VP11: الدرج يغطي زرّ القائمة — زرّ إغلاق ظاهر داخل رأس الدرج، والتركيز إليه
+  // عند الفتح ويعود إلى زرّ القائمة عند الإغلاق
+  useEffect(() => {
+    if (navOpen) closeRef.current?.focus();
+    else if (wasOpen.current && navRef.current?.contains(document.activeElement))
+      menuRef.current?.focus();
+    wasOpen.current = navOpen;
+  }, [navOpen]);
   useEffect(() => {
     const el = navRef.current;
     if (!side || el === null) return;
@@ -115,6 +126,7 @@ export function Frame({
         <header className="c-frame__banner" data-region tabIndex={-1}>
           {side ? (
             <button
+              ref={menuRef}
               type="button"
               className="c-frame__menu"
               aria-expanded={navOpen}
@@ -156,6 +168,23 @@ export function Frame({
           {/* النقر على رابط داخل الدرج يغلقه (الانتقال عميلي فلا إعادة تحميل تُغلقه) — يُلتقط
               في مرحلة الالتقاط على الحاوية، والعناصر نفسها أزرار/روابط بمفاتيحها */}
           <div id="frame-nav" className="c-frame__nav" data-region tabIndex={-1} ref={navRef}>
+            {side ? (
+              <div className="c-frame__nav-head">
+                <span className="c-frame__nav-title">
+                  {brand && title === brand.name ? brand.node : title}
+                </span>
+                <button
+                  ref={closeRef}
+                  type="button"
+                  className="c-frame__nav-close"
+                  aria-label="إغلاق القائمة"
+                  tabIndex={navOpen ? 0 : -1}
+                  onClick={() => setNavOpen(false)}
+                >
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </div>
+            ) : null}
             {nav}
           </div>
         </>

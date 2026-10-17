@@ -532,3 +532,35 @@
   text-align: center;
   font-size: 16px;
 }
+
+/* فحص 2026-10-17 F05 — الهاتف: البحث أولاً، والسلة شريط مثبّت يفتح تفاصيلها عند الطلب */
+.pos-cart--compact .pos-cart__head {
+  flex-wrap: wrap;
+}
+.pos-cartbar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 12px;
+  margin-inline: calc(var(--layout-pagePadding) * -1);
+  padding: 10px var(--layout-pagePadding) calc(10px + env(safe-area-inset-bottom));
+  background: var(--color-surface-card);
+  border-block-start: 1px solid var(--color-border);
+  box-shadow: 0 -8px 20px -16px rgb(15 23 42 / 0.4);
+}
+.pos-cartbar__sum {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-block-size: 44px;
+  justify-content: center;
+  color: var(--color-ink-strong);
+  text-decoration: none;
+}
+.pos-cartbar__sum strong {
+  font-size: 18px;
+}

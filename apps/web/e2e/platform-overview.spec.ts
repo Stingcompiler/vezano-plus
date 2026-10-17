@@ -121,6 +121,69 @@ async function operatorLogin(page: Page) {
 }
 
 test.describe("PLT-00", () => {
+  test("فحص 2026-10-17 F07/VP11: درج الهاتف بزرّ إغلاق ظاهر في رأسه، والتركيز يعود إلى زرّ القائمة", async ({
+    page,
+  }) => {
+    test.skip((page.viewportSize()?.width ?? 0) >= 834, "درج الهاتف وحده");
+    await page.route("**/api/platform/overview", (route) => route.fulfill(json(200, OVERVIEW)));
+    await operatorLogin(page);
+    await page.locator(".c-frame--sidebar .c-frame__menu").click();
+    await expect(page.locator(".c-frame--nav-open")).toHaveCount(1);
+    const close = page.getByRole("button", { name: "إغلاق القائمة" });
+    await expect(close).toBeVisible();
+    await expect(close).toBeFocused();
+    const box = await close.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    await close.click();
+    await expect(page.locator(".c-frame--nav-open")).toHaveCount(0);
+    await expect(page.locator(".c-frame--sidebar .c-frame__menu")).toBeFocused();
+  });
+
+  test("فحص 2026-10-17 VP01: الرابط المباشر يُستأنف من الـCookie، وبلا جلسة يعود إلى الدخول ثم إلى وجهته", async ({
+    page,
+  }) => {
+    await page.route("**/api/platform/overview", (route) => route.fulfill(json(200, OVERVIEW)));
+    await page.route(/\/api\/platform\/tenants(\?.*)?$/, (route) =>
+      route.fulfill(
+        json(200, {
+          tenants: [],
+          total: 1,
+          shown: 0,
+          active_count: 0,
+          filter: "active",
+          q: "",
+          access_rule: "قراءة بيانات مستأجر تحتاج تذكرة دعم مفتوحة منه.",
+          fetched_at: new Date().toISOString(),
+        }),
+      ),
+    );
+    let resumes = 0;
+    await page.route("**/api/platform/resume", (route) => {
+      resumes += 1;
+      return route.fulfill(
+        json(200, { access: "op2", refresh: "r2", session_id: "s", display_name: "هدى — تشغيل" }),
+      );
+    });
+    await page.goto("/platform/tenants?filter=active");
+    await expect(page.locator('[data-screen="PLT-02"]')).toBeVisible();
+    expect(resumes).toBe(1);
+    await expect(page).toHaveURL(/\/platform\/tenants\?filter=active$/);
+    // بلا Cookie صالح: الدخول بوجهته، ثم العودة إليها بعد الدخول
+    await page.unroute("**/api/platform/resume");
+    await page.route("**/api/platform/resume", (route) => route.fulfill(json(401, {})));
+    await page.route("**/api/platform/login", (route) =>
+      route.fulfill(
+        json(200, { access: "op", refresh: "r", session_id: "s", display_name: "هدى — تشغيل" }),
+      ),
+    );
+    await page.goto("/platform/tenants?filter=active");
+    await expect(page).toHaveURL(/\/platform\/login\?next=%2Fplatform%2Ftenants%3Ffilter%3Dactive$/);
+    await page.getByLabel("بريد المشغّل").fill("ops.huda@sting.internal");
+    await page.getByLabel("كلمة المرور").fill("very-secret-ops");
+    await page.getByRole("button", { name: "دخول مساحة المشغّل" }).click();
+    await expect(page).toHaveURL(/\/platform\/tenants\?filter=active$/);
+  });
+
   test("ready: العدّادات بختم وقتها و«يحتاج انتباهاً»؛ بطاقة «موقوفون» تفتح المستأجرين بمرشّحها", async ({
     page,
   }, info) => {

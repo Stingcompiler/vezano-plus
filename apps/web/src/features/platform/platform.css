@@ -85,10 +85,9 @@
   .plt-banner.plt-banner--bare {
     flex-basis: auto;
   }
+  /* فحص 2026-10-17 VP11: الترويسة كانت 107–152px على الهاتف — شرح الإطار ينتقل إلى الحاسوب وحده */
   .plt-banner__hint {
-    white-space: normal;
-    font-size: 12px;
-    line-height: 1.4;
+    display: none;
   }
   .plt-banner__name {
     display: none;

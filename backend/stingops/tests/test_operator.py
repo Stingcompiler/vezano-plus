@@ -759,3 +759,69 @@ def test_m0_board_and_entitlements(
     with platform_context():
         assert OperatorAccessLog.objects.filter(action="entitlement_changed").count() == 1
         assert OperatorAccessLog.objects.filter(action="flag_changed").count() == 1
+
+
+def test_operator_session_survives_reload_8h_cap_and_logout() -> None:
+    """فحص 2026-10-17 VP01 (0005 §١٦٨): الدخول يضع Cookie `HttpOnly` بمسار الإدارة؛ الاستئناف يدوّره
+    ويعيد الهوية والدور؛ بعد ثماني ساعات من الدخول يُرفض؛ الخروج يُلغي الجلسة في الخادم."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.models import Session
+    from stingops.models import OperatorAccessLog
+    from stingops.views import OPERATOR_COOKIE
+
+    c = Client()
+    acc = create_account("ops.huda@sting.internal", "very-secret-ops", "هدى")
+    with platform_context():
+        op = User.unscoped.create(
+            tenant=None,
+            username="ops-h",
+            display_name="هدى — تشغيل",
+            is_platform_staff=True,
+            account=acc,
+        )
+        ensure_operator(op)
+    r = _post(
+        c,
+        {},
+        "/api/platform/login",
+        {"email": "ops.huda@sting.internal", "password": "very-secret-ops"},
+    )
+    assert r.status_code == 200
+    cookie = r.cookies[OPERATOR_COOKIE]
+    assert (
+        cookie["httponly"] and cookie["path"] == "/api/platform/" and cookie["samesite"] == "Strict"
+    )
+    # «إعادة التحميل»: لا رمز في الذاكرة — الـCookie يستأنف ويدوّر
+    r2 = c.post("/api/platform/resume")
+    assert r2.status_code == 200 and r2.json()["display_name"] == "هدى — تشغيل"
+    assert r2.json()["access"] and r2.cookies[OPERATOR_COOKIE].value != cookie.value
+    oh = {"Authorization": f"Bearer {r2.json()['access']}"}
+    assert c.get("/api/platform/tenants", headers=oh).status_code == 200
+    # سقف الثماني ساعات من الدخول الأصلي — الاستئناف لا يمدّده
+    with platform_context():
+        sid = r2.json()["session_id"]
+        Session.unscoped.filter(id=sid).update(
+            created_at=timezone.now() - timedelta(hours=8, minutes=1)
+        )
+    r3 = c.post("/api/platform/resume")
+    assert r3.status_code == 401 and r3.json()["detail"] == "session_expired"
+    # دخول جديد ثم خروج: الجلسة تُلغى في الخادم والـCookie يُمسح
+    r = _post(
+        c,
+        {},
+        "/api/platform/login",
+        {"email": "ops.huda@sting.internal", "password": "very-secret-ops"},
+    )
+    sid = r.json()["session_id"]
+    assert c.post("/api/platform/logout").status_code == 204
+    with platform_context():
+        assert Session.unscoped.get(id=sid).revoked_at is not None
+        assert {a.action for a in OperatorAccessLog.objects.filter(operator=op)} >= {
+            "login",
+            "resume",
+            "logout",
+        }
+    assert c.post("/api/platform/resume").status_code == 401
