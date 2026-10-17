@@ -48,16 +48,140 @@ class OperatorLoginView(APIView):
             )
         except services.OperatorLoginRejected as e:
             return Response({"detail": e.code}, status=e.status)
-        return Response(
-            {
-                "access": out.access,
-                "refresh": out.refresh,
-                "session_id": out.session_id,
-                "display_name": out.display_name,
-                "role": out.role,
-                "must_change_password": out.must_change_password,
-            }
-        )
+        response = Response(_operator_payload(out))
+        _set_operator_cookie(response, out.refresh)
+        return response
+
+
+# ------------------------------------------------------------------ 0005 §١٦٨ بقاء جلسة المشغّل
+#
+# كانت جلسة المشغّل في الذاكرة وحدها (PLT-01) فكان كل رابط مباشر أو تحديث يعيد إلى الدخول (فحص
+# 2026-10-17 VP01). بقرار المالك: Cookie `HttpOnly` بمسار `/api/platform/` مثل تطبيق المتاجر (§١٢١)،
+# بسقف ثماني ساعات من الدخول لا يُمدَّد بالاستئناف، وكل استئناف وخروج يُدقَّق.
+
+OPERATOR_COOKIE = "sting_op_rt"
+OPERATOR_COOKIE_PATH = "/api/platform/"
+OPERATOR_SESSION_HOURS = 8
+
+
+def _operator_payload(out: services.OperatorLogin) -> dict[str, Any]:
+    return {
+        "access": out.access,
+        "refresh": out.refresh,
+        "session_id": out.session_id,
+        "display_name": out.display_name,
+        "role": out.role,
+        "must_change_password": out.must_change_password,
+    }
+
+
+def _set_operator_cookie(response: Response, raw_refresh: str, max_age: int | None = None) -> None:
+    from django.conf import settings
+
+    response.set_cookie(
+        OPERATOR_COOKIE,
+        raw_refresh,
+        max_age=max_age if max_age is not None else OPERATOR_SESSION_HOURS * 3600,
+        path=OPERATOR_COOKIE_PATH,
+        secure=not settings.DEBUG,
+        httponly=True,
+        samesite="Strict",
+    )
+
+
+def _clear_operator_cookie(response: Response) -> None:
+    response.delete_cookie(OPERATOR_COOKIE, path=OPERATOR_COOKIE_PATH, samesite="Strict")
+
+
+class OperatorResumeView(APIView):
+    """يستأنف جلسة المشغّل من الـCookie: تجديد مدوّر، وسقف ثماني ساعات من الدخول الأصلي."""
+
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
+
+    @extend_schema(request=None, responses={200: None, 401: None})
+    def post(self, request: Request) -> Response:
+        from rest_framework.exceptions import AuthenticationFailed
+        from rest_framework_simplejwt.exceptions import TokenError
+
+        from core.auth.tokens import rotate_refresh
+        from core.models import Session, User
+
+        raw = request.COOKIES.get(OPERATOR_COOKIE, "")
+        if not raw:
+            return Response({"detail": "not_remembered"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        def reject(code: str) -> Response:
+            response = Response({"detail": code}, status=status.HTTP_401_UNAUTHORIZED)
+            _clear_operator_cookie(response)
+            return response
+
+        try:
+            new = rotate_refresh(raw)
+        except (TokenError, AuthenticationFailed):
+            return reject("token_invalid")
+        with platform_context():
+            session = Session.unscoped.filter(id=str(new["sid"])).first()
+            user = User.unscoped.filter(id=new["user_id"]).first()
+            if (
+                session is None
+                or user is None
+                or not user.is_platform_staff
+                or user.tenant_id is not None
+            ):
+                return reject("operator_required")
+            age = timezone.now() - session.created_at
+            remaining = OPERATOR_SESSION_HOURS * 3600 - int(age.total_seconds())
+            if remaining <= 0:
+                session.revoked_at = timezone.now()
+                session.save(update_fields=["revoked_at"])
+                return reject("session_expired")
+            prof = services.ensure_operator(user)
+            OperatorAccessLog.objects.create(operator=user, action="resume")
+            out = services.OperatorLogin(
+                access=str(new.access_token),
+                refresh=str(new),
+                session_id=str(session.id),
+                display_name=user.display_name,
+                role=roles.role_of(user),
+                must_change_password=prof.must_change_password,
+            )
+        response = Response(_operator_payload(out))
+        _set_operator_cookie(response, out.refresh, max_age=remaining)
+        return response
+
+
+class OperatorLogoutView(APIView):
+    """خروج المشغّل: يُلغى الجلسة في الخادم (كان المسح في الذاكرة وحدها) ويُمسح الـCookie."""
+
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request: Request) -> Response:
+        from rest_framework_simplejwt.exceptions import TokenError
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from core.models import Session, User
+
+        raw = request.COOKIES.get(OPERATOR_COOKIE, "")
+        if raw:
+            try:
+                token = RefreshToken(raw)  # type: ignore[arg-type]
+                with platform_context():
+                    session = Session.unscoped.filter(id=str(token.get("sid", ""))).first()
+                    user = User.unscoped.filter(id=token.get("user_id")).first()
+                    if session is not None and session.revoked_at is None:
+                        session.revoked_at = timezone.now()
+                        session.save(update_fields=["revoked_at"])
+                    if user is not None and user.is_platform_staff:
+                        OperatorAccessLog.objects.create(operator=user, action="logout")
+                    token.blacklist()
+            except TokenError:
+                pass
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        _clear_operator_cookie(response)
+        return response
 
 
 class OperatorPasswordView(APIView):

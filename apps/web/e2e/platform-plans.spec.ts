@@ -266,9 +266,11 @@ test.describe("PLT-16", () => {
     const later = new Date(Date.now() + 40 * 86_400_000).toISOString().slice(0, 10);
     await single.getByLabel("الشهري الجديد").fill("60,000");
     await single.getByLabel("تاريخ السريان").fill(soon);
-    await single.getByRole("button", { name: "جدوِل السعر" }).click();
-    await expect(single).toContainText(
-      "السعر الجديد يحتاج إشعاراً 30 يوماً على الأقل — اختر تاريخاً أبعد.",
+    // فحص 2026-10-17 VP06: التاريخ القريب يُرفض في النموذج قبل الإرسال (والخادم يرفضه أيضاً)
+    await expect(single).toContainText("أقرب تاريخ مسموح");
+    await expect(single.getByRole("button", { name: "جدوِل السعر" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
     );
     await single.getByLabel("تاريخ السريان").fill(later);
     await single.getByRole("button", { name: "جدوِل السعر" }).click();

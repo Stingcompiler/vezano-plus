@@ -98,6 +98,8 @@ export function PosClient() {
   const app = useApp();
   const online = useOnline();
   const tablet = useMedia("(max-width: 1199px)");
+  // فحص 2026-10-17 F05: على الهاتف البحث والأصناف أولاً، والسلة شريط مثبّت أسفل الشاشة
+  const phone = useMedia("(max-width: 767px)");
   const [items, setItems] = useState<LocalItem[] | null>(null);
   const [balances, setBalances] = useState<Map<string, LocalBalance>>(new Map());
   const [matchedAt, setMatchedAt] = useState<string | null>(null);
@@ -396,98 +398,125 @@ export function PosClient() {
     },
   ];
 
-  const cart = (
-    <aside className="pos-cart" aria-label="السلة">
+  const phoneEmptyCart = (
+    <aside className="pos-cart pos-cart--compact" id="pos-cart" aria-label="السلة">
       <div className="pos-cart__head">
         <span className="pos-cart__title">السلة</span>
-        <span className="acc-choice__note">فاتورة جديدة — لم تُحفظ</span>
+        <span className="acc-choice__note">السلة فارغة — أضف صنفاً من البحث أعلاه.</span>
       </div>
-      <Cart
-        lines={cartLines}
-        totalMinor={totals.totalMinor.toString()}
-        currency="ج.س"
-        onRemove={(id) => {
-          setRemoved(lines.find((l) => l.id === id) ?? null);
-          persist(lines.filter((l) => l.id !== id));
-        }}
-        onUndoRemove={() => {
-          if (removed) persist([...lines, removed]);
-          setRemoved(null);
-        }}
-        onQty={editLine}
-        onStep={(id, dir) => persist(stepCartLine(lines, id, dir))}
-        summary={
-          <>
-            <div>
-              <span>عدد الأسطر</span>
-              <span className="sting-mono">{totals.lineCount}</span>
-            </div>
-            <div>
-              <Button
-                variant="quiet"
-                className="pos-cart__link"
-                onClick={() => router.push("/pos/discount")}
-                disabledReason={lines.length ? undefined : "السلة فارغة"}
-              >
-                خصم
-              </Button>
-              <span className="sting-mono">
-                {totals.discountMinor > 0n ? "−" : ""}
-                {formatMinor(totals.discountMinor.toString())}
-              </span>
-            </div>
-            <div>
-              <Button
-                variant="quiet"
-                className="pos-cart__link"
-                onClick={() => router.push("/pos/customer")}
-                disabledReason={lines.length ? undefined : "السلة فارغة"}
-              >
-                اختيار العميل
-              </Button>
-              <span>{customer ? customer.name : "بيع نقدي بلا عميل"}</span>
-            </div>
-          </>
-        }
-        empty={<div className="pos-cart__empty" aria-hidden="true" />}
-        footer={
-          <div className="pos-cart__actions">
-            <Button
-              financial
-              pos={tablet}
-              onClick={() => router.push("/pos/pay")}
-              disabledReason={payDisabled}
-            >
-              {tablet ? "تحصيل" : "متابعة إلى الدفع"}
-            </Button>
-            <div className="pos-cart__secondary">
-              <Button
-                variant="secondary"
-                pos={tablet}
-                onClick={() => void hold()}
-                disabledReason={lines.length ? undefined : "السلة فارغة"}
-              >
-                تعليق الفاتورة
-              </Button>
-              <Button
-                variant="secondary"
-                pos={tablet}
-                onClick={() => persist([])}
-                disabledReason={lines.length ? undefined : "السلة فارغة"}
-              >
-                إلغاء السلة
-              </Button>
-            </div>
-            {held ? (
-              <p className="acc-choice__note" role="status">
-                عُلّقت — <span className="sting-mono">{held}</span> في المعلّقات
-              </p>
-            ) : null}
-          </div>
-        }
-      />
     </aside>
   );
+
+  const cartBar =
+    phone && lines.length ? (
+      <div className="pos-cartbar" role="region" aria-label="ملخّص السلة">
+        <a className="pos-cartbar__sum" href="#pos-cart">
+          <span>
+            السلة · <span className="sting-mono">{totals.lineCount}</span>
+          </span>
+          <strong className="sting-mono">{formatMinor(totals.totalMinor.toString())}</strong>
+        </a>
+        <Button financial pos onClick={() => router.push("/pos/pay")} disabledReason={payDisabled}>
+          تحصيل
+        </Button>
+      </div>
+    ) : null;
+
+  const cart =
+    phone && !lines.length ? (
+      phoneEmptyCart
+    ) : (
+      <aside className="pos-cart" id="pos-cart" aria-label="السلة">
+        <div className="pos-cart__head">
+          <span className="pos-cart__title">السلة</span>
+          <span className="acc-choice__note">فاتورة جديدة — لم تُحفظ</span>
+        </div>
+        <Cart
+          lines={cartLines}
+          totalMinor={totals.totalMinor.toString()}
+          currency="ج.س"
+          onRemove={(id) => {
+            setRemoved(lines.find((l) => l.id === id) ?? null);
+            persist(lines.filter((l) => l.id !== id));
+          }}
+          onUndoRemove={() => {
+            if (removed) persist([...lines, removed]);
+            setRemoved(null);
+          }}
+          onQty={editLine}
+          onStep={(id, dir) => persist(stepCartLine(lines, id, dir))}
+          summary={
+            <>
+              <div>
+                <span>عدد الأسطر</span>
+                <span className="sting-mono">{totals.lineCount}</span>
+              </div>
+              <div>
+                <Button
+                  variant="quiet"
+                  className="pos-cart__link"
+                  onClick={() => router.push("/pos/discount")}
+                  disabledReason={lines.length ? undefined : "السلة فارغة"}
+                >
+                  خصم
+                </Button>
+                <span className="sting-mono">
+                  {totals.discountMinor > 0n ? "−" : ""}
+                  {formatMinor(totals.discountMinor.toString())}
+                </span>
+              </div>
+              <div>
+                <Button
+                  variant="quiet"
+                  className="pos-cart__link"
+                  onClick={() => router.push("/pos/customer")}
+                  disabledReason={lines.length ? undefined : "السلة فارغة"}
+                >
+                  اختيار العميل
+                </Button>
+                <span>{customer ? customer.name : "بيع نقدي بلا عميل"}</span>
+              </div>
+            </>
+          }
+          empty={<div className="pos-cart__empty" aria-hidden="true" />}
+          footer={
+            <div className="pos-cart__actions">
+              <Button
+                financial
+                pos={tablet}
+                onClick={() => router.push("/pos/pay")}
+                disabledReason={payDisabled}
+              >
+                {tablet ? "تحصيل" : "متابعة إلى الدفع"}
+              </Button>
+              <div className="pos-cart__secondary">
+                <Button
+                  variant="secondary"
+                  pos={tablet}
+                  onClick={() => void hold()}
+                  disabledReason={lines.length ? undefined : "السلة فارغة"}
+                >
+                  تعليق الفاتورة
+                </Button>
+                <Button
+                  variant="secondary"
+                  pos={tablet}
+                  onClick={() => persist([])}
+                  disabledReason={lines.length ? undefined : "السلة فارغة"}
+                >
+                  إلغاء السلة
+                </Button>
+              </div>
+              {held ? (
+                <p className="acc-choice__note" role="status">
+                  عُلّقت — <span className="sting-mono">{held}</span> في المعلّقات
+                </p>
+              ) : null}
+            </div>
+          }
+        />
+      </aside>
+    );
 
   const search = (
     <div className="pos-search">
@@ -664,16 +693,17 @@ export function PosClient() {
           </Notice>
         ) : null}
 
-        <div className={`pos-body${tablet ? " pos-body--tablet" : ""}`}>
-          {tablet ? cart : null}
+        <div className={`pos-body${tablet && !phone ? " pos-body--tablet" : ""}`}>
+          {tablet && !phone ? cart : null}
           <section className="pos-panel" aria-label="الأصناف">
             {search}
             {chipsRow}
             {results}
             {foot}
           </section>
-          {tablet ? null : cart}
+          {tablet && !phone ? null : cart}
         </div>
+        {cartBar}
       </div>
       {sheet ? (
         <UnitSheet

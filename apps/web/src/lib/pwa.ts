@@ -63,6 +63,42 @@ export function installEnv(): InstallEnv {
   return "unknown";
 }
 
+/**
+ * فحص 2026-10-17 F13 — وصف البيئة من المتصفح الفعلي لا نصّاً ثابتاً («Chrome · Android» ظهر على Mac).
+ * ما لا نتعرّف عليه بثقة يُوصف محايداً.
+ */
+export function browserLabel(
+  ua: string = typeof navigator === "undefined" ? "" : navigator.userAgent,
+): string {
+  const browser = /SamsungBrowser/i.test(ua)
+    ? "Samsung Internet"
+    : /Edg(A|iOS)?\//.test(ua)
+      ? "Edge"
+      : /OPR\//.test(ua)
+        ? "Opera"
+        : /Firefox\/|FxiOS/.test(ua)
+          ? "Firefox"
+          : /Chrome\/|CriOS/.test(ua)
+            ? "Chrome"
+            : /Safari\//.test(ua)
+              ? "Safari"
+              : "";
+  const os = /Android/i.test(ua)
+    ? "Android"
+    : IOS.test(ua)
+      ? "iOS"
+      : /CrOS/.test(ua)
+        ? "ChromeOS"
+        : /Macintosh|Mac OS X/.test(ua)
+          ? "macOS"
+          : /Windows/.test(ua)
+            ? "Windows"
+            : /Linux/.test(ua)
+              ? "Linux"
+              : "";
+  return [browser, os].filter(Boolean).join(" · ") || "متصفح هذا الجهاز";
+}
+
 export function canPrompt(): boolean {
   return deferredPrompt !== null && !dismissedThisSession;
 }

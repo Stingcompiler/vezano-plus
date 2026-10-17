@@ -219,6 +219,7 @@ test.describe("POS-01", () => {
     await login(page);
     await expect(page.locator('[data-screen="POS-01"][data-state="ready"]')).toBeVisible();
     const wide = (page.viewportSize()?.width ?? 0) >= 1200;
+    const phone = (page.viewportSize()?.width ?? 0) < 768;
     await expectFrame(page, info, {
       screenId: "POS-01",
       state: "ready",
@@ -246,13 +247,18 @@ test.describe("POS-01", () => {
         "منظفات",
         "وزن",
         "السلة",
-        "فاتورة جديدة — لم تُحفظ",
-        "عدد الأسطر",
-        "خصم",
-        "الإجمالي",
-        "ج.س",
-        "تعليق الفاتورة",
-        "إلغاء السلة",
+        // فحص 2026-10-17 F05: على الهاتف السلة الفارغة سطر واحد لا قائمة أزرار معطّلة قبل البحث
+        ...(phone
+          ? []
+          : [
+              "فاتورة جديدة — لم تُحفظ",
+              "عدد الأسطر",
+              "خصم",
+              "الإجمالي",
+              "ج.س",
+              "تعليق الفاتورة",
+              "إلغاء السلة",
+            ]),
         ...(wide
           ? [
               "مسح باركود",
@@ -265,10 +271,20 @@ test.describe("POS-01", () => {
               "السعر والوحدة يُثبَّتان على سطر البيع لحظة الحفظ",
               "متابعة إلى الدفع",
             ]
-          : ["ابحث أو امسح باركود…", "ماسح", "تحصيل"]),
+          : ["ابحث أو امسح باركود…", "ماسح", ...(phone ? [] : ["تحصيل"])]),
       ]),
       styles: [[".pos-cart__title", "color", "ink.strong"]],
     });
+    if (phone) {
+      // البحث في الشاشة الأولى، قبل السلة
+      const searchTop = await page.getByLabel("ابحث أو امسح باركود…").boundingBox();
+      expect(searchTop?.y ?? 9999).toBeLessThan(page.viewportSize()?.height ?? 0);
+      const cartTop = await page.locator("#pos-cart").boundingBox();
+      expect((searchTop?.y ?? 0) < (cartTop?.y ?? 0)).toBe(true);
+      await expect(page.locator("#pos-cart")).toContainText(
+        "السلة فارغة — أضف صنفاً من البحث أعلاه.",
+      );
+    }
     if (wide) {
       // الوحدة البديلة بمعاملها المُعلن، وشارات الرصيد من بيانات الإطار
       const table = page.locator(".c-table");
@@ -283,15 +299,22 @@ test.describe("POS-01", () => {
     await page.getByRole("button", { name: "زيادة شاي أسود 250غ" }).click();
     await expect(cart).toContainText("480.00");
     await expect(cart.locator(".c-cart__summary")).toContainText("1");
+    if (phone) await expect(page.locator(".pos-cartbar")).toContainText("480.00");
     // الصف موسوم «في السلة ×2» على الشاشة العريضة
     if (wide) await expect(page.locator(".c-table")).toContainText("في السلة ×2");
     // «−» حتى الصفر يحذف السطر؛ السلة تعود فارغة والدفع معطّل بسببه
     await page.getByRole("button", { name: "إنقاص شاي أسود 250غ" }).click();
     await page.getByRole("button", { name: "إنقاص شاي أسود 250غ" }).click();
     await expect(cart.locator(".c-cart__lines")).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: wide ? "متابعة إلى الدفع" : "تحصيل" }),
-    ).toHaveAttribute("aria-disabled", "true");
+    if (phone) {
+      // الهاتف: السلة الفارغة سطر واحد، ولا شريط تحصيل
+      await expect(page.locator("#pos-cart")).toContainText("السلة فارغة");
+      await expect(page.locator(".pos-cartbar")).toHaveCount(0);
+    } else {
+      await expect(
+        page.getByRole("button", { name: wide ? "متابعة إلى الدفع" : "تحصيل" }),
+      ).toHaveAttribute("aria-disabled", "true");
+    }
   });
 
   test("POS-02 ready → validation_error: الوزن بثلاث منازل، والتحويل مُعلن، والزر معطّل حتى التصحيح", async ({

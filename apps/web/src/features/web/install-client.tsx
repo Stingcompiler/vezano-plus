@@ -18,6 +18,7 @@ import {
   applyUpdate,
   canPrompt,
   type InstallEnv,
+  browserLabel,
   installEnv,
   onPwaChange,
   promptInstall,
@@ -39,6 +40,7 @@ export function InstallClient() {
   const app = useApp();
   const online = useOnline();
   const [env, setEnv] = useState<InstallEnv>("unknown");
+  const [envLabel, setEnvLabel] = useState("");
   const [promptable, setPromptable] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -57,6 +59,7 @@ export function InstallClient() {
     }
     const refresh = () => {
       setEnv(installEnv());
+      setEnvLabel(browserLabel());
       setPromptable(canPrompt());
       setDismissed(wasDismissed());
       setReady(updateReady());
@@ -242,10 +245,14 @@ export function InstallClient() {
                   </Button>
                 }
               >
-                <p className="acc-choice__note">Chrome · Android · مدعوم</p>
+                <p className="acc-choice__note">
+                  {envLabel || "متصفح هذا الجهاز"} ·{" "}
+                  {promptable ? "مدعوم" : "التثبيت من قائمة المتصفح"}
+                </p>
                 <p className="acc-lead">
-                  متصفحك يدعم التثبيت. التطبيق المثبَّت يعمل بلا اتصال ويحفظ العمليات محلياً حتى
-                  تعود الشبكة.
+                  {promptable
+                    ? "متصفحك يدعم التثبيت. التطبيق المثبَّت يعمل بلا اتصال ويحفظ العمليات محلياً حتى تعود الشبكة."
+                    : "إن لم يظهر زر التثبيت فابحث في قائمة المتصفح عن «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». التطبيق المثبَّت يعمل بلا اتصال ويحفظ العمليات محلياً حتى تعود الشبكة."}
                 </p>
                 <p className="acc-choice__note">
                   التثبيت لا يُنشئ حساباً جديداً ولا ينقل بياناتك — هو نفس التطبيق باختصار على

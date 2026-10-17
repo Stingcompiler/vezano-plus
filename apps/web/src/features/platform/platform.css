@@ -85,10 +85,9 @@
   .plt-banner.plt-banner--bare {
     flex-basis: auto;
   }
+  /* فحص 2026-10-17 VP11: الترويسة كانت 107–152px على الهاتف — شرح الإطار ينتقل إلى الحاسوب وحده */
   .plt-banner__hint {
-    white-space: normal;
-    font-size: 12px;
-    line-height: 1.4;
+    display: none;
   }
   .plt-banner__name {
     display: none;
@@ -1043,4 +1042,55 @@
   background: #1f8a4c;
   border-color: #1f8a4c;
   color: #fff;
+}
+
+/* فحص 2026-10-17 VP09/VP10 — صفّ النسخة: أفعال مرتّبة، والاستعادة الحيّة مفصولة، والأثر التقني يُطوى */
+.plt-backup__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 8px;
+}
+.plt-backup__live.c-btn {
+  color: var(--color-danger-strong);
+}
+.plt-backup__confirm {
+  display: grid;
+  gap: 8px;
+  margin-block-start: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+/* حقل التأكيد داخل خلية جدول: عرضه النسبي لا الذاتي (size=20) كي لا يمدّ الجدول خارج الشاشة */
+.plt-backup__confirm input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.plt-backup__fail {
+  display: grid;
+  gap: 4px;
+  margin-block-start: 6px;
+}
+.plt-backup__tech > summary {
+  cursor: pointer;
+  font-size: var(--text-note);
+  color: var(--color-ink-muted);
+  min-block-size: 32px;
+  display: flex;
+  align-items: center;
+}
+.plt-backup__tech > code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  user-select: all;
+  text-align: start;
+}
+@media (max-width: 767px) {
+  .plt-backup__acts > .c-btn,
+  .plt-backup__acts > .c-btn__wrap {
+    inline-size: 100%;
+  }
 }

@@ -235,7 +235,11 @@ export function HomeClient() {
               <div className="home-head__meta">
                 <span>
                   <span className="sting-mono">{summary.branches.length}</span> فروع ·{" "}
-                  {summary.branches_synced ? "كلها زامنت" : "بعضها لم يزامن"}
+                  {summary.devices_total === 0
+                    ? "لا جهاز مسجّل بعد"
+                    : summary.branches_synced
+                      ? "كلها زامنت"
+                      : "بعضها لم يزامن"}
                 </span>
                 <SelectField
                   label="الفترة"

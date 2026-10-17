@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (184 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (187 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -165,6 +165,7 @@ export const API_ERROR_CODES = [
   "send_failed",
   "sender_required",
   "service_areas_required",
+  "session_expired",
   "session_revoked",
   "shift_open",
   "similar_party",
@@ -186,6 +187,8 @@ export const API_ERROR_CODES = [
   "validity_past",
   "version_superseded",
   "whatsapp_invalid",
+  "window_in_past",
+  "window_invalid",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
@@ -630,6 +633,18 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 409,
       code: "account_exists",
+    },
+  ],
+  "POST /api/auth/device-refresh": [
+    {
+      status: 401,
+      code: "token_invalid",
+    },
+  ],
+  "POST /api/auth/device-refresh/issue": [
+    {
+      status: 401,
+      code: "token_invalid",
     },
   ],
   "POST /api/auth/login": [
@@ -1438,6 +1453,16 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "owner_required",
     },
   ],
+  "POST /api/platform/announcements": [
+    {
+      status: 400,
+      code: "window_in_past",
+    },
+    {
+      status: 400,
+      code: "window_invalid",
+    },
+  ],
   "POST /api/platform/announcements/{announcement_id}/{action}": [
     {
       status: 400,
@@ -1648,6 +1673,16 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 409,
       code: "already_decided",
+    },
+  ],
+  "POST /api/platform/resume": [
+    {
+      status: 401,
+      code: "not_remembered",
+    },
+    {
+      status: 401,
+      code: "session_expired",
     },
   ],
   "POST /api/platform/tenants/{tenant_id}/market-verification/review": [

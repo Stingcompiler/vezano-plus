@@ -64,9 +64,7 @@ DEFAULT_PLANS: list[dict[str, Any]] = [
         "max_users": 2,
         "campaign_quota": 0,
         "features": ["pos_core", "advanced_reports", "bulk_pricing"],
-        "blurb": (
-            "كل ميزات باقة الفرع الواحد. عند الانتهاء تبقى بياناتك وتتحوّل للقراءة والبيع النقدي."
-        ),
+        "blurb": ("كل ميزات باقة الفرع الواحد. عند الانتهاء يستمر البيع كاملاً وتبقى بياناتك لك."),
         "price_monthly_minor": 0,
     },
 ]

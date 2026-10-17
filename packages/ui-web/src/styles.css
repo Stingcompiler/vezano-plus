@@ -116,7 +116,8 @@ h3 {
 /* ---------- C-FRAME ---------- */
 .c-frame {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, …): محتوى عريض في المساحة الرئيسية لا يمدّ الإطار كلّه خارج الشاشة (فحص 2026-10-17 VP09) */
+  grid-template-columns: minmax(0, 1fr);
   min-block-size: 100dvh;
 }
 .c-frame__skip {
@@ -211,7 +212,7 @@ h3 {
 }
 @media (min-width: 834px) {
   .c-frame--sidebar {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 240px minmax(0, 1fr);
     grid-template-areas: "banner banner" "nav main" "footer footer";
   }
   .c-frame--sidebar .c-frame__nav {
@@ -287,6 +288,43 @@ h3 {
   .c-frame--sidebar .c-nav {
     padding: 10px 8px 24px;
   }
+  /* رأس الدرج: اسم الإطار وزرّ إغلاق ظاهر ثابت أعلى القائمة (فحص 2026-10-17 F07) */
+  .c-frame--sidebar .c-frame__nav-head {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--color-sidebar);
+    border-block-end: 1px solid var(--color-border);
+  }
+}
+.c-frame__nav-head {
+  display: none;
+}
+.c-frame__nav-title {
+  font-weight: var(--font-weight-semibold);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c-frame__nav-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: var(--layout-touchTarget);
+  min-block-size: var(--layout-touchTarget);
+  font-size: 18px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  cursor: pointer;
 }
 /* على الحاسوب لا درج: الشريط الجانبي ثابت */
 @media (min-width: 834px) {
@@ -1018,6 +1056,9 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
 .c-table__empty {
   margin-block: 8px;
 }
+.c-table__val {
+  display: contents;
+}
 /* < 834px أو forceCards: بطاقة صف بنفس التسميات — لا تمرير أفقي لبيانات مالية */
 @media (max-width: 833px) {
   .c-table:not(.c-table--table) .c-table__table thead {
@@ -1044,6 +1085,13 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
     content: attr(data-label);
     color: var(--color-ink-muted);
     font-size: var(--text-note);
+    flex: 0 0 auto;
+    max-inline-size: 40%;
+  }
+  .c-table:not(.c-table--table) .c-table__val {
+    display: block;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
   }
 }
 .c-table--cards .c-table__table thead {
@@ -1069,6 +1117,13 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
   content: attr(data-label);
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  flex: 0 0 auto;
+  max-inline-size: 40%;
+}
+.c-table--cards .c-table__val {
+  display: block;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- C-FILTER ---------- */

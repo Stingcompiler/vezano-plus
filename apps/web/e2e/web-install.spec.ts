@@ -80,7 +80,26 @@ async function fireInstallPrompt(page: Page, outcome: "accepted" | "dismissed") 
   }, outcome);
 }
 
+const ANDROID_CHROME =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
+
 test.describe("WEB-01", () => {
+  test("فحص 2026-10-17 F13: البيئة من المتصفح الفعلي لا «Chrome · Android» ثابتاً، وبلا عرض تثبيت لا نقول «مدعوم»", async ({
+    page,
+  }) => {
+    await seed(page);
+    await login(page, "/install");
+    const root = page.locator('[data-screen="WEB-01"]');
+    await expect(root).toHaveAttribute("data-state", "ready");
+    // Desktop Chrome في Playwright = Windows
+    await expect(root).toContainText("Chrome · Windows · التثبيت من قائمة المتصفح");
+    await expect(root).not.toContainText("Android");
+    await expect(root).not.toContainText("متصفحك يدعم التثبيت");
+  });
+});
+
+test.describe("WEB-01 Android", () => {
+  test.use({ userAgent: ANDROID_CHROME });
   test("ready → success: التثبيت متاح على Chrome/Android؛ الرفض لا يُعاد في الجلسة؛ القبول = ثُبّت", async ({
     page,
   }, info) => {
@@ -124,7 +143,9 @@ test.describe("WEB-01", () => {
       ]),
     });
   });
+});
 
+test.describe("WEB-01", () => {
   test("offline: يعمل بلا اتصال بعد التثبيت — الفرق المُعلن", async ({ page }, info) => {
     await seed(page);
     await login(page, "/install");
