@@ -29,6 +29,7 @@ export function OperatorGate({ children }: { children: ReactNode }) {
       alive = false;
     };
   }, [ready, isLogin, router]);
-  if (!ready && !isLogin) return <div className="restore-gate" aria-busy="true" data-restoring="" />;
+  if (!ready && !isLogin)
+    return <div className="restore-gate" aria-busy="true" data-restoring="" />;
   return <>{children}</>;
 }

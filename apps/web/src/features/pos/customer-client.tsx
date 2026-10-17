@@ -26,6 +26,7 @@ import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
 
+import { AppNav } from "@/features/home/app-nav";
 import { PosNav } from "./pos-nav";
 
 type State = "ready" | "empty" | "validation_error" | "permission_denied" | "offline";
@@ -74,7 +75,10 @@ function Balance({ minor }: { minor: string }) {
  * التشابه المضلل (الاسم نفسه/الهاتف نفسه) يُعرض ويُسأل عنه قبل الإنشاء — لا يُمنع ولا يُدمج؛
  * والفحص الخادمي يكتمل عند المزامنة وقد ينتج مراجعة دمج (PTY-07).
  */
-export function CustomerClient() {
+export function CustomerClient({ mode = "sale" }: { mode?: "sale" | "ledger" } = {}) {
+  // فحص 2026-10-17 F12: «عميل جديد» من دفتر العملاء كان يمرّ بمسار البيع (إجمالي سلة و«بيع نقدي بلا
+  // عميل»). وضع «الدفتر» يفتح نموذج الإنشاء مباشرة ويعود إلى بطاقة العميل بعده
+  const ledger = mode === "ledger";
   const router = useRouter();
   const app = useApp();
   const online = useOnline();
@@ -82,7 +86,7 @@ export function CustomerClient() {
   const [, setCtx] = useState<ShiftContext | null>(null);
   const [parties, setParties] = useState<LocalParty[]>([]);
   const [q, setQ] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(ledger);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [similar, setSimilar] = useState<{ byName: LocalParty | null; byPhone: LocalParty | null }>(
@@ -117,6 +121,10 @@ export function CustomerClient() {
   const results = searchLocalParties(parties, q);
 
   const choose = async (p: LocalParty) => {
+    if (ledger) {
+      router.push(`/parties/${p.id}`);
+      return;
+    }
     if (!draft) return;
     const limit = BigInt(p.credit_limit_minor || "0");
     if (limit > 0n && BigInt(p.balance_minor || "0") + (totals?.totalMinor ?? 0n) > limit) {
@@ -176,12 +184,16 @@ export function CustomerClient() {
           : "ready";
 
   return (
-    <Frame title="نقطة البيع" nav={<PosNav currentId="pos" />} footer={null}>
+    <Frame
+      title={ledger ? "العملاء والذمم" : "نقطة البيع"}
+      nav={ledger ? <AppNav currentId="parties" /> : <PosNav currentId="pos" />}
+      footer={null}
+    >
       <div className="pos" data-screen="POS-04" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">{creating ? "عميل جديد" : "اختيار العميل"}</h2>
-            {totals ? (
+            {totals && !ledger ? (
               <span className="cat-head__hint">
                 الإجمالي{" "}
                 <span className="sting-mono">{formatMinor(totals.totalMinor.toString())}</span>
@@ -350,9 +362,15 @@ export function CustomerClient() {
                   >
                     أنشئ: {name.trim() || "—"}
                   </Button>
-                  <Button variant="secondary" onClick={() => setCreating(false)}>
-                    اختيار العميل
-                  </Button>
+                  {ledger ? (
+                    <Button variant="secondary" onClick={() => router.push("/parties")}>
+                      العملاء والذمم
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" onClick={() => setCreating(false)}>
+                      اختيار العميل
+                    </Button>
+                  )}
                 </div>
               </>
             )}

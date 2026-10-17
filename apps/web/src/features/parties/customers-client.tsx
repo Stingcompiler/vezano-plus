@@ -316,7 +316,7 @@ export function CustomersClient() {
                     ))}
                   </div>
                   <div className="pty-actions">
-                    <Button onClick={() => router.push("/pos/customer")}>عميل جديد</Button>
+                    <Button onClick={() => router.push("/parties/new")}>عميل جديد</Button>
                     <Button variant="quiet" onClick={() => router.push("/parties/suppliers")}>
                       قائمة الموردين
                     </Button>

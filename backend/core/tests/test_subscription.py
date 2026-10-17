@@ -31,6 +31,13 @@ def test_entitlements_and_amount_visibility(ctx: dict[str, Any]) -> None:  # noq
     codes = [f["code"] for f in p["features"]]
     assert codes[0] == "pos_core" and p["features"][0]["status"] == "open"
     assert next(f for f in p["features"] if f["code"] == "supplier_analytics")["status"] == "locked"
+    # فحص 2026-10-17 F11: الملاحظة تتبع الحالة — لا «فُعّلت لباقتك حديثاً» بجوار «مغلق»
+    for f in p["features"]:
+        if f["status"] == "open" and f["code"] not in {"pos_core", "multi_branch"}:
+            assert f["note"] == "مشمولة في باقتك", f
+        if f["status"] == "locked":
+            assert "فُعّلت" not in f["note"] and f["note"], f
+    assert "للقراءة والبيع النقدي" not in str(p["plans"])
     assert [x["code"] for x in p["plans"]] == ["single", "dual", "trial"]
     assert p["if_expired"]["continues"][0] == "البيع كاملاً — نقدي وآجل ومختلط"
     # مدير الفرع: الحدود والميزات بلا مبالغ

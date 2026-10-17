@@ -416,17 +416,17 @@ FEATURE_ROWS: tuple[dict[str, str], ...] = (
     {
         "code": "market_private_prices",
         "label": "قوائم أسعار خاصة في السوق",
-        "note": "فُعّلت لباقتك حديثاً",
+        "note": "",
     },
     {
         "code": "market_publish",
         "label": "أدوات البائع ونشر العروض",
-        "note": "تحتاج تحقّق دور بائع منفصلاً — ليس قيد باقة بل قيد تحقّق",
+        "note": "تحتاج تحقّق هوية البائع — مستقلّ عن الباقة",
     },
     {
         "code": "supplier_analytics",
         "label": "تحليلات المورد المتقدّمة",
-        "note": "غير مشمولة في باقة الفرعين. نعرضها رمادية مع ما تفعله بالضبط، ولا نخفيها.",
+        "note": "",
     },
 )
 
@@ -446,6 +446,18 @@ STOPS: tuple[str, ...] = (
     "التقارير التحليلية",
     "الاستيراد الجماعي",
 )
+
+
+def _feature_note(code: str, status: str) -> str:
+    """«مشمولة في باقتك» أو أين تتوفّر — من الكتالوج الحالي لا من نصّ ثابت."""
+    if status == "open":
+        return "مشمولة في باقتك"
+    with_it = [
+        PLANS[c].name for c in PLAN_ORDER if code in PLANS[c].features and not PLANS[c].trial
+    ]
+    if not with_it:
+        return "غير متاحة في الباقات الحالية"
+    return "متاحة في باقة «" + "» و«".join(with_it) + "»"
 
 
 def _feature_status(code: str, plan: Plan, sub: TenantSubscription) -> str:
@@ -476,6 +488,10 @@ def entitlements_payload(*, viewer_is_owner: bool, now: Any = None) -> dict[str,
                 note = "فرعان في باقتك · الثالث يحتاج ترقية"
             else:
                 note = f"{plan.max_branches} فروع في باقتك"
+        elif not note:
+            # فحص 2026-10-17 F11: الملاحظة تتبع الحالة الفعلية — كانت «فُعّلت لباقتك حديثاً» بجوار
+            # «مغلق» (نصّ مثال من الإطار)
+            note = _feature_note(f["code"], s)
         rows.append({**f, "note": note, "status": s})
     return {
         "plan": {

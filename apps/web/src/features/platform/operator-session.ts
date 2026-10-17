@@ -63,7 +63,6 @@ export function platformApi(): ContractsClient {
   return client;
 }
 
-
 let resumeInflight: Promise<boolean> | null = null;
 
 /** يستأنف من الـCookie مرة (طلب واحد مهما تعدّد): يضع الجلسة ويعيد `true`، أو `false` بلا جلسة. */

@@ -297,6 +297,21 @@ test.describe("PTY-01", () => {
     await expect(page).toHaveURL(/\/parties\/[^/]+\/statement$/);
   });
 
+  test("فحص 2026-10-17 F12: «عميل جديد» يفتح نموذج الإنشاء مباشرة — لا سلة ولا «بيع نقدي»", async ({
+    page,
+  }) => {
+    await seed(page);
+    await listRoute(page, listBody("customers", CUSTOMERS));
+    await login(page, "/parties");
+    await page.getByRole("button", { name: "عميل جديد" }).click();
+    await expect(page).toHaveURL(/\/parties\/new$/);
+    await expect(page.getByLabel("الاسم")).toBeVisible();
+    await expect(page.getByText("بيع نقدي بلا عميل")).toHaveCount(0);
+    await expect(page.locator('[data-screen="POS-04"]')).not.toContainText("الإجمالي");
+    await page.getByRole("button", { name: "العملاء والذمم" }).last().click();
+    await expect(page).toHaveURL(/\/parties$/);
+  });
+
   test("empty: محلٌّ نقدي بالكامل — حالة سويّة لا نقص", async ({ page }, info) => {
     await seed(page);
     await listRoute(page, listBody("customers", []));

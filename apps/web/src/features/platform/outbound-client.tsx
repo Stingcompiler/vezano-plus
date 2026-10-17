@@ -234,8 +234,20 @@ export function OutboundClient() {
                   </dd>
                   <dt>نسبة التسليم</dt>
                   <dd>
-                    <span className="sting-mono">{data.delivery_rate_hour}%</span>
-                    <div className="mp-reason">قياس آخر ساعة</div>
+                    {data.delivery_rate_hour ? (
+                      <>
+                        <span className="sting-mono">{data.delivery_rate_hour}%</span>
+                        <div className="mp-reason">قياس آخر ساعة</div>
+                        <div className="mp-reason">
+                          من <span className="sting-mono">{data.delivery_hour_total}</span> رسالة
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span>—</span>
+                        <div className="mp-reason">لا رسائل في آخر ساعة — لا نسبة تُقاس</div>
+                      </>
+                    )}
                   </dd>
                 </dl>
                 <h3 className="cat-head__title">القنوات والمزوّدون</h3>

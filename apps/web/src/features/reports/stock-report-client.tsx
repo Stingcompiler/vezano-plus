@@ -20,6 +20,7 @@ import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
+import { DevicesSynced } from "@/features/reports/completeness";
 import { pushPending } from "@/lib/sync";
 
 type State = "ready" | "loading" | "empty" | "stale" | "pending_sync";
@@ -388,9 +389,11 @@ export function StockReportClient() {
                     {p.branch ? ` · ${p.branch.name}` : ""}
                   </h3>
                   <p className="acc-choice__note">
-                    <span className="sting-mono">{p.completeness.devices_synced}</span> أجهزة من{" "}
-                    <span className="sting-mono">{p.completeness.devices_total}</span> زامنت · حُسب
-                    في <span className="sting-mono">{hhmm(p.computed_at)}</span>
+                    <DevicesSynced
+                      synced={p.completeness.devices_synced}
+                      total={p.completeness.devices_total}
+                    />{" "}
+                    · حُسب في <span className="sting-mono">{hhmm(p.computed_at)}</span>
                     {p.negatives > 0 ? (
                       <>
                         {" "}

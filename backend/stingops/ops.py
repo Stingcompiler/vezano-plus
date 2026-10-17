@@ -175,7 +175,8 @@ def outbound_payload() -> dict[str, Any]:
             "deferred_campaigns": deferred_campaigns,
             "announcements_due": announcements_due,
         },
-        "delivery_rate_hour": _pct(hour_delivered, hour_total),
+        # فحص 2026-10-17 VP08: بلا رسائل في الساعة لا «0%» — الواجهة تقول «لا رسائل» وتعرض المقام
+        "delivery_rate_hour": _pct(hour_delivered, hour_total) if hour_total else "",
         "delivery_hour_total": hour_total,
         "channels": channels,
         "fetched_at": _iso(now),
