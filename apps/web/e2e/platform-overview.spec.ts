@@ -177,7 +177,9 @@ test.describe("PLT-00", () => {
       ),
     );
     await page.goto("/platform/tenants?filter=active");
-    await expect(page).toHaveURL(/\/platform\/login\?next=%2Fplatform%2Ftenants%3Ffilter%3Dactive$/);
+    await expect(page).toHaveURL(
+      /\/platform\/login\?next=%2Fplatform%2Ftenants%3Ffilter%3Dactive$/,
+    );
     await page.getByLabel("بريد المشغّل").fill("ops.huda@sting.internal");
     await page.getByLabel("كلمة المرور").fill("very-secret-ops");
     await page.getByRole("button", { name: "دخول مساحة المشغّل" }).click();

@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 
+/**
+ * فحص 2026-10-17 F13 — إصدار بناء قابل للتتبّع بدل `0.0.0-dev`: تاريخ البناء + أول 7 من الالتزام
+ * (`STING_BUILD_SHA` يمرّره النشر إلى صورة Docker، وCI يملك `GITHUB_SHA`). `next dev` يبقى «dev».
+ */
+function buildVersion(): string {
+  if (process.env.NEXT_PUBLIC_APP_VERSION) return process.env.NEXT_PUBLIC_APP_VERSION;
+  if (process.env.NODE_ENV !== "production") return "dev";
+  const d = new Date().toISOString();
+  const day = `${d.slice(0, 4)}.${d.slice(5, 7)}.${d.slice(8, 10)}`;
+  const sha = (process.env.STING_BUILD_SHA || process.env.GITHUB_SHA || "").slice(0, 7);
+  return sha ? `${day}+${sha}` : day;
+}
+
 const config: NextConfig = {
   reactStrictMode: true,
+  env: { NEXT_PUBLIC_APP_VERSION: buildVersion() },
   // خادما التطوير (المعاينة 3100 والاختبار 3011/3100) لا يتشاركان مخرجات البناء — وإلا يكتب أحدهما
   // بيئة الآخر (NEXT_PUBLIC_API_URL) فتطلب المعاينة localhost:8000 مباشرةً وتسقط بـCORS
   distDir: process.env.NEXT_DIST_DIR ?? ".next",

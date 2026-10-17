@@ -478,4 +478,72 @@ test.describe("PLT-10", () => {
     await expect(root.locator("li", { hasText: "تأكيد كتابيّ لاسم البيئة" })).toHaveCount(0);
     expect(calls).toBe(2);
   });
+  test("فحص 2026-10-17 VP09/VP10: لا تجاوز أفقي على الهاتف، والأثر التقني مطويّ، ومعرّف لكل نسخة، وتصفية وقائمة مختصرة", async ({
+    page,
+  }) => {
+    const note =
+      "الرفع فشل: S3UploadFailedError: Failed to upload /backups/vezano-20261008-2041.dump.vzb.part to vezano-plus-product/vezano-plus/nightly/vezano-20261008-2041.dump.vzb: An error occurred (NoSuchBucket) when calling the PutObject operation: The specified bucket does not exist";
+    const many = Array.from({ length: 10 }, (_, i) =>
+      BACKUP({
+        id: `0199a1b2-c3d4-7e5f-8a9b-00000000000${i}`,
+        taken_at: `2026-09-${String(20 - i).padStart(2, "0")}T02:00:00`,
+        last_drill: null,
+        integrity_label: "صالحة",
+      }),
+    );
+    const failedUp = BACKUP({
+      id: "0199a1b2-c3d4-7e5f-8a9b-0000000000ff",
+      taken_at: "2026-09-05T22:41:00",
+      offsite_status: "failed",
+      offsite_label: "فشل الرفع",
+      offsite_at: "2026-09-05T22:45:00",
+      offsite_note: note,
+    });
+    await page.route("**/api/platform/backups", (route) =>
+      route.fulfill(json(200, PAYLOAD([...many, failedUp], false))),
+    );
+    await operatorLogin(page);
+    await goSection(page, "النسخ");
+    const root = page.locator('[data-screen="PLT-10"]');
+    // قائمة مختصرة: أحدث 8، والباقي بزرّ
+    await expect(root.getByRole("button", { name: "تشغيل تجربة استعادة معزولة" })).toHaveCount(8);
+    await expect(root).toContainText("المعرّف 00000000");
+    await root.getByRole("button", { name: "أظهر كل النسخ (11)" }).click();
+    await expect(root.getByRole("button", { name: "تشغيل تجربة استعادة معزولة" })).toHaveCount(11);
+    // الخطأ موجز بالعربية، ورفع أحدث ناجح يُذكر، والأثر التقني مطويّ حتى يُطلب
+    await expect(root).toContainText("حاوية التخزين غير موجودة");
+    await expect(root).toContainText("رُفعت بعدها نسخة أحدث");
+    const tech = root.locator("details.plt-backup__tech");
+    await expect(tech.locator("code")).toBeHidden();
+    await tech.locator("summary", { hasText: "التفاصيل التقنية" }).click();
+    await expect(tech.locator("code")).toContainText("NoSuchBucket");
+    // التصفية: «تحتاج انتباهاً» — كل النسخ هنا إما غير مختبَرة أو فشل رفعها
+    await root.getByRole("button", { name: /تحتاج انتباهاً/ }).click();
+    await expect(root.getByRole("button", { name: /تحتاج انتباهاً \(11\)/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // تأكيد الاستعادة الحيّة يسمّي النسخة بمعرّفها
+    await root.getByRole("button", { name: "استعادة حيّة — تتطلّب موافقة ثانية" }).last().click();
+    await expect(root.locator(".plt-backup__confirm")).toContainText("المعرّف 000000ff");
+    // لا تجاوز أفقي
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    const offenders = await page.evaluate(() => {
+      const w = document.documentElement.clientWidth;
+      return [...document.querySelectorAll("body *")]
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width > 0 && (r.left < -1 || r.right > w + 1);
+        })
+        .filter((e) => ![...e.children].some((c) => c.getBoundingClientRect().left < -1))
+        .slice(0, 12)
+        .map(
+          (e) =>
+            `${e.tagName}.${e.className} ${Math.round(e.getBoundingClientRect().left)}..${Math.round(e.getBoundingClientRect().right)}`,
+        );
+    });
+    expect(overflow, offenders.join("\n")).toBeLessThanOrEqual(0);
+  });
 });

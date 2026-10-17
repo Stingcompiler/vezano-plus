@@ -179,7 +179,14 @@ export function Table<Row>({
                       className={c.mono ? "c-table__num" : undefined}
                     >
                       {/* mono على القيمة لا الخلية: تسمية البطاقة (::before) عربية ولا تدخل mono */}
-                      {c.mono ? <span className="sting-mono">{c.render(row)}</span> : c.render(row)}
+                      {/* فحص 2026-10-17 VP09: القيمة كتلة واحدة — في البطاقة لا تتوزّع أجزاؤها على السطر فتضغط التسمية */}
+                      <div className="c-table__val">
+                        {c.mono ? (
+                          <span className="sting-mono">{c.render(row)}</span>
+                        ) : (
+                          c.render(row)
+                        )}
+                      </div>
                     </td>
                   ))}
                 </tr>

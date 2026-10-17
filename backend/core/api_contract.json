@@ -226,6 +226,12 @@
    "400:phone_invalid",
    "409:account_exists"
   ],
+  "POST /api/auth/device-refresh": [
+   "401:token_invalid"
+  ],
+  "POST /api/auth/device-refresh/issue": [
+   "401:token_invalid"
+  ],
   "POST /api/auth/login": [
    "401:invalid_credentials"
   ],
@@ -552,6 +558,10 @@
    "400:validation_error",
    "403:owner_required"
   ],
+  "POST /api/platform/announcements": [
+   "400:window_in_past",
+   "400:window_invalid"
+  ],
   "POST /api/platform/announcements/{announcement_id}/{action}": [
    "400:promise_outside_plan"
   ],
@@ -628,6 +638,10 @@
    "400:reason_required",
    "403:operator_scope_publish_only",
    "409:already_decided"
+  ],
+  "POST /api/platform/resume": [
+   "401:not_remembered",
+   "401:session_expired"
   ],
   "POST /api/platform/tenants/{tenant_id}/market-verification/review": [
    "400:reasons_required"
@@ -2826,6 +2840,9 @@
      "decisions_count": {
       "type": "integer"
      },
+     "devices_total": {
+      "type": "integer"
+     },
      "kind": {
       "type": "string"
      },
@@ -2912,6 +2929,7 @@
      "branch_id",
      "branches",
      "branches_synced",
+     "devices_total",
      "coverage_at",
      "decisions",
      "kpis",
@@ -25088,6 +25106,82 @@
     "type": "object"
    }
   },
+  "POST /api/auth/device-refresh": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "access": {
+      "type": "string"
+     },
+     "device_id": {
+      "type": "string"
+     },
+     "expires_at": {
+      "type": "string"
+     },
+     "refresh_token": {
+      "type": "string"
+     },
+     "session_id": {
+      "type": "string"
+     },
+     "tenant_id": {
+      "type": "string"
+     },
+     "user_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "access",
+     "refresh_token",
+     "expires_at",
+     "session_id",
+     "user_id",
+     "tenant_id",
+     "device_id"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/auth/device-refresh/issue": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "access": {
+      "type": "string"
+     },
+     "device_id": {
+      "type": "string"
+     },
+     "expires_at": {
+      "type": "string"
+     },
+     "refresh_token": {
+      "type": "string"
+     },
+     "session_id": {
+      "type": "string"
+     },
+     "tenant_id": {
+      "type": "string"
+     },
+     "user_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "access",
+     "refresh_token",
+     "expires_at",
+     "session_id",
+     "user_id",
+     "tenant_id",
+     "device_id"
+    ],
+    "type": "object"
+   }
+  },
   "POST /api/auth/login": {
    "200": {
     "additionalProperties": false,
@@ -45791,6 +45885,40 @@
     },
     "required": [
      "report"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/resume": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "access": {
+      "type": "string"
+     },
+     "display_name": {
+      "type": "string"
+     },
+     "must_change_password": {
+      "type": "boolean"
+     },
+     "refresh": {
+      "type": "string"
+     },
+     "role": {
+      "type": "string"
+     },
+     "session_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "access",
+     "refresh",
+     "session_id",
+     "display_name",
+     "role",
+     "must_change_password"
     ],
     "type": "object"
    }

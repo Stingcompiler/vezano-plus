@@ -280,18 +280,6 @@ export function EntitlementsClient() {
                     );
                   })}
                 </ul>
-                <div className="acc-actions">
-                  <Button
-                    variant="quiet"
-                    onClick={() => {
-                      const p = data.plans[0]!;
-                      const c = p.cells.find((x) => x.feature === "market_private_prices")!;
-                      void toggle(p, c, { apply_all: true });
-                    }}
-                  >
-                    طبّق على كل المستأجرين
-                  </Button>
-                </div>
 
                 <h3 className="cat-head__title">أعلام التشغيل</h3>
                 <p className="acc-choice__note">

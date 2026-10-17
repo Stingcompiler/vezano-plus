@@ -72,6 +72,19 @@ export function AnnouncementsClient() {
     localIso(new Date(Date.now() + 6 * 3_600_000 + 40 * 60_000)),
   );
   const [preview, setPreview] = useState<Preview | null>(null);
+  // فحص 2026-10-17 VP04: النافذة تُفحص فوراً بجوار الحقل لا بعد الإرسال
+  const startMs = Date.parse(starts);
+  const endMs = Date.parse(ends);
+  const windowError = Number.isNaN(startMs)
+    ? "اكتب بداية صالحة بالصيغة نفسها"
+    : Number.isNaN(endMs)
+      ? "اكتب نهاية صالحة بالصيغة نفسها"
+      : endMs <= startMs
+        ? "النهاية قبل البداية — اجعلها بعدها"
+        : startMs <= Date.now()
+          ? "البداية في الماضي — اختر وقتاً قادماً"
+          : undefined;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [draftId, setDraftId] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState("");
@@ -311,18 +324,19 @@ export function AnnouncementsClient() {
                   hint="نقاط البيع تعمل بالكامل محلياً والمزامنة تُستأنف تلقائياً بعد النافذة."
                 />
                 <TextField
-                  label="بداية النافذة (بتوقيتك)"
+                  label={`بداية النافذة (بتوقيت ${tz})`}
                   kind="text"
                   mono
                   value={starts}
                   onChange={(e) => setStarts(e.target.value)}
                 />
                 <TextField
-                  label="نهاية النافذة (بتوقيتك)"
+                  label={`نهاية النافذة (بتوقيت ${tz})`}
                   kind="text"
                   mono
                   value={ends}
                   onChange={(e) => setEnds(e.target.value)}
+                  error={windowError}
                 />
                 <div className="pos-chips" role="group" aria-label="الجمهور">
                   {(
@@ -373,7 +387,7 @@ export function AnnouncementsClient() {
                     loading={busy === "save"}
                     onClick={() => void onSave()}
                     disabledReason={
-                      !title.trim() || !body.trim() ? "العنوان والنص مطلوبان" : undefined
+                      !title.trim() || !body.trim() ? "العنوان والنص مطلوبان" : windowError
                     }
                   >
                     حفظ
@@ -385,9 +399,12 @@ export function AnnouncementsClient() {
                     disabledReason={
                       !title.trim() || !body.trim()
                         ? "العنوان والنص مطلوبان"
-                        : preview?.promise_outside_plan
-                          ? "النصّ يَعِد بما ليس في الباقة"
-                          : undefined
+                        : (windowError ??
+                          (preview?.promise_outside_plan
+                            ? "النصّ يَعِد بما ليس في الباقة"
+                            : preview && preview.targeted === 0
+                              ? "لا متجر في الجمهور الآن — لا جدولة لإعلان لا يصل أحداً"
+                              : undefined))
                     }
                   >
                     جدولة — {preview ? storesWord(preview.targeted) : "…"}
