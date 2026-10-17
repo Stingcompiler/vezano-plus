@@ -3322,6 +3322,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description خروج المشغّل: يُلغى الجلسة في الخادم (كان المسح في الذاكرة وحدها) ويُمسح الـCookie. */
+        post: operations["platform_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/m0": {
         parameters: {
             query?: never;
@@ -3540,6 +3557,23 @@ export interface paths {
         put?: never;
         /** @description PLT-07: `decide` (`{decision: suspend|close|ledger, reason_code, reason_text}`). */
         post: operations["platform_reports_decide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description يستأنف جلسة المشغّل من الـCookie: تجديد مدوّر، وسقف ثماني ساعات من الدخول الأصلي. */
+        post: operations["platform_resume_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6618,6 +6652,7 @@ export interface components {
             coverage_at: string;
             decisions: unknown[];
             decisions_count: number;
+            devices_total: number;
             kind: string;
             kpis: unknown[];
             margin_locked: boolean;
@@ -14518,6 +14553,14 @@ export interface components {
                 target_label: string;
                 tenant_id: string;
             };
+        };
+        PostPlatformResumeResponse: {
+            access: string;
+            display_name: string;
+            must_change_password: boolean;
+            refresh: string;
+            role: string;
+            session_id: string;
         };
         GetPlatformTenantsResponse: {
             access_rule: string;
@@ -25429,6 +25472,24 @@ export interface operations {
             };
         };
     };
+    platform_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     platform_m0_retrieve: {
         parameters: {
             query?: {
@@ -25987,6 +26048,33 @@ export interface operations {
             };
             /** @description No response body */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_resume_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformResumeResponse"];
+                };
+            };
+            /** @description No response body */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

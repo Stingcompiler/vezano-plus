@@ -371,6 +371,9 @@ def save_announcement(*, viewer: User, body: dict[str, Any]) -> PlatformAnnounce
     ends = _parse_dt(str(body.get("ends_at") or ""), "ends_at")
     if ends <= starts:
         raise ReviewRejected("window_invalid")
+    # فحص 2026-10-17 VP04: النافذة الماضية تُرفض عند الحفظ لا عند الجدولة وحدها
+    if ends <= timezone.now():
+        raise ReviewRejected("window_in_past")
     aid = str(body.get("id") or "")
     a = PlatformAnnouncement.objects.filter(id=aid).first() if aid else None
     if a is None:

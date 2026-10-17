@@ -183,7 +183,15 @@ export function PlansCatalogClient() {
   const [priceFor, setPriceFor] = useState("");
   const [nextMonthly, setNextMonthly] = useState("");
   const [nextYearly, setNextYearly] = useState("");
+  // فحص 2026-10-17 VP06: الدورات الثلاث كلها — كان الربعي غائباً عن السعر المقبل
+  const [nextQuarterly, setNextQuarterly] = useState("");
   const [effective, setEffective] = useState("");
+  // أقرب تاريخ يقبله الخادم: الآن + مهلة الإشعار، ويوم زائد لأن التاريخ يُرسل منتصف ليلته (UTC)
+  const minEffective = data
+    ? new Date(Date.now() + (data.min_price_notice_days + 1) * 86_400_000)
+        .toISOString()
+        .slice(0, 10)
+    : "";
   const [priceReason, setPriceReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -270,6 +278,7 @@ export function PlansCatalogClient() {
           ? { clear: true, reason: priceReason }
           : {
               monthly_minor: nextMonthly.trim() ? Number(toMinor(nextMonthly)) : null,
+              quarterly_minor: nextQuarterly.trim() ? Number(toMinor(nextQuarterly)) : null,
               yearly_minor: nextYearly.trim() ? Number(toMinor(nextYearly)) : null,
               effective_at: effective ? new Date(effective).toISOString() : "",
               reason: priceReason,
@@ -281,6 +290,7 @@ export function PlansCatalogClient() {
         setDone(clear ? "أُلغي السعر المقبل" : "جُدول السعر الجديد بتاريخ سريانه");
         setPriceFor("");
         setNextMonthly("");
+        setNextQuarterly("");
         setNextYearly("");
         setEffective("");
         setPriceReason("");
@@ -549,6 +559,15 @@ export function PlansCatalogClient() {
                               </span>
                             </>
                           ) : null}
+                          {p.next_price.quarterly_minor ? (
+                            <>
+                              {" "}
+                              · ربعي{" "}
+                              <span className="sting-mono">
+                                {money(p.next_price.quarterly_minor)}
+                              </span>
+                            </>
+                          ) : null}
                           {p.next_price.yearly_minor ? (
                             <>
                               {" "}
@@ -571,6 +590,13 @@ export function PlansCatalogClient() {
                               onChange={(e) => setNextMonthly(e.target.value)}
                             />
                             <TextField
+                              label="الربعي الجديد"
+                              mono
+                              inputMode="decimal"
+                              value={nextQuarterly}
+                              onChange={(e) => setNextQuarterly(e.target.value)}
+                            />
+                            <TextField
                               label="السنوي الجديد"
                               mono
                               inputMode="decimal"
@@ -582,6 +608,12 @@ export function PlansCatalogClient() {
                               type="date"
                               mono
                               hint={`بعد ${data.min_price_notice_days} يوماً على الأقل — إشعار الشروط`}
+                              min={minEffective}
+                              error={
+                                effective && effective < minEffective
+                                  ? `أقرب تاريخ مسموح ${minEffective} — إشعار ${data.min_price_notice_days} يوماً`
+                                  : undefined
+                              }
                               value={effective}
                               onChange={(e) => setEffective(e.target.value)}
                             />
@@ -593,7 +625,19 @@ export function PlansCatalogClient() {
                             onChange={(e) => setPriceReason(e.target.value)}
                           />
                           <div className="acc-actions plt-ops-row">
-                            <Button loading={busy} onClick={() => void schedule(p.code)}>
+                            <Button
+                              loading={busy}
+                              onClick={() => void schedule(p.code)}
+                              disabledReason={
+                                !nextMonthly.trim() && !nextQuarterly.trim() && !nextYearly.trim()
+                                  ? "اكتب سعراً جديداً لدورة واحدة على الأقل"
+                                  : !effective
+                                    ? "اختر تاريخ السريان"
+                                    : effective < minEffective
+                                      ? "تاريخ السريان أقرب من مهلة الإشعار"
+                                      : undefined
+                              }
+                            >
                               جدوِل السعر
                             </Button>
                             {p.next_price ? (

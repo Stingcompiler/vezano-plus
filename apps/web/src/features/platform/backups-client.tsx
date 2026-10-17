@@ -73,6 +73,20 @@ const size = (b: number) =>
     : b >= 1_048_576
       ? `${(b / 1_048_576).toFixed(1)} MB`
       : `${Math.max(1, Math.round(b / 1024))} KB`;
+// فحص 2026-10-17 VP10: معرّف ظاهر يميّز نسختين متماثلتين — آخر 8 محارف من uuid7 (الجزء العشوائي)
+const shortId = (id: string) => id.replace(/-/g, "").slice(-8);
+const when = (b: Backup) => `${short(b.taken_at)} ${hhmm(b.taken_at)}`;
+/** سبب الرفع الخارجي بجملة عربية موجزة — الأثر التقني كاملاً في «التفاصيل التقنية» */
+const offsiteReason = (note: string) =>
+  /NoSuchBucket/i.test(note)
+    ? "حاوية التخزين غير موجودة"
+    : /AccessDenied|InvalidAccessKeyId|SignatureDoesNotMatch|Forbidden/i.test(note)
+      ? "مفاتيح التخزين مرفوضة"
+      : /timeout|timed out|connect|EndpointConnectionError/i.test(note)
+        ? "تعذّر الاتصال بالتخزين"
+        : "تعذّر الرفع إلى التخزين الخارجي";
+const PAGE = 8;
+type Filter = "all" | "attention";
 
 /** PLT-10 — نسخ خادمية وتجربة استعادة (26-D19 · 39-D31): RPO/RTO نتيجةً لا وعداً، ولا زرّ مدمّر بلا مسار مخوَّل (ACC-75). */
 export function BackupsClient() {
@@ -84,6 +98,8 @@ export function BackupsClient() {
   const [approver, setApprover] = useState("");
   const [missing, setMissing] = useState<string[] | null>(null);
   const [busy, setBusy] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async () => {
     if (!operatorToken()) {
@@ -149,14 +165,12 @@ export function BackupsClient() {
       render: (b: Backup) => (
         <>
           <strong>
-            {b.kind_label} · <span className="sting-mono">{short(b.taken_at)}</span>
-            {b.kind === "nightly" ? (
-              <>
-                {" "}
-                <span className="sting-mono">{hhmm(b.taken_at)}</span>
-              </>
-            ) : null}
+            {b.kind_label} · <span className="sting-mono">{short(b.taken_at)}</span>{" "}
+            <span className="sting-mono">{hhmm(b.taken_at)}</span>
           </strong>
+          <div className="mp-check__hint">
+            المعرّف <span className="sting-mono">{shortId(b.id)}</span>
+          </div>
           {b.note ? <div className="mp-check__hint">{b.note}</div> : null}
         </>
       ),
@@ -186,8 +200,8 @@ export function BackupsClient() {
               }
               label={b.offsite_label}
             />
-            {b.offsite_status === "failed" && b.offsite_note ? (
-              <div className="mp-check__hint">{b.offsite_note}</div>
+            {b.offsite_status === "failed" ? (
+              <OffsiteFailure b={b} newerOk={newerOffsiteOk(b)} />
             ) : null}
           </>
         ),
@@ -234,9 +248,9 @@ export function BackupsClient() {
             "صالحة — لم تُختبر بعد"
           )}
           {b.usable ? (
-            <div className="acc-actions">
+            <div className="plt-backup__acts">
               <Button
-                variant="quiet"
+                variant="secondary"
                 loading={busy === `drill:${b.id}`}
                 onClick={() => void runDrill(b)}
               >
@@ -244,6 +258,7 @@ export function BackupsClient() {
               </Button>
               <Button
                 variant="quiet"
+                className="plt-backup__live"
                 onClick={() => {
                   setLiveFor(liveFor === b.id ? "" : b.id);
                   setMissing(null);
@@ -254,7 +269,11 @@ export function BackupsClient() {
             </div>
           ) : null}
           {liveFor === b.id ? (
-            <>
+            <div className="plt-backup__confirm">
+              <p className="acc-choice__note">
+                النسخة المطلوبة: {b.kind_label} · <span className="sting-mono">{when(b)}</span> ·
+                المعرّف <span className="sting-mono">{shortId(b.id)}</span>
+              </p>
               <TextField
                 label="اكتب اسم البيئة تأكيداً"
                 mono
@@ -286,12 +305,20 @@ export function BackupsClient() {
                   </p>
                 </Notice>
               ) : null}
-            </>
+            </div>
           ) : null}
         </>
       ),
     },
   ];
+  const attention = (b: Backup) =>
+    b.status !== "ok" || b.offsite_status === "failed" || b.last_drill?.result !== "ok";
+  const all = data?.backups ?? [];
+  const filtered = filter === "attention" ? all.filter(attention) : all;
+  const rows = showAll ? filtered : filtered.slice(0, PAGE);
+  // خطأ رفع تاريخي لا يعني تعطّلاً قائماً: هل رُفعت نسخة أحدث منها بعده؟
+  const newerOffsiteOk = (b: Backup) =>
+    all.find((x) => x.offsite_status === "ok" && x.taken_at > b.taken_at) ?? null;
 
   return (
     <PlatformFrame current="backups">
@@ -428,19 +455,52 @@ export function BackupsClient() {
                   </Notice>
                 )}
                 <h3 className="cat-head__title">النسخ المتاحة وتجارب الاستعادة</h3>
+                {all.length ? (
+                  <div className="plt-ops__tabs" role="group" aria-label="تصفية النسخ">
+                    {(
+                      [
+                        ["all", `الكل (${all.length})`],
+                        ["attention", `تحتاج انتباهاً (${all.filter(attention).length})`],
+                      ] as const
+                    ).map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        className={`plt-ops__tab${filter === k ? " plt-ops__tab--on" : ""}`}
+                        aria-pressed={filter === k}
+                        onClick={() => setFilter(k)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <Table
                   caption="النسخ المتاحة وتجارب الاستعادة"
                   columns={columns}
-                  rows={data.backups}
+                  rows={rows}
                   rowKey={(b) => b.id}
                   empty={
-                    <Notice kind="empty" title="لا نسخ مسجَّلة بعد">
-                      <p className="acc-lead">
-                        يسجّل مسار النسخ كل نسخة هنا — ووجودها ليس صلاحية حتى تُجرَّب.
-                      </p>
-                    </Notice>
+                    all.length ? (
+                      <Notice kind="empty" title="لا نسخ تحتاج انتباهاً">
+                        <p className="acc-lead">كل النسخ صالحة ومرفوعة ومختبَرة.</p>
+                      </Notice>
+                    ) : (
+                      <Notice kind="empty" title="لا نسخ مسجَّلة بعد">
+                        <p className="acc-lead">
+                          يسجّل مسار النسخ كل نسخة هنا — ووجودها ليس صلاحية حتى تُجرَّب.
+                        </p>
+                      </Notice>
+                    )
                   }
                 />
+                {filtered.length > PAGE ? (
+                  <div className="acc-actions">
+                    <Button variant="quiet" onClick={() => setShowAll(!showAll)}>
+                      {showAll ? `أظهر أحدث ${PAGE} فقط` : `أظهر كل النسخ (${filtered.length})`}
+                    </Button>
+                  </div>
+                ) : null}
                 <h3 className="cat-head__title">استعادة فوق بيانات حيّة — إجراء مدمّر محكوم</h3>
                 <p className="acc-choice__note">
                   لا زرّ واحد يستبدل قاعدة الإنتاج. الاستعادة الحيّة تتطلّب: تأكيد كتابيّ لاسم
@@ -453,5 +513,33 @@ export function BackupsClient() {
         </div>
       </div>
     </PlatformFrame>
+  );
+}
+
+function OffsiteFailure({ b, newerOk }: { b: Backup; newerOk: Backup | null }) {
+  return (
+    <div className="plt-backup__fail">
+      <div className="mp-check__hint">
+        {offsiteReason(b.offsite_note)}
+        {b.offsite_at ? (
+          <>
+            {" "}
+            · <span className="sting-mono">{when({ ...b, taken_at: b.offsite_at })}</span>
+          </>
+        ) : null}
+      </div>
+      {newerOk ? (
+        <div className="mp-check__hint">
+          رُفعت بعدها نسخة أحدث <span className="sting-mono">{when(newerOk)}</span> — الرفع يعمل
+          الآن
+        </div>
+      ) : null}
+      {b.offsite_note ? (
+        <details className="plt-backup__tech">
+          <summary>التفاصيل التقنية</summary>
+          <code dir="ltr">{b.offsite_note}</code>
+        </details>
+      ) : null}
+    </div>
   );
 }

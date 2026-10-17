@@ -169,10 +169,17 @@ def health_payload() -> dict[str, Any]:
         {
             "key": "write_success",
             "label": "نسبة نجاح الكتابة الخادمية",
-            "value": f"{write_pct:g}%",
-            "value_note": "",
-            "status": "ok" if write_pct >= WRITE_SUCCESS_FLOOR else "degraded",
-            "status_label": "سليم" if write_pct >= WRITE_SUCCESS_FLOOR else "متدهور",
+            # فحص 2026-10-17 VP08: بلا كتابة اليوم لا «100%» — لا عيّنة، والمقام يُعلن
+            "value": f"{write_pct:g}%" if total_writes else "—",
+            "value_note": f"من {total_writes} كتابة اليوم"
+            if total_writes
+            else "لا كتابة اليوم بعد",
+            "status": "ok" if not total_writes or write_pct >= WRITE_SUCCESS_FLOOR else "degraded",
+            "status_label": (
+                "لا بيانات"
+                if not total_writes
+                else ("سليم" if write_pct >= WRITE_SUCCESS_FLOOR else "متدهور")
+            ),
             "meaning": "الفشل النادر يُمنع معه البيع بالذمة ولا تُعرض رسالة حفظ ناجح كاذبة.",
         },
         {

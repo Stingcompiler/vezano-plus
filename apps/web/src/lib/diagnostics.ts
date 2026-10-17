@@ -229,7 +229,7 @@ export interface SupportPayload {
   readonly print_failures: number;
 }
 
-export const APP_VERSION = process.env["NEXT_PUBLIC_APP_VERSION"] ?? "0.0.0-dev";
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
 function uaFamily(ua: string): string {
   if (/Android/i.test(ua)) return "android";

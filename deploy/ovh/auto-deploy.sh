@@ -46,7 +46,8 @@ for img in vezano-api ovh-web; do
   sudo docker image inspect "$img:latest" >/dev/null 2>&1 && sudo docker tag "$img:latest" "$img:previous"
 done
 
-"${COMPOSE[@]}" build api web
+# الإصدار الظاهر للمستخدم يحمل الالتزام المنشور (فحص 2026-10-17 F13)
+"${COMPOSE[@]}" build --build-arg STING_BUILD_SHA="$sha" api web
 "${COMPOSE[@]}" up -d db api worker web
 
 healthy() {

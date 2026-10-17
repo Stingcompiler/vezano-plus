@@ -19,6 +19,7 @@ import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
+import { DevicesSynced } from "@/features/reports/completeness";
 import { pushPending } from "@/lib/sync";
 
 type State = "ready" | "loading" | "empty" | "stale" | "pending_sync" | "permission_denied";
@@ -483,8 +484,11 @@ export function SalesReportClient() {
                 <section className="rep-head" aria-label="اكتمال البيانات">
                   <h3 className="cat-head__title">اكتمال البيانات</h3>
                   <p className="acc-lead">
-                    <span className="sting-mono">{p.completeness.devices_synced}</span> أجهزة من{" "}
-                    <span className="sting-mono">{p.completeness.devices_total}</span> زامنت.
+                    <DevicesSynced
+                      synced={p.completeness.devices_synced}
+                      total={p.completeness.devices_total}
+                    />
+                    .
                     {p.completeness.not_synced.map((d) => (
                       <span key={d.device_name}>
                         {" "}
@@ -518,7 +522,13 @@ export function SalesReportClient() {
                     <div className="home-kpi__label">الإيراد</div>
                     <div className="home-kpi__value sting-mono">{formatMinor(revenue)}</div>
                     <div className="home-kpi__scope">
-                      من <span className="sting-mono">{branchesSynced}</span> فروع زامنت
+                      {p.completeness.devices_total === 0 ? (
+                        "لا جهاز بيع بعد"
+                      ) : (
+                        <>
+                          من <span className="sting-mono">{branchesSynced}</span> فروع زامنت
+                        </>
+                      )}
                       {local.count > 0 ? " · يشمل معلّق هذا الجهاز" : ""}
                     </div>
                   </div>
@@ -567,7 +577,9 @@ export function SalesReportClient() {
                       key: "sync",
                       header: "آخر مزامنة",
                       render: (b) =>
-                        b.complete ? (
+                        !b.last_sync_at ? (
+                          <span>لم يزامن بعد</span>
+                        ) : b.complete ? (
                           <span>
                             مكتمل · <Ago iso={b.last_sync_at} />
                           </span>

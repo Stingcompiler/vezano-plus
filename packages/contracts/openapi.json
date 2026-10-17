@@ -8388,6 +8388,19 @@
         }
       }
     },
+    "/api/platform/logout": {
+      "post": {
+        "operationId": "platform_logout_create",
+        "description": "خروج المشغّل: يُلغى الجلسة في الخادم (كان المسح في الذاكرة وحدها) ويُمسح الـCookie.",
+        "tags": ["platform"],
+        "security": [{}],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/m0": {
       "get": {
         "operationId": "platform_m0_retrieve",
@@ -8899,6 +8912,29 @@
             "description": "No response body"
           },
           "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/resume": {
+      "post": {
+        "operationId": "platform_resume_create",
+        "description": "يستأنف جلسة المشغّل من الـCookie: تجديد مدوّر، وسقف ثماني ساعات من الدخول الأصلي.",
+        "tags": ["platform"],
+        "security": [{}],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformResumeResponse"
+                }
+              }
+            }
+          },
+          "401": {
             "description": "No response body"
           }
         }
@@ -17766,6 +17802,9 @@
           "decisions_count": {
             "type": "integer"
           },
+          "devices_total": {
+            "type": "integer"
+          },
           "kind": {
             "type": "string"
           },
@@ -17842,6 +17881,7 @@
           "branch_id",
           "branches",
           "branches_synced",
+          "devices_total",
           "coverage_at",
           "decisions",
           "kpis",
@@ -49893,6 +49933,38 @@
           }
         },
         "required": ["report"],
+        "type": "object"
+      },
+      "PostPlatformResumeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "access": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "must_change_password": {
+            "type": "boolean"
+          },
+          "refresh": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "access",
+          "refresh",
+          "session_id",
+          "display_name",
+          "role",
+          "must_change_password"
+        ],
         "type": "object"
       },
       "GetPlatformTenantsResponse": {

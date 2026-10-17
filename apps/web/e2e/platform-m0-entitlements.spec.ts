@@ -323,6 +323,8 @@ test.describe("PLT-12", () => {
     let dualPrivate = true;
     let overridden = true;
     let flags: unknown[] = [];
+    // الخادم يرفض أي تجاوز يطال أكثر من مستأجر (no_global_override) — نحاكي رفضه مرة
+    let denyOnce = false;
     await page.route("**/api/platform/entitlements", (route) => {
       if (route.request().method() === "GET")
         return route.fulfill(json(200, PAYLOAD(dualPrivate, overridden, flags)));
@@ -333,8 +335,10 @@ test.describe("PLT-12", () => {
         apply_all?: boolean;
         tenant_id?: string;
       };
-      if (b.apply_all || b.tenant_id)
+      if (b.apply_all || b.tenant_id || denyOnce) {
+        denyOnce = false;
         return route.fulfill(json(403, { detail: "no_global_override", extra: {} }));
+      }
       dualPrivate = b.enabled;
       overridden = true;
       return route.fulfill(
@@ -400,8 +404,14 @@ test.describe("PLT-12", () => {
       ]),
     });
     const root = page.locator('[data-screen="PLT-12"]');
-    // لا مفتاح «طبّق على الجميع» يمرّ — الخادم يرفضه بنيوياً
-    await page.getByRole("button", { name: "طبّق على كل المستأجرين" }).click();
+    // فحص 2026-10-17 VP07: لا زرّ «طبّق على كل المستأجرين» (كان زرّاً وُجد ليُرفض فحسب)؛ حالة الرفض
+    // تبقى لما يرفضه الخادم بنيوياً
+    await expect(page.getByRole("button", { name: "طبّق على كل المستأجرين" })).toHaveCount(0);
+    denyOnce = true;
+    await page
+      .getByRole("group", { name: "قوائم أسعار خاصة للسوق" })
+      .getByRole("button", { name: "فرعان" })
+      .click();
     await expectFrame(page, info, {
       screenId: "PLT-12",
       state: "permission_denied",

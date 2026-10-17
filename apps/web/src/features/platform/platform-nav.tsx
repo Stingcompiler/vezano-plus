@@ -7,7 +7,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 import "./platform.css";
 import { ThemeToggle } from "@/features/home/theme-toggle";
 import {
-  clearOperatorSession,
+  logoutOperator,
   operatorMustChangePassword,
   operatorName,
   operatorRole,
@@ -167,8 +167,7 @@ function PlatformBanner({ current }: { current: PlatformSection }) {
             variant="quiet"
             className="plt-banner__logout"
             onClick={() => {
-              clearOperatorSession();
-              router.push("/platform/login");
+              void logoutOperator().then(() => router.push("/platform/login"));
             }}
           >
             خروج

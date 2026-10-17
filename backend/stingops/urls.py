@@ -16,6 +16,7 @@ from stingops.views import (
     OperatorFlagsView,
     OperatorHealthView,
     OperatorLoginView,
+    OperatorLogoutView,
     OperatorM0View,
     OperatorOperatorActionView,
     OperatorOperatorsView,
@@ -28,6 +29,7 @@ from stingops.views import (
     OperatorProofsView,
     OperatorReportActionView,
     OperatorReportsView,
+    OperatorResumeView,
     OperatorSubscriptionView,
     OperatorTenantDetailView,
     OperatorTenantsView,
@@ -38,6 +40,8 @@ from stingops.views import (
 
 urlpatterns = [
     path("platform/login", OperatorLoginView.as_view(), name="platform-login"),
+    path("platform/resume", OperatorResumeView.as_view(), name="platform-resume"),
+    path("platform/logout", OperatorLogoutView.as_view(), name="platform-logout"),
     path("platform/me/password", OperatorPasswordView.as_view(), name="platform-me-password"),
     path("platform/tenants", OperatorTenantsView.as_view(), name="platform-tenants"),
     path(

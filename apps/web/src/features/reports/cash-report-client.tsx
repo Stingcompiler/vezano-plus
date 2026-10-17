@@ -17,6 +17,7 @@ import { Ago } from "@/features/org/ago";
 import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { DevicesSynced } from "@/features/reports/completeness";
 import { getStorage } from "@/lib/storage";
 
 type State = "ready" | "loading" | "empty" | "conflict" | "stale";
@@ -392,9 +393,11 @@ export function CashReportClient() {
                     </div>
                   </div>
                   <p className="acc-choice__note">
-                    <span className="sting-mono">{p.completeness.devices_synced}</span> أجهزة من{" "}
-                    <span className="sting-mono">{p.completeness.devices_total}</span> زامنت · حُسب
-                    في <span className="sting-mono">{hhmm(p.computed_at)}</span>
+                    <DevicesSynced
+                      synced={p.completeness.devices_synced}
+                      total={p.completeness.devices_total}
+                    />{" "}
+                    · حُسب في <span className="sting-mono">{hhmm(p.computed_at)}</span>
                   </p>
                 </section>
 

@@ -178,6 +178,8 @@ def home_summary(
     devices_pending = Session.objects.filter(
         device__isnull=False, revoked_at__isnull=True, reported_pending__gt=0
     ).exists()
+    # فحص 2026-10-17 F08: «كلها زامنت» بلا أي جهاز ليست حقيقة — العدد يميّز «لا أجهزة بعد»
+    devices_total = Device.objects.filter(status=Device.Status.ACTIVE).count()
     out: dict[str, Any] = {
         "kind": "owner" if viewer.can_see_finance else "employee",
         "tenant_name": tenant.name,
@@ -191,6 +193,7 @@ def home_summary(
         "branch_id": branch_id,
         "branches": [{"id": str(b.id), "name": b.name} for b in branches],
         "branches_synced": not devices_pending,
+        "devices_total": devices_total,
         "coverage_at": timezone.now().isoformat().replace("+00:00", "Z"),
         "decisions": [],
         "kpis": [],

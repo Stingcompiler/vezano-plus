@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Notice, TextField } from "@sting/ui-web";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import "@/features/acc/acc.css";
@@ -13,7 +13,11 @@ import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "@/features/market/market.css";
 import "./platform.css";
-import { platformApi, setOperatorSession } from "@/features/platform/operator-session";
+import {
+  platformApi,
+  safePlatformNext,
+  setOperatorSession,
+} from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { BrandMark } from "@/features/public/brand-mark";
 
@@ -22,6 +26,7 @@ type State = "ready" | "validation_error" | "permission_denied";
 /** PLT-01 — دخول الإدارة ومساحة المشغّل (26-D19 ready/validation_error · 18-D13 permission_denied): حساب منفصل لا دور مزدوج. التحقّق الثنائي أُلغي بأمر المالك (0005 §١٠٨). */
 export function OperatorLoginClient() {
   const router = useRouter();
+  const next = useSearchParams().get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,7 +53,8 @@ export function OperatorLoginClient() {
         const mustChange = b.must_change_password === true;
         setOperatorSession(b.access, b.display_name, b.role ?? "admin", mustChange);
         // 0005 §١٣٨ — الدخول يقود إلى النظرة العامة؛ وكلمة مؤقتة تُغيَّر قبلها
-        router.push(mustChange ? "/platform/password" : "/platform");
+        // فحص 2026-10-17 VP01: العودة إلى الصفحة المطلوبة قبل الدخول
+        router.push(mustChange ? "/platform/password" : safePlatformNext(next));
         return;
       }
       const d = (b as { detail?: string } | undefined)?.detail ?? "invalid_credentials";

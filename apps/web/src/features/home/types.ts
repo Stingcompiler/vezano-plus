@@ -55,6 +55,8 @@ export interface HomeSummary {
   readonly branch_id: string;
   readonly branches: readonly { readonly id: string; readonly name: string }[];
   readonly branches_synced: boolean;
+  /** الأجهزة الفعّالة — 0 = لا جهاز مسجّل بعد (لا «كلها زامنت»). */
+  readonly devices_total?: number;
   readonly coverage_at: string;
   readonly decisions: readonly Decision[];
   readonly decisions_count: number;
