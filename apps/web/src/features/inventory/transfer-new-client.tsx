@@ -365,7 +365,7 @@ export function TransferNewClient({ viewId }: { viewId: string }) {
                   </Notice>
                 ) : null}
                 <div className="inv-ledger inv-ledger--in">
-                  <div className="pty-merge__role">أثر الإرسال — ثلاثة أرقام لا رقمان</div>
+                  <div className="pty-merge__role">أثر الإرسال</div>
                   <div className="shift-facts">
                     <div>
                       <span className="shift-facts__k">{ctx?.branchName ?? "المصدر"}</span>
@@ -384,10 +384,6 @@ export function TransferNewClient({ viewId }: { viewId: string }) {
                       </span>
                     </div>
                   </div>
-                  <p className="acc-choice__note">
-                    «في الطريق» طور ثالث حقيقي. بلا هذا الطور إمّا تختفي البضاعة من الدفتر أو تُحسب
-                    مرتين — والاثنان خطأ يظهر عند أول جرد.
-                  </p>
                 </div>
                 <div className="cat-form__actions">
                   <Button
@@ -447,8 +443,7 @@ export function TransferNewClient({ viewId }: { viewId: string }) {
                       المخزن بلا شبكة. التحويل محفوظ وخرج من رصيد المصدر محلياً.
                     </p>
                     <p className="acc-choice__note">
-                      <strong>الفرع المستقبل لا يعلم</strong> · حتى تعود الشبكة. نقولها: «سيصل إعلام
-                      الفرع عند المزامنة» — والسائق قد يصل قبل الإعلام.
+                      <strong>الفرع المستقبل لا يعلم</strong> · حتى تعود الشبكة.
                     </p>
                     {push === "failed" ? (
                       <Button

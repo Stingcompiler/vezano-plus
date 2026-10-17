@@ -29,7 +29,7 @@ export function PhaseScreenClient({ id }: { id: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">{s.title}</h2>
-            <span className="cat-head__hint">{s.hint}</span>
+            {s.hint ? <span className="cat-head__hint">{s.hint}</span> : null}
           </div>
           <div className="acc-card__body">
             <PhaseLocked
@@ -39,8 +39,7 @@ export function PhaseScreenClient({ id }: { id: string }) {
               activateLabel={`يُفتح مع ${s.kind === "M3" ? "مرحلة الربط" : "مرحلة النموّ"} — لا مفتاح هنا`}
             >
               <p className="acc-choice__note">
-                <strong>مثال</strong> · لقطة موسومة «مثال» — ما يُرى يُقنع بالانتظار أكثر مما يُقنع
-                الوصف.
+                <strong>مثال</strong>
               </p>
               {s.sample.map((block) => (
                 <div key={block.heading} className="mp-preview-card pos-card">
@@ -56,9 +55,6 @@ export function PhaseScreenClient({ id }: { id: string }) {
                 </div>
               ))}
             </PhaseLocked>
-            <p className="acc-choice__note">
-              <strong>صيغة القفل</strong> · {s.lock}
-            </p>
             {s.alternative ? (
               <>
                 <p className="acc-choice__note">

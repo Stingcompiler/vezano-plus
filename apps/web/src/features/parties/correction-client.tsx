@@ -239,8 +239,7 @@ export function CorrectionClient({ receiptId }: { receiptId: string }) {
               <Notice kind="error" title="تاريخ داخل فترة مقفلة">
                 <p className="acc-lead">نقل حركة إلى شهر أُقفلت ورديّاته وصُدِّرت تقاريره.</p>
                 <p className="acc-choice__note">
-                  <strong>نمنع ونقول السبب</strong> · الفترة مقفلة — الحركة تبقى بتاريخها ويُسجَّل
-                  التصحيح بحركة معلَّلة.
+                  الفترة مقفلة — الحركة تبقى بتاريخها ويُسجَّل التصحيح بحركة معلَّلة.
                 </p>
               </Notice>
             ) : null}
@@ -262,7 +261,6 @@ export function CorrectionClient({ receiptId }: { receiptId: string }) {
                     الجديد وحده.
                   </p>
                   <p className="acc-choice__note">
-                    <strong>أثرٌ مُعلن</strong> · نقول ما تغيّر:{" "}
                     {balanceAfter === balanceBefore ? (
                       "رصيد الطرف كما هو"
                     ) : (

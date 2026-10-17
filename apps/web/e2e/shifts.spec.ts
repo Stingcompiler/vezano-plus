@@ -247,12 +247,7 @@ test.describe("SHIFT-01", () => {
     await expectFrame(page, info, {
       screenId: "SHIFT-01",
       state: "success",
-      texts: fromFrame("SHIFT-01", "success", [
-        "الوردية مفتوحة",
-        "رقمها ووقتها والمعدود الافتتاحي باسم من عدّ. والمسار الواحد: نقطة البيع.",
-        "شهادة الفتح",
-        "500.00",
-      ]),
+      texts: fromFrame("SHIFT-01", "success", ["الوردية مفتوحة", "شهادة الفتح", "500.00"]),
     });
     expect(pushed).toBe(1);
     await expect(page.locator(".shift-facts")).toContainText("OPEN-0001");

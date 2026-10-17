@@ -171,11 +171,7 @@ export function SuppliersClient() {
               </Button>
             </div>
 
-            {state === "loading" ? (
-              <Notice kind="info" title="جلب الموردين">
-                <p className="acc-lead">مع المستحقّ عليك لهم — وهو سبب فتح الشاشة غالباً.</p>
-              </Notice>
-            ) : null}
+            {state === "loading" ? <Notice kind="info" title="جلب الموردين" /> : null}
             {state === "empty" ? (
               <Notice kind="empty" title="لا موردين">
                 <p className="acc-lead">الشراء نقدي بلا حساب مفتوح.</p>
@@ -188,10 +184,6 @@ export function SuppliersClient() {
             {state === "permission_denied" ? (
               <Notice kind="locked" title="أمين المخزن يرى الأسماء">
                 <p className="acc-lead">يرى الموردين ليستلم منهم، ولا يرى ما لهم على المنشأة.</p>
-                <p className="acc-choice__note">
-                  <strong>الحدّ</strong> · عمله عدُّ ما وصل لا مطابقة المبالغ. والمستحقّ يقود إلى
-                  التكلفة.
-                </p>
               </Notice>
             ) : null}
 

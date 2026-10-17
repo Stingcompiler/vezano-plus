@@ -181,10 +181,6 @@ export function PrefsClient() {
                 <p className="acc-lead">
                   أوقف كل قناة والاشتراك قائم — حالةٌ بلا معنى: مشتركٌ لا يصله شيء.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>نسأل عن القصد</strong> · «أوقفتَ كل القنوات — هل تريد إلغاء الاشتراك؟»
-                  والإلغاء بضغطة. لا نُبقيه في سجلّ لا ينفعه ولا ينفع المحل.
-                </p>
               </Notice>
             ) : null}
 

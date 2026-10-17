@@ -336,10 +336,6 @@ export function RenewClient() {
             <h2 className="cat-head__title">
               إثبات تحويل الاشتراك — الرفع لا يُفعِّل، والمراجعة بشرية معلَنة
             </h2>
-            <span className="cat-head__hint">
-              التاجر يرفع إيصال التحويل فتظهر حالة «معلّق» صريحة. لا نفعّل الاشتراك بمجرد وجود صورة،
-              ولا نتركه يظن أنه دفع ومضى.
-            </span>
           </div>
           <div className="acc-card__body">
             {state === "server_error" ? (
@@ -354,13 +350,8 @@ export function RenewClient() {
                   ) : undefined
                 }
               >
-                <p className="acc-lead">
-                  صورة التحويل لم تُرفع. المستخدم دفع فعلاً وهذا يزيد قلقه.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا نُضيّع الصورة</strong> · تُحفظ محلياً وتُرفع تلقائياً عند عودة الشبكة،
-                  ونقول ذلك. طلبُ التصوير من جديد بعد دفعٍ تمّ استفزاز.
-                </p>
+                <p className="acc-lead">صورة التحويل لم تُرفع.</p>
+                <p className="acc-choice__note">تُحفظ محلياً وتُرفع تلقائياً عند عودة الشبكة.</p>
                 <p className="acc-choice__note">
                   <strong>مسار بديل</strong> · رقم التحويل وتاريخه يُسجَّلان نصاً الآن — يكفيان
                   للمراجعة اليدوية ريثما تصل الصورة.
@@ -544,10 +535,9 @@ export function RenewClient() {
                     الاشتراك والباقات
                   </Button>
                 </div>
-                <h3 className="cat-head__title">مسار الإثبات كما يراه التاجر</h3>
                 <p className="acc-choice__note">
-                  <strong>«معلّق» حالة معلَنة لا صامتة.</strong> نعرض متوسط زمن المراجعة، ونبقي
-                  الخدمة عاملة خلالها، ولا نرسل تنبيه «تم الدفع» قبل الاعتماد.
+                  نعرض متوسط زمن المراجعة، ونبقي الخدمة عاملة خلالها، ولا نرسل تنبيه «تم الدفع» قبل
+                  الاعتماد.
                 </p>
               </>
             ) : null}

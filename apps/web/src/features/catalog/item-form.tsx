@@ -364,10 +364,7 @@ export function ItemForm({
               ) : null}
             </div>
           ))}
-          <p className="cat-errors__foot">
-            ما كتبتَه باقٍ كما هو. لا نمسح حقلاً صحيحاً لأن جاره خطأ، ولا نُرجعك إلى أعلى النموذج —
-            التمرير يذهب إلى أول خطأ ومؤشّر الكتابة فيه.
-          </p>
+          <p className="cat-errors__foot">ما كتبتَه باقٍ كما هو.</p>
         </div>
       ) : null}
 
@@ -387,8 +384,7 @@ export function ItemForm({
           </ol>
           <p className="cat-saving__note">
             <strong>الأزرار معطّلة والنافذة لا تُغلق.</strong> الصورة ترفع بعد الصنف لا قبله: لو
-            انقطع الرفع بقي الصنف محفوظاً بلا صورة، ولو حفظنا الصورة أولاً لبقيت ملفاً يتيماً بلا
-            صنف يملكه.
+            انقطع الرفع بقي الصنف محفوظاً بلا صورة.
           </p>
         </div>
       ) : null}
@@ -414,7 +410,7 @@ export function ItemForm({
           </div>
           <p className="cat-success__note">
             <strong>الصنف موجود ولا رصيد له.</strong> بيعه الآن يُخرج المخزون إلى سالب، وهذا قرار لا
-            خطأ — فلا نمنعه ولا نخفيه.
+            خطأ.
           </p>
           <div className="acc-links">
             <Link href={`/inventory/opening?item=${saved.id}`} className="c-btn c-btn--primary">

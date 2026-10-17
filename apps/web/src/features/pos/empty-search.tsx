@@ -76,19 +76,14 @@ export function EmptySearch({
       </p>
       <div className="pos-empty__actions">
         {nearest.length ? (
-          <>
-            <div className="pos-empty__nearest">
-              أقرب الأسماء: {nearest.map((n) => `«${n}»`).join(" · ")}
-            </div>
-            <span className="acc-choice__note">
-              اقتراح بحثي لا تصحيح تلقائي — لا نستبدل ما كتبته
-            </span>
-          </>
+          <div className="pos-empty__nearest">
+            أقرب الأسماء: {nearest.map((n) => `«${n}»`).join(" · ")}
+          </div>
         ) : null}
         <Button onClick={() => newItem({ name: query })}>إضافته كصنف جديد</Button>
         <span className="acc-choice__note">يفتح الإضافة السريعة باسم «{query}» جاهزاً</span>
       </div>
-      <p className="pos-empty__foot">البحث يشمل الاسم والباركود والرمز الداخلي — نقول أين بحثنا.</p>
+      <p className="pos-empty__foot">البحث يشمل الاسم والباركود والرمز الداخلي.</p>
     </section>
   );
 }

@@ -200,9 +200,6 @@ export function MergeClient({ sourceId, targetId }: { sourceId: string; targetId
             {state === "permission_denied" ? (
               <Notice kind="locked" title="الدمج للمالك">
                 <p className="acc-lead">يوحّد دفترين ماليين. لا مدير فرع ولا محاسب.</p>
-                <p className="acc-choice__note">
-                  <strong>حتى بالتأكيد المزدوج</strong> · الصلاحية قبل التأكيد لا بدلاً منه.
-                </p>
               </Notice>
             ) : null}
 
@@ -222,12 +219,10 @@ export function MergeClient({ sourceId, targetId }: { sourceId: string; targetId
                   الاسمان متقاربان والدليل ضد الدمج لا معه: رقمان مختلفان وعنوانان.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>نعرض الدليل</strong> · لا نقترح الدمج ولا نفعله تلقائياً. لو كانا شخصين
-                  لطالبتَ أحدهما بدين غيره.
+                  لا نقترح الدمج ولا نفعله تلقائياً. لو كانا شخصين لطالبتَ أحدهما بدين غيره.
                 </p>
                 <p className="acc-choice__note">
-                  <strong>البديل المعروض</strong> · «وسمهما مراجَعان ومنفصلان» — يُسكت التنبيه بلا
-                  دمج، وهو الصواب في أغلب الحالات.
+                  «وسمهما مراجَعان ومنفصلان» — يُسكت التنبيه بلا دمج، وهو الصواب في أغلب الحالات.
                 </p>
               </Notice>
             ) : null}

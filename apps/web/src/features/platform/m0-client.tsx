@@ -58,21 +58,6 @@ interface Payload {
 const monthName = (m: string) => MONTHS_AR[Number(m.slice(5, 7)) - 1] ?? m;
 const ordersWord = (n: number) =>
   n === 1 ? "طلب واحد" : n === 2 ? "طلبان" : n <= 10 ? `${n} طلبات` : `${n} طلباً`;
-const SMALL = [
-  "",
-  "فرصة واحدة",
-  "فرصتين",
-  "ثلاث فرص",
-  "أربع فرص",
-  "خمس فرص",
-  "ست فرص",
-  "سبع فرص",
-  "ثماني فرص",
-  "تسع فرص",
-  "عشر فرص",
-];
-/** «ثلاث فرص» بالكلمات حتى العشرة — الإطار يكتبها كلمات لا أرقاماً. */
-const oppsWord = (n: number) => SMALL[n] ?? `${n} فرصة`;
 const oppsUnit = (n: number) => (n === 1 ? "فرصة" : n === 2 ? "فرصتان" : n <= 10 ? "فرص" : "فرصة");
 
 /** PLT-11 — لوحة الاكتساب M0 (08-D4 · 39-D31): كل رقم بمقامه؛ قيمة التجارة مرة لا مرتين (ACC-142)؛ غير حاسم يُقال كذلك (ACC-146). */
@@ -167,22 +152,6 @@ export function M0Client() {
                   المدى فيه <span className="sting-mono">{t.opportunities}</span>{" "}
                   {oppsUnit(t.opportunities)}، والحكم على M0 يحتاج عدداً أكبر.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>نتيجة غير حاسمة</strong> · نقولها كذلك ولا نعرض نسبةً من{" "}
-                  {oppsWord(t.opportunities)}. «غير حاسم — يحتاج{" "}
-                  <span className="sting-mono">{t.opportunities_min}</span> فرصة» أصدق من «
-                  <span className="sting-mono">
-                    {t.opportunities
-                      ? Math.round((snap.trade.executed_count * 100) / t.opportunities)
-                      : 0}
-                    %
-                  </span>{" "}
-                  نجاح».
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا توقف البناء</strong> · النتيجة غير الحاسمة معلومة لا حكم. الشاشة لا
-                  تقترح قراراً — تعرض ما يكفي وما لا يكفي.
-                </p>
               </Notice>
             ) : null}
 
@@ -240,10 +209,6 @@ export function M0Client() {
                     <div className="mp-reason">من حصص الباقات لا من ميزانية المنصة</div>
                   </dd>
                 </dl>
-                <p className="acc-choice__note">
-                  <strong>لا مضاعفة</strong> · صفقةٌ بين مشترٍ وبائع قيمةٌ واحدة. عدّها عند الطرفين
-                  يُضاعف الرقم ويُفسد القرار المبنيّ عليه.
-                </p>
 
                 <h3 className="cat-head__title">الاكتساب والنشاط — {monthName(month)}</h3>
                 <p className="acc-choice__note">

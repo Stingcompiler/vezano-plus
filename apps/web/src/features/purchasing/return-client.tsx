@@ -216,7 +216,7 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
             </h2>
             <span className="cat-head__hint">
               المرتجع يُبنى على مستند شراء بعينه لا على الصنف مجرّداً، فيرجع بسعر تلك الفاتورة لا
-              بسعر اليوم — وإلا صارت المرتجعات باباً لتغيير التكلفة.
+              بسعر اليوم.
             </span>
           </div>
           <div className="acc-card__body">
@@ -253,7 +253,7 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                 </p>
                 <p className="acc-lead">
                   <strong>التكلفة</strong> · لا تتأثر: الردّ بسعر المستند نفسه، فالمتوسط المرجّح
-                  يبقى كما هو. هذا سبب تثبيت السعر ابتداءً.
+                  يبقى كما هو.
                 </p>
                 <p className="acc-lead">
                   <strong>التحليلات</strong> · يظهر في نسبة المرتجع لـ{saved.supplier_name} مع سببه
@@ -286,8 +286,8 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                   {viewing.status === "rejected" ? "كلُّه مرفوض" : "نصفُه مقبول"}.
                 </p>
                 <p className="acc-lead">
-                  <strong>لا نُغلقه</strong> · المرتجع يبقى مفتوحاً بالمرفوض، ويُسجَّل ردُّ المورد
-                  نصاً كما قاله — هو الذي سيُحتجّ به لاحقاً.
+                  المرتجع يبقى مفتوحاً بالمرفوض، ويُسجَّل ردُّ المورد نصاً كما قاله — هو الذي
+                  سيُحتجّ به لاحقاً.
                 </p>
                 <p className="acc-lead">
                   <strong>الأثر المالي</strong> · يُخصم المقبول (
@@ -319,9 +319,6 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                 <p className="acc-lead">
                   <strong>السبب</strong> · إلزامي لأنه يُقرأ في «تحليلات المورد»: «تالف» حكمٌ على
                   المورد، و«خطأ في الطلب» حكمٌ علينا.
-                </p>
-                <p className="acc-choice__note">
-                  الحقل يُقصَر على الحدّ فور تجاوزه، ويُعرض الحدّ بجانبه — لا رسالة بعد الحفظ.
                 </p>
               </Notice>
             ) : null}

@@ -231,7 +231,7 @@ test.describe("REP-03", () => {
       texts: fromFrame("REP-03", "loading", [
         "تقرير المخزون والحركات",
         "جارٍ الجمع",
-        "الأرصدة من مواقع متعددة. نعرض المواقع وهي تَرِد واحداً واحداً لا شريطاً مبهماً",
+        "الأرصدة من مواقع متعددة",
       ]),
     });
     g.release();
@@ -274,11 +274,7 @@ test.describe("REP-03", () => {
     await expectFrame(page, info, {
       screenId: "REP-03",
       state: "pending_sync",
-      texts: fromFrame("REP-03", "pending_sync", [
-        "حركات لم تُرفع",
-        "نشملها ونسمها",
-        "إخفاؤها يجعل الرقم مخالفاً لما على الرفّ. وعرضها بلا وسم يجعله يبدو مؤكَّداً. الحلّ الثالث: تُعرض بوسم.",
-      ]),
+      texts: fromFrame("REP-03", "pending_sync", ["حركات لم تُرفع"]),
     });
     await expect(root).toContainText("هذا التقرير لا يشمل 6 عمليات معلّقة من هاتف المخزن");
     await expect(page.getByRole("button", { name: "مزامنة ثم إعادة الحساب" })).toBeVisible();
@@ -292,7 +288,6 @@ test.describe("REP-03", () => {
       texts: fromFrame("REP-03", "empty", [
         "لا حركة في المدى",
         "المدى المختار (أمس) بلا حركة. الفراغ سببه المرشّح لا المخزون.",
-        "نقول السبب",
       ]),
     });
     await expect(root).toContainText("لا حركة في أمس — آخر حركة 16 سبتمبر.");
@@ -313,11 +308,7 @@ test.describe("REP-03", () => {
     await expectFrame(page, info, {
       screenId: "REP-03",
       state: "stale",
-      texts: fromFrame("REP-03", "stale", [
-        "أرصدة من آخر مطابقة",
-        "الوقت مع كل رصيد",
-        "لا في رأس الصفحة وحده. من يطبع صفحةً واحدة من التقرير يأخذ معه الطابع الزمني.",
-      ]),
+      texts: fromFrame("REP-03", "stale", ["أرصدة من آخر مطابقة"]),
     });
     await expect(root).toContainText("حُسبت في 11:05");
     await expect(root).toContainText("09:12");
@@ -386,9 +377,8 @@ test.describe("REP-04", () => {
       state: "ready",
       texts: fromFrame("REP-04", "ready", [
         "تقرير الصندوق والورديات",
-        "النقد المتوقَّع مقابل المعدود عبر الورديات. حالته الفريدة: تعارضٌ في تقرير.",
+        "النقد المتوقَّع مقابل المعدود عبر الورديات.",
         "ورديات الأسبوع",
-        "لكل وردية: المتوقَّع والمعدود والفارق ومن عدّ. والفوارق مجموعةٌ في الأعلى لأنها سبب فتح التقرير.",
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });

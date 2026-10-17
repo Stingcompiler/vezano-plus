@@ -190,12 +190,9 @@ export function TransferCard({
             {t.lines[0]?.unit_name ?? "وحدة"} ·{" "}
             <span className="sting-mono">{formatMinor(value)}</span>
           </div>
+          <p className="acc-choice__note">تظهر في تقرير المنشأة المجمَّع ولا تُنسب لأي فرع.</p>
           <p className="acc-choice__note">
-            تظهر في تقرير المنشأة المجمَّع ولا تُنسب لأي فرع. من دون هذا الحساب تختفي البضاعة من
-            الدفاتر بين الخروج والدخول.
-          </p>
-          <p className="acc-choice__note">
-            لو تأخر الاستلام فوق 72 ساعة يظهر تنبيه للمالك — تأخر لا اتهام.
+            لو تأخر الاستلام فوق 72 ساعة يظهر تنبيه للمالك.
             {t.late ? (
               <>
                 {" "}
@@ -208,8 +205,7 @@ export function TransferCard({
       {t.status === "partially_received" ? (
         <p className="acc-choice__note inv-variance">
           <strong>عند الاستلام بفارق:</strong> يُسجَّل المستلم فعلاً، ويبقى المتبقّي في «الطريق»
-          موسوماً «فارق تحويل»، ويُحسم بجرد أو بإقرار من أحد الفرعين — الاثنان دفتران لمالك واحد لكن
-          مسؤولية العدّ لشخصين.
+          موسوماً «فارق تحويل»، ويُحسم بجرد أو بإقرار من أحد الفرعين.
         </p>
       ) : null}
       {open ? (

@@ -302,8 +302,7 @@ export function MovementsClient({
           <div className="cat-head">
             <h2 className="cat-head__title">سجل حركة الصنف</h2>
             <span className="cat-head__hint">
-              هذا هو الجواب على «كيف صار الرصيد كذا». لا سطر بلا مستند، والحركات المحفوظة محلياً
-              معلَّمة بصراحة فلا تُقرأ كمؤكَّدة.
+              لا سطر بلا مستند، والحركات المحفوظة محلياً معلَّمة بصراحة فلا تُقرأ كمؤكَّدة.
             </span>
           </div>
           <div className="acc-card__body">
@@ -374,7 +373,6 @@ export function MovementsClient({
 
             {state === "loading" ? (
               <Notice kind="info" title="جلب الحركات">
-                <p className="acc-lead">مع المدى وعدد الحركات المتوقَّع.</p>
                 <p className="acc-choice__note">
                   المدى {range === "all" ? "كل الحركات" : <span className="sting-mono">30</span>}
                   {cached ? (
@@ -413,10 +411,6 @@ export function MovementsClient({
                     "الصنف لم يتحرّك بعد"
                   )}
                 </p>
-                <p className="acc-choice__note">
-                  <strong>نفرّق</strong> · «الصنف لم يتحرّك بعد» تختلف عن «لا حركة في هذا المدى —
-                  آخرها 12 سبتمبر». الأولى عن الصنف والثانية عن المرشّح.
-                </p>
               </Notice>
             ) : null}
 
@@ -427,11 +421,6 @@ export function MovementsClient({
               rowKey={(r) => r.id}
               loading={state === "loading" && rows.length === 0 ? 3 : undefined}
             />
-            <p className="acc-choice__note">
-              <strong>الصفوف المعلّقة لا تُخفى ولا تُخلط.</strong> الرصيد المعروض يفصل «مؤكَّد
-              خادمياً» عن «معلّق هذا الجهاز» برقمين، لأن دمجهما في رقم واحد يعطي التاجر ثقة لا أساس
-              لها عند تعارض لاحق.
-            </p>
           </div>
         </div>
       </div>

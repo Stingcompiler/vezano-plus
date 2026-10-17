@@ -121,10 +121,6 @@ export function SearchClient() {
             <h2 className="cat-head__title">
               نتائج البحث والمقارنة — لا «الأرخص» عند اختلاف الوحدة
             </h2>
-            <span className="cat-head__hint">
-              كرتونة ١٢ عند مورد وكرتونة ٢٤ عند آخر. من يقارن سعرَي الكرتونتين يشتري الأغلى وهو يظن
-              أنه وفّر — الشاشة تحسب سعر الوحدة الأساسية وتسمّي ما لا يُعرف.
-            </span>
           </div>
           <div className="acc-card__body">
             <TextField
@@ -144,18 +140,11 @@ export function SearchClient() {
                 <p className="acc-lead">
                   العدّ والمرشّحات أولاً، والعروض تلحق — ولا يُعرض ترتيبٌ قبل اكتمال ما سيُرتَّب.
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا ترتيب جزئي</strong> · «الأوفر» من نصف النتائج ادعاءٌ يتغيّر بعد ثانية.
-                  الترتيب يُعلن مكتملاً أو لا يُعلن.
-                </p>
               </Notice>
             ) : null}
             {state === "empty" && shown ? (
               <Notice kind="empty" title="لا عروض مطابقة">
                 <p className="acc-lead">الصنف غير معروض في منطقتك أو الفئة أضيق من اللازم.</p>
-                <p className="acc-choice__note">
-                  <strong>التوسيع بعدده</strong> · أزرار بأثر معدود لا نصيحة عامة.
-                </p>
                 <div className="acc-actions">
                   {area ? (
                     <Button
@@ -176,10 +165,6 @@ export function SearchClient() {
             {state === "stale" ? (
               <Notice kind="warning" title="نتائج من آخر جلب">
                 <p className="acc-lead">الاتصال تقطّع بعد البحث.</p>
-                <p className="acc-choice__note">
-                  <strong>المنتهي يسقط أولاً</strong> · كل عرض تجاوزت صلاحيتُه وقتَ الكاش يُستبعد من
-                  الترتيب فوراً — نعرض أقلّ ولا نعرض ميتاً.
-                </p>
               </Notice>
             ) : null}
             {state === "partial" && shown ? (
@@ -197,10 +182,7 @@ export function SearchClient() {
             ) : null}
             {state === "ready" ? (
               <p className="acc-choice__note">
-                <strong>الترتيب: سعر العبوة الواحدة</strong> · لا شارة «الأرخص» في الشاشة كلها حين
-                تكون رسوم النقل غير محسومة — نرتّب بسعر العبوة ونسمّي المجهول «رسوم تُحدَّد عند
-                الطلب» بدل أن نطمسه في مجموعٍ مُدّعى. والسعر المعروض من آخر تأكيد خادمي — والمنتهي
-                لا يدخل الترتيب أصلاً.
+                <strong>الترتيب: سعر العبوة الواحدة</strong>
               </p>
             ) : null}
 

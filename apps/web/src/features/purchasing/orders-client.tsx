@@ -226,7 +226,6 @@ export function OrdersClient() {
             <h2 className="cat-head__title">أوامر الشراء الداخلية — الأمر وعدٌ لا التزام</h2>
             <span className="cat-head__hint">
               أمر الشراء لا يحرّك مخزوناً ولا مالاً. الذي يحرّكهما مستند الشراء حين يُستلم ويُعتمد.
-              الفصل بينهما يمنع أن يصير الطلبُ رصيداً.
             </span>
           </div>
           <div className="acc-card__body">
@@ -273,14 +272,6 @@ export function OrdersClient() {
             {state === "loading" ? (
               <>
                 <Notice kind="info" title="تحميل القائمة">
-                  <p className="acc-lead">
-                    ستة هياكل بعدد آخر قائمة معروفة، والمرشّحات فعّالة أثناء التحميل — اختيار
-                    المرشّح يعيد الطلب لا ينتظره.
-                  </p>
-                  <p className="acc-lead">
-                    <strong>لا نُظهر</strong> · «لا أوامر» أثناء التحميل. الفراغ حكمٌ، والقائمة لم
-                    تصل لتُحكَم.
-                  </p>
                   {slow ? <p className="acc-choice__note">الشبكة بطيئة</p> : null}
                 </Notice>
                 <Table
@@ -309,13 +300,7 @@ export function OrdersClient() {
                   والمحاسب — كلاهما التزام مالي.
                 </p>
                 <p className="acc-lead">
-                  <strong>القيمة التقديرية</strong> · عمود القيمة محجوب عن أمين المخزن: عمله عدُّ
-                  الأصناف لا مطابقة المبالغ، والسعر يقود إلى التكلفة.
-                </p>
-                <p className="acc-lead">
-                  <strong>الزرّ</strong> · يظهر معطّلاً مع سببه ومع «اطلب من{" "}
-                  {data.ask_name || "المالك"}» — لا يُخفى. الصلاحية على العمود لا على الشاشة كلها:
-                  حجب الشاشة يمنعه من الاستلام أصلاً.
+                  <strong>القيمة التقديرية</strong> · عمود القيمة محجوب عن أمين المخزن.
                 </p>
               </Notice>
             ) : null}
@@ -333,8 +318,9 @@ export function OrdersClient() {
                 <p className="acc-lead">
                   {data.closed_count > 0 ? (
                     <>
+                      {/* فحص 2026-10-17 F10: «مغلق» قد يكون مُلغى — لا «كل ما طُلب وصل» */}
                       <span className="sting-mono">{data.closed_count}</span> أوامر مغلقة في السجل
-                      وصفرٌ مفتوح. هذه حالة صحّية لا نقص: كل ما طُلب وصل.
+                      ولا أمر مفتوح.
                     </>
                   ) : (
                     "لم يُنشأ أمر شراء بعد."
@@ -342,16 +328,12 @@ export function OrdersClient() {
                 </p>
                 {data.last_closed ? (
                   <p className="acc-lead">
-                    <strong>نقول</strong> · «لا أوامر مفتوحة — آخرها{" "}
+                    «لا أوامر مفتوحة — آخرها{" "}
                     <span className="sting-mono">{data.last_closed.number}</span>{" "}
                     {data.last_closed.status_label} {ago(data.last_closed.at)}»، والسجل المغلق على
                     بعد ضغطة.
                   </p>
                 ) : null}
-                <p className="acc-choice__note">
-                  <strong>نعرض</strong> · مدخلاً لأمر جديد ومدخلاً لاقتراح التوريد إن كانت مرحلته
-                  مفتوحة.
-                </p>
               </Notice>
             ) : null}
 
@@ -372,8 +354,7 @@ export function OrdersClient() {
             ) : null}
             {state === "ready" ? (
               <p className="acc-choice__note">
-                «القيمة التقديرية» موسومة بالتقدير في العنوان لا في حاشية. الرقم من آخر سعر شراء
-                معروف، وقد يختلف عمّا يأتي في الفاتورة — ومن يقرأه في قائمة يبني عليه قراراً نقدياً.
+                الرقم من آخر سعر شراء معروف، وقد يختلف عمّا يأتي في الفاتورة.
               </p>
             ) : null}
           </div>

@@ -46,6 +46,7 @@ interface Payload {
   avg_response_hours: number;
   response_target_hours: number;
   within_target: boolean;
+  response_samples: number;
   referred_week: number;
   closed_30d: number;
   intervention_days: number;
@@ -232,11 +233,22 @@ export function DisputesOpsClient() {
                 </dd>
                 <dt>متوسط زمن الاستجابة</dt>
                 <dd>
-                  <span className="sting-mono">{data.avg_response_hours}</span> ساعة
-                  <div className="mp-reason">
-                    {data.within_target ? "ضمن الهدف المعلَن" : "فوق الهدف المعلَن"} (
-                    <span className="sting-mono">{data.response_target_hours}h</span>)
-                  </div>
+                  {/* فحص 2026-10-17 VP12: بلا ردود مقيسة لا «0 ساعة» ولا «ضمن الهدف» */}
+                  {data.response_samples ? (
+                    <>
+                      <span className="sting-mono">{data.avg_response_hours}</span> ساعة
+                      <div className="mp-reason">
+                        {data.within_target ? "ضمن الهدف المعلَن" : "فوق الهدف المعلَن"} (
+                        <span className="sting-mono">{data.response_target_hours}h</span>) · من{" "}
+                        <span className="sting-mono">{data.response_samples}</span> ردّ في 30 يوماً
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span>—</span>
+                      <div className="mp-reason">لا ردود في آخر 30 يوماً — لا متوسط يُقاس</div>
+                    </>
+                  )}
                 </dd>
                 <dt>أُحيل لمسار خارجي</dt>
                 <dd>

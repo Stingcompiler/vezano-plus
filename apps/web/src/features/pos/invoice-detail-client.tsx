@@ -327,9 +327,7 @@ export function InvoiceDetailClient({ saleId }: { saleId: string }) {
 
                 {reported ? (
                   <Notice kind="success" title="الكاشير يُبلغ">
-                    <p className="acc-lead">
-                      الملاحظة من الميدان والقرار ممن يملك أثره — سُجّل البلاغ باسم {reported}.
-                    </p>
+                    <p className="acc-lead">سُجّل البلاغ باسم {reported}.</p>
                   </Notice>
                 ) : (
                   <div className="pos-inv__report">
@@ -337,7 +335,6 @@ export function InvoiceDetailClient({ saleId }: { saleId: string }) {
                       label="ملاحظة الاشتباه"
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      hint="زرّ «أبلغ عن اشتباه» متاح له — الملاحظة من الميدان والقرار ممن يملك أثره."
                     />
                   </div>
                 )}

@@ -233,10 +233,8 @@ export function SellerClient() {
               >
                 <p className="acc-lead">الطلب مرفوع وأدلته عند مشرف السوق.</p>
                 <p className="acc-choice__note">
-                  <strong>الحالة لا العجلة</strong> · «قيد المراجعة منذ{" "}
-                  {daysWord(acc.days_since_submitted ?? 0)} — المدة المعتادة{" "}
-                  <span className="sting-mono">{acc.usual_review_days}</span> أيام». طلبٌ بلا أفق
-                  زمني يولّد تذاكر دعم لا صبراً.
+                  «قيد المراجعة منذ {daysWord(acc.days_since_submitted ?? 0)} — المدة المعتادة{" "}
+                  <span className="sting-mono">{acc.usual_review_days}</span> أيام».
                 </p>
               </Notice>
             ) : null}
@@ -244,10 +242,6 @@ export function SellerClient() {
             {state === "validation_error" ? (
               <Notice kind="error" title="أدلة ناقصة">
                 <p className="acc-lead">سجل تجاري غير مقروء أو نشاط لا يطابق الفئة المطلوبة.</p>
-                <p className="acc-choice__note">
-                  <strong>النقص مسمّى</strong> · حقلاً حقلاً مع سبب الرفض السابق إن وُجد. «طلبك
-                  مرفوض» بلا سبب يعيد نفس الملف ثانيةً.
-                </p>
               </Notice>
             ) : null}
 
@@ -264,7 +258,6 @@ export function SellerClient() {
                 <p className="acc-lead">الترقية من مشترٍ إلى بائع على الحساب نفسه.</p>
                 <p className="acc-choice__note">
                   <strong>التفعيل لا ينشر</strong> · لا ملف عام ولا عرض ولا صنف يُنشر تلقائياً.
-                  الباب فُتح والدخول قرارات لاحقة كلٌّ بشاشته.
                 </p>
               </Notice>
             ) : null}
@@ -355,22 +348,6 @@ export function SellerClient() {
               منشأتك المنشور بجوار الشارة.
             </p>
             <div className="mp-paths">
-              <p className="acc-choice__note">
-                <strong>قرار معتمد</strong> · تحقق الهوية الذي يكفي للشراء لا يكفي للبيع: من ينشر
-                سعراً يبني عليه غيره قراراً مالياً. فحساب واحد، ودور بائع يُفتح بطلب تحقق منفصل
-                يراجعه مشرف السوق قبل أول عرض — بانتظار بشري صريح لا إخفاء له. المسارات المرفوضة
-                موثقة أدناه.
-              </p>
-              <p className="acc-choice__note">
-                <strong>المسار أ — مرفوض</strong> · تفعيل تلقائي داخل نفس المنشأة: زر في إعدادات
-                المنشأة يمنح النشر فوراً بنفس هوية المشترٍ المتحققة. الثمن: تحقق الهوية للشراء أضعف
-                مما يلزم للبيع. مورّد غير مؤهل ينشر أسعاراً يعتمد عليها غيره.
-              </p>
-              <p className="acc-choice__note">
-                <strong>المسار ج — مرفوض</strong> · حساب سوق منفصل مرتبط بتخويل: كيان بائع مستقل
-                يُربط بالمنشأة المشترية بموافقة مالكها، ودفتراهما منفصلان. الثمن: محوّل منشأة أعقد،
-                وخطر أن يظن المستخدم أن لديه شركتين ودفترين.
-              </p>
               <p className="acc-choice__note">
                 مورّد سجّلته في دفترك المحلي لا يحصل على ملف عام في السوق ولا يُدعى إليه. سجلّك
                 الخاص ليس إعلاناً عن غيرك.

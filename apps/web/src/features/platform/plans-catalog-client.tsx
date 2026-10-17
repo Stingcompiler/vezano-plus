@@ -723,7 +723,7 @@ export function PlansCatalogClient() {
                     ))}
                   </ol>
                 ) : (
-                  <p className="acc-choice__note">لا تغييرات بعد — الكتالوج كما بُذر.</p>
+                  <p className="acc-choice__note">لا تغييرات على الباقات بعد.</p>
                 )}
                 <p className="acc-choice__note">{data.rule}</p>
               </>

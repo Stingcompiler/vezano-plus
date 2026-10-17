@@ -167,9 +167,7 @@ export function CampaignResultsClient({ id }: { id: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">نتائج حملة وإلغاؤها</h2>
-            <span className="cat-head__hint">
-              ما وصل فعلاً. القاعدة: لا ندّعي علماً بما لا يُخبرنا به المزوّد.
-            </span>
+            <span className="cat-head__hint">ما وصل فعلاً.</span>
           </div>
           <div className="acc-card__body">
             {c ? (
@@ -236,22 +234,15 @@ export function CampaignResultsClient({ id }: { id: string }) {
                     "لم تُرسل بعد — مسودة تنتظر الاعتماد."
                   )}
                 </p>
-                <p className="acc-lead">
-                  <strong>نفرّق</strong> · «لم تصل نتائج بعد» لا «لم تصل لأحد». الأولى انتظار
-                  والثانية فشل.
-                </p>
               </Notice>
             ) : null}
 
             {state === "server_error" ? (
               <Notice kind="error" title="المزوّد لا يردّ">
+                <p className="acc-lead">الحملة أُرسلت وحالة التسليم مجهولة.</p>
                 <p className="acc-lead">
-                  الحملة أُرسلت وحالة التسليم مجهولة. أسوأ من الفشل لأنه غموض.
-                </p>
-                <p className="acc-lead">
-                  <strong>نقولها كما هي</strong> · «أُرسلت{" "}
-                  <span className="sting-mono">{sent}</span> · حالة التسليم غير معروفة — المزوّد لا
-                  يستجيب». ولا نُعيد الإرسال: قد تصل مرتين.
+                  أُرسلت <span className="sting-mono">{sent}</span> · حالة التسليم غير معروفة —
+                  المزوّد لا يستجيب. ولا نُعيد الإرسال: قد تصل مرتين.
                 </p>
               </Notice>
             ) : null}
@@ -260,17 +251,15 @@ export function CampaignResultsClient({ id }: { id: string }) {
               <Notice kind="success" title="أُلغيت الحملة">
                 {sent === 0 ? (
                   <p className="acc-lead">
-                    أُلغيت قبل موعدها. نقول العدد الذي لم يُرسل والحصة التي عادت:{" "}
-                    <span className="sting-mono">{r.cancelled ?? 0}</span> لم تُرسل ·{" "}
-                    <span className="sting-mono">{r.refunded_messages ?? 0}</span> رسالة عادت إلى
-                    حصتك.
+                    أُلغيت قبل موعدها. <span className="sting-mono">{r.cancelled ?? 0}</span> لم
+                    تُرسل · <span className="sting-mono">{r.refunded_messages ?? 0}</span> رسالة
+                    عادت إلى حصتك.
                   </p>
                 ) : (
                   <p className="acc-lead">
-                    <strong>ما أُرسل لا يُستردّ</strong> · إن كانت بدأت، نُفصّل: «
+                    <strong>ما أُرسل لا يُستردّ</strong> ·{" "}
                     <span className="sting-mono">{sent}</span> أُرسلت ولا تُستردّ ·{" "}
-                    <span className="sting-mono">{r.cancelled ?? 0}</span> أُلغيت». الإلغاء الجزئي
-                    حقيقة تُقال.
+                    <span className="sting-mono">{r.cancelled ?? 0}</span> أُلغيت.
                   </p>
                 )}
               </Notice>
@@ -343,9 +332,7 @@ export function CampaignResultsClient({ id }: { id: string }) {
                 </div>
                 <p className="acc-choice__note">
                   <strong>لا قراءة مفترضة</strong> · المزوّد يخبرنا أنه قبِل الرسالة، وأحياناً أنه
-                  سلّمها. لا يخبرنا أن أحداً قرأها. عرض «معدل القراءة» هنا سيكون رقماً مخترعاً تبني
-                  عليه قراراً تسويقياً خاطئاً. تسجيل القراءة افتراضاً يجعل التاجر يظنّ حملته ناجحة.
-                  الصمت أصدق من رقم مخترع.
+                  سلّمها. لا يخبرنا أن أحداً قرأها.
                 </p>
                 {failures.length ? (
                   <Table
@@ -380,7 +367,7 @@ export function CampaignResultsClient({ id }: { id: string }) {
             {c && c.can_cancel && c.status !== "cancelled" ? (
               <div className="cat-form__actions">
                 <p className="acc-choice__note">
-                  الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده. نقول ذلك قبل التأكيد لا بعده.
+                  الإيقاف لا يسترد ما أُرسل ولا يعيد رصيده.
                   {sent > 0 ? (
                     <>
                       {" "}

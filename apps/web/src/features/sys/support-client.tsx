@@ -196,8 +196,8 @@ export function SupportClient() {
                     المرجع: <span className="sting-mono">{sent.reference}</span>
                   </p>
                   <p className="acc-choice__note">
-                    <strong>وما لم يُرسل</strong> · نعدّده صراحةً: لا فواتير ولا مبالغ ولا أسماء
-                    عملاء ولا رموز دخول. الثقة تُبنى بقول ما لم نأخذه لا بقول ما أخذنا.
+                    <strong>وما لم يُرسل</strong> · لا فواتير ولا مبالغ ولا أسماء عملاء ولا رموز
+                    دخول.
                   </p>
                 </Notice>
                 {preview}
@@ -212,21 +212,14 @@ export function SupportClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>ما يفعله الموظف</strong> · يُنشئ التقرير ويحفظه محلياً ويطلب من المالك
-                  إرساله. عمله في التشخيص لا يُهدر.
+                  إرساله.
                 </p>
               </Notice>
             ) : null}
 
             {state === "empty" ? (
               <Notice kind="empty" title="لا شيء يُبلَّغ عنه">
-                <p className="acc-lead">
-                  لا أخطاء مسجّلة في آخر سبعة أيام. الشاشة تُفتح غالباً بطلب موظف الدعم لا بمبادرة
-                  المستخدم.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>المخرج قائم</strong> · «أرسل تقريراً على أي حال» — فالمشكلة قد تكون سلوكاً
-                  خاطئاً لا خطأً مسجّلاً.
-                </p>
+                <p className="acc-lead">لا أخطاء مسجّلة في آخر سبعة أيام.</p>
               </Notice>
             ) : null}
 

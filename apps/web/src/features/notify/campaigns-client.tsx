@@ -157,9 +157,7 @@ export function CampaignsClient() {
             ) : null}
             {state === "loading" ? (
               <Notice kind="info" title="جلب الحملات">
-                <p className="acc-lead">
-                  مع الحصة الشهرية وهي تُحسب — فهي أول ما يُنظر إليه قبل إنشاء حملة.
-                </p>
+                <p className="acc-lead">مع الحصة الشهرية وهي تُحسب.</p>
               </Notice>
             ) : null}
 
@@ -187,8 +185,7 @@ export function CampaignsClient() {
                 {!data.can_see_billing ? (
                   <p className="acc-choice__note">
                     <strong>مسؤول الحملات لا يرى الفوترة</strong> · يرى الحملات والحصة المتبقية، ولا
-                    يرى تكلفتها ولا فاتورة الباقة. <strong>الحدّ</strong> · الحصة عددٌ يحتاجه
-                    ليخطّط، والتكلفة رقمٌ مالي للمالك.
+                    يرى تكلفتها ولا فاتورة الباقة.
                   </p>
                 ) : null}
                 {data.can_create ? (
@@ -203,9 +200,7 @@ export function CampaignsClient() {
 
             {state === "empty" && data ? (
               <Notice kind="empty" title="لا حملات">
-                <p className="acc-lead">
-                  لم تُنشأ حملة بعد. نعرض الحصة المتاحة وعدد المشتركين الفعلي.
-                </p>
+                <p className="acc-lead">لم تُنشأ حملة بعد.</p>
                 <p className="acc-lead">
                   <strong>الرقم الصادق</strong> · «
                   <span className="sting-mono">{data.subscribers}</span> زبوناً أذنوا باستقبال
@@ -273,10 +268,6 @@ export function CampaignsClient() {
                     <h3 className="cat-head__title">
                       نتائج الحملة — «قبِله المزوّد» ليس «قرأه الزبون»
                     </h3>
-                    <p className="acc-choice__note">
-                      أربع درجات لا واحدة. عرض «{latest.results.delivered ?? 0} وصلت» بينما{" "}
-                      {latest.results.failed ?? 0} فشلت يجعلك تحاسب حملة نجحت نصفها.
-                    </p>
                     <div className="home-kpis rep-kpis">
                       <div className="home-kpi">
                         <div className="home-kpi__label">أُرسلت من عندنا</div>

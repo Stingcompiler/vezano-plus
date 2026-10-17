@@ -232,9 +232,6 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">صندوق الوارد — التشغيلي فوق التسويقي دائماً</h2>
-            <span className="cat-head__hint">
-              إشعار «وردية مفتوحة منذ 3 أيام» لا يقف في طابور واحد مع عرض ترقية الباقة.
-            </span>
           </div>
           <div className="acc-card__body">
             <div className="pos-inv__filters">
@@ -260,13 +257,7 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
               ) : null}
             </div>
 
-            {state === "loading" ? (
-              <Notice kind="info" title="جلب الوارد">
-                <p className="acc-lead">
-                  هياكل بعدد آخر قائمة. غير المقروء يُعلَّم بعد الوصول لا قبله.
-                </p>
-              </Notice>
-            ) : null}
+            {state === "loading" ? <Notice kind="info" title="جلب الوارد" /> : null}
             {state === "loading" ? (
               <TimeList label="الوارد" entries={[]} loading={lastCount} />
             ) : null}
@@ -277,12 +268,7 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
                   kind="empty"
                   title="لا نتائج لهذا المرشّح"
                   action={<Button onClick={() => setCategory("")}>امسح المرشّح</Button>}
-                >
-                  <p className="acc-lead">
-                    <strong>نفرّق</strong> · الفراغ بعد ترشيح يقول «لا نتائج لهذا المرشّح» مع زرّ
-                    مسحه. الخلط بينهما يجعل المستخدم يظنّ أنه لم يصله شيء.
-                  </p>
-                </Notice>
+                />
               ) : (
                 <Notice kind="empty" title="لا إشعارات">
                   <p className="acc-lead">صندوقٌ فارغ فعلاً لا مرشَّحٌ لا يطابق.</p>
@@ -300,24 +286,10 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
                   </span>
                 </div>
                 {state === "permission_denied" ? (
-                  <Notice kind="locked" title="إشعار لدورٍ آخر">
-                    <p className="acc-lead">
-                      إشعار عن اعتماد اشتراك وصل لأن الجهاز مشترك، والموظف الحالي لا يملك فتحه.
-                    </p>
-                    <p className="acc-lead">
-                      <strong>العنوان بلا التفصيل</strong> · يظهر العنوان ويُحجب المحتوى ومعه «يخصّ
-                      المالك». الإخفاء الكامل يجعله يظنّ أن الإشعار ضاع.
-                    </p>
-                  </Notice>
+                  <Notice kind="locked" title="إشعار لدورٍ آخر" />
                 ) : state === "expired" ? (
                   <Notice kind="warning" title="إشعار انتهت صلاحيته">
-                    <p className="acc-lead">
-                      إشعار عن عرض سوق انتهى أو دعوة مضت. يبقى مقروءاً ولا يُخفى.
-                    </p>
-                    <p className="acc-lead">
-                      <strong>لا نمسح التاريخ</strong> · الإشعار المنتهي يُوسم ويُعطَّل زرّه. محوُه
-                      يجعل المستخدم يظنّ أنه لم يصله شيء ويسأل عنه.
-                    </p>
+                    <p className="acc-lead">يبقى مقروءاً ولا يُخفى.</p>
                     <p className="acc-choice__note">{selected.body}</p>
                     <div className="cat-form__actions">
                       <Button disabledReason="انتهت صلاحية هذا الإشعار">
@@ -329,12 +301,7 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
                   <>
                     <p className="acc-lead">{selected.body}</p>
                     {opened?.status === "link_expired" ? (
-                      <Notice kind="warning" title="انتهت صلاحية هذا الرابط">
-                        <p className="acc-lead">
-                          الرابط داخل الإشعار يحمل صلاحية: بعد انتهائها نقول «انتهت صلاحية هذا
-                          الرابط» ونعرض الوجهة بديلاً — لا صفحة خطأ عامة.
-                        </p>
-                      </Notice>
+                      <Notice kind="warning" title="انتهت صلاحية هذا الرابط" />
                     ) : null}
                     <div className="cat-form__actions">
                       {selected.href ? (
@@ -379,10 +346,6 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
                     </section>
                   ) : null,
                 )}
-                <p className="acc-choice__note">
-                  الرابط داخل الإشعار يحمل صلاحية: بعد انتهائها نقول «انتهت صلاحية هذا الرابط» ونعرض
-                  الوجهة بديلاً — لا صفحة خطأ عامة.
-                </p>
               </>
             ) : null}
           </div>

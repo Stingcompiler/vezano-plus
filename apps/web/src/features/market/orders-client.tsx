@@ -342,10 +342,6 @@ export function OrdersClient() {
             {state === "empty" ? (
               <Notice kind="empty" title="لا طلبات">
                 <p className="acc-lead">منشأةٌ لم تشترِ من السوق بعد.</p>
-                <p className="acc-choice__note">
-                  <strong>المسار</strong> · مدخل السوق. والفراغ هنا بدايةٌ لا عطب — الشراء المحلي
-                  قائمٌ بلا سوق.
-                </p>
                 <div className="acc-actions">
                   <Button pos onClick={() => router.push("/market")}>
                     السوق
@@ -356,10 +352,6 @@ export function OrdersClient() {
             {state === "stale" && snapshot ? (
               <Notice kind="warning" title="حالات من آخر مطابقة">
                 <p className="acc-lead">{agoWord(snapshot.at)}، وقد شُحن طلبٌ أو انتهت مهلة عرض.</p>
-                <p className="acc-choice__note">
-                  <strong>الوقت مع كل صفّ</strong> · لا في الترويسة وحدها. «مؤكَّد» عمرها ساعة قد
-                  تكون «مشحون» الآن، ومن يقرأها يقرّر نقلاً.
-                </p>
                 <div className="acc-actions">
                   <Button onClick={() => void load()}>حدّث</Button>
                 </div>
@@ -381,12 +373,6 @@ export function OrdersClient() {
                 rowKey={(r) => r.id}
                 onOpenRow={(r) => router.push(r.draft ? "/market/cart" : `/market/orders/${r.id}`)}
               />
-            ) : null}
-            {shown ? (
-              <p className="acc-choice__note">
-                لا عمود «إجمالي كل الطلبات»: جمع قيم طلبات بحالات مختلفة — منها ما هو محل خلاف وما
-                هو ملغى جزئياً — يُنتج رقماً لا يصف شيئاً. الإجماليات في التقارير بمقاماتها.
-              </p>
             ) : null}
           </div>
         </div>

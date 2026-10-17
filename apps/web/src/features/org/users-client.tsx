@@ -336,14 +336,12 @@ export function UsersClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">المستخدمون والدعوات</h2>
-            <span className="cat-head__hint">من يدخل منشأتك وبأي دور. أربع حالات ناقصة.</span>
+            <span className="cat-head__hint">من يدخل منشأتك وبأي دور.</span>
           </div>
           <div className="acc-card__body">
             {state === "loading" ? (
               <Notice kind="info" title="جلب المستخدمين">
-                <p className="acc-lead">
-                  القائمة من الخادم دائماً لا من كاش — من يفتحها يسأل «من يدخل الآن؟».
-                </p>
+                <p className="acc-lead">القائمة من الخادم دائماً لا من كاش.</p>
                 {failed ? (
                   <Button variant="secondary" onClick={() => void load()}>
                     أعد المحاولة
@@ -354,11 +352,7 @@ export function UsersClient() {
 
             {state === "empty" ? (
               <Notice kind="empty" title="أنت وحدك">
-                <p className="acc-lead">منشأة بمستخدم واحد. حالةٌ شائعة لا نقص.</p>
-                <p className="acc-choice__note">
-                  <strong>لا نُلحّ بالدعوة</strong> · «أنت المستخدم الوحيد» ومدخل الدعوة حاضر. كثير
-                  من المحلات يديرها صاحبها وحده، ودعوة موظفٍ ليست هدفاً.
-                </p>
+                <p className="acc-lead">منشأة بمستخدم واحد.</p>
               </Notice>
             ) : null}
 
@@ -382,10 +376,6 @@ export function UsersClient() {
                 }
               >
                 <p className="acc-lead">الرقم عليه دعوة معلّقة لم تُقبل بعد.</p>
-                <p className="acc-choice__note">
-                  <strong>لا دعوة ثانية</strong> · نعرض الدعوة القائمة وتاريخها ومخرجَين: أعد
-                  إرسالها أو ألغِها. دعوتان لرقم واحد تُربكان من يستقبلهما.
-                </p>
                 <p className="acc-choice__note">
                   دعوة — {dup.identifier_masked} · {dup.role_name} · {dup.branch_name} · أُرسلت{" "}
                   <span className="sting-mono">{ddmm(dup.sent_at)}</span>
@@ -425,9 +415,6 @@ export function UsersClient() {
                   </Button>
                 }
               >
-                <p className="acc-lead">
-                  نقول ما سيملكه المدعوّ حين يقبل: الدور والفرع وما يستطيع فعله.
-                </p>
                 <p className="acc-choice__note">
                   دعوة — {sent.invitation.identifier_masked} · {sent.invitation.role_name} ·{" "}
                   {sent.invitation.branch_name} · الرابط صالح{" "}
@@ -440,10 +427,6 @@ export function UsersClient() {
                     </li>
                   ))}
                 </ul>
-                <p className="acc-choice__note">
-                  <strong>الصلاحية تُراجَع قبل الإرسال</strong> · لا بعد القبول. تصحيحُ دورٍ بعد أن
-                  دخل الموظف أصعب من ضبطه الآن.
-                </p>
                 <p className="acc-choice__note">
                   رابط الدعوة: <span className="sting-mono">{sent.link}</span>
                 </p>

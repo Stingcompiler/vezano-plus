@@ -3151,6 +3151,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description فحص 2026-10-17 VP13: سجل تدقيق المشغّلين — `?operator=&category=&tenant=&before=`. */
+        get: operations["platform_audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/backups": {
         parameters: {
             query?: never;
@@ -6885,6 +6902,7 @@ export interface components {
                 id: string;
                 name: string;
             }[];
+            catalog_items: number;
             rows: {
                 alert_threshold_milli: string;
                 in_transit_milli: string;
@@ -13619,6 +13637,34 @@ export interface components {
                 tenant_id: string;
             };
         };
+        GetPlatformAuditResponse: {
+            categories: {
+                code: string;
+                label: string;
+            }[];
+            entries: {
+                action: string;
+                action_label: string;
+                at: string;
+                detail: string;
+                id: string;
+                operator_id: string;
+                operator_name: string;
+                tenant_id: string;
+                tenant_name: string;
+                ticket_ref: string;
+            }[];
+            filters: {
+                category: string;
+                operator: string;
+                tenant: string;
+            };
+            next_before: string;
+            operators: {
+                id: string;
+                name: string;
+            }[];
+        };
         GetPlatformBackupsResponse: {
             achieved: {
                 backup_taken_at: string;
@@ -13814,6 +13860,7 @@ export interface components {
             near_limit_count: number;
             open_count: number;
             referred_week: number;
+            response_samples: number;
             response_target_hours: number;
             state: string;
             within_target: boolean;
@@ -14862,6 +14909,7 @@ export interface components {
                 tenant_id: string;
                 waiting_hours: number;
             }[];
+            reviewed_week: number;
         };
         PostPlatformVerificationsByTenantIdByActionResponse: {
             badge_text?: string;
@@ -25079,6 +25127,33 @@ export interface operations {
             };
             /** @description No response body */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformAuditResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

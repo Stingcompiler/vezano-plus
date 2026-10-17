@@ -246,9 +246,7 @@ export function ProofsClient() {
                 </p>
                 {err.code === "reference_used" ? (
                   <p className="acc-choice__note">
-                    <strong>نُظهر السابقة</strong> · بتاريخها ومستأجرها — بلا اسمه إن كان مستأجراً
-                    آخر. المراجع يحتاج أن يعرف أنها مستهلكة لا لمن. اعتُمدت{" "}
-                    {err.extra.approved_at ? dm(err.extra.approved_at) : "—"} بيد{" "}
+                    اعتُمدت {err.extra.approved_at ? dm(err.extra.approved_at) : "—"} بيد{" "}
                     {err.extra.approved_by_name ?? ""} ·{" "}
                     {err.extra.same_tenant ? "المستأجر نفسه" : "مستأجر آخر"}
                   </p>
@@ -283,9 +281,8 @@ export function ProofsClient() {
             {!current && data ? (
               <>
                 <p className="acc-choice__note">
-                  <strong>الإثبات ومطابقته</strong> · صورة التحويل ورقمه وتاريخه، بجانب المستحقّ
-                  والباقة. والمطابقة يدوية بقرار لا آلية. <strong>لا قبول آلي</strong> · مطابقة
-                  المبلغ وحدها لا تكفي — قد يكون تحويلاً لغرض آخر أو مستهلكاً سابقاً.
+                  <strong>لا قبول آلي</strong> · مطابقة المبلغ وحدها لا تكفي — قد يكون تحويلاً لغرض
+                  آخر أو مستهلكاً سابقاً.
                 </p>
                 <h3 className="cat-head__title">مراجعة دفع الاشتراك</h3>
                 <p className="acc-choice__note">

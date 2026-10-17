@@ -182,15 +182,13 @@ export function AuditClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">سجل التدقيق — فاعل ووقت وسبب، ولا تعديل</h2>
             <span className="cat-head__hint">
-              السجل الذي يمكن تعديله ليس سجلاً. يُقرأ ويُصفّى ويُصدَّر، ولا يُحرَّر ولو من المالك.
+              يُقرأ ويُصفّى ويُصدَّر، ولا يُحرَّر ولو من المالك.
             </span>
           </div>
           <div className="acc-card__body">
             {state === "loading" ? (
               <Notice kind="info" title="جلب السجل">
-                <p className="acc-lead">
-                  مع المدى المختار وعدد الأحداث المتوقَّع. السجل قد يبلغ آلاف الأسطر.
-                </p>
+                <p className="acc-lead">مع المدى المختار وعدد الأحداث المتوقَّع.</p>
               </Notice>
             ) : null}
 
@@ -260,15 +258,13 @@ export function AuditClient() {
               >
                 <p className="acc-lead">المدى بلا أحداث مسجّلة — والسبب المرشّح غالباً.</p>
                 <p className="acc-choice__note">
-                  <strong>لا نقول «لا سجل»</strong> ·{" "}
                   {p.last_event_at ? (
                     <>
                       لا أحداث في هذا المدى — آخر حدث <Ago iso={p.last_event_at} />.
                     </>
                   ) : (
                     "لا حدث مسجَّل بعد في هذه المنشأة."
-                  )}{" "}
-                  سجلٌّ يبدو فارغاً يُقلق من يفتّش عن شيء.
+                  )}
                 </p>
               </Notice>
             ) : null}

@@ -136,7 +136,6 @@ export function InstallClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تثبيت PWA أو عدم دعم التثبيت</h2>
-            <span className="cat-head__hint">الويب هو الطريق الأول لأغلب المحلات.</span>
           </div>
           <div className="acc-card__body">
             {updateBar}
@@ -144,8 +143,7 @@ export function InstallClient() {
             {state === "success" ? (
               <Notice kind="success" title="ثُبّت">
                 <p className="acc-lead">
-                  صار أيقونةً على الشاشة. نقول ما تغيّر: يفتح بلا متصفح، ويعمل بلا اتصال، والتخزين
-                  أثبت.
+                  صار أيقونةً على الشاشة. يفتح بلا متصفح، ويعمل بلا اتصال، والتخزين أثبت.
                 </p>
                 <p className="acc-choice__note">
                   <strong>لا تكرار للطلب</strong> · من رفض التثبيت لا يُسأل ثانيةً في الجلسة نفسها،
@@ -161,7 +159,7 @@ export function InstallClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>الفرق المُعلن</strong> · المتصفح قد يمسح تخزينه تحت ضغط المساحة، والمثبَّت
-                  أثبت. نقولها عند اقتراح التثبيت — سببٌ حقيقي لا إلحاح.
+                  أثبت.
                 </p>
                 <Status state="offline" label="بلا اتصال الآن — التثبيت متاح حين تعود الشبكة" />
               </Notice>
@@ -187,8 +185,7 @@ export function InstallClient() {
                   <li>سجّل الدخول هناك ثم ثبّت التطبيق</li>
                 </ol>
                 <p className="acc-choice__note">
-                  حتى ذلك الحين يعمل كل شيء عدا التثبيت والإشعار والعمل بلا اتصال. لا نطلب إذناً
-                  سيُرفض تلقائياً.
+                  حتى ذلك الحين يعمل كل شيء عدا التثبيت والإشعار والعمل بلا اتصال.
                 </p>
               </Notice>
             ) : null}
@@ -213,9 +210,7 @@ export function InstallClient() {
                   <li>اختر «إضافة إلى الشاشة الرئيسية»</li>
                   <li>أكد الاسم ثم افتح التطبيق من أيقونته</li>
                 </ol>
-                <p className="acc-choice__note">
-                  لا نضع زراً يقول «تثبيت» ثم لا يفعل شيئاً. التعليمات تتغيّر حسب متصفحك ونسخته.
-                </p>
+                <p className="acc-choice__note">التعليمات تتغيّر حسب متصفحك ونسخته.</p>
                 {showSteps ? (
                   <p className="acc-choice__note">
                     الصور التوضيحية تُضاف مع مواد الدعم — الخطوات أعلاه كافية.
@@ -260,7 +255,7 @@ export function InstallClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>الفرق المُعلن</strong> · المتصفح قد يمسح تخزينه تحت ضغط المساحة، والمثبَّت
-                  أثبت. نقولها عند اقتراح التثبيت — سببٌ حقيقي لا إلحاح.
+                  أثبت.
                 </p>
               </Notice>
             ) : null}

@@ -204,10 +204,6 @@ export function QuoteClient({ id }: { id: string }) {
                   </span>
                   .
                 </p>
-                <p className="acc-choice__note">
-                  <strong>الترقيم ليس زينة</strong> · هو ما يجعل القبول قابلاً للإثبات. بلا رقم
-                  إصدار يصير القبول دعوى.
-                </p>
               </Notice>
             ) : null}
             {declined ? (
@@ -246,10 +242,6 @@ export function QuoteClient({ id }: { id: string }) {
                 <p className="acc-choice__note">
                   <strong>الزيادة تحتاج سبباً</strong> · قد تكون تعبئةً بالكرتونة الكاملة — تُعلَن
                   سبباً لا تُمرّر رقماً. والمشتري يقبل الزيادة أو يرفضها.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الصلاحية لا تكون ماضياً</strong> · عرضٌ منتهٍ قبل إرساله لا معنى له،
-                  ويُقرأ عند المشتري خطأً في نظامنا لا في تحرير المورد.
                 </p>
               </Notice>
             ) : null}
@@ -406,7 +398,7 @@ export function QuoteClient({ id }: { id: string }) {
                 />
                 <p className="acc-choice__note">
                   <strong>الفرق معروض للطرفين</strong> · المورد يرى ما غيّره قبل الإرسال، والمشتري
-                  يراه بعده. تغييرٌ لا يُسمّى يُقرأ خطأً.
+                  يراه بعده.
                 </p>
                 <div className="acc-actions">
                   <Button pos loading={busy === "send"} onClick={() => void submit(true)}>

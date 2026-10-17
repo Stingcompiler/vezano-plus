@@ -199,8 +199,6 @@ test.describe("PLT-11", () => {
       texts: fromFrame("PLT-11", "ready", [
         "مؤشرات M0",
         "الفرص والوساطة والدقائق والكلفة مقابل الأهداف المعلنة. وقيمة التجارة تُحسب مرة لا مرتين للطرفين",
-        "لا مضاعفة",
-        "صفقةٌ بين مشترٍ وبائع قيمةٌ واحدة. عدّها عند الطرفين يُضاعف الرقم ويُفسد القرار المبنيّ عليه.",
       ]),
     });
     await expect(root).toContainText("88 / 15");
@@ -230,15 +228,11 @@ test.describe("PLT-11", () => {
       texts: fromFrame("PLT-11", "empty", [
         "فرص غير كافية للحكم",
         "فرص، والحكم على M0 يحتاج عدداً أكبر.",
-        "نتيجة غير حاسمة",
-        "نقولها كذلك ولا نعرض نسبةً من ثلاث فرص.",
-        "لا توقف البناء",
-        "النتيجة غير الحاسمة معلومة لا حكم. الشاشة لا تقترح قراراً — تعرض ما يكفي وما لا يكفي.",
       ]),
     });
     const root = page.locator('[data-screen="PLT-11"]');
     await expect(root).toContainText("المدى فيه 3 فرص");
-    await expect(root).toContainText("«غير حاسم — يحتاج 15 فرصة» أصدق من «67% نجاح».");
+    await expect(root).not.toContainText("% نجاح");
     await expect(root).toContainText("غير حاسم");
     await expect(page.getByRole("button", { name: /قرار|أوقف|اعتمد/ })).toHaveCount(0);
   });
@@ -429,7 +423,7 @@ test.describe("PLT-12", () => {
       state: "validation_error",
       texts: fromFrame("PLT-12", "validation_error", [
         "علم تشغيل بلا نطاق واضح",
-        "حاول المشغّل حفظ علم تشغيل دون تحديد نطاقه (باقة؟ بيئة؟). نمنع الحفظ ونطالب بالنطاق صراحةً، لأن علماً بلا نطاق قد يتسرّب إلى الجميع.",
+        "نمنع الحفظ ونطالب بالنطاق صراحةً، لأن علماً بلا نطاق قد يتسرّب إلى الجميع.",
       ]),
     });
     await page.getByRole("button", { name: "باقة", exact: true }).click();

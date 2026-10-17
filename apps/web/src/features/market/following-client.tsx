@@ -213,7 +213,7 @@ export function FollowingClient() {
                 </p>
                 <p className="acc-choice__note">
                   <strong>الإلغاء بحدوده</strong> · إلغاء المتابعة يوقف التسويق ولا يمحو أحداث
-                  الطلبات القائمة المخوَّلة. فعلان مختلفان لا زرّ واحد.
+                  الطلبات القائمة المخوَّلة.
                 </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push("/market/directory")}>

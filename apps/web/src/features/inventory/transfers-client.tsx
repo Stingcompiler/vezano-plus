@@ -252,11 +252,7 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
               </span>
             </div>
 
-            {state === "loading" ? (
-              <Notice kind="info" title="جلب التحويلات">
-                <p className="acc-lead">مع عدد ما ينتظر استلاماً — وهو سبب فتح الشاشة.</p>
-              </Notice>
-            ) : null}
+            {state === "loading" ? <Notice kind="info" title="جلب التحويلات" /> : null}
             {state === "empty" ? (
               <Notice
                 kind="empty"
@@ -268,9 +264,6 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
                 }
               >
                 <p className="acc-lead">فرعٌ واحد أو لا نقل بين الفروع.</p>
-                <p className="acc-choice__note">
-                  <strong>لا اقتراح</strong> · التحويل قرار تشغيلي. اقتراحه من قائمة فارغة عبث.
-                </p>
               </Notice>
             ) : null}
             {state === "partial" ? (
@@ -281,7 +274,7 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
                 </p>
                 <p className="acc-choice__note">
                   <strong>لا يُغلق بالسهو</strong> · التحويل يبقى مفتوحاً بالمتبقّي حتى يُستلم أو
-                  يُلغى بقرار. والإغلاق التلقائي يُبخّر الفرق.
+                  يُلغى بقرار.
                 </p>
               </Notice>
             ) : null}
@@ -313,8 +306,7 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
               onOpenRow={(r) => router.push(`/inventory/transfers?id=${r.id}`)}
             />
             <p className="acc-choice__note">
-              <strong>مخزون الطريق</strong> · لا يُحسب في رصيد الفرعين. إهماله يُفقد بضاعةً من
-              الدفتر؛ وعدّه مرتين يضاعفها.
+              <strong>مخزون الطريق</strong> · لا يُحسب في رصيد الفرعين.
             </p>
           </div>
         </div>

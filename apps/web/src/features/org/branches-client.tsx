@@ -173,20 +173,12 @@ export function BranchesClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">الفروع وتفاصيلها</h2>
-            <span className="cat-head__hint">
-              ثلاث حالات ناقصة. الفرع وحدة مخزون وصندوق لا عنوان.
-            </span>
+            <span className="cat-head__hint">الفرع وحدة مخزون وصندوق لا عنوان.</span>
           </div>
           <div className="acc-card__body">
             {state === "empty" ? (
               <Notice kind="empty" title="فرع واحد">
-                <p className="acc-lead">
-                  أغلب المحلات فرعٌ واحد. لا نعرض هذا فراغاً بل حالةً سويّة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>متى يُقترح الثاني</strong> · لا نقترحه. إضافة فرع قرار توسّع تجاري،
-                  واقتراحه من شاشة إعدادات عبثٌ.
-                </p>
+                <p className="acc-lead">أغلب المحلات فرعٌ واحد.</p>
               </Notice>
             ) : null}
             {state === "permission_denied" ? (
@@ -244,8 +236,7 @@ export function BranchesClient() {
                 <h3 className="cat-head__title">الأجهزة المرتبطة</h3>
                 <p className="acc-choice__note">
                   <strong>الجهاز يحمل معلّقاً محلياً — فصله ليس إلغاء اشتراك</strong> · قبل فصل أي
-                  جهاز نعرض ما عليه من معلّق غير مزامَن ونطلب مزامنته أو الإقرار بفقده كتابةً. الفصل
-                  الصامت يُضيّع بيعاً حدث فعلاً وقبض الكاشير ثمنه.
+                  جهاز نعرض ما عليه من معلّق غير مزامَن ونطلب مزامنته أو الإقرار بفقده كتابةً.
                 </p>
                 <ul className="acc-choice__note">
                   {blocked.devices.map((d) => {

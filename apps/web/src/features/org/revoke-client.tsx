@@ -183,10 +183,7 @@ export function RevokeClient({ userId }: { userId: string }) {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">سحب مستخدم أو نطاق أو جهاز — السحب لا يمحو عملاً</h2>
-            <span className="cat-head__hint">
-              أخطر فعل إداري في المنشأة: قد يُنفَّذ في لحظة غضب أو بعد سرقة، وعلى الجهاز المسحوب
-              عملٌ لم يُرفع. المنع فوريّ والعمل أمانة.
-            </span>
+            <span className="cat-head__hint">المنع فوريّ والعمل أمانة.</span>
           </div>
           <div className="acc-card__body">
             {state === "permission_denied" ? (
@@ -347,10 +344,7 @@ export function RevokeClient({ userId }: { userId: string }) {
                     </>
                   ) : null}
                 </p>
-                <p className="acc-choice__note">
-                  <strong>لا اختفاء صامت</strong> · الموظف يرى على جهازه رسالةً تقول إن وصوله سُحب —
-                  لا شاشةَ خطأٍ غامضة يظنّها عطباً فيتصل بالدعم.
-                </p>
+                <p className="acc-choice__note">الموظف يرى على جهازه رسالةً تقول إن وصوله سُحب.</p>
                 <p className="acc-choice__note">
                   <strong>في سجل التدقيق</strong> · باسم من سحب ووقته وسببه إن كُتب. السحب فعلٌ
                   يُراجَع لاحقاً كغيره.
@@ -397,8 +391,7 @@ export function RevokeClient({ userId }: { userId: string }) {
                 {p.pending_total > 0 ? (
                   <Notice kind="warning" title="على جهازه عملٌ لم يُرفع">
                     <p className="acc-lead">
-                      <MonoText text={pendingText(p.pending_total)} /> — السحب يقطع رفعها. لا نمنعك
-                      — قد يكون السحب عاجلاً — لكن العدد يُعرض قبل التأكيد لا بعده.
+                      <MonoText text={pendingText(p.pending_total)} /> — السحب يقطع رفعها.
                     </p>
                   </Notice>
                 ) : null}
@@ -450,10 +443,6 @@ export function RevokeClient({ userId }: { userId: string }) {
                     </div>
                   ) : null}
                 </fieldset>
-                <p className="acc-choice__note">
-                  الخيار الأوسط هو الصحيح في أغلب الحالات، وليس هو الافتراضي — لأن السحب العاجل
-                  حالةٌ حقيقية أيضاً، والاختيار للمالك لا لنا.
-                </p>
                 {choice === "wipe" ? (
                   <TextField
                     label="إقرار مكتوب بفقد المعلّق"

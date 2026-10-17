@@ -114,6 +114,9 @@
   "GET /api/parties/{party_id}/statement": [
    "403:finance_required"
   ],
+  "GET /api/platform/audit": [
+   "403:operator_required"
+  ],
   "GET /api/platform/demo-requests": [
    "403:operator_required"
   ],
@@ -2973,6 +2976,9 @@
       },
       "type": "array"
      },
+     "catalog_items": {
+      "type": "integer"
+     },
      "rows": {
       "items": {
        "additionalProperties": false,
@@ -3078,7 +3084,8 @@
      "branch_id",
      "branches",
      "as_of",
-     "rows"
+     "rows",
+     "catalog_items"
     ],
     "type": "object"
    }
@@ -16032,6 +16039,133 @@
     "type": "object"
    }
   },
+  "GET /api/platform/audit": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "categories": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "code": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "code",
+        "label"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "entries": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "action": {
+         "type": "string"
+        },
+        "action_label": {
+         "type": "string"
+        },
+        "at": {
+         "type": "string"
+        },
+        "detail": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "operator_id": {
+         "type": "string"
+        },
+        "operator_name": {
+         "type": "string"
+        },
+        "tenant_id": {
+         "type": "string"
+        },
+        "tenant_name": {
+         "type": "string"
+        },
+        "ticket_ref": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "at",
+        "operator_id",
+        "operator_name",
+        "tenant_id",
+        "tenant_name",
+        "action",
+        "action_label",
+        "detail",
+        "ticket_ref"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "filters": {
+      "additionalProperties": false,
+      "properties": {
+       "category": {
+        "type": "string"
+       },
+       "operator": {
+        "type": "string"
+       },
+       "tenant": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "operator",
+       "category",
+       "tenant"
+      ],
+      "type": "object"
+     },
+     "next_before": {
+      "type": "string"
+     },
+     "operators": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "name"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "entries",
+     "next_before",
+     "operators",
+     "categories",
+     "filters"
+    ],
+    "type": "object"
+   }
+  },
   "GET /api/platform/backups": {
    "200": {
     "additionalProperties": false,
@@ -16539,6 +16673,9 @@
      "referred_week": {
       "type": "integer"
      },
+     "response_samples": {
+      "type": "integer"
+     },
      "response_target_hours": {
       "type": "integer"
      },
@@ -16556,6 +16693,7 @@
      "near_limit_count",
      "avg_response_hours",
      "response_target_hours",
+     "response_samples",
      "within_target",
      "referred_week",
      "closed_30d",
@@ -18556,6 +18694,9 @@
        "type": "object"
       },
       "type": "array"
+     },
+     "reviewed_week": {
+      "type": "integer"
      }
     },
     "required": [
@@ -18563,6 +18704,7 @@
      "pending_count",
      "oldest_waiting_hours",
      "avg_review_hours_week",
+     "reviewed_week",
      "badge_text",
      "fetched_at"
     ],

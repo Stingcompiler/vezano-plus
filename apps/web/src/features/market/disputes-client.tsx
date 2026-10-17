@@ -227,10 +227,6 @@ export function DisputesClient({ id }: { id: string }) {
             {state === "empty" ? (
               <Notice kind="empty" title="لا خلافات">
                 <p className="acc-lead">حالةٌ سويّة بل مرغوبة.</p>
-                <p className="acc-choice__note">
-                  <strong>لا لوحة مؤشرات</strong> · عددُ خلافاتٍ تاريخي لا يفيد المشتري. الفراغ يبقى
-                  فراغاً.
-                </p>
                 <div className="acc-actions">
                   <Button onClick={() => router.push(`/market/orders/${id}`)}>تفاصيل الطلب</Button>
                 </div>
@@ -241,10 +237,6 @@ export function DisputesClient({ id }: { id: string }) {
                 <p className="acc-lead">
                   الخط الزمني وأدلة الطرفين وآخر إجراء ومهلة الرد — ومن عليه الدور معلَنٌ في
                   الترويسة.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>الدور مسمّى</strong> · خلافٌ بلا صاحب دورٍ يبقى مفتوحاً شهراً. الشاشة تقول
-                  «بانتظارك» أو «بانتظار المورد» ومتى تنتهي المهلة.
                 </p>
               </Notice>
             ) : null}
@@ -382,8 +374,7 @@ export function DisputesClient({ id }: { id: string }) {
                 </div>
                 <p className="acc-choice__note">
                   <strong>لا تسوية تلقائية</strong> · حين يتفق الطرفان، يسجّل كل طرف إجراءه في دفتره
-                  بصلاحيته: أنت تقبل الكرتونة كمستلمة، أو هو يصدر إشعاراً دائناً. لا زر «حلّ الخلاف»
-                  يكتب في الدفترين معاً — من يملك الدفتر يملك القيد.
+                  بصلاحيته: أنت تقبل الكرتونة كمستلمة، أو هو يصدر إشعاراً دائناً.
                 </p>
 
                 <TextField

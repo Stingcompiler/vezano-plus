@@ -93,12 +93,7 @@ export function ShopClient({ slug, campaign }: { slug: string; campaign: string 
         {state === "loading" ? (
           <div className="cat-table pos-card">
             <div className="acc-card__body">
-              <Notice kind="info" title="جارٍ الفتح">
-                <p className="acc-lead">
-                  صفحةٌ خفيفة تُفتح في ثانية على شبكة بطيئة. لا خطوط ثقيلة ولا صور كبيرة قبل
-                  المحتوى.
-                </p>
-              </Notice>
+              <Notice kind="info" title="جارٍ الفتح" />
               <div className="cus-skeleton" />
               <div className="cus-skeleton" />
             </div>
@@ -115,10 +110,6 @@ export function ShopClient({ slug, campaign }: { slug: string; campaign: string 
               >
                 <p className="acc-lead">
                   هذا العرض انتهى — هذه صفحة المحل. رابط مؤقت لعرضٍ انتهى أو حملةٍ مضت.
-                </p>
-                <p className="acc-choice__note">
-                  <strong>لا نترك بابًا مغلقاً</strong> · نُحوّل إلى صفحة المحل الدائمة. الزبون جاء
-                  مهتمّاً، فلا نطرده.
                 </p>
               </Notice>
             ) : null}
@@ -152,18 +143,14 @@ export function ShopClient({ slug, campaign }: { slug: string; campaign: string 
             <div className="cat-table pos-card">
               <div className="cat-head">
                 <h2 className="cat-head__title">آخر إعلانات المحل</h2>
-                <span className="cat-head__hint">
-                  {state === "empty" ? "المحل لم ينشر شيئاً" : "ثلاثة منشورات بتواريخها"}
-                </span>
+                {state === "empty" ? (
+                  <span className="cat-head__hint">المحل لم ينشر شيئاً</span>
+                ) : null}
               </div>
               <div className="acc-card__body">
                 {state === "empty" ? (
                   <Notice kind="empty" title="المحل لم ينشر شيئاً">
                     <p className="acc-lead">الصفحة قائمة والمحل لم يضع رسائل ولا عروضاً.</p>
-                    <p className="acc-choice__note">
-                      <strong>لا صفحة فارغة</strong> · نعرض ما يعرفه المحل عن نفسه: الاسم والعنوان
-                      وساعات العمل. ثم «تابعنا لتصلك العروض» — وهي نقطة القيمة.
-                    </p>
                   </Notice>
                 ) : (
                   <ul className="cus-list">
@@ -184,11 +171,6 @@ export function ShopClient({ slug, campaign }: { slug: string; campaign: string 
                 )}
               </div>
             </div>
-
-            <p className="acc-choice__note">
-              <strong>لا أسعار ولا مخزون</strong> · إلا ما اختار التاجر نشره صراحة. لا تسجيل دخول
-              ولا ملف زبون. الصفحة محتوى منشور، والزبون زائر لا مستخدم في دفتر التاجر.
-            </p>
           </>
         ) : null}
       </div>

@@ -148,10 +148,6 @@ export function OpeningClient({ partyId }: { partyId: string }) {
               {state === "permission_denied" ? (
                 <Notice kind="locked" title="الافتتاحي للمالك">
                   <p className="acc-lead">يُنشئ ذمّةً بلا فاتورة — إقرارٌ مالي محض.</p>
-                  <p className="acc-choice__note">
-                    <strong>لا استثناء</strong> · ولا للمحاسب في الإصدار الأول. الرقم بلا مستند
-                    يُراجَع من مالكه.
-                  </p>
                 </Notice>
               ) : null}
               {state === "success" && saved ? (
@@ -162,7 +158,7 @@ export function OpeningClient({ partyId }: { partyId: string }) {
                     </p>
                     <p className="acc-choice__note">
                       <strong>يظهر أول الكشف</strong> · سطراً مسمّى «رصيد افتتاحي» لا مندساً بين
-                      الفواتير. من يقرأ الكشف يحتاج أن يعرف من أين بدأ.
+                      الفواتير.
                     </p>
                     <p className="acc-choice__note">
                       <strong>لا أعمار منه</strong> · الافتتاحي بلا فواتير يُسنَد إليها، فلا يُحتسب
@@ -212,7 +208,7 @@ export function OpeningClient({ partyId }: { partyId: string }) {
                   </p>
                   <p className="acc-choice__note">
                     <strong>الافتتاحي مرة واحدة</strong> · وقبل أول حركة. بعدها التصحيح بحركة
-                    معلَّلة لا برصيد افتتاحي ثانٍ — وإلا ضاع الفرق بين ما كان وما صار.
+                    معلَّلة لا برصيد افتتاحي ثانٍ.
                   </p>
                   <p className="acc-choice__note">
                     <strong>المخرج</strong> · حركة تسوية بسبب مكتوب، أو تصحيح تاريخ الأعمال إن كان

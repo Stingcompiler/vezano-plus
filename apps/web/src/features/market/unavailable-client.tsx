@@ -161,10 +161,7 @@ export function UnavailableClient() {
                     </div>
                   </div>
                 </div>
-                <p className="acc-choice__note">
-                  لا نحذف السطر من السلّة ولا نحدّث سعره تلقائياً. الاثنان خطأ: الحذف يُخفي ما
-                  اختاره المشتري، والتحديث الصامت يُبدّل رقماً بناء عليه قراراً.
-                </p>
+                <p className="acc-choice__note">لا نحذف السطر من السلّة ولا نحدّث سعره تلقائياً.</p>
                 <div className="acc-actions">
                   <Button
                     pos
@@ -185,10 +182,6 @@ export function UnavailableClient() {
                   <p className="acc-lead">
                     العرض المنتهي يبقى في قائمة البائع بوسمه وزرّ تجديده — وعند المشتري يسقط من
                     النتائج ولا يُعرض سعراً.
-                  </p>
-                  <p className="acc-choice__note">
-                    <strong>وجهان لحقيقة واحدة</strong> · الناشر يحتاج رؤية المنتهي ليجدّده؛
-                    والمشتري لا يحتاج سعراً ميتاً. الشاشة نفسها بجمهورين.
                   </p>
                   <p className="acc-choice__note">
                     <strong>المعلَّقة أوسع</strong> · تعليق المنشأة يمنع الجديد كله ويبقي السابق
