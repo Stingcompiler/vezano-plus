@@ -224,13 +224,13 @@ def test_proof_review_claims_and_announcements(ctx: dict[str, Any]) -> None:  # 
     assert r.status_code == 200 and r.json()["announcement"]["status"] == "draft"
     aid = r.json()["announcement"]["id"]
     # فحص 2026-10-17 VP04: نهاية قبل البداية، ونافذة ماضية — كلتاهما تُرفضان عند الحفظ
-    base = {"title": "صيانة", "body": "نص", "audience": "all"}
-    r = _post(c, oh1, "/api/platform/announcements", {**base, "starts_at": ends, "ends_at": starts})
+    ann = {"title": "صيانة", "body": "نص", "audience": "all"}
+    r = _post(c, oh1, "/api/platform/announcements", {**ann, "starts_at": ends, "ends_at": starts})
     assert (r.status_code, r.json()["detail"]) == (400, "window_invalid")
     past_s = (timezone.now() - timedelta(hours=3)).isoformat()
     past_e = (timezone.now() - timedelta(hours=2)).isoformat()
     r = _post(
-        c, oh1, "/api/platform/announcements", {**base, "starts_at": past_s, "ends_at": past_e}
+        c, oh1, "/api/platform/announcements", {**ann, "starts_at": past_s, "ends_at": past_e}
     )
     assert (r.status_code, r.json()["detail"]) == (400, "window_in_past")
     r = _post(c, oh1, f"/api/platform/announcements/{aid}/schedule")
