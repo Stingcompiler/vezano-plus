@@ -5,6 +5,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 
+import { goAfterSetup } from "@/lib/after-setup";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
@@ -29,7 +30,7 @@ export default function SetPin() {
 
   const finish = () => {
     completeSetup();
-    router.replace("/");
+    goAfterSetup(router);
   };
 
   const save = async () => {

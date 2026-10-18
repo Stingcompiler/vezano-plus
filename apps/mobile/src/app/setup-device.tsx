@@ -19,6 +19,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 
+import { goAfterSetup } from "@/lib/after-setup";
 import { runBootstrap, type BootstrapStop } from "@/lib/bootstrap";
 import { SECRET_KEYS, secrets } from "@/lib/secrets";
 import { type DeviceRegistration, useSession } from "@/lib/session";
@@ -111,7 +112,8 @@ export default function SetupDevice() {
         const userId = (await secrets().get(SECRET_KEYS.userId)) ?? state.userId;
         const hasPin = Boolean(data?.verifiers.some((v) => v.user_id === userId));
         if (hasPin) completeSetup();
-        router.replace(hasPin ? "/" : "/set-pin");
+        if (hasPin) goAfterSetup(router);
+        else router.replace("/set-pin");
       } catch (e) {
         if (!cancelled)
           setStop(

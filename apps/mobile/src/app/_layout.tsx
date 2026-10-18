@@ -48,7 +48,7 @@ export default function RootLayout() {
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
           >
             {/* الشاشات المدفوعة فوق التبويبات: سهم رجوع وحده — العنوان الكبير في جسم الشاشة */}
-            {["search", "sync"].map((name) => (
+            {["search", "sync", "onboarding"].map((name) => (
               <Stack.Screen
                 key={name}
                 name={name}

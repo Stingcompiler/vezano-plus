@@ -12,7 +12,7 @@ const T = "ACC-02";
 /**
  * ACC-02 — الدخول (خطة الجوال M1). الحقول ولوحات مفاتيحها: المعرّف بريد أو هاتف، وكلمة المرور بزرّ
  * إظهار الحروف. رسالة واحدة للحالتين (لا تسريب لوجود الحساب)، وتأخير بعدّاد ظاهر بعد المحاولات
- * (429). الاستعادة وإنشاء الحساب يفتحان الويب حتى تُبنى خطواتهما هنا. بعد الدخول: منشأة واحدة =
+ * (429). الاستعادة تفتح الويب حتى تُبنى خطوتها هنا، وإنشاء الحساب في `register.tsx`. بعد الدخول: منشأة واحدة =
  * التبويبات، وأكثر = اختيار المنشأة (ACC-03).
  */
 export default function Login() {
@@ -91,7 +91,7 @@ export default function Login() {
           <Button
             label={tx(T, "ليس لديك حساب؟")}
             variant="quiet"
-            onPress={() => void openOnWeb("/register")}
+            onPress={() => router.push("/register")}
           />
         </StateView>
       ) : null}
@@ -139,7 +139,7 @@ export default function Login() {
         <Button
           label={tx(T, "أنشئ حساب متجر")}
           variant="quiet"
-          onPress={() => void openOnWeb("/register")}
+          onPress={() => router.push("/register")}
         />
       </View>
     </Screen>

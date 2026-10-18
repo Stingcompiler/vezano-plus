@@ -75,7 +75,7 @@ export default function Welcome() {
             <ListRow
               title={tx(T, "أدير متجراً — إنشاء منشأة جديدة")}
               subtitle={tx(T, "حساب إدارة: نقاط بيع ومخزون ودفاتر. هذا ما يحتاجه صاحب المحل.")}
-              onPress={() => void openOnWeb("/register")}
+              onPress={() => router.push("/register")}
             />
             <ListRow
               title={tx(T, "أشتري من السوق باسم منشأتي")}

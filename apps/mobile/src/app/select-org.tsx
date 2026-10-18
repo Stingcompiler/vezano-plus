@@ -120,7 +120,7 @@ export default function SelectOrg() {
       ) : (
         <StateView state="empty" title={tx(T, "لا منشأة بعد")}>
           <View style={{ gap: SPACE["2"] }}>
-            <Button label={tx(T, "أنشئ منشأتك")} onPress={() => void openOnWeb("/create-org")} />
+            <Button label={tx(T, "أنشئ منشأتك")} onPress={() => router.push("/create-org")} />
             <Button
               label={tx(T, "عندي دعوة")}
               variant="secondary"
