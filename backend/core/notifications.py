@@ -193,7 +193,8 @@ def refresh() -> None:
     sub = ensure_subscription()
     _subscription_alerts(sub, now)
     # ٥) تسويقي: باقة الفروع المتعددة — قابل للإيقاف، لا يُنبَّه به بعد انتهاء العرض (ACC-110)
-    if plan_of(sub).code in {"single", "trial"}:
+    # 0005 §١٧٠ — بالميزة لا برمز الباقة: التجريبية قد تُبنى على باقة الفروع المتعددة نفسها
+    if "multi_branch" not in plan_of(sub).features:
         emit(
             kind="plan_upgrade",
             category="marketing",

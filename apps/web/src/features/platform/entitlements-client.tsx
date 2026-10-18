@@ -52,6 +52,8 @@ interface Flag {
 interface Payload {
   rows: Row[];
   plans: Plan[];
+  /** 0005 §١٧٠ — التجريبية بلا عمود: ترث استحقاقات باقتها الأساس */
+  trial_base_name?: string;
   flags: Flag[];
 }
 interface Saved {
@@ -232,6 +234,12 @@ export function EntitlementsClient() {
                 <p className="acc-choice__note">
                   ما تفتحه كل باقة — يُطبَّق على مستوى الباقة لا فوق مستأجر بعينه
                 </p>
+                {data.trial_base_name ? (
+                  <p className="acc-choice__note">
+                    التجريبية تتبع استحقاقات باقة «{data.trial_base_name}» — تُغيَّر الباقة الأساس
+                    من «الباقات والتسعير».
+                  </p>
+                ) : null}
                 <ul className="cus-list">
                   {data.rows.map((r) => {
                     const recent = data.plans

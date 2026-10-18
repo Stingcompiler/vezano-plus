@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (187 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (193 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -176,7 +176,13 @@ export const API_ERROR_CODES = [
   "tier_gap",
   "token_invalid",
   "too_wide",
+  "trial_base_in_use",
+  "trial_base_invalid",
+  "trial_derived",
+  "trial_follows_base",
   "trial_not_reassignable",
+  "trial_only",
+  "trial_single",
   "unauthenticated",
   "undo_expired",
   "unit_not_found",
@@ -1533,6 +1539,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "feature_invalid",
     },
     {
+      status: 400,
+      code: "trial_follows_base",
+    },
+    {
       status: 403,
       code: "no_global_override",
     },
@@ -1643,6 +1653,26 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "pos_core_required",
+    },
+    {
+      status: 400,
+      code: "trial_base_in_use",
+    },
+    {
+      status: 400,
+      code: "trial_base_invalid",
+    },
+    {
+      status: 400,
+      code: "trial_derived",
+    },
+    {
+      status: 400,
+      code: "trial_only",
+    },
+    {
+      status: 400,
+      code: "trial_single",
     },
     {
       status: 403,

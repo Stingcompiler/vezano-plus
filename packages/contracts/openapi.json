@@ -41411,12 +41411,16 @@
               },
               "trial": {
                 "type": "boolean"
+              },
+              "trial_base_name": {
+                "type": "string"
               }
             },
             "required": [
               "code",
               "name",
               "trial",
+              "trial_base_name",
               "state",
               "expires_at",
               "days_since_expiry",
@@ -41775,12 +41779,16 @@
               },
               "trial": {
                 "type": "boolean"
+              },
+              "trial_base_name": {
+                "type": "string"
               }
             },
             "required": [
               "code",
               "name",
               "trial",
+              "trial_base_name",
               "state",
               "expires_at",
               "days_since_expiry",
@@ -42172,12 +42180,16 @@
               },
               "trial": {
                 "type": "boolean"
+              },
+              "trial_base_name": {
+                "type": "string"
               }
             },
             "required": [
               "code",
               "name",
               "trial",
+              "trial_base_name",
               "state",
               "expires_at",
               "days_since_expiry",
@@ -47335,9 +47347,12 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "trial_base_name": {
+            "type": "string"
           }
         },
-        "required": ["rows", "plans", "flags"],
+        "required": ["rows", "plans", "trial_base_name", "flags"],
         "type": "object"
       },
       "PostPlatformEntitlementsResponse": {
@@ -47476,9 +47491,12 @@
               "changed_at"
             ],
             "type": "object"
+          },
+          "trial_base_name": {
+            "type": "string"
           }
         },
-        "required": ["saved", "rows", "plans", "flags"],
+        "required": ["saved", "rows", "plans", "trial_base_name", "flags"],
         "type": "object"
       },
       "PostPlatformFlagsResponse": {
@@ -47616,9 +47634,12 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "trial_base_name": {
+            "type": "string"
           }
         },
-        "required": ["rows", "plans", "flags"],
+        "required": ["rows", "plans", "trial_base_name", "flags"],
         "type": "object"
       },
       "GetPlatformHealthResponse": {
@@ -48691,6 +48712,12 @@
                 "trial": {
                   "type": "boolean"
                 },
+                "trial_base_code": {
+                  "type": "string"
+                },
+                "trial_base_name": {
+                  "type": "string"
+                },
                 "trial_days": {
                   "type": "integer"
                 },
@@ -48706,6 +48733,8 @@
                 "is_active",
                 "trial",
                 "trial_days",
+                "trial_base_code",
+                "trial_base_name",
                 "max_branches",
                 "max_devices",
                 "max_users",
@@ -48986,6 +49015,12 @@
                 "trial": {
                   "type": "boolean"
                 },
+                "trial_base_code": {
+                  "type": "string"
+                },
+                "trial_base_name": {
+                  "type": "string"
+                },
                 "trial_days": {
                   "type": "integer"
                 },
@@ -49001,6 +49036,8 @@
                 "is_active",
                 "trial",
                 "trial_days",
+                "trial_base_code",
+                "trial_base_name",
                 "max_branches",
                 "max_devices",
                 "max_users",
@@ -49213,6 +49250,32 @@
                       },
                       "required": ["to", "from"],
                       "type": "object"
+                    },
+                    "trial_base_code": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["to", "from"],
+                      "type": "object"
+                    },
+                    "trial_days": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "from": {
+                          "type": "integer"
+                        },
+                        "to": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["to", "from"],
+                      "type": "object"
                     }
                   },
                   "type": "object"
@@ -49359,6 +49422,12 @@
                 "trial": {
                   "type": "boolean"
                 },
+                "trial_base_code": {
+                  "type": "string"
+                },
+                "trial_base_name": {
+                  "type": "string"
+                },
                 "trial_days": {
                   "type": "integer"
                 },
@@ -49374,6 +49443,8 @@
                 "is_active",
                 "trial",
                 "trial_days",
+                "trial_base_code",
+                "trial_base_name",
                 "max_branches",
                 "max_devices",
                 "max_users",

@@ -30,6 +30,8 @@ interface Plan {
   max_devices: number;
   blurb: string;
   trial: boolean;
+  trial_days?: number | null;
+  trial_base_name?: string;
 }
 
 interface Plans {
@@ -56,6 +58,8 @@ export function AboutClient() {
   const router = useRouter();
   const online = useOnline();
   const [plans, setPlans] = useState<Plans | null>(null);
+  // 0005 §١٧٠ — مدة التجريبية وباقتها من سياسة المنصّة
+  const trialPlan = plans?.plans.find((p) => p.trial);
   const [installed, setInstalled] = useState(false);
   useEffect(() => {
     void hasLocalSetup().then(setInstalled);
@@ -127,7 +131,14 @@ export function AboutClient() {
             </Button>
           </div>
           <p className="lp__note">
-            تجربة <span className="sting-mono">30</span> يوماً · بلا بطاقة · بياناتك ملكك
+            {trialPlan?.trial_days ? (
+              <>
+                تجربة <span className="sting-mono">{trialPlan.trial_days}</span> يوماً
+              </>
+            ) : (
+              "تجربة مجانية"
+            )}{" "}
+            · بلا بطاقة · بياناتك ملكك
           </p>
 
           <div className="lp__window" aria-hidden="true">
@@ -481,8 +492,15 @@ export function AboutClient() {
                 <h3>أنشئ منشأتك</h3>
                 <p>
                   اسمك وبريدك ورقم واتساب، ثم رمز يصلك على بريدك وكلمة مرور، ثم اسم المحل وفرعه
-                  الأول. لا بطاقة ولا عقد — تجربة <span className="sting-mono">30</span> يوماً
-                  بمزايا باقة الفرع الواحد.
+                  الأول. لا بطاقة ولا عقد —{" "}
+                  {trialPlan?.trial_base_name ? (
+                    <>
+                      تجربة <span className="sting-mono">{trialPlan.trial_days ?? 0}</span> يوماً
+                      بمزايا باقة «{trialPlan.trial_base_name}».
+                    </>
+                  ) : (
+                    "تجربة مجانية."
+                  )}
                 </p>
               </div>
               <div className="lp__box lp__step">

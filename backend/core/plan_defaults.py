@@ -59,6 +59,8 @@ DEFAULT_PLANS: list[dict[str, Any]] = [
         "order": 3,
         "trial": True,
         "trial_days": 30,
+        # 0005 §١٧٠ — الميزات والحدود من الباقة الأساس؛ القيم أدناه احتياطٌ إن غابت
+        "trial_base_code": "single",
         "max_branches": 1,
         "max_devices": 3,
         "max_users": 2,
