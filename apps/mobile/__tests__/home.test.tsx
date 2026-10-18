@@ -124,7 +124,7 @@ const SUMMARY: HomeSummary = {
   shift: null,
 };
 
-describe("HOME-01 — الرئيسية (0005 §١٧٤)", () => {
+describe("HOME-01 — الرئيسية (0005 §١٧٥)", () => {
   it("الملخّص من الخادم: اسم المحل والقرار، ويُحفظ للعمل بلا اتصال", async () => {
     const s = server({ "GET /api/home": () => json(200, SUMMARY) });
     await renderWith(<Home />, s.fetch);
