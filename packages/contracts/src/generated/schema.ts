@@ -15419,6 +15419,7 @@ export interface components {
                 price_quarterly_minor: string;
                 price_yearly_minor: string;
                 trial: boolean;
+                trial_base_name: string;
                 trial_days: number | null;
             }[];
         };

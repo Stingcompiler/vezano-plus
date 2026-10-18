@@ -53285,6 +53285,9 @@
                 "trial": {
                   "type": "boolean"
                 },
+                "trial_base_name": {
+                  "type": "string"
+                },
                 "trial_days": {
                   "anyOf": [
                     {
@@ -53311,7 +53314,8 @@
                 "max_devices",
                 "campaign_quota",
                 "blurb",
-                "trial"
+                "trial",
+                "trial_base_name"
               ],
               "type": "object"
             },
