@@ -7,7 +7,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://plus.vezan
 );
 export const SITE_NAME = "فيزانو بلص";
 export const SITE_DESCRIPTION =
-  "نقطة بيع ومخزون وذمم تعمل وإن انقطعت الشبكة، للمحلات والبقالات والموزّعين في السودان. جرّب 30 يوماً مجاناً — دفترك ملكك.";
+  "نقطة بيع ومخزون وذمم تعمل وإن انقطعت الشبكة، للمحلات والبقالات والموزّعين في السودان. جرّبه مجاناً — دفترك ملكك.";
 
 export const OG_IMAGE = { url: "/og.png", width: 1200, height: 630, alt: SITE_NAME };
 

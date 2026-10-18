@@ -74,6 +74,8 @@ interface Payload {
     code: string;
     name: string;
     trial: boolean;
+    /** 0005 §١٧٠ — الباقة التي بُنيت عليها التجريبية */
+    trial_base_name?: string;
     state: "trial" | "active" | "grace" | "expired" | "suspended";
     expires_at: string;
     suspended_reason?: string;
@@ -313,8 +315,18 @@ export function SubscriptionClient() {
               <>
                 <h3 className="cat-head__title">استحقاقات</h3>
                 <p className="acc-lead">
-                  <strong>باقتك الحالية — {p.plan.name}</strong>
-                  {p.can_see_amounts && renew ? (
+                  <strong>
+                    باقتك الحالية — {p.plan.name}
+                    {p.plan.trial && p.plan.trial_base_name
+                      ? ` بميزات «${p.plan.trial_base_name}»`
+                      : ""}
+                  </strong>
+                  {p.plan.trial && renew ? (
+                    <>
+                      {" "}
+                      · تنتهي في <span className="sting-mono">{renew.day}</span> {renew.month}
+                    </>
+                  ) : p.can_see_amounts && renew ? (
                     <>
                       {" "}
                       · تُجدَّد في <span className="sting-mono">{renew.day}</span> {renew.month} ·{" "}

@@ -12435,6 +12435,7 @@ export interface components {
                 state: "trial" | "active" | "grace" | "expired" | "suspended";
                 suspended_reason: string;
                 trial: boolean;
+                trial_base_name: string;
             };
             plans: {
                 blurb: string;
@@ -12529,6 +12530,7 @@ export interface components {
                 state: "trial" | "active" | "grace" | "expired" | "suspended";
                 suspended_reason: string;
                 trial: boolean;
+                trial_base_name: string;
             };
             plans: {
                 blurb: string;
@@ -12632,6 +12634,7 @@ export interface components {
                 state: "trial" | "active" | "grace" | "expired" | "suspended";
                 suspended_reason: string;
                 trial: boolean;
+                trial_base_name: string;
             };
             plans: {
                 blurb: string;
@@ -13917,6 +13920,7 @@ export interface components {
                 label: string;
                 note: string;
             }[];
+            trial_base_name: string;
         };
         PostPlatformEntitlementsResponse: {
             flags: unknown[];
@@ -13949,6 +13953,7 @@ export interface components {
                 plan_code: string;
                 plan_name: string;
             };
+            trial_base_name: string;
         };
         PostPlatformFlagsResponse: {
             flags: {
@@ -13980,6 +13985,7 @@ export interface components {
                 label: string;
                 note: string;
             }[];
+            trial_base_name: string;
         };
         GetPlatformHealthResponse: {
             cards: {
@@ -14261,6 +14267,8 @@ export interface components {
                 price_yearly_minor: string;
                 subscribers: number;
                 trial: boolean;
+                trial_base_code: string;
+                trial_base_name: string;
                 trial_days: number;
                 updated_at: string;
             }[];
@@ -14337,6 +14345,8 @@ export interface components {
                 price_yearly_minor: string;
                 subscribers: number;
                 trial: boolean;
+                trial_base_code: string;
+                trial_base_name: string;
                 trial_days: number;
                 updated_at: string;
             }[];
@@ -14395,6 +14405,14 @@ export interface components {
                         from: number;
                         to: number;
                     };
+                    trial_base_code?: {
+                        from: string;
+                        to: string;
+                    };
+                    trial_days?: {
+                        from: number;
+                        to: number;
+                    };
                 };
                 id: string;
                 plan_code: string;
@@ -14432,6 +14450,8 @@ export interface components {
                 price_yearly_minor: string;
                 subscribers: number;
                 trial: boolean;
+                trial_base_code: string;
+                trial_base_name: string;
                 trial_days: number;
                 updated_at: string;
             }[];
@@ -15399,6 +15419,7 @@ export interface components {
                 price_quarterly_minor: string;
                 price_yearly_minor: string;
                 trial: boolean;
+                trial_base_name: string;
                 trial_days: number | null;
             }[];
         };

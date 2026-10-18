@@ -29,6 +29,7 @@ interface Plan {
   price_quarterly_minor?: string;
   price_yearly_minor?: string;
   trial_days?: number | null;
+  trial_base_name?: string;
   next_price_minor?: string | null;
   next_price_effective_at?: string;
   max_branches: number;
@@ -77,6 +78,7 @@ export function PlansClient() {
 
   const state: State = data ? "ready" : online ? "loading" : "offline";
   const plans = data?.plans ?? [];
+  const trialPlan = plans.find((p) => p.trial);
   const hot = plans.findIndex((p) => p.code === "dual");
   // دورة الفوترة (0005 §١١٠): تظهر حين يعرض الكتالوج سعراً ربعياً/سنوياً لأي باقة
   const [cycle, setCycle] = useState<Cycle>("monthly");
@@ -342,9 +344,18 @@ export function PlansClient() {
             <section className="mk-cta pl-cta">
               <div>
                 <h2 className="mk-cta__title">ابدأ بالتجريبية، وانتقل حين تحتاج</h2>
+                {/* 0005 §١٧٠ — مدة التجريبية وباقتها من سياسة المنصّة لا نصّاً ثابتاً */}
                 <p className="acc-choice__note">
-                  التجريبية بكل ميزات باقة الفرع الواحد <span className="sting-mono">30</span> يوماً
-                  بلا بطاقة. الترقية إلى باقة أوسع من إعدادات المنشأة (الاشتراك) في أي وقت.
+                  {trialPlan?.trial_base_name ? (
+                    <>
+                      التجريبية بكل ميزات باقة «{trialPlan.trial_base_name}»{" "}
+                      <span className="sting-mono">{trialPlan.trial_days ?? 0}</span> يوماً بلا
+                      بطاقة.
+                    </>
+                  ) : (
+                    "التجريبية مجانية بلا بطاقة."
+                  )}{" "}
+                  الترقية إلى باقة أوسع من إعدادات المنشأة (الاشتراك) في أي وقت.
                 </p>
               </div>
               <div className="mk-cta__actions">

@@ -501,6 +501,9 @@ class PlanCatalog(models.Model):
     is_active = models.BooleanField(default=True)
     trial = models.BooleanField(default=False)
     trial_days = models.PositiveIntegerField(default=30)
+    # 0005 §١٧٠ — التجريبية تُبنى على باقة تحدّدها إدارة المنصّة: ميزاتها وحدودها من الباقة الأساس،
+    # والتجريبية تحدّد المدة وحدها (صفّ `trial=True` فقط)
+    trial_base_code = models.CharField(max_length=20, blank=True, default="")
     max_branches = models.PositiveIntegerField(default=1)
     max_devices = models.PositiveIntegerField(default=3)
     max_users = models.PositiveIntegerField(null=True, blank=True)
