@@ -275,6 +275,7 @@ export function LoginClient() {
         data-step={step}
       >
         <AuthAside
+          cta="register"
           hint={
             params.get("intent") === "market"
               ? "الشراء من السوق باسم منشأتك بحساب الإدارة نفسه — لا حساب سوق منفصل."
@@ -304,6 +305,9 @@ export function LoginClient() {
                 <BrandMark />
               </span>
               <h1 className="acc-card__title">الدخول إلى فيزانو بلص</h1>
+              <p className="acc-card__sub">
+                حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
+              </p>
             </div>
             <div className="acc-card__body">
               {/* 0005 §١٢٠ — القادم من القفل: الرمز فتح الجهاز، وجلسة الخادم انتهت بإعادة التحميل */}
@@ -385,9 +389,6 @@ export function LoginClient() {
               {sendFailures > 0 && !manualSuggested ? (
                 <Status state="server_error" label="تعذّر إرسال الرمز" />
               ) : null}
-              <p className="acc-note">
-                حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
-              </p>
               <p className="acc-signup">
                 ليس لديك حساب؟ <Link href="/register">أنشئ حساب متجر</Link>
               </p>

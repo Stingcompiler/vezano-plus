@@ -2,34 +2,64 @@
 
 import Link from "next/link";
 
+import { ThemeToggle } from "@/features/home/theme-toggle";
+import { BrandMark, BrandName } from "@/features/public/brand-mark";
+
 /**
  * لوحة الهوية بجانب بطاقات الدخول/الترحيب/التسجيل على سطح المكتب (≥ 834): الاسم، الجملة الأولى من
  * صفحة الهبوط، وثلاثة وعود من PUB-01 — لا تُعرض على الهاتف (البطاقة وحدها).
  */
-export function AuthAside({ hint }: { hint?: string | undefined }) {
+export function AuthAside({
+  hint,
+  cta = "none",
+}: {
+  hint?: string | undefined;
+  /** إعادة تصميم 2026-10-18: شريط أعلى عمود النموذج على الحاسوب (الرأس العام مخفيّ هناك) */
+  cta?: "register" | "login" | "none";
+}) {
   return (
-    <aside className="auth-aside" aria-label="عن فيزانو بلص">
-      <h2 className="auth-aside__title">
-        دفتر محلك يعمل وإن انقطعت الشبكة، ويبقى ملكك وإن توقف اشتراكك
-      </h2>
-      {hint ? <p className="auth-aside__hint">{hint}</p> : null}
-      <ul className="auth-aside__list">
-        <li>
-          <span aria-hidden="true">✓</span> البيع يعمل بلا اتصال — ويُرفع عند عودة الشبكة
-        </li>
-        <li>
-          <span aria-hidden="true">✓</span> دفترك ملكك — تصدير كامل في أي وقت
-        </li>
-        <li>
-          <span aria-hidden="true">✓</span> عربية كاملة من اليمين — وسوق يصلك بموردي منطقتك
-        </li>
-      </ul>
-      <div className="auth-aside__links">
-        <Link href="/">تعرَّف على فيزانو بلص</Link>
-        <Link href="/legal">الشروط وسياسة الخصوصية</Link>
-        <Link href="/status">حالة الخدمة</Link>
+    <>
+      <div className="auth-topbar">
+        <ThemeToggle className="auth-topbar__theme" />
+        {cta === "register" ? (
+          <span className="auth-topbar__cta">
+            ليس لديك حساب؟ <Link href="/register">حساب جديد</Link>
+          </span>
+        ) : cta === "login" ? (
+          <span className="auth-topbar__cta">
+            لديك حساب؟ <Link href="/login">تسجيل الدخول</Link>
+          </span>
+        ) : null}
       </div>
-    </aside>
+      <aside className="auth-aside" aria-label="عن فيزانو بلص">
+        <Link href="/" className="auth-aside__brand" aria-label="فيزانو بلص — الصفحة الرئيسية">
+          <span className="auth-aside__mark" aria-hidden="true">
+            <BrandMark />
+          </span>
+          <BrandName />
+        </Link>
+        <h2 className="auth-aside__title">
+          دفتر محلك يعمل وإن انقطعت الشبكة، ويبقى ملكك وإن توقف اشتراكك
+        </h2>
+        {hint ? <p className="auth-aside__hint">{hint}</p> : null}
+        <ul className="auth-aside__list">
+          <li>
+            <span aria-hidden="true">✓</span> البيع يعمل بلا اتصال — ويُرفع عند عودة الشبكة
+          </li>
+          <li>
+            <span aria-hidden="true">✓</span> دفترك ملكك — تصدير كامل في أي وقت
+          </li>
+          <li>
+            <span aria-hidden="true">✓</span> عربية كاملة من اليمين — وسوق يصلك بموردي منطقتك
+          </li>
+        </ul>
+        <div className="auth-aside__links">
+          <Link href="/">تعرَّف على فيزانو بلص</Link>
+          <Link href="/legal">الشروط وسياسة الخصوصية</Link>
+          <Link href="/status">حالة الخدمة</Link>
+        </div>
+      </aside>
+    </>
   );
 }
 

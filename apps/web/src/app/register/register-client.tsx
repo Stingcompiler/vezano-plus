@@ -179,7 +179,10 @@ export function RegisterClient() {
         data-screen="ACC-02"
         data-state={busy ? "saving" : err ? "validation_error" : "ready"}
       >
-        <AuthAside hint="حساب واحد يدير المنشأة ويشتري من السوق — التجربة مجانية بلا بطاقة." />
+        <AuthAside
+          cta="login"
+          hint="حساب واحد يدير المنشأة ويشتري من السوق — التجربة مجانية بلا بطاقة."
+        />
         <AuthSteps current={step === "form" ? 1 : step === "verify" ? 2 : 3} />
         {step === "form" ? (
           <form className="acc-card" onSubmit={(e) => void requestCode(e)} noValidate>
