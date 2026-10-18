@@ -18,6 +18,12 @@
   border: 1px solid currentColor;
   border-radius: 4px;
 }
+/* مراجعة 2026-10-18: الشارة العربية بخط النص — الحرف العربي داخل mono مع تباعد الحروف يتفكّك
+   (قاعدة: لا عربي داخل عنصر mono) */
+.plt-badge--text {
+  font-family: inherit;
+  letter-spacing: normal;
+}
 /* ---------- إطار المشغّل: ترويسة + قائمة جانبية (C-NAV) ---------- */
 .plt-banner {
   display: flex;

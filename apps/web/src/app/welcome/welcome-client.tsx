@@ -55,7 +55,7 @@ export function WelcomeClient() {
       title="فيزانو بلص"
       footer={<PublicFooter inFrame compact />}
       back={false}
-      chrome={<PublicHeader cta="login" />}
+      chrome={<PublicHeader cta="login" minimal />}
     >
       <div className="acc-page acc-page--split" data-screen="ACC-01" data-state={state}>
         <AuthAside />

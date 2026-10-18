@@ -28,6 +28,8 @@ export interface NavProps {
   readonly onNavigate?: (item: NavItem) => void;
   /** مجموعات قابلة للطيّ (الجانبي فقط). */
   readonly collapsible?: boolean;
+  /** أيقونة لكل مجموعة باسمها — تسهّل المسح البصري (مراجعة 2026-10-18). */
+  readonly groupIcons?: Readonly<Record<string, ReactNode>>;
 }
 
 export function Nav({
@@ -37,6 +39,7 @@ export function Nav({
   label,
   onNavigate,
   collapsible = false,
+  groupIcons,
 }: NavProps) {
   if (variant === "bottom" && items.length > 5) throw new Error("C-NAV bottom: ≤5 عناصر");
   const listRef = useRef<HTMLUListElement>(null);
@@ -100,7 +103,11 @@ export function Nav({
           }
         }}
       >
-        {item.icon ? <span aria-hidden="true">{item.icon}</span> : null}
+        {item.icon ? (
+          <span className="c-nav__icon" aria-hidden="true">
+            {item.icon}
+          </span>
+        ) : null}
         <span>
           {item.label}
           {restricted ? <span className="c-nav__reason"> — {item.restrictedReason}</span> : null}
@@ -141,8 +148,13 @@ export function Nav({
                   data-keep-nav
                   onClick={() => toggle(g.name)}
                 >
+                  {/* مراجعة 2026-10-18: عدد عناصر المجموعة كان يُقرأ كتنبيهات — أيقونة مكانه */}
+                  {groupIcons?.[g.name] ? (
+                    <span className="c-nav__icon" aria-hidden="true">
+                      {groupIcons[g.name]}
+                    </span>
+                  ) : null}
                   <span className="c-nav__group-label">{g.name}</span>
-                  <span className="c-nav__group-count sting-mono">{g.items.length}</span>
                   <span className="c-nav__chevron" aria-hidden="true" />
                 </button>
                 <ul id={panelId} className="c-nav__sub" hidden={!isOpen}>

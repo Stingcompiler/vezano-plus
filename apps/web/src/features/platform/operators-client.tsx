@@ -190,7 +190,9 @@ export function OperatorsClient() {
                       <div className="plt-demo__top">
                         <strong>
                           {op.name}
-                          {op.is_me ? <span className="plt-badge plt-badge--me">أنت</span> : null}
+                          {op.is_me ? (
+                            <span className="plt-badge plt-badge--text plt-badge--me">أنت</span>
+                          ) : null}
                           {op.role_label ? (
                             <span className="plt-badge" data-role={op.role}>
                               {op.role_label}

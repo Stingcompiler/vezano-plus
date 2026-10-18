@@ -24,7 +24,17 @@ const LINKS: readonly { href: string; label: string }[] = [
   { href: "/#lp-contact", label: "تواصل" },
 ];
 
-export function PublicHeader({ cta = "login" }: { cta?: "login" | "register" | "none" }) {
+/**
+ * `minimal` (صفحات الدخول والتسجيل والترحيب — مراجعة 2026-10-18): الشعار والمظهر وزرّ واحد، بلا روابط
+ * التسويق السبعة التي تشتّت عن إكمال الدخول.
+ */
+export function PublicHeader({
+  cta = "login",
+  minimal = false,
+}: {
+  cta?: "login" | "register" | "none";
+  minimal?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,7 +92,7 @@ export function PublicHeader({ cta = "login" }: { cta?: "login" | "register" | "
 
   return (
     <div
-      className={`lp__header${menuOpen ? " lp__header--open" : ""}${hidden && !menuOpen ? " lp__header--hidden" : ""}${scrolled ? " lp__header--scrolled" : ""}`}
+      className={`lp__header${minimal ? " lp__header--minimal" : ""}${menuOpen ? " lp__header--open" : ""}${hidden && !menuOpen ? " lp__header--hidden" : ""}${scrolled ? " lp__header--scrolled" : ""}`}
     >
       <div className="lp__wrap lp__bar">
         <a className="lp__brand" href="/" onClick={go("/")}>
@@ -91,51 +101,57 @@ export function PublicHeader({ cta = "login" }: { cta?: "login" | "register" | "
           </span>
           <BrandName />
         </a>
-        <nav id="lp-links" className="lp__links" aria-label="الصفحات العامة">
-          {LINKS.map((l, i) => (
-            <a
-              key={l.href}
-              href={l.href}
-              onClick={go(l.href)}
-              aria-current={pathname === l.href ? "page" : undefined}
-              style={{ "--i": i } as CSSProperties}
-            >
-              {l.label}
-            </a>
-          ))}
-          <div className="lp__links-foot">
-            <Button variant="secondary" onClick={go("/register")} className="lp__links-cta">
-              ابدأ تجربتك المجانية
-            </Button>
-            <div className="lp__links-tools">
-              <span className="lp__lang" aria-label="اللغة: العربية">
-                <span aria-hidden="true">🌐</span> العربية
-              </span>
-              <ThemeToggle className="lp__theme" />
+        {minimal ? (
+          <span className="lp__spacer" />
+        ) : (
+          <nav id="lp-links" className="lp__links" aria-label="الصفحات العامة">
+            {LINKS.map((l, i) => (
+              <a
+                key={l.href}
+                href={l.href}
+                onClick={go(l.href)}
+                aria-current={pathname === l.href ? "page" : undefined}
+                style={{ "--i": i } as CSSProperties}
+              >
+                {l.label}
+              </a>
+            ))}
+            <div className="lp__links-foot">
+              <Button variant="secondary" onClick={go("/register")} className="lp__links-cta">
+                ابدأ تجربتك المجانية
+              </Button>
+              <div className="lp__links-tools">
+                <span className="lp__lang" aria-label="اللغة: العربية">
+                  <span aria-hidden="true">🌐</span> العربية
+                </span>
+                <ThemeToggle className="lp__theme" />
+              </div>
             </div>
-          </div>
-        </nav>
+          </nav>
+        )}
         <ThemeToggle className="lp__theme lp__theme--bar" />
         {cta !== "none" ? (
           <Button pos onClick={go(ctaHref)} className="lp__login">
             {ctaLabel}
           </Button>
         ) : null}
-        <button
-          type="button"
-          className="lp__menu"
-          aria-expanded={menuOpen}
-          aria-controls="lp-links"
-          aria-label={menuOpen ? "أغلق القائمة" : "القائمة"}
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          {/* ثلاثة خطوط تتحوّل إلى ✕ بحركة (عند «تقليل الحركة» تتبدّل فوراً) */}
-          <span className="lp__burger" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-        </button>
+        {minimal ? null : (
+          <button
+            type="button"
+            className="lp__menu"
+            aria-expanded={menuOpen}
+            aria-controls="lp-links"
+            aria-label={menuOpen ? "أغلق القائمة" : "القائمة"}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {/* ثلاثة خطوط تتحوّل إلى ✕ بحركة (عند «تقليل الحركة» تتبدّل فوراً) */}
+            <span className="lp__burger" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );

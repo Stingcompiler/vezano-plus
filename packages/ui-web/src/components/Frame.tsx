@@ -152,6 +152,8 @@ export function Frame({
           </h1>
           {banner}
           {notice ? <div role="status">{notice}</div> : null}
+          {/* طرف الترويسة: يملؤه التنقل بأدوات عامة (بحث) — مراجعة 2026-10-18 */}
+          {side ? <div className="c-frame__banner-end" id="frame-banner-end" /> : null}
         </header>
       )}
       {nav ? (
