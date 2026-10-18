@@ -19,6 +19,7 @@ UNTYPED_ALLOWED = {
     "POST /api/auth/logout",
     "POST /api/auth/remember",
     "POST /api/platform/logout",
+    "POST /api/account/pin",
     # ملفات لا JSON
     "GET /api/catalog/prices/import/{batch_id}/rejected.csv",
     "GET /api/imports/{batch_id}/rejected.csv",

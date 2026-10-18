@@ -195,6 +195,12 @@ export function LockClient() {
                 <p className="acc-lead">
                   القفل يحتاج رمزاً نُزّل عند تجهيز الجهاز. ادخل بكلمة المرور ثم جهّز الجهاز.
                 </p>
+                {/* لم يكن للمستخدم طريق لضبط رمزه خارج البذر (0005 §١٧٤) — بلا جلسة يمرّ بالدخول أولاً */}
+                <div className="acc-links">
+                  <Button variant="secondary" onClick={() => router.push("/account/pin")}>
+                    اضبط رمز PIN
+                  </Button>
+                </div>
               </Notice>
             ) : null}
             {needsLogin ? (

@@ -1,0 +1,34 @@
+/* رمز PIN للقفل (0005 §١٧٤): نموذج مفرد على بطاقة C-CARD البطلة — الحقول 52 والزرّ بعرض البطاقة. */
+.own-pin {
+  box-sizing: border-box;
+  inline-size: min(100%, 520px);
+  padding: 28px;
+  display: grid;
+  gap: 20px;
+}
+.own-pin__head {
+  display: grid;
+  gap: 6px;
+}
+.own-pin__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-ink-strong);
+}
+.own-pin__fields {
+  display: grid;
+  gap: 14px;
+}
+.own-pin .c-field__input {
+  min-block-size: 52px;
+}
+.own-pin__submit .c-btn {
+  inline-size: 100%;
+  min-block-size: 52px;
+}
+@media (max-width: 833px) {
+  .own-pin {
+    padding: 20px 16px;
+  }
+}
