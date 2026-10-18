@@ -218,7 +218,8 @@ h3 {
   .c-frame--sidebar .c-frame__nav {
     position: sticky;
     inset-block-start: 0;
-    max-block-size: 100dvh;
+    /* بطول ما يظهر تحت الترويسة — فتبقى أدوات أسفله (الخروج) ظاهرة بلا تمرير الصفحة */
+    max-block-size: calc(100dvh - 64px);
     overflow-y: auto;
   }
 }
@@ -436,15 +437,20 @@ h3 {
 .c-nav__group--toggle[data-current] .c-nav__group-label {
   color: var(--color-brand-primary);
 }
-.c-nav__group-count {
+.c-nav__icon {
+  display: inline-flex;
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+  color: currentColor;
+  opacity: 0.8;
+}
+.c-nav__icon svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.c-nav__group--toggle .c-nav__chevron {
   margin-inline-start: auto;
-  min-inline-size: 22px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: var(--text-badge);
-  text-align: center;
-  color: var(--color-ink-muted);
-  background: var(--color-surface-sunken);
 }
 .c-nav__chevron {
   inline-size: 7px;
@@ -2218,4 +2224,14 @@ div.c-sync__button {
   .c-enter {
     animation: vz-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
+}
+
+.c-frame__banner-end {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.c-frame__banner-end:empty {
+  display: none;
 }

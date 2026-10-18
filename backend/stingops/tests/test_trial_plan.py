@@ -113,3 +113,13 @@ def test_trial_follows_platform_chosen_base_plan(ctx: dict[str, Any]) -> None:  
         from core.subscription import has_feature
 
         assert has_feature("campaigns") is False  # تجاوز «فرعان» يسري على التجريبية المبنية عليها
+    # ORG-06 تقول الشيء نفسه: تجاوز «قوائم أسعار خاصة» على «فرعان» يظهر «مغلق» للتجريبية
+    r = _post(
+        c,
+        oh,
+        "/api/platform/entitlements",
+        {"plan_code": "dual", "feature": "market_private_prices", "enabled": False},
+    )
+    assert r.status_code == 200
+    ent = c.get("/api/org/subscription", headers=owner).json()
+    assert _feature(ent, "market_private_prices") == "locked"

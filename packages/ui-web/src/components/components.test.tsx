@@ -114,7 +114,7 @@ describe("C-NAV", () => {
     expect(first).toHaveFocus();
   });
 
-  it("المجموعات القابلة للطيّ: مجموعة الحالي مفتوحة، والباقي عنوان بعدده يُفتح بنقرة", async () => {
+  it("المجموعات القابلة للطيّ: مجموعة الحالي مفتوحة، والباقي عنوان بأيقونته (لا عدد) يُفتح بنقرة", async () => {
     const grouped = [
       { id: "home", label: "الرئيسية", href: "/" },
       { id: "pos", label: "نقطة البيع", href: "/pos", group: "البيع اليومي" },
@@ -122,17 +122,24 @@ describe("C-NAV", () => {
       { id: "sync", label: "المزامنة", href: "/sync", group: "الأجهزة" },
     ];
     const { container } = render(
-      <Nav items={grouped} currentId="pos" label="التنقل" collapsible />,
+      <Nav
+        items={grouped}
+        currentId="pos"
+        label="التنقل"
+        collapsible
+        groupIcons={{ الأجهزة: <svg data-testid="icon-devices" /> }}
+      />,
     );
     // الرئيسية بلا مجموعة ظاهرة، ومجموعة الحالي مفتوحة
     expect(screen.getByRole("link", { name: "الرئيسية" })).toBeVisible();
     expect(screen.getByRole("link", { name: "الفواتير" })).toBeVisible();
     const sell = screen.getByRole("button", { name: /البيع اليومي/ });
     expect(sell).toHaveAttribute("aria-expanded", "true");
-    // الأجهزة مطويّة: الرابط في DOM مخفياً، والعنوان يعلن عدده
+    // الأجهزة مطويّة: الرابط في DOM مخفياً، والعنوان بأيقونته — لا عدد عناصر يُقرأ كتنبيه (مراجعة 2026-10-18)
     const devices = screen.getByRole("button", { name: /الأجهزة/ });
     expect(devices).toHaveAttribute("aria-expanded", "false");
-    expect(devices).toHaveTextContent("1");
+    expect(devices).toHaveTextContent(/^الأجهزة$/);
+    expect(screen.getByTestId("icon-devices")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "المزامنة" })).toBeNull();
     await userEvent.click(devices);
     expect(devices).toHaveAttribute("aria-expanded", "true");

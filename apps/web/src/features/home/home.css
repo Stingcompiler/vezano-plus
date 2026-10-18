@@ -406,3 +406,55 @@
     flex-direction: column;
   }
 }
+
+/* مراجعة 2026-10-18 — أدوات أسفل الشريط (المظهر والخروج) ثابتة وإن طالت القائمة */
+.app-nav__tools {
+  position: sticky;
+  inset-block-end: 0;
+  background: var(--color-sidebar);
+}
+/* بحث في الترويسة: حقلٌ شكلاً يفتح البحث الشامل — يملأ الطرف الفارغ ويختصر الوصول من كل شاشة */
+.app-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: var(--layout-touchTarget);
+  min-inline-size: 260px;
+  box-sizing: border-box;
+  padding-inline: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  font-size: var(--text-note);
+}
+.app-search:hover {
+  border-color: var(--color-brand-line);
+  color: var(--color-ink-strong);
+}
+.app-search:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+.app-search__icon {
+  inline-size: 18px;
+  block-size: 18px;
+  display: inline-flex;
+}
+@media (max-width: 833px) {
+  .app-search {
+    min-inline-size: 0;
+    inline-size: var(--layout-touchTarget);
+    min-block-size: var(--layout-touchTarget);
+    justify-content: center;
+    padding: 0;
+  }
+  .app-search__text {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}

@@ -266,7 +266,7 @@ export function LoginClient() {
       title="فيزانو بلص"
       footer={<PublicFooter inFrame compact />}
       back={false}
-      chrome={<PublicHeader cta="register" />}
+      chrome={<PublicHeader cta="register" minimal />}
     >
       <div
         className="acc-page acc-page--split"
@@ -275,6 +275,7 @@ export function LoginClient() {
         data-step={step}
       >
         <AuthAside
+          cta="register"
           hint={
             params.get("intent") === "market"
               ? "الشراء من السوق باسم منشأتك بحساب الإدارة نفسه — لا حساب سوق منفصل."
@@ -304,6 +305,9 @@ export function LoginClient() {
                 <BrandMark />
               </span>
               <h1 className="acc-card__title">الدخول إلى فيزانو بلص</h1>
+              <p className="acc-card__sub">
+                حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
+              </p>
             </div>
             <div className="acc-card__body">
               {/* 0005 §١٢٠ — القادم من القفل: الرمز فتح الجهاز، وجلسة الخادم انتهت بإعادة التحميل */}
@@ -354,19 +358,10 @@ export function LoginClient() {
                 readOnly={busy}
                 required
               />
-              <div className="acc-actions">
+              {/* مراجعة 2026-10-18: «نسيت» رابطٌ تحت حقلها لا زرّ بعرض الدخول ينافسه */}
+              <div className="acc-forgot">
                 <Button
-                  type="submit"
-                  financial
-                  loading={busy}
-                  disabledReason={
-                    lock.remaining > 0 ? `${String(lock.remaining)} ثانية` : undefined
-                  }
-                >
-                  دخول
-                </Button>
-                <Button
-                  variant="secondary"
+                  variant="quiet"
                   onClick={() => {
                     if (!identifier.trim()) {
                       setNeedIdentifier(true);
@@ -379,11 +374,23 @@ export function LoginClient() {
                   نسيت كلمة المرور
                 </Button>
               </div>
+              <div className="acc-actions">
+                <Button
+                  type="submit"
+                  financial
+                  loading={busy}
+                  disabledReason={
+                    lock.remaining > 0 ? `${String(lock.remaining)} ثانية` : undefined
+                  }
+                >
+                  دخول
+                </Button>
+              </div>
               {sendFailures > 0 && !manualSuggested ? (
                 <Status state="server_error" label="تعذّر إرسال الرمز" />
               ) : null}
-              <p className="acc-note">
-                حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
+              <p className="acc-signup">
+                ليس لديك حساب؟ <Link href="/register">أنشئ حساب متجر</Link>
               </p>
             </div>
           </form>

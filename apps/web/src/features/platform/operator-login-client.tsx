@@ -124,7 +124,7 @@ export function OperatorLoginClient() {
               noValidate
             >
               <div className="plt-login__kicker">
-                <span className="plt-badge">فصل حسابات</span>
+                <span className="plt-badge plt-badge--text">فصل حسابات</span>
                 <strong>وحدة تشغيل فيزانو بلص — دخول المشغّل</strong>
               </div>
               <TextField

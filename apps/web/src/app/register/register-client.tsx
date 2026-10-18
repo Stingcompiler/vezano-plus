@@ -172,14 +172,17 @@ export function RegisterClient() {
       title="فيزانو بلص"
       footer={<PublicFooter inFrame compact />}
       back={false}
-      chrome={<PublicHeader cta="login" />}
+      chrome={<PublicHeader cta="login" minimal />}
     >
       <div
         className="acc-page acc-page--split"
         data-screen="ACC-02"
         data-state={busy ? "saving" : err ? "validation_error" : "ready"}
       >
-        <AuthAside hint="حساب واحد يدير المنشأة ويشتري من السوق — التجربة مجانية بلا بطاقة." />
+        <AuthAside
+          cta="login"
+          hint="حساب واحد يدير المنشأة ويشتري من السوق — التجربة مجانية بلا بطاقة."
+        />
         <AuthSteps current={step === "form" ? 1 : step === "verify" ? 2 : 3} />
         {step === "form" ? (
           <form className="acc-card" onSubmit={(e) => void requestCode(e)} noValidate>

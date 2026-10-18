@@ -683,3 +683,205 @@ a.c-btn {
   gap: 12px;
   min-inline-size: 0;
 }
+
+/* مراجعة 2026-10-18 — الدخول: «نسيت» رابط تحت حقلها، ودعوة التسجيل في ذيل البطاقة */
+.acc-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: -6px;
+}
+.acc-forgot .c-btn {
+  min-block-size: var(--layout-touchTarget);
+  padding-inline: 4px;
+  font-size: var(--text-note);
+}
+.acc-signup {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-note);
+  color: var(--color-ink-muted);
+}
+.acc-signup a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--layout-touchTarget);
+  color: var(--color-brand-strong);
+  font-weight: var(--font-weight-bold);
+}
+/* شريط الثقة يكرّر لوحة الهوية حين تظهر (≥ 834) — يبقى للهاتف وحده */
+@media (min-width: 834px) {
+  .auth-extras {
+    display: none;
+  }
+}
+
+/* ===================================================================================================
+   إعادة تصميم صفحات الدخول (المالك 2026-10-18: «صفحة الدخول ما زالت سيئة — أعد تصميمها حديثة»)
+   — نموذج مسطّح بلا صندوق ورأس مكدّس بعنوان كبير، حقول وأزرار 52px، ولوحة هوية بكامل الارتفاع
+   على الحاسوب بلا رأس التسويق؛ على الهاتف يبقى الرأس المختصر والنموذج مسطّحاً على أرضية الصفحة.
+   =================================================================================================== */
+.auth-topbar {
+  display: none;
+}
+.acc-page--split > form.acc-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+.acc-page--split > form.acc-card > .acc-card__head:not(.acc-card__head--tone) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 8px 0 4px;
+  border: 0;
+}
+.acc-page--split > form.acc-card > .acc-card__head:not(.acc-card__head--tone) .acc-logo {
+  inline-size: 48px;
+  block-size: 48px;
+}
+.acc-page--split > form.acc-card > .acc-card__head:not(.acc-card__head--tone) .acc-card__title {
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1.3;
+}
+.acc-card__sub {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-body);
+  line-height: 1.7;
+}
+.acc-page--split > form.acc-card > .acc-card__body {
+  padding: 20px 0 0;
+  gap: 16px;
+}
+.acc-page--split .c-field__input {
+  min-block-size: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+.acc-page--split .acc-actions > .c-btn,
+.acc-page--split .acc-actions > .c-btn__wrap,
+.acc-page--split .acc-actions > .c-btn__wrap > .c-btn {
+  inline-size: 100%;
+  /* 56px كفعل مالي على الهاتف (06-D2) — ولا يقلّ عنه على الحاسوب */
+  min-block-size: 56px;
+  border-radius: 12px;
+}
+.acc-page--split .acc-signup {
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--color-border);
+}
+
+@media (min-width: 834px) {
+  /* الحاسوب: صفحة بلوحتين بكامل الارتفاع — الرأس والذيل العامّان يتراجعان لصالح شريط النموذج */
+  .c-frame:has(> .c-frame__main > .acc-page--split) > .c-frame__banner,
+  .c-frame:has(> .c-frame__main > .acc-page--split) > .c-frame__footer {
+    display: none;
+  }
+  .acc-page--split {
+    position: relative;
+    min-block-size: 100dvh;
+    grid-template-columns: minmax(380px, 6fr) minmax(0, 7fr);
+    background-color: var(--color-surface-page);
+    background-image: radial-gradient(70% 55% at 65% 0%, rgb(14 124 134 / 0.07), transparent 70%);
+    background-size: auto;
+  }
+  .acc-page--split > form.acc-card {
+    inline-size: min(100%, 420px);
+    margin: 96px var(--layout-pagePadding) 56px;
+    box-shadow: none;
+  }
+  .acc-page--split > div.acc-card {
+    margin-block-start: 96px;
+  }
+  .auth-topbar {
+    position: absolute;
+    inset-block-start: 20px;
+    inset-inline-end: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 2;
+  }
+  .auth-topbar__cta {
+    color: var(--color-ink-muted);
+    font-size: var(--text-note);
+  }
+  .auth-topbar__cta a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--layout-touchTarget);
+    padding-inline: 14px;
+    margin-inline-start: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface-card);
+    color: var(--color-ink-strong);
+    font-weight: var(--font-weight-bold);
+    text-decoration: none;
+  }
+  .auth-topbar__cta a:hover {
+    border-color: var(--color-brand-line);
+    color: var(--color-brand-strong);
+  }
+  .auth-topbar__theme.vz-theme {
+    inline-size: var(--layout-touchTarget);
+    block-size: var(--layout-touchTarget);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface-card);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  /* مؤشّر خطوات التسجيل تحت شريط النموذج لا تحته متراكباً، والنموذج يليه بمسافة أقل */
+  .acc-page--split > .auth-steps {
+    margin-block-start: 92px;
+  }
+  .acc-page--split > .auth-steps ~ .acc-card,
+  .acc-page--split > .auth-steps ~ form.acc-card {
+    margin-block-start: 40px;
+    align-self: start;
+  }
+  /* دعوة التسجيل في الشريط أعلاه على الحاسوب — لا تتكرر أسفل النموذج */
+  .acc-page--split .acc-signup {
+    display: none;
+  }
+  /* لوحة الهوية: الشعار أعلاها، عنوان كبير، الوعود بسطور هادئة، والروابط في أسفلها */
+  .auth-aside {
+    padding: 36px 48px 28px;
+    gap: 28px;
+  }
+  .auth-aside__brand {
+    color: var(--color-navy-text);
+    text-decoration: none;
+    font-size: 26px;
+    min-block-size: var(--layout-touchTarget);
+  }
+  .auth-aside__brand .brand-name__plus {
+    color: #5ac6cd; /* ui-allow: فيروزي العلامة على الكحلي — لون الشعار نفسه على الخلفية الداكنة */
+  }
+  .auth-aside__mark {
+    background: transparent;
+    inline-size: 44px;
+    block-size: 44px;
+  }
+  .auth-aside__title {
+    margin-block-start: auto;
+    font-size: clamp(28px, 2.6vw, 40px);
+    font-weight: var(--font-weight-extrabold);
+    line-height: 1.35;
+    max-inline-size: 22ch;
+  }
+  .auth-aside__list {
+    gap: 14px;
+    font-size: 17px;
+  }
+  .auth-aside__links {
+    margin-block-start: auto;
+    padding-block-start: 20px;
+    border-block-start: 1px solid rgb(255 255 255 / 0.12);
+  }
+}
