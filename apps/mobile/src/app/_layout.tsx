@@ -1,3 +1,5 @@
+import "@/lib/crypto";
+
 import { useColors } from "@sting/ui-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -44,7 +46,23 @@ export default function RootLayout() {
           <StatusBar style="auto" />
           <Stack
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
-          />
+          >
+            {/* الشاشات المدفوعة فوق التبويبات: سهم رجوع وحده — العنوان الكبير في جسم الشاشة */}
+            {["search", "sync"].map((name) => (
+              <Stack.Screen
+                key={name}
+                name={name}
+                options={{
+                  headerShown: true,
+                  headerTitle: "",
+                  headerBackButtonDisplayMode: "minimal",
+                  headerShadowVisible: false,
+                  headerStyle: { backgroundColor: c.surfacePage },
+                  headerTintColor: c.brandPrimary,
+                }}
+              />
+            ))}
+          </Stack>
         </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

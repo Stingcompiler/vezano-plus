@@ -1,14 +1,16 @@
 import { NAV_GROUPS, NAV_ITEMS } from "@sting/app-core";
 import { mtx } from "@sting/texts";
 import { GroupedList, ListRow, Screen } from "@sting/ui-native";
+import { useRouter } from "expo-router";
 
-import { openOnWeb } from "@/lib/web";
+import { openHref } from "@/lib/home";
 
 /**
  * «المزيد»: كل بنود تنقّل الويب بمجموعاتها نفسها (من `@sting/app-core`) — لا شاشة في الويب تغيب عن
- * الجوال. ما لم يُبنَ بعد يفتح على الويب.
+ * الجوال. المبني يُفتح داخل التطبيق، وما لم يُبنَ بعد يفتح على الويب.
  */
 export default function More() {
+  const router = useRouter();
   const groups = Object.values(NAV_GROUPS);
   return (
     <Screen screenId="MOB-MORE" state="ready" title={mtx("more")}>
@@ -21,7 +23,8 @@ export default function More() {
                 key={i.id}
                 title={i.label}
                 last={n === items.length - 1}
-                onPress={() => void openOnWeb(i.href)}
+                // المبني على الهاتف يُفتح داخله (المزامنة…)، وما سواه على الويب
+                onPress={() => openHref(i.href, (p) => router.push(p))}
               />
             ))}
           </GroupedList>

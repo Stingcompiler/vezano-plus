@@ -9,6 +9,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NotBuilt } from "@/components/not-built";
 import More from "@/app/(tabs)/more";
 
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }));
+jest.mock("expo-web-browser", () => ({ openBrowserAsync: jest.fn() }));
+
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
