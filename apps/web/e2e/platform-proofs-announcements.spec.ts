@@ -418,6 +418,8 @@ test.describe("PLT-04", () => {
         "قد يتأخّر ظهور عروض السوق وتحديث الطلبات نحو 40 دقيقة. نقاط البيع تعمل بالكامل محلياً والمزامنة تُستأنف تلقائياً بعد النافذة.",
       );
     await page.getByRole("button", { name: "حفظ", exact: true }).click();
+    // معاينة الجمهور تُجلب بعد مهلة الكتابة — تُنتظر قبل فحص النصوص الحرفية (لا يعيد المحاولة)
+    await expect(page.locator('[data-screen="PLT-04"]')).toContainText("47 مستهدَف");
     await expectFrame(page, info, {
       screenId: "PLT-04",
       state: "ready",

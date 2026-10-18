@@ -6,7 +6,7 @@ import { RegisterClient } from "./register-client";
 
 export const metadata = pageMetadata(
   "حساب جديد",
-  "أنشئ حساب فيزانو بلص وابدأ تجربة 30 يوماً مجاناً بلا بطاقة.",
+  "أنشئ حساب فيزانو بلص وابدأ تجربتك المجانية بلا بطاقة.",
   "/register",
 );
 

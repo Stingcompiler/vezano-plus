@@ -5,6 +5,7 @@ import {
   formatMinor,
   Notice,
   parseMoneyInput,
+  SelectField,
   Status,
   SwitchField,
   TextAreaField,
@@ -34,6 +35,9 @@ interface Plan {
   is_active: boolean;
   trial: boolean;
   trial_days: number;
+  /** 0005 §١٧٠ — التجريبية على باقة تحدّدها إدارة المنصّة */
+  trial_base_code: string;
+  trial_base_name: string;
   max_branches: number;
   max_devices: number;
   max_users: number | null;
@@ -89,7 +93,12 @@ const ERRORS: Record<string, string> = {
   code_exists: "يوجد باقة بهذا الرمز.",
   nothing_to_change: "لا تغيير.",
   pos_core_required: "نقاط البيع لا تُنزع من أي باقة — لا تتوقف بحال.",
-  trial_required: "التجريبية لا تُؤرشف؛ عدّل مدتها أو حدودها.",
+  trial_required: "التجريبية لا تُؤرشف؛ عدّل مدتها أو باقتها الأساس.",
+  trial_base_invalid: "الباقة الأساس يجب أن تكون باقة مدفوعة معروضة.",
+  trial_base_in_use: "التجريبية مبنية على هذه الباقة — غيّر أساس التجريبية قبل أرشفتها.",
+  trial_derived: "ميزات التجريبية وحدودها من باقتها الأساس — غيّر الأساس لا القيم.",
+  trial_single: "تجريبية واحدة على المنصّة.",
+  trial_only: "المدة والباقة الأساس للتجريبية وحدها.",
   features_invalid: "خاصية غير معروفة.",
   notice_too_short: "السعر الجديد يحتاج إشعاراً 30 يوماً على الأقل — اختر تاريخاً أبعد.",
   effective_at_invalid: "تاريخ السريان غير صالح.",
@@ -117,6 +126,7 @@ type Draft = {
   is_active: boolean;
   trial: boolean;
   trial_days: string;
+  trial_base_code: string;
   max_branches: string;
   max_devices: string;
   max_users: string;
@@ -138,6 +148,7 @@ const EMPTY: Draft = {
   is_active: true,
   trial: false,
   trial_days: "30",
+  trial_base_code: "",
   max_branches: "1",
   max_devices: "3",
   max_users: "",
@@ -159,6 +170,7 @@ const fromPlan = (p: Plan): Draft => ({
   is_active: p.is_active,
   trial: p.trial,
   trial_days: String(p.trial_days),
+  trial_base_code: p.trial_base_code,
   max_branches: String(p.max_branches),
   max_devices: String(p.max_devices),
   max_users: p.max_users === null ? "" : String(p.max_users),
@@ -220,13 +232,22 @@ export function PlansCatalogClient() {
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const body = () => ({
+  // 0005 §١٧٠ — التجريبية تُرسل الاسم والترتيب والمدة والأساس فقط؛ الباقة المدفوعة بلا حقول التجريبية
+  const body = () =>
+    draft.trial
+      ? {
+          name: draft.name,
+          order: Number(draft.order || 0),
+          trial_days: Number(draft.trial_days || 30),
+          trial_base_code: draft.trial_base_code,
+          reason: draft.reason,
+        }
+      : paidBody();
+  const paidBody = () => ({
     name: draft.name,
     blurb: draft.blurb,
     order: Number(draft.order || 0),
     is_active: draft.is_active,
-    trial: draft.trial,
-    trial_days: Number(draft.trial_days || 30),
     max_branches: Number(draft.max_branches || 1),
     max_devices: Number(draft.max_devices || 1),
     max_users: draft.max_users.trim() === "" ? null : Number(draft.max_users),
@@ -301,6 +322,46 @@ export function PlansCatalogClient() {
   };
 
   const state: State = denied ? "permission_denied" : data ? "ready" : "loading";
+
+  const baseOptions = (data?.plans ?? []).filter((p) => !p.trial && p.is_active);
+  const trialForm = (
+    <form className="plt-ops plt-plan-form" onSubmit={(e) => void save(e)} noValidate>
+      <div className="plt-ops__fields plt-ops__fields--3">
+        <SelectField
+          label="الباقة الأساس"
+          hint="ميزاتها وحدودها هي ما يجرّبه التاجر"
+          value={draft.trial_base_code}
+          onChange={(e) => set("trial_base_code", e.target.value)}
+          options={baseOptions.map((p) => ({ value: p.code, label: p.name }))}
+        />
+        <TextField
+          label="أيام التجريبية"
+          mono
+          inputMode="numeric"
+          hint="للمنشآت الجديدة — التجارب القائمة تبقى على تاريخ انتهائها"
+          value={draft.trial_days}
+          onChange={(e) => set("trial_days", e.target.value)}
+        />
+        <TextField label="الاسم" value={draft.name} onChange={(e) => set("name", e.target.value)} />
+      </div>
+      <TextAreaField
+        label="سبب التغيير"
+        hint="يُسجَّل باسمك في سجل الكتالوج"
+        rows={2}
+        value={draft.reason}
+        onChange={(e) => set("reason", e.target.value)}
+      />
+      <div className="acc-actions plt-ops-row">
+        <Button type="submit" loading={busy}>
+          احفظ
+        </Button>
+        <Button variant="quiet" onClick={() => setEditing("")}>
+          إلغاء
+        </Button>
+        {error ? <Status state="validation_error" label={error} /> : null}
+      </div>
+    </form>
+  );
 
   const form = (
     <form className="plt-ops plt-plan-form" onSubmit={(e) => void save(e)} noValidate>
@@ -438,16 +499,6 @@ export function PlansCatalogClient() {
           checked={draft.is_active}
           onChange={(v) => set("is_active", v)}
         />
-        <SwitchField label="تجريبية" checked={draft.trial} onChange={(v) => set("trial", v)} />
-        {draft.trial ? (
-          <TextField
-            label="أيام التجريبية"
-            mono
-            inputMode="numeric"
-            value={draft.trial_days}
-            onChange={(e) => set("trial_days", e.target.value)}
-          />
-        ) : null}
       </div>
       <TextAreaField
         label="سبب التغيير"
@@ -511,7 +562,8 @@ export function PlansCatalogClient() {
                       <div className="plt-plan__prices">
                         {p.trial ? (
                           <span>
-                            مجاناً · <span className="sting-mono">{p.trial_days}</span> يوماً
+                            مجاناً · <span className="sting-mono">{p.trial_days}</span> يوماً ·
+                            بميزات «{p.trial_base_name || "—"}»
                           </span>
                         ) : (
                           <>
@@ -578,7 +630,11 @@ export function PlansCatalogClient() {
                         </p>
                       ) : null}
                       {editing === p.code ? (
-                        form
+                        p.trial ? (
+                          trialForm
+                        ) : (
+                          form
+                        )
                       ) : priceFor === p.code ? (
                         <div className="plt-ops plt-plan-form">
                           <div className="plt-ops__fields plt-ops__fields--3">

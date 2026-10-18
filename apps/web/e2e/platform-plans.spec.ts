@@ -19,6 +19,8 @@ type Plan = {
   is_active: boolean;
   trial: boolean;
   trial_days: number;
+  trial_base_code: string;
+  trial_base_name: string;
   max_branches: number;
   max_devices: number;
   max_users: number | null;
@@ -42,6 +44,8 @@ const plan = (o: Partial<Plan> & { code: string; name: string }): Plan => ({
   is_active: true,
   trial: false,
   trial_days: 30,
+  trial_base_code: "",
+  trial_base_name: "",
   max_branches: 1,
   max_devices: 3,
   max_users: null,
@@ -123,8 +127,18 @@ test.describe("PLT-16", () => {
         price_yearly_minor: "85000000",
         subscribers: 31,
       }),
-      plan({ code: "trial", name: "تجريبية", order: 3, trial: true, subscribers: 18 }),
+      plan({
+        code: "trial",
+        name: "تجريبية",
+        order: 3,
+        trial: true,
+        trial_base_code: "single",
+        trial_base_name: "فرع واحد",
+        features: ["pos_core", "advanced_reports", "bulk_pricing"],
+        subscribers: 18,
+      }),
     ];
+    const trialBodies: Record<string, unknown>[] = [];
     const changes: {
       id: string;
       plan_code: string;
@@ -187,6 +201,18 @@ test.describe("PLT-16", () => {
         monthly_minor?: number | null;
       };
       const p = plans.find((x) => x.code === code)!;
+      if (action === "update" && p.trial) {
+        // 0005 §١٧٠ — صفّ التجريبية يقبل الأساس والمدة (والاسم والترتيب) فقط
+        trialBodies.push(route.request().postDataJSON() as Record<string, unknown>);
+        const t = route.request().postDataJSON() as { trial_base_code: string; trial_days: number };
+        const base = plans.find((x) => x.code === t.trial_base_code)!;
+        p.trial_base_code = base.code;
+        p.trial_base_name = base.name;
+        p.features = base.features;
+        p.max_branches = base.max_branches;
+        p.trial_days = Number(t.trial_days);
+        return route.fulfill(json(200, payload()));
+      }
       if (action === "update") {
         const diff: Record<string, unknown> = {};
         if (b.price_monthly_minor !== undefined) {
@@ -250,7 +276,9 @@ test.describe("PLT-16", () => {
     });
     const root = page.locator('[data-screen="PLT-16"]');
     // تعديل: السعر الشهري والأجهزة بسبب → السجل والبطاقة يتحدّثان
-    const single = root.locator(".plt-plan", { hasText: "فرع واحد" });
+    const single = root.locator(".plt-plan", {
+      has: page.locator(".plt-badge", { hasText: /^single$/ }),
+    });
     await single.getByRole("button", { name: "عدّل" }).click();
     await single.getByLabel("السعر الشهري").fill("50,000");
     await single.getByLabel("الأجهزة").fill("4");
@@ -286,6 +314,26 @@ test.describe("PLT-16", () => {
     await form.getByRole("button", { name: "أنشئ الباقة" }).click();
     await expect(root).toContainText("أُنشئت الباقة «سلسلة»");
     await expect(root.locator(".plt-plan", { hasText: "سلسلة" })).toContainText("150,000.00");
+    // 0005 §١٧٠ — التجريبية على باقة تحدّدها إدارة المنصّة: أساس ومدة لا ميزات وأسعار
+    const trial = root.locator(".plt-plan", { hasText: "تجريبية" });
+    await expect(trial).toContainText("مجاناً · 30 يوماً · بميزات «فرع واحد»");
+    await expect(trial.getByRole("button", { name: "سعر مقبل بتاريخ" })).toHaveCount(0);
+    await trial.getByRole("button", { name: "عدّل" }).click();
+    await expect(trial.getByLabel("السعر الشهري")).toHaveCount(0);
+    await expect(trial.getByRole("checkbox")).toHaveCount(0);
+    await trial.getByLabel("الباقة الأساس").selectOption("dual");
+    await trial.getByLabel("أيام التجريبية").fill("14");
+    await trial.getByLabel("سبب التغيير").fill("عرض الإطلاق");
+    await trial.getByRole("button", { name: "احفظ" }).click();
+    await expect(root).toContainText("حُفظت «تجريبية»");
+    await expect(trial).toContainText("مجاناً · 14 يوماً · بميزات «فرعان»");
+    expect(Object.keys(trialBodies[0] ?? {}).sort()).toEqual([
+      "name",
+      "order",
+      "reason",
+      "trial_base_code",
+      "trial_days",
+    ]);
   });
 
   test("permission_denied: جلسة بلا صفة مشغّل", async ({ page }, info) => {

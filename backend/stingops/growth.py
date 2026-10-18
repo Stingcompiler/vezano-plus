@@ -263,8 +263,13 @@ def entitlements_payload() -> dict[str, Any]:
         overrides = {(e.plan_code, e.feature): e for e in PlanEntitlement.objects.all()}
         flags = list(OpsFlag.objects.order_by("key", "scope_kind", "scope"))
     plans = []
+    trial_base_name = ""
     for code in subscription.PLAN_ORDER:
         plan = subscription.PLANS[code]
+        if plan.trial:
+            # 0005 §١٧٠ — التجريبية ترث استحقاقات باقتها الأساس فلا عمود لها
+            trial_base_name = plan.trial_base_name
+            continue
         cells = []
         for r in ENTITLEMENT_ROWS:
             base = r["feature"] in plan.features
@@ -285,6 +290,7 @@ def entitlements_payload() -> dict[str, Any]:
     return {
         "rows": list(ENTITLEMENT_ROWS),
         "plans": plans,
+        "trial_base_name": trial_base_name,
         "flags": [
             {
                 "key": f.key,
@@ -309,6 +315,8 @@ def set_entitlement(*, viewer: User, body: dict[str, Any]) -> dict[str, Any]:
     feature = str(body.get("feature") or "")
     if plan_code not in subscription.PLANS:
         raise ReviewRejected("plan_invalid", 400, {"field": "plan_code"})
+    if subscription.PLANS[plan_code].trial:
+        raise ReviewRejected("trial_follows_base", 400, {"field": "plan_code"})
     if feature not in FEATURE_LABELS or feature in {"multi_branch"}:
         raise ReviewRejected("feature_invalid", 400, {"field": "feature"})
     enabled = bool(body.get("enabled"))

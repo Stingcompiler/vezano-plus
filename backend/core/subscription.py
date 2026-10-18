@@ -61,6 +61,9 @@ class Plan:
     addon_device_minor: int = 0
     addon_user_minor: int = 0
     addon_branch_minor: int = 0
+    # 0005 §١٧٠ — التجريبية: الباقة الأساس التي تحدّدها إدارة المنصّة (رمزها واسمها)
+    trial_base_code: str = ""
+    trial_base_name: str = ""
 
     def addon_price(self, kind: str) -> int:
         return {
@@ -155,6 +158,34 @@ def _to_plan(row: PlanCatalog) -> Plan:
     )
 
 
+def trial_blurb(base_name: str, days: int) -> str:
+    """وصف التجريبية من سياستها لا نصاً يُحرَّر فيتخلّف عنها (0005 §١٧٠)."""
+    return (
+        f"كل ميزات باقة «{base_name}» لمدة {days} يوماً. عند الانتهاء يستمر البيع كاملاً وتبقى "
+        "بياناتك لك."
+    )
+
+
+def _derive_trial(trial: Plan, base: Plan) -> Plan:
+    """التجريبية = ميزات الباقة الأساس وحدودها وحصّتها، بلا سعر، بمدّتها هي."""
+    from dataclasses import replace
+
+    return replace(
+        trial,
+        max_branches=base.max_branches,
+        max_devices=base.max_devices,
+        max_users=base.max_users,
+        campaign_quota=base.campaign_quota,
+        features=base.features,
+        blurb=trial_blurb(base.name, trial.trial_days),
+        price_minor=0,
+        price_quarterly_minor=0,
+        price_yearly_minor=0,
+        trial_base_code=base.code,
+        trial_base_name=base.name,
+    )
+
+
 class _PlanCatalog:
     """`PLANS` — قاموس باقات يقرأ الكتالوج من قاعدة البيانات (كاش قصير لكل عملية؛ `refresh()` بعد
     تحرير المشغّل). الباقات المؤرشفة تبقى قابلة للقراءة بالرمز (اشتراكات قائمة) ولا تُعرض."""
@@ -189,7 +220,12 @@ class _PlanCatalog:
             rows = list(PlanCatalog.objects.all())
         for r in rows:
             _promote_due_prices(r, now)
-        self._all = {r.code: _to_plan(r) for r in rows}
+        plans = {r.code: _to_plan(r) for r in rows}
+        for r in rows:
+            base = plans.get(r.trial_base_code) if r.trial else None
+            if base is not None and not base.trial:
+                plans[r.code] = _derive_trial(plans[r.code], base)
+        self._all = plans
         self._loaded_at = time.monotonic()
         return self._all
 
@@ -368,7 +404,8 @@ def has_feature(code: str, *, now: Any = None) -> bool:
     # PLT-12: تجاوز على مستوى الباقة (لا فوق مستأجر) يغيّر الاستحقاق فوراً
     from stingops.growth import plan_feature_enabled
 
-    override = plan_feature_enabled(plan.code, code)
+    # التجريبية ترث تجاوزات باقتها الأساس (0005 §١٧٠)
+    override = plan_feature_enabled(plan.trial_base_code or plan.code, code)
     granted = (
         override
         if override is not None
@@ -498,6 +535,7 @@ def entitlements_payload(*, viewer_is_owner: bool, now: Any = None) -> dict[str,
             "code": plan.code,
             "name": plan.name,
             "trial": plan.trial,
+            "trial_base_name": plan.trial_base_name,
             "state": st,
             "expires_at": _iso(sub.expires_at),
             "days_since_expiry": days_since_expiry(sub, now),
@@ -655,7 +693,10 @@ class ProofRejected(Exception):
 
 
 def _default_paid_code() -> str:
-    """أول باقة مدفوعة معروضة — احتياطاً لمستأجر تجريبي بلا اختيار."""
+    """الباقة الأساس للتجريبية (يكمل التاجر على ما جرّبه — 0005 §١٧٠)، وإلا أول باقة مدفوعة."""
+    t = PLANS.get("trial")
+    if t and t.trial_base_code and t.trial_base_code in PLANS.visible_codes():
+        return t.trial_base_code
     for c in PLANS.visible_codes():
         if not PLANS[c].trial:
             return c

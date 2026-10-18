@@ -144,6 +144,8 @@ class PublicPlansView(APIView):
                         "campaign_quota": p.campaign_quota,
                         "blurb": p.blurb,
                         "trial": p.trial,
+                        # 0005 §١٧٠ — الباقة التي تقوم عليها التجريبية (تحدّدها إدارة المنصّة)
+                        "trial_base_name": p.trial_base_name,
                     }
                     for p in (PLANS[c] for c in PLAN_ORDER)
                 ],

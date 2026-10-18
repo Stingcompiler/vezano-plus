@@ -35,8 +35,8 @@ EDITABLE = (
     "blurb",
     "order",
     "is_active",
-    "trial",
     "trial_days",
+    "trial_base_code",
     "max_branches",
     "max_devices",
     "max_users",
@@ -51,6 +51,11 @@ EDITABLE = (
 )
 
 
+#: 0005 §١٧٠ — صفّ التجريبية: المدة والباقة الأساس (والاسم والترتيب) فقط؛ الميزات والحدود والأسعار
+#: من الباقة الأساس فلا تُحرَّر هنا
+TRIAL_EDITABLE = frozenset({"name", "order", "trial_days", "trial_base_code"})
+
+
 class PlanOpRejected(Exception):
     def __init__(self, code: str, status: int = 400) -> None:
         super().__init__(code)
@@ -63,19 +68,25 @@ def _iso(dt: Any) -> str:
 
 
 def _row(p: PlanCatalog, subscribers: dict[str, int]) -> dict[str, Any]:
+    derived = PLANS.get(p.code) if p.trial else None
+    if derived is not None and not derived.trial_base_code:
+        derived = None
     return {
         "code": p.code,
         "name": p.name,
-        "blurb": p.blurb,
+        "blurb": derived.blurb if derived else p.blurb,
         "order": p.order,
         "is_active": p.is_active,
         "trial": p.trial,
         "trial_days": p.trial_days,
-        "max_branches": p.max_branches,
-        "max_devices": p.max_devices,
-        "max_users": p.max_users,
-        "campaign_quota": p.campaign_quota,
-        "features": list(p.features or []),
+        "trial_base_code": p.trial_base_code if p.trial else "",
+        "trial_base_name": derived.trial_base_name if derived else "",
+        # التجريبية تعرض ما ترثه فعلاً من باقتها الأساس لا قيمها المخزّنة القديمة
+        "max_branches": derived.max_branches if derived else p.max_branches,
+        "max_devices": derived.max_devices if derived else p.max_devices,
+        "max_users": derived.max_users if derived else p.max_users,
+        "campaign_quota": derived.campaign_quota if derived else p.campaign_quota,
+        "features": sorted(derived.features) if derived else list(p.features or []),
         "price_monthly_minor": str(p.price_monthly_minor),
         "price_quarterly_minor": str(p.price_quarterly_minor),
         "price_yearly_minor": str(p.price_yearly_minor),
@@ -146,6 +157,15 @@ def _int(v: Any, *, name: str, minimum: int = 0) -> int:
 
 def _apply(p: PlanCatalog, body: dict[str, Any]) -> dict[str, Any]:
     changes: dict[str, Any] = {}
+    if body.get("trial"):
+        # تجريبية واحدة على المنصّة (صفّها المبذور) — لا تُحوَّل باقة مدفوعة إلى تجريبية
+        raise PlanOpRejected("trial_single")
+    if p.trial:
+        derived = sorted(k for k in body if k in EDITABLE and k not in TRIAL_EDITABLE)
+        if derived:
+            raise PlanOpRejected("trial_derived")
+    elif "trial_base_code" in body or "trial_days" in body:
+        raise PlanOpRejected("trial_only")
     for f in EDITABLE:
         if f not in body:
             continue
@@ -156,8 +176,13 @@ def _apply(p: PlanCatalog, body: dict[str, Any]) -> dict[str, Any]:
                 raise PlanOpRejected("name_required")
         elif f == "blurb":
             v = str(v or "").strip()[:200]
-        elif f in ("is_active", "trial"):
+        elif f == "is_active":
             v = bool(v)
+        elif f == "trial_base_code":
+            v = str(v or "").strip()
+            base = PlanCatalog.objects.filter(code=v).first()
+            if base is None or base.trial or not base.is_active:
+                raise PlanOpRejected("trial_base_invalid")
         elif f == "features":
             if not isinstance(v, list) or any(x not in FEATURES for x in v):
                 raise PlanOpRejected("features_invalid")
@@ -213,10 +238,16 @@ def update(code: str, body: dict[str, Any], *, by_name: str, reason: str) -> dic
         changes = _apply(p, body)
         if not changes:
             raise PlanOpRejected("nothing_to_change")
-        if "pos_core" not in (p.features or []):
+        if not p.trial and "pos_core" not in (p.features or []):
             raise PlanOpRejected("pos_core_required")
         if not p.is_active and p.trial:
             raise PlanOpRejected("trial_required")
+        if (
+            not p.is_active
+            and PlanCatalog.objects.filter(trial=True, trial_base_code=p.code).exists()
+        ):
+            # لا تُؤرشف الباقة التي تقوم عليها التجريبية — غيّر أساس التجريبية أولاً
+            raise PlanOpRejected("trial_base_in_use")
         p.save()
         PlanChange.objects.create(plan=p, changes=changes, reason=reason[:300], by_name=by_name)
     PLANS.refresh()
@@ -229,6 +260,8 @@ def schedule_price(code: str, body: dict[str, Any], *, by_name: str, reason: str
         p = PlanCatalog.objects.filter(code=code).first()
         if p is None:
             raise PlanOpRejected("not_found", 404)
+        if p.trial:
+            raise PlanOpRejected("trial_derived")  # التجريبية بلا سعر (0005 §١٧٠)
         if body.get("clear"):
             if p.next_price_effective_at is None:
                 raise PlanOpRejected("nothing_to_change")
