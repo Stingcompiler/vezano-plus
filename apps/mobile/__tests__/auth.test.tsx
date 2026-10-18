@@ -5,7 +5,11 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import Login from "@/app/login";
 import SelectOrg from "@/app/select-org";
+import { MemoryStorage } from "@sting/platform/memory";
+
+import { setSecretsForTests } from "@/lib/secrets";
 import { afterSignIn, ANONYMOUS, SessionProvider, type SessionState } from "@/lib/session";
+import { setStorageForTests } from "@/lib/storage";
 
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
@@ -40,7 +44,7 @@ function server(routes: Record<string, Route>) {
 const renderWith = (ui: ReactElement, fetchImpl: typeof fetch, initial?: SessionState) =>
   render(
     <SafeAreaProvider initialMetrics={METRICS}>
-      <SessionProvider fetchImpl={fetchImpl} initial={initial}>
+      <SessionProvider fetchImpl={fetchImpl} initial={initial ?? ANONYMOUS}>
         {ui}
       </SessionProvider>
     </SafeAreaProvider>,
@@ -48,7 +52,16 @@ const renderWith = (ui: ReactElement, fetchImpl: typeof fetch, initial?: Session
 
 const TOKENS = { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" };
 
-beforeEach(() => mockReplace.mockClear());
+beforeEach(() => {
+  mockReplace.mockClear();
+  setStorageForTests(new MemoryStorage());
+  const mem = new Map<string, string>();
+  setSecretsForTests({
+    get: (k) => Promise.resolve(mem.get(k) ?? null),
+    set: (k, v) => Promise.resolve(void mem.set(k, v)),
+    delete: (k) => Promise.resolve(void mem.delete(k)),
+  });
+});
 
 describe("الجلسة (0005 §١٧٢)", () => {
   it("دخول برموز = جلسة نشطة؛ وبتذكرة = اختيار منشأة بصفوف كالويب", () => {

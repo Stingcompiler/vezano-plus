@@ -15,9 +15,12 @@ const NAV = "shared:app-core/nav.ts";
 export default function TabsLayout() {
   const c = useColors();
   const { state } = useSession();
-  // التبويبات بجلسة نشطة وحدها (0005 §١٧٢): بلا جلسة الترحيب، وبعضويات متعدّدة اختيار المنشأة
+  // التبويبات بجلسة نشطة على جهاز مجهّز وحدها (0005 §١٧٢–§١٧٣)
+  if (state.status === "booting") return null;
   if (state.status === "anonymous") return <Redirect href="/welcome" />;
   if (state.status === "selecting") return <Redirect href="/select-org" />;
+  if (state.status === "locked") return <Redirect href="/lock" />;
+  if (!state.setupDone || !state.deviceId) return <Redirect href="/setup-device" />;
   return (
     <Tabs
       screenOptions={{
