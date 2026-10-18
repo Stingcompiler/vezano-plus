@@ -14,11 +14,13 @@ import TajawalRegular from "@sting/design/fonts/Tajawal-Regular.ttf";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { SessionProvider } from "@/lib/session";
+
 void SplashScreen.preventAutoHideAsync();
 
 /**
  * جذر التطبيق: الخطوط من `@sting/design/fonts` (محمّلة داخل التطبيق — يعمل بلا اتصال)، والعربية من
- * اليمين مفروضة بإعداد `expo-localization` في app.json (`forcesRTL`). الجلسة والقفل في M1 لاحقاً.
+ * اليمين مفروضة بإعداد `expo-localization` في app.json (`forcesRTL`). الجلسة من `SessionProvider` (0005 §١٧٢)؛ القفل والجهاز في خطوة لاحقة من M1.
  */
 export default function RootLayout() {
   const c = useColors();
@@ -38,10 +40,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="auto" />
-        <Stack
-          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
-        />
+        <SessionProvider>
+          <StatusBar style="auto" />
+          <Stack
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
+          />
+        </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

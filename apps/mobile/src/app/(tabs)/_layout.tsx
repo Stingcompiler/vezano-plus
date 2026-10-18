@@ -1,7 +1,9 @@
 import { tx, mtx } from "@sting/texts";
 import { FONT, useColors } from "@sting/ui-native";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { BarChart3, Ellipsis, House, ShoppingCart, Users } from "lucide-react-native";
+
+import { useSession } from "@/lib/session";
 
 const NAV = "shared:app-core/nav.ts";
 
@@ -12,6 +14,10 @@ const NAV = "shared:app-core/nav.ts";
  */
 export default function TabsLayout() {
   const c = useColors();
+  const { state } = useSession();
+  // التبويبات بجلسة نشطة وحدها (0005 §١٧٢): بلا جلسة الترحيب، وبعضويات متعدّدة اختيار المنشأة
+  if (state.status === "anonymous") return <Redirect href="/welcome" />;
+  if (state.status === "selecting") return <Redirect href="/select-org" />;
   return (
     <Tabs
       screenOptions={{
