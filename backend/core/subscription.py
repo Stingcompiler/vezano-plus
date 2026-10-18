@@ -497,12 +497,22 @@ def _feature_note(code: str, status: str) -> str:
     return "متاحة في باقة «" + "» و«".join(with_it) + "»"
 
 
+def _plan_grants(code: str, plan: Plan) -> bool:
+    """ما تمنحه الباقة بعد تجاوز PLT-12 — المصدر نفسه الذي يستعمله `has_feature` (مراجعة 2026-10-18:
+    كانت ORG-06 تقرأ تعريف الباقة وحده فتخالف الاستحقاق الفعلي بعد أي تجاوز)."""
+    from stingops.growth import plan_feature_enabled
+
+    override = plan_feature_enabled(plan.trial_base_code or plan.code, code)
+    return override if override is not None else code in plan.features
+
+
 def _feature_status(code: str, plan: Plan, sub: TenantSubscription) -> str:
     if code == "pos_core":
         return "open"
+    granted = _plan_grants(code, plan)
     if code == "market_publish":
-        return "conditional" if code in plan.features else "locked"
-    return "open" if (code in plan.features or code in (sub.extra_features or [])) else "locked"
+        return "conditional" if granted else "locked"
+    return "open" if (granted or code in (sub.extra_features or [])) else "locked"
 
 
 def entitlements_payload(*, viewer_is_owner: bool, now: Any = None) -> dict[str, Any]:

@@ -272,7 +272,9 @@ export function DemoRequestsClient() {
                         </p>
                       ) : null}
                       {r.email_verified ? (
-                        <span className="plt-badge plt-demo__verified">بريد مؤكَّد</span>
+                        <span className="plt-badge plt-badge--text plt-demo__verified">
+                          بريد مؤكَّد
+                        </span>
                       ) : null}
                       {r.comments && r.comments.length > 0 ? (
                         <ul className="plt-demo__comments" aria-label="تعليقات لصاحب الطلب">

@@ -1301,3 +1301,12 @@
     }
   }
 }
+
+/* مراجعة 2026-10-18 — رأس صفحات الدخول: الشعار، ثم المظهر وزرّ واحد في الطرف الآخر على كل المقاسات */
+.lp__header--minimal .lp__spacer {
+  margin-inline-start: auto;
+}
+.lp__header--minimal .lp__theme--bar,
+.lp__header--minimal .lp__theme--bar.vz-theme {
+  display: inline-flex;
+}

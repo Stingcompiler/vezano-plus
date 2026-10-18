@@ -261,7 +261,7 @@ export function TenantDetailClient({ id }: { id: string }) {
                       }
                       label={d.status_label}
                     />
-                    <span className="plt-badge">حدود وصول</span>
+                    <span className="plt-badge plt-badge--text">حدود وصول</span>
                   </div>
                   <h3 className="cat-head__title">{d.name}</h3>
                   <div className="cus-sub">

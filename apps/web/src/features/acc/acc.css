@@ -683,3 +683,31 @@ a.c-btn {
   gap: 12px;
   min-inline-size: 0;
 }
+
+/* مراجعة 2026-10-18 — الدخول: «نسيت» رابط تحت حقلها، ودعوة التسجيل في ذيل البطاقة */
+.acc-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: -6px;
+}
+.acc-forgot .c-btn {
+  min-block-size: 36px;
+  padding-inline: 4px;
+  font-size: var(--text-note);
+}
+.acc-signup {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-note);
+  color: var(--color-ink-muted);
+}
+.acc-signup a {
+  color: var(--color-brand-strong);
+  font-weight: var(--font-weight-bold);
+}
+/* شريط الثقة يكرّر لوحة الهوية حين تظهر (≥ 834) — يبقى للهاتف وحده */
+@media (min-width: 834px) {
+  .auth-extras {
+    display: none;
+  }
+}
