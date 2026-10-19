@@ -2,19 +2,23 @@ import { expect, type Page, test } from "@playwright/test";
 
 /**
  * مراجعة منطق القفل (0005 §١٢٠): جهاز بلا متحققات يقول ذلك ويعرض الدخول بكلمة المرور؛ قفل الخمول
- * بعد 20 دقيقة يعود إلى الشاشة نفسها؛ رمز مستخدم آخر لا يفتح جلسة غيره.
+ * بعد 20 دقيقة يعود إلى الشاشة نفسها؛ رمز مستخدم آخر لا يفتح جلسة غيره؛ صاحب جلسة بلا رمز على
+ * جهاز فيه رموز غيره يُقال له ذلك بدل عرض غيره (§١٧٩).
  * بلا إطار مرسوم لهذه المسارات → بلا `fromFrame`.
  */
 const json = (status: number, body: unknown) => ({ status, json: body });
 // PIN 123456 (المتجه نفسه في acc-invite-lock.spec.ts)
 const ENCODED =
   "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$xLL5EYZbGlWr9962Y1Y77xBK9jK/wka5FYHqDqwRYw8=";
-const row = (user_id: string, display_name: string) => ({
+// PIN 654321 بالملح والدورات نفسها
+const ENCODED_OTHER =
+  "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$nOp225KblbKetuYeCcvpE8NNoromzHRKcQcnwVr3zbA=";
+const row = (user_id: string, display_name: string, encoded = ENCODED) => ({
   user_id,
   display_name,
   role_name: "مدير فرع",
   branch_name: "فرع بحري",
-  encoded: ENCODED,
+  encoded,
   version: 1,
 });
 
@@ -113,13 +117,36 @@ test.describe("القفل — مراجعة المنطق", () => {
   test("رمز مستخدم آخر لا يفتح جلسة غيره", async ({ page }) => {
     await page.clock.install();
     await liveSession(page, "/org/subscription");
-    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    await seedDevice(page, [row("u1", "سميّة عبد الله", ENCODED_OTHER), row("u2", "أحمد ياسين")]);
     await page.clock.fastForward("21:00");
     await expect(page).toHaveURL(/\/lock\?next=/);
+    await expect(page.locator('[data-screen="ACC-07"]')).toContainText("سميّة عبد الله");
     await typePin(page, "123456");
     await expect(page.locator('[data-screen="ACC-07"]')).toContainText(
       "هذا رمز أحمد ياسين — الجلسة المفتوحة لغيره",
     );
     await expect(page).toHaveURL(/\/lock\?next=/);
+  });
+
+  test("صاحب الجلسة بلا رمز على جهاز فيه رموز غيره: لا يُعرض غيره، والضبط يمرّ بالدخول", async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await liveSession(page, "/org/subscription");
+    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    // إعادة بناء Fast Refresh (خادم التطوير) تعيد تشغيل مؤقّت الخمول فتصفّره — القفزة تُكرَّر حتى يُقفل
+    await expect(async () => {
+      await page.clock.fastForward("21:00");
+      await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/, { timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
+    const screen = page.locator('[data-screen="ACC-07"]');
+    await expect(screen).toContainText("لا رمز PIN لك على هذا الجهاز");
+    await expect(screen).not.toContainText("أحمد ياسين");
+    await expect(page.locator(".acc-keypad")).toHaveCount(0);
+    await page.getByRole("button", { name: "اضبط رمز PIN" }).click();
+    await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fpin$/);
+    await page.goBack();
+    await page.getByRole("button", { name: "ادخل بكلمة المرور", exact: true }).click();
+    await expect(page).toHaveURL(/\/login\?next=%2Forg%2Fsubscription$/);
   });
 });
