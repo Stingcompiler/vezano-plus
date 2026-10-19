@@ -14201,6 +14201,33 @@
       ],
       "type": "object"
      },
+     "plans": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "code": {
+         "type": "string"
+        },
+        "max_branches": {
+         "type": "integer"
+        },
+        "name": {
+         "type": "string"
+        },
+        "price_minor": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "code",
+        "name",
+        "price_minor",
+        "max_branches"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
      "proofs": {
       "items": {
        "additionalProperties": false,
@@ -14318,7 +14345,8 @@
      "due",
      "proofs",
      "can_submit",
-     "review_sla"
+     "review_sla",
+     "plans"
     ],
     "type": "object"
    }
@@ -41951,6 +41979,33 @@
       ],
       "type": "object"
      },
+     "plans": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "code": {
+         "type": "string"
+        },
+        "max_branches": {
+         "type": "integer"
+        },
+        "name": {
+         "type": "string"
+        },
+        "price_minor": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "code",
+        "name",
+        "price_minor",
+        "max_branches"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
      "proof": {
       "additionalProperties": false,
       "properties": {
@@ -42164,7 +42219,8 @@
      "due",
      "proofs",
      "can_submit",
-     "review_sla"
+     "review_sla",
+     "plans"
     ],
     "type": "object"
    }

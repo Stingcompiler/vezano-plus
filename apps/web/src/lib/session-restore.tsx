@@ -15,7 +15,7 @@ import { useEffect, useRef } from "react";
 
 import { setResumer } from "@/lib/api";
 import { type AppContextValue, useApp } from "@/lib/app-context";
-import { hasLocalSetup } from "@/lib/device-setup";
+import { hasLocalSetup, hasPinFor } from "@/lib/device-setup";
 import { isExempt } from "@/lib/idle-lock";
 import { loadContext, type Resumed, resumeSession } from "@/lib/session-store";
 
@@ -64,7 +64,10 @@ export function SessionRestore() {
         const ctx = await loadContext();
         if (!ctx) return;
         const here = `${location.pathname}${location.search}`;
-        if (await hasLocalSetup()) {
+        // مراجعة 2026-10-19 (B1): القفل لمن له رمز على هذا الجهاز وحده — مستخدم بلا PIN كان يُرسَل إلى
+        // قفل لا يفتحه («لا رمز PIN محفوظ») ثم إلى الدخول، فتضيع الجلسة مع كل تحميل كامل. بلا رمز له:
+        // يُستأنف من الـCookie مباشرة كحاسوب المالك
+        if ((await hasLocalSetup()) && (await hasPinFor(ctx.userId))) {
           // الجهاز المُجهَّز لا يُفتح بلا رمز — القفل يستأنف بعد الفتح. الحاجز يبقى حتى يفتح الرمز
           // جلسةً (أو وضعاً محلياً) كي لا تُركَّب الشاشة المحمية قبل القفل فتعيد إلى الدخول
           if (!isExempt(location.pathname) || location.pathname === "/") {

@@ -23,6 +23,7 @@ import {
 } from "@sting/sync-core";
 
 import { api, apiBaseUrl, getDeviceRefresh } from "@/lib/api";
+import { needsDeviceSession, renewDeviceSession } from "@/lib/device-session";
 import { getStorage, wipeLocalStorage } from "@/lib/storage";
 
 export function createPushTransport(
@@ -79,8 +80,22 @@ export async function pushPending(
   }
   const transport = createPushTransport(async (sent) => (await countPending()) - sent);
   let out: PushOnceOutcome = { kind: "idle" };
+  let renewed = false;
   for (let i = 0; i < maxRounds; i++) {
     out = await pushOnce(storage, { transport, syncEpoch: epoch, requestId: crypto.randomUUID() });
+    // جلسة مستخدم مكان جلسة الجهاز (بعد دخول أو استئناف): تجديد الجهاز ثم إعادة مرة (B2)
+    if (
+      !renewed &&
+      out.kind === "halt" &&
+      out.failure.kind === "auth" &&
+      needsDeviceSession(out.failure.status, out.failure.detail)
+    ) {
+      renewed = true;
+      if (await renewDeviceSession()) {
+        i--;
+        continue;
+      }
+    }
     if (out.kind !== "applied") break;
   }
   if (out.kind === "halt") await onHalt(out.failure, epoch);
@@ -131,7 +146,11 @@ export interface ReachStatus {
 /** فحص الوصول (SYS-01): «هناك شبكة» ≠ «نجح الوصول» — ردٌّ مصادَق من الخادم يحدّث `sync.last_ok`. */
 export async function checkReach(): Promise<ReachStatus | null> {
   try {
-    const { data, response } = await api().GET("/api/sync/status", {});
+    let { data, response, error } = await api().GET("/api/sync/status", {});
+    const detail = (error as { detail?: string } | undefined)?.detail;
+    if (needsDeviceSession(response.status, detail) && (await renewDeviceSession())) {
+      ({ data, response, error } = await api().GET("/api/sync/status", {}));
+    }
     const body = data as unknown as ReachStatus | undefined;
     if (!response.ok || !body) return null;
     await getStorage().transaction((tx) => tx.putMeta(LAST_OK_META, new Date().toISOString()));

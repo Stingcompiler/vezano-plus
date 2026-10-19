@@ -190,8 +190,9 @@ test.describe("PLT-03", () => {
         return route.fulfill(
           json(200, {
             image_name: "receipt.jpg",
+            // كما يخزّنه الخادم من ORG-07: base64 خام بلا بادئة (مراجعة 2026-10-19 B5)
             image_data:
-              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+              "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
           }),
         );
       if (action === "approve")
@@ -222,7 +223,13 @@ test.describe("PLT-03", () => {
     await expect(page.locator('[data-screen="PLT-03"]')).toContainText("مستأجر آخر");
     await expect(page.locator('[data-screen="PLT-03"]')).not.toContainText("س. عثمان · متجر");
     await page.getByRole("button", { name: "افتح الصورة — تُسجَّل المشاهدة" }).click();
-    await expect(page.getByRole("img", { name: "إيصال TRX-90112" })).toBeVisible();
+    const receipt = page.getByRole("img", { name: "إيصال TRX-90112" });
+    await expect(receipt).toBeVisible();
+    await expect(receipt).toHaveAttribute("src", /^data:image\/png;base64,iVBOR/);
+    // الصورة تُفكّ فعلاً (لا أيقونة صورة مكسورة)
+    await expect
+      .poll(() => receipt.evaluate((el) => (el as HTMLImageElement).naturalWidth))
+      .toBe(1);
     // الاعتماد محجوب بالمرجع المستخدم — نحاكي مسار الخادم عبر زرّ مفعَّل لا يوجد؛ الزرّ معطَّل بسبب معلَن
     await expect(page.getByRole("button", { name: "اعتماد", exact: true })).toHaveAttribute(
       "aria-disabled",
