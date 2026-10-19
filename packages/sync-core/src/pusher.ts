@@ -20,6 +20,7 @@ import {
   type PushEnvelope,
   type PushTransport,
   type TransportFailure,
+  type TransportOutcome,
 } from "./types";
 
 export interface PushOnceOptions {
@@ -168,9 +169,14 @@ export async function pushOnce(
       );
     }
   });
-  const outcome = await options.transport.push(
-    toEnvelope(batch, options.syncEpoch, options.requestId),
-  );
+  // نقل يرمي (طلب أُجهض، شبكة سقطت أثناء الإرسال) = عابر شبكة — وإلا بقيت الدفعة «قيد الرفع» إلى
+  // الأبد ولا تعود محلية (مراجعة 2026-10-19: ظهر مع الرفع التلقائي عند عودة الاتصال)
+  let outcome: TransportOutcome;
+  try {
+    outcome = await options.transport.push(toEnvelope(batch, options.syncEpoch, options.requestId));
+  } catch {
+    outcome = { ok: false, kind: "transient", reason: "network" };
+  }
   if (!outcome.ok) {
     // إعادة الحالة إلى local: النقل لم يُطبَّق
     await storage.transaction(async (tx) => {

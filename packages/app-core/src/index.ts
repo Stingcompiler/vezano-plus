@@ -27,6 +27,7 @@ export {
   createPushTransport,
   LAST_PUSH_META,
   type LastPush,
+  needsDeviceSession,
   pushPending,
   type PushDeps,
   type ReachStatus,

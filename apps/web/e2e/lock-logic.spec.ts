@@ -9,12 +9,15 @@ const json = (status: number, body: unknown) => ({ status, json: body });
 // PIN 123456 (المتجه نفسه في acc-invite-lock.spec.ts)
 const ENCODED =
   "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$xLL5EYZbGlWr9962Y1Y77xBK9jK/wka5FYHqDqwRYw8=";
-const row = (user_id: string, display_name: string) => ({
+// PIN 654321 — رمز ثانٍ لصاحب الجلسة حين يُختبر رمز مستخدم آخر
+const ENCODED_654321 =
+  "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$nOp225KblbKetuYeCcvpE8NNoromzHRKcQcnwVr3zbA=";
+const row = (user_id: string, display_name: string, encoded = ENCODED) => ({
   user_id,
   display_name,
   role_name: "مدير فرع",
   branch_name: "فرع بحري",
-  encoded: ENCODED,
+  encoded,
   version: 1,
 });
 
@@ -113,7 +116,8 @@ test.describe("القفل — مراجعة المنطق", () => {
   test("رمز مستخدم آخر لا يفتح جلسة غيره", async ({ page }) => {
     await page.clock.install();
     await liveSession(page, "/org/subscription");
-    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    // لصاحب الجلسة رمزه على الجهاز (القفل لمن له رمز وحده — مراجعة 2026-10-19 B1)
+    await seedDevice(page, [row("u1", "سميّة عبد الله", ENCODED_654321), row("u2", "أحمد ياسين")]);
     await page.clock.fastForward("21:00");
     await expect(page).toHaveURL(/\/lock\?next=/);
     await typePin(page, "123456");
@@ -121,5 +125,15 @@ test.describe("القفل — مراجعة المنطق", () => {
       "هذا رمز أحمد ياسين — الجلسة المفتوحة لغيره",
     );
     await expect(page).toHaveURL(/\/lock\?next=/);
+  });
+
+  test("مراجعة 2026-10-19 B1: صاحب جلسة بلا رمز على الجهاز لا يُقفل عند الخمول — قفل لا يفتحه", async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await liveSession(page, "/org/subscription");
+    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    await page.clock.fastForward("21:00");
+    await expect(page).toHaveURL(/\/org\/subscription$/);
   });
 });

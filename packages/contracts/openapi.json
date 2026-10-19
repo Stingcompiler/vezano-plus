@@ -6937,6 +6937,15 @@
       "get": {
         "operationId": "org_subscription_proofs_retrieve",
         "description": "ORG-07: قائمة الإثباتات والمستحق؛ الرفع يسجّل «معلّقاً» — لا تفعيل تلقائي.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "plan_code",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "tags": ["org"],
         "responses": {
           "200": {
@@ -42591,6 +42600,28 @@
             ],
             "type": "object"
           },
+          "plans": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "max_branches": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "price_minor": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "name", "price_minor", "max_branches"],
+              "type": "object"
+            },
+            "type": "array"
+          },
           "proofs": {
             "items": {
               "additionalProperties": false,
@@ -42697,7 +42728,7 @@
             "type": "string"
           }
         },
-        "required": ["due", "proofs", "can_submit", "review_sla"],
+        "required": ["due", "proofs", "can_submit", "review_sla", "plans"],
         "type": "object"
       },
       "PostOrgSubscriptionProofsResponse": {
@@ -42822,6 +42853,28 @@
               "cycles"
             ],
             "type": "object"
+          },
+          "plans": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "max_branches": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "price_minor": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "name", "price_minor", "max_branches"],
+              "type": "object"
+            },
+            "type": "array"
           },
           "proof": {
             "additionalProperties": false,
@@ -43024,7 +43077,7 @@
             "type": "string"
           }
         },
-        "required": ["proof", "due", "proofs", "can_submit", "review_sla"],
+        "required": ["proof", "due", "proofs", "can_submit", "review_sla", "plans"],
         "type": "object"
       },
       "PostOrgSubscriptionProofsByProofIdImageResponse": {

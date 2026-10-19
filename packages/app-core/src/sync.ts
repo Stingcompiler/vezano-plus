@@ -92,6 +92,16 @@ export interface PushDeps {
     failure: Exclude<TransportFailure, { kind: "transient" }>,
     epoch: string,
   ) => Promise<void>;
+  /**
+   * جلسة مستخدم مكان جلسة الجهاز (403 `device_session_required` بعد دخول أو استئناف): تجديد جلسة
+   * الجهاز ثم إعادة مرة — `true` إن جُدّدت (مراجعة 2026-10-19 B2، 0005 §١٧٨).
+   */
+  readonly renewDevice?: () => Promise<boolean>;
+}
+
+/** 403 بسبب جلسة مستخدم مكان جلسة الجهاز — يستحق تجديداً ثم إعادة واحدة. */
+export function needsDeviceSession(status: number, detail: string | undefined): boolean {
+  return status === 403 && detail === "device_session_required";
 }
 
 /**
@@ -119,13 +129,28 @@ export async function pushPending(
     async (sent) => (await countPending(storage)) - sent,
   );
   let out: PushOnceOutcome = { kind: "idle" };
+  let renewed = false;
   for (let i = 0; i < maxRounds; i++) {
     out = await pushOnce(storage, { transport, syncEpoch: epoch, requestId: deps.requestId() });
+    if (
+      !renewed &&
+      deps.renewDevice &&
+      out.kind === "halt" &&
+      out.failure.kind === "auth" &&
+      needsDeviceSession(out.failure.status, out.failure.detail)
+    ) {
+      renewed = true;
+      if (await deps.renewDevice()) {
+        i--;
+        continue;
+      }
+    }
     if (out.kind !== "applied") break;
   }
   if (out.kind === "halt") await deps.onHalt?.(out.failure, epoch);
   await storage.transaction(async (tx) => {
-    if (out.kind === "retry") {
+    // الوقوف للخادم الذي يرفض («الشبكة تعمل والخادم يردّ بخطأ» — SYS-01) لا لانقطاع الشبكة
+    if (out.kind === "retry" && out.failure.reason === "server_error") {
       const attempts = Number((await tx.getMeta("push_attempts")) ?? "0");
       if (attempts >= MAX_AUTO_ATTEMPTS) await tx.putMeta(HALTED_META, new Date().toISOString());
     } else if (out.kind === "applied" || out.kind === "idle") {
@@ -150,9 +175,14 @@ export async function pushPending(
 export async function checkReach(
   api: ContractsClient,
   storage: StoragePort,
+  renewDevice?: () => Promise<boolean>,
 ): Promise<ReachStatus | null> {
   try {
-    const { data, response } = await api.GET("/api/sync/status", {});
+    let { data, response, error } = await api.GET("/api/sync/status", {});
+    const detail = (error as { detail?: string } | undefined)?.detail;
+    if (renewDevice && needsDeviceSession(response.status, detail) && (await renewDevice())) {
+      ({ data, response, error } = await api.GET("/api/sync/status", {}));
+    }
     const body = data as unknown as ReachStatus | undefined;
     if (!response.ok || !body) return null;
     await storage.transaction((tx) => tx.putMeta(LAST_OK_META, new Date().toISOString()));
@@ -169,6 +199,6 @@ export async function reconcileNow(
   const before = await countPending(deps.storage);
   const push = await pushPending(deps, 10, { manual: true });
   const after = await countPending(deps.storage);
-  const reach = await checkReach(deps.api, deps.storage);
+  const reach = await checkReach(deps.api, deps.storage, deps.renewDevice);
   return { push, synced: Math.max(0, before - after), reach };
 }

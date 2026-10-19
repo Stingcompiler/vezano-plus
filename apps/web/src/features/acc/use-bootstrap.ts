@@ -77,7 +77,8 @@ export function useBootstrap(online: boolean): BootstrapUi {
     const storage = getStorage();
 
     const ensureDevice = (): Promise<DeviceTokens> => {
-      if (app.device) return Promise.resolve(app.device);
+      // لا يُعاد استعمال `app.device` القائم: على جهاز مشترك قد يكون لمستخدم سابق، فيعمل الداخل برمز
+      // غيره (مراجعة 2026-10-19). التجديد باعتماد التسجيل يعيد جلسة جهاز للمستخدم الحالي
       deviceOnce.current ??= registerDevice().catch((e: unknown) => {
         deviceOnce.current = null;
         throw e;

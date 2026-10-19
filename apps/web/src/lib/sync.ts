@@ -29,9 +29,10 @@ import {
 } from "@sting/sync-core";
 
 import { api, apiBaseUrl, getDeviceRefresh } from "@/lib/api";
+import { renewDeviceSession } from "@/lib/device-session";
 import { getStorage, wipeLocalStorage } from "@/lib/storage";
 
-// المحرّك نفسه انتقل إلى `@sting/app-core` (0005 §١٧٤) ليشاركه الجوال؛ هنا ربطه بمفردات الويب
+// المحرّك نفسه انتقل إلى `@sting/app-core` (0005 §١٧٥) ليشاركه الجوال؛ هنا ربطه بمفردات الويب
 export { LAST_PUSH_META, type LastPush, type ReachStatus } from "@sting/app-core";
 
 const deps = () => ({
@@ -39,6 +40,8 @@ const deps = () => ({
   storage: getStorage(),
   requestId: () => crypto.randomUUID(),
   onHalt,
+  // مراجعة 2026-10-19 B2 (0005 §١٧٨): جلسة مستخدم مكان جلسة الجهاز ← تجديد ثم إعادة مرة
+  renewDevice: async () => (await renewDeviceSession()) !== null,
 });
 
 export function createPushTransport(
@@ -63,7 +66,7 @@ export function readLastPush(): Promise<LastPush | null> {
 }
 
 export function checkReach(): Promise<ReachStatus | null> {
-  return sharedCheckReach(api(), getStorage());
+  return sharedCheckReach(api(), getStorage(), deps().renewDevice);
 }
 
 export function reconcileNow(): Promise<{

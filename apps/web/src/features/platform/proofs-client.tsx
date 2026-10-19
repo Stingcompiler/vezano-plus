@@ -16,6 +16,7 @@ import "./platform.css";
 import { agoParts, dayMonth } from "@/features/home/format";
 import { MonoText } from "@/features/org/mono";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { imageSrc } from "@/features/platform/image-src";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "ready" | "validation_error" | "conflict" | "success";
@@ -384,7 +385,7 @@ export function ProofsClient() {
                 </p>
                 {image ? (
                   <img
-                    src={image.data}
+                    src={imageSrc(image.data, image.name)}
                     alt={`إيصال ${current.reference}`}
                     style={{ maxInlineSize: "100%" }}
                   />
