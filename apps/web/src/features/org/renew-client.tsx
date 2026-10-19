@@ -47,6 +47,9 @@ interface Payload {
     currency: string;
     period_label: string;
     review_sla: string;
+    /** نهاية الفترة المدفوعة بعد الاعتماد، وتعليمات التحويل إن ضُبطت في المنصّة (بند 10). */
+    covers_until?: string;
+    pay_to?: { bank: string; account: string; holder: string } | null;
     addons_amount_minor?: string;
     addons?: { kind: string; label: string; qty: number; monthly_minor: string }[];
     cycle?: Cycle;
@@ -493,6 +496,23 @@ export function RenewClient() {
                       ))}
                   </div>
                 ) : null}
+                {p.due.pay_to ? (
+                  <Notice kind="info" title="حوّل إلى">
+                    <p className="acc-lead" data-testid="pay-to">
+                      {p.due.pay_to.bank} ·{" "}
+                      <span className="sting-mono">{p.due.pay_to.account}</span> ·{" "}
+                      {p.due.pay_to.holder}
+                    </p>
+                    <Button
+                      variant="quiet"
+                      onClick={() =>
+                        void navigator.clipboard?.writeText(p.due.pay_to?.account ?? "")
+                      }
+                    >
+                      نسخ رقم الحساب
+                    </Button>
+                  </Notice>
+                ) : null}
                 <p className="acc-lead">
                   المستحق:{" "}
                   <span className="sting-mono">
@@ -505,6 +525,13 @@ export function RenewClient() {
                     {p.due.currency}
                   </span>{" "}
                   · الفترة: {addonQuote ? "إضافة" : upgradeQuote ? "فرق ترقية" : p.due.period_label}
+                  {!addonQuote && !upgradeQuote && p.due.covers_until ? (
+                    <>
+                      {" "}
+                      · يغطي حتى{" "}
+                      <span className="sting-mono">{p.due.covers_until.slice(0, 10)}</span>
+                    </>
+                  ) : null}
                   {cycle !== "monthly" && !addonQuote ? (
                     <>
                       {" "}

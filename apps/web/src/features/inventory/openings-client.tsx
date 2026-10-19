@@ -138,6 +138,25 @@ export function OpeningsClient() {
       const [c, its] = await Promise.all([readShiftContext(storage, app), readLocalItems(storage)]);
       setCtx(c);
       setItems(its.filter((i) => i.is_active !== false));
+      // مراجعة 2026-10-19 (بند 7): صنف أُنشئ للتوّ متصلاً لا يكون في الإسقاط المحلي بعد فكانت القائمة
+      // فارغة منه — يُدمج ما يعيده الخادم (الأصنافُ الأحدث تغلب) ويبقى المحلي وحده بلا اتصال
+      try {
+        const { data: srv, response } = await api().GET("/api/catalog/items", {
+          params: { query: {} },
+        });
+        const list = (srv as unknown as { items?: LocalItem[] } | undefined)?.items;
+        if (response.ok && list) {
+          const byId = new Map(its.map((i) => [i.id, i] as const));
+          for (const i of list) byId.set(i.id, i);
+          setItems([...byId.values()].filter((i) => i.is_active !== false));
+        }
+      } catch {
+        /* بلا اتصال: المحلي يكفي */
+      }
+      // ?item=<id> (من «أضف رصيداً افتتاحياً» بعد حفظ صنف): يُختار مسبقاً في السطر الأول
+      const pre = new URLSearchParams(location.search).get("item");
+      if (pre)
+        setLines((ls) => ls.map((l, i) => (i === 0 && !l.itemId ? { ...l, itemId: pre } : l)));
       await load();
     })();
   }, [router]);

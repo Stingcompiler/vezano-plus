@@ -11,7 +11,7 @@ import {
   readReturnCashRows,
   readSaleCashRows,
 } from "@sting/sync-core";
-import { formatMinor, Frame, Notice, Status, Table } from "@sting/ui-web";
+import { Button, formatMinor, Frame, Notice, Status, Table } from "@sting/ui-web";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -60,6 +60,8 @@ const KIND_LABEL: Record<CashRow["kind"], string> = {
   receipt: "سداد",
   refund: "مرتجع نقدي",
 };
+/** البيع غير النقدي باسم وسيلته (بند 27): الآجل لا يُسمّى «نقدياً» وإن لم يدخل الصندوق. */
+const MODE_LABEL = { credit: "بيع آجل", bank: "بيع بالتحويل", mixed: "بيع مختلط" } as const;
 const SYNC_LABEL = { synced: "مؤكد", pending: "معلّق", conflict: "تعارض", quarantined: "محجور" };
 const SYNC_STATE = {
   synced: "synced",
@@ -159,7 +161,7 @@ export function CurrentShiftClient() {
       header: "البيان",
       render: (r: CashRow) => (
         <div>
-          {KIND_LABEL[r.kind]}
+          {r.kind === "sale" && r.mode ? MODE_LABEL[r.mode] : KIND_LABEL[r.kind]}
           {r.note ? <div className="acc-choice__note">{r.note}</div> : null}
         </div>
       ),
@@ -215,6 +217,9 @@ export function CurrentShiftClient() {
             </h2>
             {shift?.state === "closed" ? (
               <Status state="stale" label="مقفلة · معلّقة الرفع" />
+            ) : shift ? (
+              // مراجعة 2026-10-19 (بند 12): الإقفال كان بلا رابط من شاشة الوردية نفسها
+              <Button onClick={() => router.push("/shifts/close")}>أقفل الوردية</Button>
             ) : null}
           </div>
           <div className="acc-card__body">

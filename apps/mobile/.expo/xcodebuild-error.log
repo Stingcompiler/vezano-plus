@@ -1,0 +1,7 @@
+** BUILD FAILED **
+
+
+The following build commands failed:
+	PhaseScriptExecution [CP]\ Check\ Pods\ Manifest.lock /Users/macbookairm1/Library/Developer/Xcode/DerivedData/fyzanwbls-deklpaiyhlxcyoeqjmfgrnlihsnw/Build/Intermediates.noindex/fyzanwbls.build/Debug-iphonesimulator/fyzanwbls.build/Script-08A4A3CD28434E44B6B9DE2E.sh (in target 'fyzanwbls' from project 'fyzanwbls')
+	Building project fyzanwbls with scheme fyzanwbls and configuration Debug
+(2 failures)

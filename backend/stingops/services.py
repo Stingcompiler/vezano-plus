@@ -290,7 +290,8 @@ def tenant_detail(*, operator: User, tenant_id: uuid.UUID) -> dict[str, Any] | N
             .select_related("branch")
             .order_by("registered_at")
         )
-        branches = t.branches.count() if hasattr(t, "branches") else 0
+        # مراجعة 2026-10-19 (بند 20ب): كان `hasattr(t, "branches")` يخطئ فيعيد 0 بينما الجدول 1/1
+        branches = Branch.unscoped.filter(tenant=t, is_active=True).count()
         users = User.unscoped.filter(tenant=t, is_active=True).count()
         ops = 0
         try:

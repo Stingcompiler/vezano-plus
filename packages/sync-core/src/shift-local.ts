@@ -141,6 +141,8 @@ export interface CashRow {
   readonly sync: CashRowSync;
   /** حركة عكسٍ لحركة سابقة. */
   readonly reversal?: boolean | undefined;
+  /** وسيلة البيع حين لا تكون نقداً كاملاً — لاسم الحركة في الكشف: «بيع آجل» لا «بيع نقدي» (مراجعة 2026-10-19، بند 27). */
+  readonly mode?: "credit" | "bank" | "mixed" | undefined;
 }
 
 export interface ShiftCash {
