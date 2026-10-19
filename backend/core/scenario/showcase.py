@@ -54,7 +54,7 @@ ACCOUNTS: list[tuple[str, str, str, str, tuple[str, ...]]] = [
     ("+249912600200", "عثمان الجزيري", "dist", "owner", ("DST",)),
     ("yasir@aljazeera.example", "ياسر حامد", "dist", "manager", ("DST",)),
 ]
-PENDING_INVITE = "+249912600109"
+PENDING_INVITE = "nada@alwaha.example"  # الدعوة بالبريد وحده (0005 §١٤٩)
 
 
 class ShowcaseError(RuntimeError):

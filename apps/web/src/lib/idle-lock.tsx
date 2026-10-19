@@ -12,7 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { useApp } from "@/lib/app-context";
-import { hasLocalSetup } from "@/lib/device-setup";
+import { hasLocalSetup, hasPinFor } from "@/lib/device-setup";
 
 export const IDLE_LOCK_MINUTES = 20;
 
@@ -65,8 +65,10 @@ export function IdleLock({ minutes = IDLE_LOCK_MINUTES }: { minutes?: number }) 
     };
     const check = () => {
       if (Date.now() - last.current < minutes * 60_000) return;
-      void hasLocalSetup().then((ready) => {
-        if (cancelled || !ready) return;
+      const userId = app.session.userId;
+      void Promise.all([hasLocalSetup(), hasPinFor(userId)]).then(([ready, pin]) => {
+        // بلا رمز لهذا المستخدم لا قفل: لا يُفتح إلا بالخروج والدخول (B1)
+        if (cancelled || !ready || !pin) return;
         const here = `${location.pathname}${location.search}`;
         router.push(`/lock?next=${encodeURIComponent(here)}`);
       });
@@ -82,7 +84,7 @@ export function IdleLock({ minutes = IDLE_LOCK_MINUTES }: { minutes?: number }) 
       document.removeEventListener("visibilitychange", check);
       if (timer) clearInterval(timer);
     };
-  }, [active, minutes, router]);
+  }, [active, minutes, router, app.session.userId]);
 
   return null;
 }

@@ -597,9 +597,11 @@ export function SubscriptionClient() {
                                 شهر
                               </>
                             )}
-                            {!pl.current && pl.period !== "trial" && !p.plan.trial ? (
+                            {/* مراجعة 2026-10-19 B4: التجريبية تختار باقتها أيضاً (كانت بلا زر) */}
+                            {!pl.current && pl.period !== "trial" ? (
                               <Button variant="quiet" onClick={() => void askQuote(pl.code)}>
-                                {BigInt(pl.price_minor) > BigInt(p.plan.price_minor ?? "0")
+                                {p.plan.trial ||
+                                BigInt(pl.price_minor) > BigInt(p.plan.price_minor ?? "0")
                                   ? "ترقية"
                                   : "تخفيض"}
                               </Button>
@@ -659,7 +661,11 @@ export function SubscriptionClient() {
                               </Button>
                             ) : null}
                             {quote.kind === "renewal" ? (
-                              <Button onClick={() => router.push("/org/subscription/renew")}>
+                              <Button
+                                onClick={() =>
+                                  router.push(`/org/subscription/renew?plan=${quote.to.code}`)
+                                }
+                              >
                                 جدّد على هذه الباقة
                               </Button>
                             ) : null}

@@ -15,6 +15,7 @@ import "@/features/market/market.css";
 import "./platform.css";
 import { agoParts } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { imageSrc } from "@/features/platform/image-src";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "loading" | "ready" | "empty" | "validation_error" | "success";
@@ -305,7 +306,7 @@ export function VerificationsClient() {
                 </ul>
                 {doc ? (
                   <img
-                    src={doc.data}
+                    src={imageSrc(doc.data, doc.name)}
                     alt={`مستند ${current.name}`}
                     style={{ maxInlineSize: "100%" }}
                   />

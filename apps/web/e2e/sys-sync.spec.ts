@@ -335,6 +335,82 @@ test.describe("SYS-01", () => {
   });
 });
 
+test.describe("مراجعة 2026-10-19 — جلسة الجهاز والرفع التلقائي", () => {
+  test("B2: دخول جديد على جهاز مسجَّل يجدّد جلسة الجهاز فيقبل الخادم الرفع (لا 403 صامت)", async ({
+    page,
+  }) => {
+    await seed(page, [sale("op-1", "INV-KRT-POS1-26-000041", "local")], {
+      "device.setup": "done",
+      "device.registration": JSON.stringify({
+        deviceId: "d1",
+        prefix: "POS1",
+        branchId: "b1",
+        branchCode: "KRT",
+        registrationSecret: "reg-secret",
+      }),
+    });
+    let renewBody: unknown = null;
+    await page.route("**/api/devices/renew", (route) => {
+      renewBody = route.request().postDataJSON();
+      return route.fulfill(
+        json(200, {
+          device_id: "d1",
+          prefix: "POS1",
+          branch_id: "b1",
+          branch_code: "KRT",
+          access: "dev-a",
+          refresh: "dev-r",
+        }),
+      );
+    });
+    await statusRoute(page);
+    const auths: string[] = [];
+    await page.route("**/api/sync/push", async (route) => {
+      const auth = route.request().headers()["authorization"] ?? "";
+      auths.push(auth);
+      if (auth !== "Bearer dev-a")
+        return route.fulfill(json(403, { detail: "device_session_required" }));
+      const body = JSON.parse(route.request().postData() ?? "{}") as {
+        operations: { operation_id: string }[];
+        request_id: string;
+      };
+      return route.fulfill(
+        json(200, {
+          protocol_version: 1,
+          sync_epoch: "epoch-A",
+          request_id: body.request_id,
+          results: body.operations.map((o) => ({
+            operation_id: o.operation_id,
+            status: "accepted",
+            member_receipts: [],
+          })),
+          server_seq_high: "9",
+        }),
+      );
+    });
+    await login(page, "/sync");
+    await expect
+      .poll(() => renewBody)
+      .toEqual({ device_id: "d1", registration_secret: "reg-secret" });
+    await page.getByRole("button", { name: "محاولة رفع الآن" }).click();
+    await expect(page.getByText("اكتمل الرفع الآن")).toBeVisible();
+    expect(auths.at(-1)).toBe("Bearer dev-a");
+  });
+
+  test("B3: عودة الاتصال ترفع المعلّق تلقائياً — بلا ضغط «محاولة رفع الآن»", async ({ page }) => {
+    await seed(page, [sale("op-1", "INV-KRT-POS1-26-000041", "local")]);
+    await statusRoute(page);
+    await login(page, "/sync");
+    const push = pushRoute(page, () => ({ status: 200 }));
+    await page.context().setOffline(true);
+    await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+    await page.context().setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect.poll(() => push.calls()).toBeGreaterThan(0);
+    expect(push.seen[0]).toBe(1);
+  });
+});
+
 test.describe("SYS-02", () => {
   test("ready → pending_sync: مرفوضة برقم مستعمل — السبب بلغة المحل وفعل واحد؛ إعادة الترقيم تعيدها لموضعها", async ({
     page,
