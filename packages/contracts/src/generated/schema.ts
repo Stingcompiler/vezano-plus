@@ -12745,6 +12745,12 @@ export interface components {
                 plan_name: string;
                 review_sla: string;
             };
+            plans: {
+                code: string;
+                max_branches: number;
+                name: string;
+                price_minor: string;
+            }[];
             proofs: {
                 addon_kind: string;
                 addon_qty: number;
@@ -12806,6 +12812,12 @@ export interface components {
                 plan_name: string;
                 review_sla: string;
             };
+            plans: {
+                code: string;
+                max_branches: number;
+                name: string;
+                price_minor: string;
+            }[];
             proof: {
                 addon_kind: string;
                 addon_qty: number;
@@ -24022,7 +24034,9 @@ export interface operations {
     };
     org_subscription_proofs_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                plan_code?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

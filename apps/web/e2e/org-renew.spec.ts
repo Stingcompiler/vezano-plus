@@ -61,6 +61,48 @@ const PNG = Buffer.from(
 );
 
 test.describe("ORG-07", () => {
+  test("مراجعة 2026-10-19 B4: التاجر يختار باقة أعلى — المستحق يُسعَّر عليها والإثبات بها", async ({
+    page,
+  }) => {
+    const PLANS = [
+      { code: "single", name: "فرع واحد", price_minor: "4500000", max_branches: 1 },
+      { code: "dual", name: "فرعان", price_minor: "8500000", max_branches: 2 },
+    ];
+    const queried: string[] = [];
+    let posted: Record<string, unknown> | null = null;
+    await page.route("**/api/org/subscription/proofs**", async (route) => {
+      if (route.request().method() === "POST") {
+        posted = route.request().postDataJSON() as Record<string, unknown>;
+        const created = proof({ plan_code: posted.plan_code });
+        return route.fulfill(json(201, { proof: created, ...payload([created]), plans: PLANS }));
+      }
+      const code = new URL(route.request().url()).searchParams.get("plan_code") ?? "single";
+      queried.push(code);
+      const pl = PLANS.find((p) => p.code === code) ?? PLANS[0]!;
+      return route.fulfill(
+        json(200, {
+          ...payload(),
+          plans: PLANS,
+          due: { ...DUE, plan_code: pl.code, plan_name: pl.name, amount_minor: pl.price_minor },
+        }),
+      );
+    });
+    await login(page, "/org/subscription/renew");
+    const root = page.locator('[data-screen="ORG-07"]');
+    await expect(root).toContainText("المستحق: 45,000.00 SDG");
+    const plans = page.getByRole("group", { name: "الباقات" });
+    await expect(plans.getByRole("button", { name: /فرع واحد/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await plans.getByRole("button", { name: /فرعان/ }).click();
+    await expect(root).toContainText("المستحق: 85,000.00 SDG");
+    expect(queried).toContain("dual");
+    await page.getByLabel("رقم العملية البنكية — مطلوب").fill("TRX-B4-1");
+    await page.getByRole("button", { name: "إرسال الإثبات" }).click();
+    await expect.poll(() => posted?.plan_code).toBe("dual");
+  });
+
   test("ready → validation_error → saving → success: الرقم إلزامي، الرفع يُسجَّل معلّقاً، ثم اعتُمد مرة واحدة", async ({
     page,
   }, info) => {

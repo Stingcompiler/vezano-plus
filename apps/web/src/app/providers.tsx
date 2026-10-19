@@ -10,6 +10,7 @@ import { ChipSlider } from "@/lib/motion/chip-slider";
 
 import { setUnauthorizedHandler } from "@/lib/api";
 import { IdleLock } from "@/lib/idle-lock";
+import { BackgroundSync } from "@/lib/background-sync";
 import { SessionRestore } from "@/lib/session-restore";
 import { registerServiceWorker, setupPwa } from "@/lib/pwa";
 import { AppContextProvider, useApp } from "@/lib/app-context";
@@ -91,6 +92,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <PwaSetup />
           <ChipSlider />
           <SessionRestore />
+          <BackgroundSync />
           <IdleLock />
           <SessionGuard>{children}</SessionGuard>
         </AppContextProvider>
