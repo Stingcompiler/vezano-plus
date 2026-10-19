@@ -64,17 +64,20 @@ export function SessionRestore() {
         const ctx = await loadContext();
         if (!ctx) return;
         const here = `${location.pathname}${location.search}`;
-        // مراجعة 2026-10-19 (B1): القفل لمن له رمز على هذا الجهاز وحده — مستخدم بلا PIN كان يُرسَل إلى
-        // قفل لا يفتحه («لا رمز PIN محفوظ») ثم إلى الدخول، فتضيع الجلسة مع كل تحميل كامل. بلا رمز له:
-        // يُستأنف من الـCookie مباشرة كحاسوب المالك
-        if ((await hasLocalSetup()) && (await hasPinFor(ctx.userId))) {
-          // الجهاز المُجهَّز لا يُفتح بلا رمز — القفل يستأنف بعد الفتح. الحاجز يبقى حتى يفتح الرمز
-          // جلسةً (أو وضعاً محلياً) كي لا تُركَّب الشاشة المحمية قبل القفل فتعيد إلى الدخول
-          if (!isExempt(location.pathname) || location.pathname === "/") {
-            toLock = true;
-            router.replace(`/lock?next=${encodeURIComponent(here)}`);
+        if (await hasLocalSetup()) {
+          // مراجعة 2026-10-19 (B1): القفل لمن له رمز على هذا الجهاز وحده — مستخدم بلا PIN كان يُرسَل إلى
+          // قفل لا يفتحه («لا رمز PIN محفوظ») ثم إلى الدخول، فتضيع الجلسة مع كل تحميل كامل
+          if (await hasPinFor(ctx.userId)) {
+            // الجهاز المُجهَّز لا يُفتح بلا رمز — القفل يستأنف بعد الفتح. الحاجز يبقى حتى يفتح الرمز
+            // جلسةً (أو وضعاً محلياً) كي لا تُركَّب الشاشة المحمية قبل القفل فتعيد إلى الدخول
+            if (!isExempt(location.pathname) || location.pathname === "/") {
+              toLock = true;
+              router.replace(`/lock?next=${encodeURIComponent(here)}`);
+            }
+            return;
           }
-          return;
+          // جهاز مشترك: صفحة الدخول والعامة لا تستأنف جلسة المستخدم السابق (يدخل غيره الآن)
+          if (isExempt(location.pathname) && location.pathname !== "/") return;
         }
         const r = await resumeSession();
         if (r) await adoptResumed(appRef.current, r);

@@ -13,7 +13,7 @@ import { useEffect, useRef } from "react";
 
 import { useApp } from "@/lib/app-context";
 import { hasLocalSetup } from "@/lib/device-setup";
-import { renewDeviceSession, setDeviceAdopter } from "@/lib/device-session";
+import { renewDeviceSession, setDeviceAdopter, setSessionAccess } from "@/lib/device-session";
 import { countPending, pushPending } from "@/lib/sync";
 
 const PUSH_EVERY_MS = 30_000;
@@ -30,8 +30,12 @@ export function BackgroundSync() {
     return () => setDeviceAdopter(null);
   }, []);
 
-  // جلسة مستخدم جديدة على جهاز مُجهَّز ← جلسة جهاز
+  // جلسة مستخدم جديدة على جهاز مُجهَّز ← جلسة جهاز (لهذه الجلسة وحدها)
   useEffect(() => {
+    setSessionAccess(tenantId ? access : null);
+    // رموز الجهاز لجلسة بعينها: جلسة جديدة (مستخدم آخر على جهاز مشترك، أو استئناف) تبدأ بلا رموز
+    // سابقة حتى يجدّدها التجديد لها
+    if (appRef.current.device) appRef.current.setDevice(null);
     if (!access || !tenantId) return;
     let cancelled = false;
     void (async () => {

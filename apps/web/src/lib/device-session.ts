@@ -11,7 +11,7 @@
  * هنا يُجدَّد تلقائياً: عند كل جلسة مستخدم جديدة على جهاز مسجَّل، وعند 403 من الرفع أو الحالة.
  */
 import type { DeviceTokens } from "@/lib/app-context";
-import { api, setAccessToken } from "@/lib/api";
+import { apiBaseUrl, setAccessToken } from "@/lib/api";
 import { getStorage } from "@/lib/storage";
 
 /** اعتماد تسجيل الجهاز — يكتبه ACC-05 (`use-bootstrap.ts`). */
@@ -46,21 +46,52 @@ async function readStored(): Promise<StoredDevice | null> {
   }
 }
 
-let inflight: Promise<DeviceTokens | null> | null = null;
+/** رمز وصول جلسة المستخدم الحالية — التجديد لها وحدها (يضعه `BackgroundSync`). */
+let sessionAccess: string | null = null;
+
+export function setSessionAccess(access: string | null): void {
+  sessionAccess = access;
+}
+
+interface Renewed {
+  readonly device_id: string;
+  readonly prefix: string;
+  readonly branch_id: string;
+  readonly access: string;
+  readonly refresh: string;
+}
+
+let inflight: { readonly for: string; readonly p: Promise<DeviceTokens | null> } | null = null;
 
 /**
- * يحوّل جلسة المستخدم الحالية إلى جلسة جهاز لهذا الجهاز المسجَّل — طلب واحد مهما تعدّد الطالبون.
- * بلا تسجيل محلي أو برفض الخادم (جهاز مسحوب، منشأة أخرى): `null` ولا يتغيّر شيء.
+ * يحوّل جلسة المستخدم الحالية إلى جلسة جهاز لهذا الجهاز المسجَّل — طلب واحد لكل جلسة مهما تعدّد
+ * الطالبون. بلا تسجيل محلي أو برفض الخادم (جهاز مسحوب، منشأة أخرى): `null` ولا يتغيّر شيء.
+ *
+ * مربوط بالجلسة التي طلبته: على جهاز مشترك قد يدخل مستخدم آخر والطلب جارٍ — نتيجة الأول لا تُطبَّق
+ * على جلسة الثاني (كانت تستبدل رمز المالك برمز جهاز الكاشير فيُرفض في إدارة المستخدمين). ولذلك
+ * يُرسل الطلب بـ`fetch` مباشرة برمز تلك الجلسة: عميل العقد يضع الرمز العام الحالي دائماً.
  */
 export function renewDeviceSession(): Promise<DeviceTokens | null> {
-  inflight ??= (async () => {
+  const forAccess = sessionAccess;
+  if (!forAccess) return Promise.resolve(null);
+  if (inflight?.for === forAccess) return inflight.p;
+  const p = (async (): Promise<DeviceTokens | null> => {
     try {
       const stored = await readStored();
       if (!stored) return null;
-      const { data, response } = await api().POST("/api/devices/renew", {
-        body: { device_id: stored.deviceId, registration_secret: stored.registrationSecret },
+      const r = await fetch(`${apiBaseUrl()}/api/devices/renew`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Authorization: `Bearer ${forAccess}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          device_id: stored.deviceId,
+          registration_secret: stored.registrationSecret,
+        }),
       });
-      if (!response.ok || !data) return null;
+      if (!r.ok) return null;
+      const data = (await r.json()) as Renewed;
+      // الجلسة تغيّرت أثناء الطلب — لا تُطبَّق على غير صاحبها
+      if (sessionAccess !== forAccess) return null;
       const d: DeviceTokens = {
         deviceId: data.device_id,
         prefix: data.prefix,
@@ -75,11 +106,12 @@ export function renewDeviceSession(): Promise<DeviceTokens | null> {
       return null;
     } finally {
       setTimeout(() => {
-        inflight = null;
+        if (inflight?.for === forAccess) inflight = null;
       }, 0);
     }
   })();
-  return inflight;
+  inflight = { for: forAccess, p };
+  return p;
 }
 
 /** 403 بسبب جلسة مستخدم مكان جلسة الجهاز — يستحق تجديداً ثم إعادة واحدة. */

@@ -100,7 +100,9 @@ export async function pushPending(
   }
   if (out.kind === "halt") await onHalt(out.failure, epoch);
   await storage.transaction(async (tx) => {
-    if (out.kind === "retry") {
+    // الوقوف للخادم الذي يرفض («الشبكة تعمل والخادم يردّ بخطأ» — SYS-01) لا لانقطاع الشبكة: الرفع
+    // التلقائي يعيد المحاولة عند عودة الاتصال بلا وقوف
+    if (out.kind === "retry" && out.failure.reason === "server_error") {
       const attempts = Number((await tx.getMeta("push_attempts")) ?? "0");
       if (attempts >= MAX_AUTO_ATTEMPTS) await tx.putMeta(HALTED_META, new Date().toISOString());
     } else if (out.kind === "applied" || out.kind === "idle") {
