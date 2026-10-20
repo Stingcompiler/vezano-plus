@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description `POST {pin, password}` → 204. كلمة المرور الخاطئة 403 `password_invalid`، والرمز غير الصالح
+         *     400 `pin_invalid` (أرقام بطول `PIN_LENGTH`).
+         */
+        post: operations["account_pin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/account/select": {
         parameters: {
             query?: never;
@@ -5314,6 +5334,10 @@ export interface components {
                 [key: string]: unknown;
             }[];
             cost_policy?: string;
+        };
+        OwnPin: {
+            pin: string;
+            password: string;
         };
         Page: {
             /** Format: uuid */
@@ -16659,6 +16683,42 @@ export interface operations {
             };
             /** @description No response body */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    account_pin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnPin"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
