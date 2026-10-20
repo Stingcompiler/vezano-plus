@@ -84,7 +84,7 @@ interface TimelineRow {
   at: string;
 }
 
-type OpAction = "extend" | "plan" | "suspend" | "resume" | "note" | "limits";
+type OpAction = "approve_trial" | "extend" | "plan" | "suspend" | "resume" | "note" | "limits";
 
 interface UsageRow {
   used: number;
@@ -105,6 +105,7 @@ const OP_ERRORS: Record<string, string> = {
   trial_not_reassignable: "لا تُعاد التجريبية بعد باقة مدفوعة.",
   already_suspended: "الاشتراك موقوف أصلاً.",
   not_suspended: "الاشتراك ليس موقوفاً.",
+  not_pending_approval: "المنشأة ليست بانتظار الاعتماد.",
 };
 
 const When = ({ iso }: { iso: string }) => {
@@ -189,17 +190,19 @@ export function TenantDetailClient({ id }: { id: string }) {
         setD(b.tenant);
         setReason("");
         setOpDone(
-          op === "extend"
-            ? `مُدِّد ${days} يوماً`
-            : op === "plan"
-              ? "غُيِّرت الباقة"
-              : op === "limits"
-                ? "حُفظت الزيادات"
-                : op === "suspend"
-                  ? "أُوقف الاشتراك"
-                  : op === "resume"
-                    ? "استُؤنف الاشتراك"
-                    : "سُجِّلت الملاحظة",
+          op === "approve_trial"
+            ? "اعتُمدت المنشأة وبدأت التجربة"
+            : op === "extend"
+              ? `مُدِّد ${days} يوماً`
+              : op === "plan"
+                ? "غُيِّرت الباقة"
+                : op === "limits"
+                  ? "حُفظت الزيادات"
+                  : op === "suspend"
+                    ? "أُوقف الاشتراك"
+                    : op === "resume"
+                      ? "استُؤنف الاشتراك"
+                      : "سُجِّلت الملاحظة",
         );
       } else {
         const code = b?.detail ?? "";
@@ -213,6 +216,7 @@ export function TenantDetailClient({ id }: { id: string }) {
   const state = denied ? "permission_denied" : d ? "ready" : "loading";
   const suspended = Boolean(d?.entitlement.suspended);
   const opLabel: Record<OpAction, string> = {
+    approve_trial: "اعتماد التجربة",
     extend: "تمديد",
     plan: "تغيير الباقة",
     suspend: "إيقاف",
@@ -397,6 +401,7 @@ export function TenantDetailClient({ id }: { id: string }) {
                   <div className="plt-ops__tabs" role="tablist" aria-label="نوع التصرّف">
                     {(
                       [
+                        ...(d.status === "pending_approval" ? ["approve_trial"] : []),
                         "extend",
                         "plan",
                         "limits",
@@ -476,6 +481,12 @@ export function TenantDetailClient({ id }: { id: string }) {
                         />
                       </div>
                     ) : null}
+                    {op === "approve_trial" ? (
+                      <p className="acc-choice__note">
+                        الاعتماد يبدأ التجربة كاملة المدة من الآن ويسمح بتسجيل أجهزة المنشأة. قبله
+                        لا جهاز ولا ميزات، والمالك يرى أنها بانتظارك.
+                      </p>
+                    ) : null}
                     {op === "suspend" ? (
                       <p className="acc-choice__note">
                         الإيقاف يوقف الميزات المدفوعة فقط (كالانتهاء بعد المهلة). لا يحجب الدفتر ولا
@@ -497,17 +508,19 @@ export function TenantDetailClient({ id }: { id: string }) {
                       loading={saving}
                       variant={op === "suspend" ? "danger" : "primary"}
                     >
-                      {op === "suspend"
-                        ? "أوقف الاشتراك"
-                        : op === "resume"
-                          ? "استأنف الاشتراك"
-                          : op === "extend"
-                            ? "مدّد"
-                            : op === "plan"
-                              ? "غيّر الباقة"
-                              : op === "limits"
-                                ? "احفظ الزيادات"
-                                : "سجّل الملاحظة"}
+                      {op === "approve_trial"
+                        ? "اعتمد المنشأة وابدأ التجربة"
+                        : op === "suspend"
+                          ? "أوقف الاشتراك"
+                          : op === "resume"
+                            ? "استأنف الاشتراك"
+                            : op === "extend"
+                              ? "مدّد"
+                              : op === "plan"
+                                ? "غيّر الباقة"
+                                : op === "limits"
+                                  ? "احفظ الزيادات"
+                                  : "سجّل الملاحظة"}
                     </Button>
                     {opDone ? <Status state="success" label={opDone} /> : null}
                     {opError ? <Status state="validation_error" label={opError} /> : null}

@@ -396,6 +396,7 @@ class SubscriptionEvent(models.Model):
         PLAN_CHANGE = "plan_change", "تغيير الباقة"
         SUSPEND = "suspend", "إيقاف"
         RESUME = "resume", "استئناف"
+        TRIAL_APPROVED = "trial_approved", "اعتماد التجربة"
         NOTE = "note", "ملاحظة"
         LIMITS = "limits", "زيادة حدود"
         PROOF_APPROVED = "proof_approved", "اعتماد إثبات"
