@@ -11,6 +11,7 @@ import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
+import { Count, GROUPS, ITEMS } from "@/lib/count";
 import { useApp } from "@/lib/app-context";
 
 type State = "ready" | "empty" | "validation_error" | "success";
@@ -174,8 +175,8 @@ export function GroupsClient() {
         <div className="cat-table">
           <div className="cat-head">
             <h2 className="cat-head__title">
-              المجموعات — <span className="sting-mono">{data?.group_count ?? 0}</span> مجموعات ·{" "}
-              <span className="sting-mono">{data?.total_items ?? 0}</span> صنفاً
+              المجموعات — <Count n={data?.group_count ?? 0} {...GROUPS} /> ·{" "}
+              <Count n={data?.total_items ?? 0} {...ITEMS} />
             </h2>
             <span className="cat-head__hint">الترتيب يغيّر العرض في نقطة البيع فقط</span>
           </div>
