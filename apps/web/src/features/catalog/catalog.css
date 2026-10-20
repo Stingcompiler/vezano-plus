@@ -22,7 +22,7 @@
 .cat-foot {
   padding: 11px 16px;
   border-block-start: 1px solid var(--color-border);
-  font-size: var(--text-note);
+  font-size: var(--text-bodyDense);
   color: var(--color-ink-muted);
   line-height: 1.7;
 }

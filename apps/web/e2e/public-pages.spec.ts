@@ -228,6 +228,15 @@ test.describe("PUB-01", () => {
   });
 });
 
+test.describe("FIX-12 · الدخول من الصفحة العامة", () => {
+  test("«تسجيل الدخول» في الترويسة يفتح /login مباشرة بلا /welcome", async ({ page }) => {
+    await page.route("**/api/public/plans", (route) => route.fulfill(json(200, PLANS)));
+    await page.goto("/");
+    await page.locator(".lp__header").getByRole("button", { name: "تسجيل الدخول" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+  });
+});
+
 test.describe("PUB-02", () => {
   test("loading → ready → phase_locked: الفهرس قبل النصّ، البنود بحالتها، وشروط السوق مقفلة", async ({
     page,
