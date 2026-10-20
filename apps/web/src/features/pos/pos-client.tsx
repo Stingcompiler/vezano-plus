@@ -28,6 +28,7 @@ import {
   readReceiptCashRows,
   readReturnCashRows,
   readSaleCashRows,
+  unitDisplay,
 } from "@sting/sync-core";
 import {
   Button,
@@ -56,6 +57,7 @@ import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
+import { hasLocalSetup } from "@/lib/device-setup";
 import { countPending } from "@/lib/sync";
 import { useMedia } from "@/lib/use-media";
 
@@ -118,6 +120,11 @@ export function PosClient() {
   const [barcodeMiss, setBarcodeMiss] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [held, setHeld] = useState<number | null>(null);
+  // الجهاز نزّل بياناته؟ بدونه كتالوج المتصفح فارغ لأنه لم يصل لا لأن المحل جديد (FIX-02 · 0005 §١٨٣)
+  const [deviceReady, setDeviceReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    void hasLocalSetup().then(setDeviceReady);
+  }, []);
   const searchRef = useRef<HTMLInputElement>(null);
   const appRef = useRef(app);
   appRef.current = app;
@@ -240,10 +247,11 @@ export function PosClient() {
     return m;
   }, [lines]);
 
+  const notDownloaded = items !== null && active.length === 0 && deviceReady === false;
   const state: State =
     shift === null
       ? "permission_denied"
-      : items !== null && active.length === 0
+      : items !== null && active.length === 0 && deviceReady !== false
         ? "empty"
         : !online
           ? "offline"
@@ -311,7 +319,7 @@ export function PosClient() {
     id: l.id,
     name: l.item_name,
     qtyLabel: formatQty(l.qty_milli, l.decimal_places),
-    unitLabel: l.unit_code,
+    unitLabel: unitDisplay(l.unit_code),
     unitPriceMinor: l.unit_price_minor,
     lineTotalMinor: (totals.lineTotals.get(l.id) ?? 0n).toString(),
   }));
@@ -319,7 +327,9 @@ export function PosClient() {
   const payDisabled = !lines.length ? "السلة فارغة" : shift ? undefined : "لا وردية مفتوحة";
   const emptyKind =
     items !== null && active.length === 0
-      ? "catalog"
+      ? notDownloaded
+        ? null
+        : "catalog"
       : barcodeMiss
         ? "unknown_barcode"
         : query.trim() && visibleRows.length === 0
@@ -649,6 +659,18 @@ export function PosClient() {
               {ctx?.deviceName && ctx.branchName ? <> · {ctx.branchName})</> : null}
               {ctx?.deviceName && !ctx.branchName ? ")" : null}؛ وردية مفتوحة على جهاز آخر لا تُحسب
               له.
+            </p>
+          </Notice>
+        ) : null}
+        {notDownloaded ? (
+          <Notice
+            kind="info"
+            title="بيانات المنشأة لم تصل إلى هذا الجهاز بعد"
+            action={<Button onClick={() => router.push("/setup-device")}>جهّز هذا الجهاز</Button>}
+          >
+            <p className="acc-lead">
+              الكتالوج هنا فارغ لأن التنزيل الأول لم يتم، لا لأن منشأتك بلا أصناف. جهّز الجهاز مرة
+              واحدة بعد الاتصال بالإنترنت.
             </p>
           </Notice>
         ) : null}
