@@ -737,12 +737,12 @@ h3 {
 }
 .c-field__hint {
   margin: 0;
-  font-size: var(--text-note);
+  font-size: var(--text-bodyDense);
   color: var(--color-ink-muted);
 }
 .c-field__error {
   margin: 0;
-  font-size: var(--text-note);
+  font-size: var(--text-bodyDense);
   color: var(--color-danger);
 }
 .c-field__switch {

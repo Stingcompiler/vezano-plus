@@ -30,6 +30,9 @@ export interface FrameProps {
   readonly chrome?: ReactNode;
 }
 
+/** آخر عنوان كتبه إطار — يميّزه من عنوان كتبته الصفحة بنفسها */
+let lastFrameTitle = "";
+
 export function Frame({
   title,
   banner,
@@ -55,6 +58,17 @@ export function Frame({
     if (back === false) return;
     setCanBack(window.history.length > 1 && window.location.pathname !== "/");
   }, [back]);
+  // عنوان التبويب يتبع عنوان الشاشة (FIX-13 · 0005 §١٨٤): كانت شاشات التشغيل تحمل عنوان الصفحة التسويقية.
+  // لا يُستبدل إلا العنوان الافتراضي للموقع («فيزانو بلص — …»): صفحة لها metadata.title خاصة بها
+  // (شاشات المنصة مثلاً) تحتفظ بعنوانها؛ وكذلك الصفحات العامة (chrome) وإطار باسم المنتج نفسه.
+  const brandName = brand?.name;
+  useEffect(() => {
+    if (chrome || !brandName || title === brandName) return;
+    // العنوان الافتراضي، أو ما كتبه إطار سابق (التنقل بين شاشتين داخل التطبيق) — لا ما كتبته الصفحة
+    if (!document.title.startsWith(`${brandName} —`) && document.title !== lastFrameTitle) return;
+    lastFrameTitle = `${title} · ${brandName}`;
+    document.title = lastFrameTitle;
+  }, [title, brandName, chrome]);
   const rootRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);

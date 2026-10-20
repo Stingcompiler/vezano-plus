@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from core import home
 from core.auth.tokens import AuthContext
-from core.tenancy import tenant_context
+from core.tenancy import platform_context, tenant_context
 from parties import reports as party_reports
 from sales import reports as sales_reports
 
@@ -327,13 +327,16 @@ class ReportExportDocumentView(APIView):
     def get(self, request: Request, token: str) -> HttpResponse:
         from core import report_export
 
-        e = report_export.open_export(token)
-        if e is None:
-            return HttpResponse("لا يوجد", status=404, content_type="text/plain; charset=utf-8")
-        ctype = "text/csv; charset=utf-8" if e.fmt == "csv" else "text/html; charset=utf-8"
-        resp = HttpResponse(e.body, content_type=ctype)
-        if e.fmt == "csv" or request.query_params.get("download") == "1":
-            resp["Content-Disposition"] = f'attachment; filename="{e.file_name}"'
+        # الرمز هو التخويل ولا جلسة هنا، والجدول تحت RLS: بلا سياق يرى الاتصال صفراً من الصفوف فيردّ
+        # 404 على الإنتاج وحده (المشرف المحلي يتجاوز RLS). كما في تنزيل كشف الحساب (parties).
+        with platform_context():
+            e = report_export.open_export(token)
+            if e is None:
+                return HttpResponse("لا يوجد", status=404, content_type="text/plain; charset=utf-8")
+            ctype = "text/csv; charset=utf-8" if e.fmt == "csv" else "text/html; charset=utf-8"
+            resp = HttpResponse(e.body, content_type=ctype)
+            if e.fmt == "csv" or request.query_params.get("download") == "1":
+                resp["Content-Disposition"] = f'attachment; filename="{e.file_name}"'
         return resp
 
 

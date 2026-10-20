@@ -1,5 +1,5 @@
 import { agoParts, countPending, formatMinorShort, hhmm } from "@sting/app-core";
-import { tx } from "@sting/texts";
+import { mtx, tx } from "@sting/texts";
 import {
   AppText,
   Button,
@@ -28,6 +28,17 @@ const PERIODS = [
 ] as const;
 
 /** رقم داخل جملة عربية: خط mono لاتيني بجانب الكلمات لا بدلها. */
+/** عدد الفروع بصيغة العدّ العربية كالويب: واحد، اثنان، 3–10 جمعاً، وما فوق تمييزاً. */
+function BranchCount({ n }: { n: number }) {
+  if (n === 1) return <Text>{mtx("branchesOne")}</Text>;
+  if (n === 2) return <Text>{mtx("branchesTwo")}</Text>;
+  return (
+    <Text>
+      <N>{n}</N> {n >= 3 && n <= 10 ? mtx("branchesFew") : mtx("branchesMany")}
+    </Text>
+  );
+}
+
 function N({ children }: { children: string | number }) {
   return <Text style={{ fontFamily: FONT.mono, writingDirection: "ltr" }}>{String(children)}</Text>;
 }
@@ -242,7 +253,7 @@ export default function Home() {
             {summary.user.display_name} — {summary.user.role_name} {tx(T, "· كل الفروع")}
           </AppText>
           <AppText variant="secondary" muted style={{ marginBottom: SPACE["3"] }}>
-            <N>{summary.branches.length}</N> {tx(T, "فروع ·")}{" "}
+            <BranchCount n={summary.branches.length} /> ·{" "}
             {summary.devices_total === 0
               ? tx(T, "لا جهاز مسجّل بعد")
               : summary.branches_synced

@@ -18,6 +18,11 @@ export const MOBILE_TEXTS = {
   pinInvalid: "الرمز ستة أرقام.",
   // نصّ إطار ACC-05 حُذف من الويب في مراجعة التصميم (#200) والجوال ما زال يحتاجه لحالة الرفض
   deviceDenied: "صلاحية مرفوضة",
+  // صيغ عدّ الفروع كما في الويب (`lib/count.tsx`) — حُذف «فروع ·» من إطار HOME-01 (#201) فصارت للجوال
+  branchesOne: "فرع واحد",
+  branchesTwo: "فرعان",
+  branchesFew: "فروع",
+  branchesMany: "فرعاً",
   pinMismatch: "الرمزان غير متطابقين.",
   pinPasswordInvalid: "كلمة المرور غير صحيحة.",
   pinLater: "لاحقاً — أدخل بكلمة المرور",
