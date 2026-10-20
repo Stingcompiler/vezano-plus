@@ -501,7 +501,13 @@ class SubscriptionProofsView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(responses={200: None, 403: None})
+    @extend_schema(
+        parameters=[
+            # مراجعة 2026-10-19 B4: المستحق بالباقة المختارة (التجديد على باقة أعلى)
+            OpenApiParameter("plan_code", str, OpenApiParameter.QUERY, required=False),
+        ],
+        responses={200: None, 403: None},
+    )
     def get(self, request: Request) -> Response:
         auth = request.auth
         if not isinstance(auth, AuthContext) or auth.tenant_id is None:
@@ -509,7 +515,11 @@ class SubscriptionProofsView(APIView):
         with tenant_context(auth.tenant_id):
             if not auth.user.is_owner:
                 return Response({"detail": "owner_required"}, status=status.HTTP_403_FORBIDDEN)
-            return Response(subscription.proofs_payload(viewer_is_owner=True))
+            return Response(
+                subscription.proofs_payload(
+                    viewer_is_owner=True, plan_code=request.query_params.get("plan_code")
+                )
+            )
 
     @extend_schema(
         request=OrgProofSerializer, responses={201: None, 400: None, 403: None, 409: None}

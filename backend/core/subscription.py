@@ -1313,10 +1313,34 @@ RECEIPT_ISSUER = {
 }
 
 
-def proofs_payload(*, viewer_is_owner: bool) -> dict[str, Any]:
+def paid_plan_code(code: str | None) -> str | None:
+    """رمز باقة مدفوعة فعّالة معروضة، وإلا None (الاختيار من العميل لا يُوثَق به)."""
+    if not code or code not in PLANS.visible_codes():
+        return None
+    plan = PLANS[code]
+    return code if plan.is_active and not plan.trial else None
+
+
+def paid_plans() -> list[dict[str, Any]]:
+    """الباقات المدفوعة التي يجدّد عليها التاجر — مراجعة 2026-10-19 B4: كان المستحق يُسعَّر على
+    باقة واحدة (أساس التجريبية) فلا يستطيع التاجر طلب باقة أعلى."""
+    return [
+        {
+            "code": c,
+            "name": PLANS[c].name,
+            "price_minor": str(PLANS[c].price_minor),
+            "max_branches": PLANS[c].max_branches,
+        }
+        for c in PLANS.visible_codes()
+        if PLANS[c].is_active and not PLANS[c].trial
+    ]
+
+
+def proofs_payload(*, viewer_is_owner: bool, plan_code: str | None = None) -> dict[str, Any]:
     proofs = SubscriptionProof.objects.order_by("-submitted_at")
     return {
-        "due": due_payload(),
+        "due": due_payload(paid_plan_code(plan_code)),
+        "plans": paid_plans(),
         "proofs": [proof_payload(p) for p in proofs],
         "can_submit": viewer_is_owner,
         "review_sla": REVIEW_SLA_TEXT,

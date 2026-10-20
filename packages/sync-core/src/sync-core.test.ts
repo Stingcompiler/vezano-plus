@@ -177,6 +177,22 @@ describe("طابور الرفع وACK (§٨.٣)", () => {
     ).toEqual({ kind: "idle" });
   });
 
+  it("نقل يرمي (طلب أُجهض) = عابر شبكة والدفعة تعود محلية — لا تبقى «قيد الرفع»", async () => {
+    const storage = new MemoryStorage();
+    await saveOperation(storage, draft());
+    const throwing: PushTransport = {
+      push: () => Promise.reject(new TypeError("Failed to fetch")),
+    };
+    const out = await pushOnce(storage, {
+      transport: throwing,
+      syncEpoch: "epoch-A",
+      requestId: "r1",
+    });
+    expect(out).toMatchObject({ kind: "retry", failure: { kind: "transient", reason: "network" } });
+    expect(await storage.read((tx) => tx.listOperationsByState("pending"))).toHaveLength(0);
+    expect(await storage.read((tx) => tx.listOperationsByState("local"))).toHaveLength(1);
+  });
+
   it("الأب غير المؤكد يُرفق في النقل نفسه ولو لم يكن في الدفعة (بند ٦، ACC-33)", async () => {
     const storage = new MemoryStorage();
     const server = fakeServer();

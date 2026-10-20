@@ -39,6 +39,9 @@ test("ACC-63 — موظف معطل على جهاز مشترك: معلّقه يب
   await pickCustomer(shared.page);
   await saveCredit(shared.page);
   expect(await pendingCount(shared.page)).toBeGreaterThanOrEqual(1);
+  // الشبكة تعود والخادم ما زال لا يستقبل الرفع حتى بعد السحب — وإلا رفعه الرفع التلقائي فوراً
+  // (مراجعة 2026-10-19 B3)، والسيناريو يختبر بقاء معلّق المعطَّل عبر تبديل المستخدم والسحب
+  await shared.page.route("**/api/sync/push", (route) => route.abort("internetdisconnected"));
   await restoreNetwork(shared);
 
   // المالك يعود إلى الجهاز نفسه ويعطّل الكاشير من ORG-05 — «اسحب الآن — ويبقى المعلّق محفوظاً»
@@ -66,6 +69,7 @@ test("ACC-63 — موظف معطل على جهاز مشترك: معلّقه يب
     "معطَّل",
   );
   // المالك يواصل على الجهاز نفسه: معلّق الكاشير يُرفع (لا يُمحى) ويظهر في كشف العميل
+  await shared.page.unroute("**/api/sync/push");
   await syncNow(shared.page);
   expect(await pendingCount(shared.page)).toBe(0);
   await statement(shared.page);

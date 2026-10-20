@@ -59,6 +59,8 @@ interface Payload {
     }[];
   };
   proofs: Proof[];
+  /** الباقات المدفوعة — التجديد على باقة أعلى (مراجعة 2026-10-19 B4) */
+  plans?: { code: string; name: string; price_minor: string; max_branches: number }[];
   can_submit: boolean;
   review_sla: string;
 }
@@ -105,6 +107,8 @@ export function RenewClient() {
   // 0005 §١١٦ — وضع الإضافة: ?addon=<kind>&qty=N → المستحق سعر الوحدة على المتبقي، بـkind=addon
   const params = useSearchParams();
   const addonKind = params.get("addon") ?? "";
+  // مراجعة 2026-10-19 B4 — الباقة المختارة للتجديد (?plan=<code> من صفحة الاشتراك أو الشرائح هنا)
+  const [plan, setPlan] = useState(params.get("plan") ?? "");
   const addonQty = Number(params.get("qty") ?? "1") || 1;
   const [addonQuote, setAddonQuote] = useState<{
     kind: string;
@@ -136,7 +140,9 @@ export function RenewClient() {
   appRef.current = app;
 
   const load = useCallback(async () => {
-    const { data, response } = await api().GET("/api/org/subscription/proofs", {});
+    const { data, response } = await api().GET("/api/org/subscription/proofs", {
+      params: { query: plan ? { plan_code: plan } : {} },
+    });
     if (response.ok && data) setP(data);
     const raw = await getStorage().read((tx) => tx.getMeta(PROOF_IMAGE_META));
     if (raw) {
@@ -147,7 +153,7 @@ export function RenewClient() {
         /* تالف */
       }
     }
-  }, []);
+  }, [plan]);
 
   useEffect(() => {
     const app = appRef.current;
@@ -449,6 +455,24 @@ export function RenewClient() {
                       / شهر مع التجديد
                     </p>
                   </Notice>
+                ) : null}
+                {!upgradeQuote && !addonQuote && (p.plans ?? []).length > 1 ? (
+                  <div className="pos-chips org-cycles" role="group" aria-label="الباقات">
+                    {(p.plans ?? []).map((pl) => (
+                      <button
+                        key={pl.code}
+                        type="button"
+                        className={`pos-chip${p.due.plan_code === pl.code ? " pos-chip--on" : ""}`}
+                        aria-pressed={p.due.plan_code === pl.code}
+                        onClick={() => {
+                          setCycle("monthly");
+                          setPlan(pl.code);
+                        }}
+                      >
+                        {pl.name} · <span className="sting-mono">{money(pl.price_minor)}</span>
+                      </button>
+                    ))}
+                  </div>
                 ) : null}
                 {!upgradeQuote &&
                 !addonQuote &&

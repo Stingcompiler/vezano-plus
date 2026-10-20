@@ -289,20 +289,46 @@ test.describe("SHIFT-01", () => {
         "شهادة الفتح",
       ]),
     });
+    // عودة الاتصال ترفعها تلقائياً بلا ضغط (مراجعة 2026-10-19 B3)
+    const pushed: string[] = [];
+    await page.route("**/api/sync/push", async (route) => {
+      const body = JSON.parse(route.request().postData() ?? "{}") as {
+        operations: { operation_id: string; kind: string }[];
+        request_id: string;
+        sync_epoch: string;
+      };
+      pushed.push(...body.operations.map((o) => o.kind));
+      return route.fulfill(
+        json(200, {
+          protocol_version: 1,
+          sync_epoch: body.sync_epoch,
+          request_id: body.request_id,
+          results: body.operations.map((o) => ({
+            operation_id: o.operation_id,
+            status: "accepted",
+            member_receipts: [],
+          })),
+          server_seq_high: "9",
+        }),
+      );
+    });
     await context.setOffline(false);
     await page.evaluate(() => window.dispatchEvent(new Event("online")));
-    // العملية محفوظة محلياً بحالة local وتنتظر الرفع
-    const local = await page.evaluate(async () => {
-      const req = indexedDB.open("sting-bootstrap");
-      const db = await new Promise<IDBDatabase>((res) => (req.onsuccess = () => res(req.result)));
-      const rows = await new Promise<unknown[]>((res) => {
-        const r = db.transaction("operations").objectStore("operations").getAll();
-        r.onsuccess = () => res(r.result as unknown[]);
+    await expect.poll(() => pushed).toContain("shift_open");
+    const opState = () =>
+      page.evaluate(async () => {
+        const req = indexedDB.open("sting-bootstrap");
+        const db = await new Promise<IDBDatabase>((res) => (req.onsuccess = () => res(req.result)));
+        const rows = await new Promise<unknown[]>((res) => {
+          const r = db.transaction("operations").objectStore("operations").getAll();
+          r.onsuccess = () => res(r.result as unknown[]);
+        });
+        db.close();
+        return (rows as { kind: string; state: string }[])
+          .filter((o) => o.kind === "shift_open")
+          .map((o) => o.state);
       });
-      db.close();
-      return rows as { kind: string; state: string }[];
-    });
-    expect(local.filter((o) => o.kind === "shift_open").map((o) => o.state)).toEqual(["local"]);
+    await expect.poll(opState).toEqual(["synced"]);
   });
 });
 

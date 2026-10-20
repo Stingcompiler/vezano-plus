@@ -10,8 +10,8 @@ const json = (status: number, body: unknown) => ({ status, json: body });
 // PIN 123456 (المتجه نفسه في acc-invite-lock.spec.ts)
 const ENCODED =
   "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$xLL5EYZbGlWr9962Y1Y77xBK9jK/wka5FYHqDqwRYw8=";
-// PIN 654321 بالملح والدورات نفسها
-const ENCODED_OTHER =
+// PIN 654321 — رمز ثانٍ لصاحب الجلسة حين يُختبر رمز مستخدم آخر
+const ENCODED_654321 =
   "pbkdf2_sha256$1000$AAAAAAAAAAAAAAAAAAAAAA==$nOp225KblbKetuYeCcvpE8NNoromzHRKcQcnwVr3zbA=";
 const row = (user_id: string, display_name: string, encoded = ENCODED) => ({
   user_id,
@@ -117,7 +117,8 @@ test.describe("القفل — مراجعة المنطق", () => {
   test("رمز مستخدم آخر لا يفتح جلسة غيره", async ({ page }) => {
     await page.clock.install();
     await liveSession(page, "/org/subscription");
-    await seedDevice(page, [row("u1", "سميّة عبد الله", ENCODED_OTHER), row("u2", "أحمد ياسين")]);
+    // لصاحب الجلسة رمزه على الجهاز (القفل لمن له رمز وحده — مراجعة 2026-10-19 B1)
+    await seedDevice(page, [row("u1", "سميّة عبد الله", ENCODED_654321), row("u2", "أحمد ياسين")]);
     await page.clock.fastForward("21:00");
     await expect(page).toHaveURL(/\/lock\?next=/);
     await expect(page.locator('[data-screen="ACC-07"]')).toContainText("سميّة عبد الله");
@@ -128,17 +129,28 @@ test.describe("القفل — مراجعة المنطق", () => {
     await expect(page).toHaveURL(/\/lock\?next=/);
   });
 
-  test("صاحب الجلسة بلا رمز على جهاز فيه رموز غيره: لا يُعرض غيره، والضبط يمرّ بالدخول", async ({
+  test("مراجعة 2026-10-19 B1: صاحب جلسة بلا رمز على الجهاز لا يُقفل عند الخمول — قفل لا يفتحه", async ({
     page,
   }) => {
     await page.clock.install();
     await liveSession(page, "/org/subscription");
     await seedDevice(page, [row("u2", "أحمد ياسين")]);
-    // إعادة بناء Fast Refresh (خادم التطوير) تعيد تشغيل مؤقّت الخمول فتصفّره — القفزة تُكرَّر حتى يُقفل
-    await expect(async () => {
-      await page.clock.fastForward("21:00");
-      await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/, { timeout: 3_000 });
-    }).toPass({ timeout: 30_000 });
+    await page.clock.fastForward("21:00");
+    await expect(page).toHaveURL(/\/org\/subscription$/);
+  });
+
+  test("صاحب الجلسة يصل إلى القفل بلا رمز له والجهاز فيه رموز غيره: لا يُعرض غيره، والضبط يمرّ بالدخول (§١٧٩)", async ({
+    page,
+  }) => {
+    await liveSession(page, "/org/subscription");
+    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    // قفل الخمول لا يقود إلى هنا بعد B1؛ الوصول بتنقّل داخلي تبقى معه الجلسة في الذاكرة
+    await page.evaluate(() =>
+      (window as unknown as { next: { router: { push(href: string): void } } }).next.router.push(
+        "/lock?next=%2Forg%2Fsubscription",
+      ),
+    );
+    await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/);
     const screen = page.locator('[data-screen="ACC-07"]');
     await expect(screen).toContainText("لا رمز PIN لك على هذا الجهاز");
     await expect(screen).not.toContainText("أحمد ياسين");

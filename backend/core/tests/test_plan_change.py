@@ -111,3 +111,26 @@ def test_upgrade_prorates_on_paid_cycle(ctx: dict[str, Any]) -> None:  # noqa: F
     assert q["amount_minor"] == str(diff // 100 * 100)
     # الشهري للمقارنة كان أغلى: الفرق الشهري × 100 ÷ 30
     assert int(q["amount_minor"]) < (dual.price_minor - single.price_minor) * 100 // 30
+
+
+def test_trial_renews_on_a_bigger_plan(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-10-19 B4: من التجريبية يختار التاجر الباقة ويُسعَّر المستحق عليها (لا على أساس
+    التجريبية وحده)، والاعتماد يضعه عليها."""
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    oh = _operator_headers("ops9", "هدى — تشغيل")
+    body = c.get(PROOFS, headers=owner).json()
+    codes = [p["code"] for p in body["plans"]]
+    assert "dual" in codes and "trial" not in codes
+    due = c.get(f"{PROOFS}?plan_code=dual", headers=owner).json()["due"]
+    assert due["plan_code"] == "dual" and due["amount_minor"] == str(PLANS["dual"].price_minor)
+    # رمز غير صالح يُتجاهل — المستحق الافتراضي لا خطأ
+    assert c.get(f"{PROOFS}?plan_code=trial", headers=owner).json()["due"]["plan_code"] != "trial"
+    r = _post(c, owner, PROOFS, {"reference": "TRX-TR2", "plan_code": "dual"})
+    assert r.status_code == 201
+    pr = r.json()["proof"]
+    assert pr["amount_minor"] == str(PLANS["dual"].price_minor)
+    approve = f"/api/platform/proofs/{ctx['tenant'].id}/{pr['id']}/approve"
+    assert _post(c, oh, approve, {}).status_code == 200
+    with tenant_context(ctx["tenant"].id):
+        assert TenantSubscription.objects.get().plan_code == "dual"

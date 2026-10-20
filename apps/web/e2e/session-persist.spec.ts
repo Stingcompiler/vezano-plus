@@ -128,6 +128,24 @@ test.describe("بقاء الجلسة", () => {
     await expect.poll(() => remembered).toBe("r2"); // الرمز المدوَّر يُحفظ من جديد
   });
 
+  test("مراجعة 2026-10-19 B1: جهاز مُجهَّز ومستخدم بلا PIN — إعادة التحميل تُستأنف ولا تمرّ بقفل مسدود", async ({
+    page,
+  }) => {
+    await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+    let resumes = 0;
+    await page.route("**/api/auth/resume", (route) => {
+      resumes += 1;
+      return route.fulfill(json(200, RESUMED));
+    });
+    await liveSession(page, "/org/subscription");
+    // الجهاز مُجهَّز لكن متحققاته لمستخدم آخر — u1 لم يضبط رمزاً
+    await seedDevice(page, [row("u9", "موظف آخر")]);
+    await page.reload();
+    await expect.poll(() => resumes).toBeGreaterThan(0);
+    await expect(page.locator('[data-screen="ORG-06"]')).toBeVisible();
+    await expect(page).toHaveURL(/\/org\/subscription$/);
+  });
+
   test("بلا شبكة بعد إعادة التحميل: الرمز يفتح وضعاً محلياً لا شاشة دخول", async ({
     page,
     context,
