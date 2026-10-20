@@ -338,7 +338,7 @@ export function PrintClient() {
 
   return (
     <Frame title="الطابعة" nav={<AppNav currentId="print" />} footer={null}>
-      <div className="sys" data-screen="WEB-03" data-state={state}>
+      <div className="sys sys--wide" data-screen="WEB-03" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">ربط طابعة ويب وتجربة عربية</h2>

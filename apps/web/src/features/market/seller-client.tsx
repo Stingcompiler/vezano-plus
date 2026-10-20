@@ -176,7 +176,7 @@ export function SellerClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-seller" />} footer={null}>
-      <div className="sys mp" data-screen="MP-08" data-state={state}>
+      <div className="sys sys--wide sys--cols mp" data-screen="MP-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تفعيل دور البائع — طلب تحقق قبل أول نشر</h2>

@@ -114,7 +114,7 @@ export function MarginReportClient() {
 
   return (
     <Frame title="التقارير" nav={<AppNav currentId="reports-margin" />} footer={null}>
-      <div className="sys rep" data-screen="REP-05" data-state={state ?? undefined}>
+      <div className="sys sys--wide rep" data-screen="REP-05" data-state={state ?? undefined}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">الهامش ومقارنة الفروع</h2>

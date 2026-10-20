@@ -2,7 +2,8 @@ import { expect, type Page, test } from "@playwright/test";
 
 /**
  * مراجعة منطق القفل (0005 §١٢٠): جهاز بلا متحققات يقول ذلك ويعرض الدخول بكلمة المرور؛ قفل الخمول
- * بعد 20 دقيقة يعود إلى الشاشة نفسها؛ رمز مستخدم آخر لا يفتح جلسة غيره.
+ * بعد 20 دقيقة يعود إلى الشاشة نفسها؛ رمز مستخدم آخر لا يفتح جلسة غيره؛ صاحب جلسة بلا رمز على
+ * جهاز فيه رموز غيره يُقال له ذلك بدل عرض غيره (§١٧٩).
  * بلا إطار مرسوم لهذه المسارات → بلا `fromFrame`.
  */
 const json = (status: number, body: unknown) => ({ status, json: body });
@@ -120,6 +121,7 @@ test.describe("القفل — مراجعة المنطق", () => {
     await seedDevice(page, [row("u1", "سميّة عبد الله", ENCODED_654321), row("u2", "أحمد ياسين")]);
     await page.clock.fastForward("21:00");
     await expect(page).toHaveURL(/\/lock\?next=/);
+    await expect(page.locator('[data-screen="ACC-07"]')).toContainText("سميّة عبد الله");
     await typePin(page, "123456");
     await expect(page.locator('[data-screen="ACC-07"]')).toContainText(
       "هذا رمز أحمد ياسين — الجلسة المفتوحة لغيره",
@@ -135,5 +137,28 @@ test.describe("القفل — مراجعة المنطق", () => {
     await seedDevice(page, [row("u2", "أحمد ياسين")]);
     await page.clock.fastForward("21:00");
     await expect(page).toHaveURL(/\/org\/subscription$/);
+  });
+
+  test("صاحب الجلسة يصل إلى القفل بلا رمز له والجهاز فيه رموز غيره: لا يُعرض غيره، والضبط يمرّ بالدخول (§١٧٩)", async ({
+    page,
+  }) => {
+    await liveSession(page, "/org/subscription");
+    await seedDevice(page, [row("u2", "أحمد ياسين")]);
+    // قفل الخمول لا يقود إلى هنا بعد B1؛ الوصول بتنقّل داخلي تبقى معه الجلسة في الذاكرة
+    await page.evaluate(() =>
+      (window as unknown as { next: { router: { push(href: string): void } } }).next.router.push(
+        "/lock?next=%2Forg%2Fsubscription",
+      ),
+    );
+    await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/);
+    const screen = page.locator('[data-screen="ACC-07"]');
+    await expect(screen).toContainText("لا رمز PIN لك على هذا الجهاز");
+    await expect(screen).not.toContainText("أحمد ياسين");
+    await expect(page.locator(".acc-keypad")).toHaveCount(0);
+    await page.getByRole("button", { name: "اضبط رمز PIN" }).click();
+    await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fpin$/);
+    await page.goBack();
+    await page.getByRole("button", { name: "ادخل بكلمة المرور", exact: true }).click();
+    await expect(page).toHaveURL(/\/login\?next=%2Forg%2Fsubscription$/);
   });
 });

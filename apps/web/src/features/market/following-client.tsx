@@ -158,7 +158,7 @@ export function FollowingClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-following" />} footer={null}>
-      <div className="sys mp cus" data-screen="MP-06" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="MP-06" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">متابعة مورد — اشتراك تسويقي مستقلّ يُلغى وحده</h2>

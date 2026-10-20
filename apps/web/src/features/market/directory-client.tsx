@@ -154,7 +154,7 @@ export function DirectoryClient() {
       footer={null}
       nav={app.tokens ? <AppNav currentId="market-directory" /> : undefined}
     >
-      <div className="sys mp" data-screen="MP-02" data-state={state}>
+      <div className="sys sys--wide mp" data-screen="MP-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

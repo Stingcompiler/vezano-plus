@@ -177,7 +177,7 @@ export function PreferencesClient() {
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="prefs" />} footer={null}>
-      <div className="sys not" data-screen="NOT-02" data-state={state}>
+      <div className="sys sys--wide sys--cols not" data-screen="NOT-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تفضيلات التنبيه</h2>

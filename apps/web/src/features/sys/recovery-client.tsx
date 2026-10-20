@@ -173,7 +173,7 @@ export function RecoveryClient({ selectedId }: { selectedId: string }) {
 
   return (
     <Frame title="مركز الاتصال والمزامنة" nav={<AppNav currentId="recovery" />} footer={null}>
-      <div className="sys" data-screen="SYS-07" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="SYS-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استرداد جهاز مسحوب</h2>
