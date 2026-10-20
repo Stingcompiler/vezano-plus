@@ -166,7 +166,7 @@ export function ReceivablesReportClient() {
 
   return (
     <Frame title="التقارير" nav={<AppNav currentId="reports-receivables" />} footer={null}>
-      <div className="sys rep" data-screen="REP-02" data-state={state}>
+      <div className="sys sys--wide rep" data-screen="REP-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تقرير الذمم — بلا تقادم مخترَع</h2>

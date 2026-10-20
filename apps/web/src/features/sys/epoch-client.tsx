@@ -121,7 +121,7 @@ export function EpochClient() {
 
   return (
     <Frame title="مركز الاتصال والمزامنة" nav={<AppNav currentId="epoch" />} footer={null}>
-      <div className="sys" data-screen="SYS-08" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="SYS-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مصالحة بعد تغيّر جيل الخادم</h2>

@@ -175,7 +175,7 @@ export function IncomingClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-incoming" />} footer={null}>
-      <div className="sys mp cus" data-screen="ORD-04" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="ORD-04" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">طلبات المورد — المهلة تنقضي، وعدم الرد حالة لا فراغ</h2>

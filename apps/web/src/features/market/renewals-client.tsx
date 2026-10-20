@@ -101,7 +101,7 @@ export function RenewalsClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-renewals" />} footer={null}>
-      <div className="sys mp" data-screen="MP-13" data-state={state}>
+      <div className="sys sys--wide mp" data-screen="MP-13" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تجديد التأكيد والمتابعة — فعلان لا يُنجزان تلقائياً</h2>

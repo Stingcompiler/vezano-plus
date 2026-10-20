@@ -252,7 +252,7 @@ export function SubscriptionClient() {
 
   return (
     <Frame title="الاشتراك" nav={<AppNav currentId="org-subscription" />} footer={null}>
-      <div className="sys" data-screen="ORG-06" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="ORG-06" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

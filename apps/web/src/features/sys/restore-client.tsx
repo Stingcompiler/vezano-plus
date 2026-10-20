@@ -163,11 +163,10 @@ export function RestoreClient() {
 
   return (
     <Frame title="مركز الاتصال والمزامنة" nav={<AppNav currentId="restore" />} footer={null}>
-      <div className="sys" data-screen="SYS-06" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="SYS-06" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استعادة نسخة ومعاينتها</h2>
-            <span className="cat-head__hint">أخطر فعل في النظام: يكتب فوق دفتر قائم.</span>
           </div>
           <div className="acc-card__body">
             {state === "server_error" && progress ? (

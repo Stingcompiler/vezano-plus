@@ -182,7 +182,7 @@ export function BackupClient() {
 
   return (
     <Frame title="مركز الاتصال والمزامنة" nav={<AppNav currentId="backup" />} footer={null}>
-      <div className="sys" data-screen="SYS-05" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="SYS-05" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تصدير نسخة محلية</h2>
