@@ -19,7 +19,7 @@ import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
-import { DevicesSynced } from "@/features/reports/completeness";
+import { CompletenessBadge, DevicesSynced } from "@/features/reports/completeness";
 import { pushPending } from "@/lib/sync";
 
 type State = "ready" | "loading" | "empty" | "stale" | "pending_sync" | "permission_denied";
@@ -474,6 +474,11 @@ export function SalesReportClient() {
               <>
                 <section className="rep-head" aria-label="اكتمال البيانات">
                   <h3 className="cat-head__title">اكتمال البيانات</h3>
+                  <CompletenessBadge
+                    synced={p.completeness.devices_synced}
+                    total={p.completeness.devices_total}
+                    computedAt={p.computed_at}
+                  />
                   <p className="acc-lead">
                     <DevicesSynced
                       synced={p.completeness.devices_synced}
@@ -517,7 +522,14 @@ export function SalesReportClient() {
                         "لا جهاز بيع بعد"
                       ) : (
                         <>
-                          من <span className="sting-mono">{branchesSynced}</span> فروع زامنت
+                          {branchesSynced === 0 ? (
+                            "لم يزامن أي فرع بعد"
+                          ) : (
+                            <>
+                              من <Count n={branchesSynced} {...BRANCHES} /> زامن
+                              {branchesSynced === 1 ? "" : branchesSynced === 2 ? "ا" : "ت"}
+                            </>
+                          )}
                         </>
                       )}
                       {local.count > 0 ? " · يشمل معلّق هذا الجهاز" : ""}
@@ -576,8 +588,14 @@ export function SalesReportClient() {
                           </span>
                         ) : (
                           <span>
-                            ناقص <span className="sting-mono">{b.pending}</span> عمليات ·{" "}
-                            <Ago iso={b.last_sync_at} />
+                            {b.pending > 0 ? (
+                              <>
+                                ناقص <Count n={b.pending} {...OPERATIONS} />
+                              </>
+                            ) : (
+                              "غير مكتمل — عدد العمليات الناقصة غير معروف"
+                            )}{" "}
+                            · <Ago iso={b.last_sync_at} />
                           </span>
                         ),
                     },

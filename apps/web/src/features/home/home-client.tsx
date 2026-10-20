@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Button,
-  formatMinorShort,
-  Frame,
-  Notice,
-  PhaseLocked,
-  SelectField,
-  Status,
-} from "@sting/ui-web";
+import { Button, formatMinorShort, Frame, Notice, SelectField, Status } from "@sting/ui-web";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -18,11 +10,13 @@ import "@/features/home/home.css";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { BRANCHES, Count } from "@/lib/count";
+import { getStorage } from "@/lib/storage";
 import { useOnline } from "@/lib/online";
 
 import { agoParts, hhmm } from "./format";
 import { countLocalPending, readHomeCache, writeHomeCache } from "./home-cache";
 import type { Attention, Decision, HomeSummary, Kpi } from "./types";
+import { readOpenShift } from "@sting/sync-core";
 
 type OwnerState = "loading" | "ready" | "empty" | "stale" | "offline" | "pending_sync";
 type EmployeeState = "ready" | "empty" | "permission_denied" | "offline" | "stale";
@@ -32,7 +26,16 @@ function greeting(): string {
   return h < 12 ? "صباح الخير" : "مساء الخير";
 }
 
-function KpiCard({ k, pending }: { k: Kpi; pending: boolean }) {
+function KpiCard({
+  k,
+  pending,
+  deviceShift,
+}: {
+  k: Kpi;
+  pending: boolean;
+  /** وردية مفتوحة على هذا الجهاز؟ null = لم يُعرف بعد — لا يُقال شيء */
+  deviceShift: boolean | null;
+}) {
   const ago = agoParts(k.as_of);
   return (
     <Link href={k.href} className="home-kpi">
@@ -51,6 +54,12 @@ function KpiCard({ k, pending }: { k: Kpi; pending: boolean }) {
         )}
       </div>
       <div className="home-kpi__scope">{k.scope}</div>
+      {/* FIX-03 (0005 §١٨٤): الرقم تجميع كل الأجهزة، فيُقال إن كانت لهذا الجهاز وردية */}
+      {k.key === "cash" && deviceShift !== null ? (
+        <div className="home-kpi__scope">
+          {deviceShift ? "منها وردية هذا الجهاز" : "لا وردية مفتوحة على هذا الجهاز"}
+        </div>
+      ) : null}
       <div className="home-kpi__scope">
         محدّث قبل <span className="sting-mono">{ago.n}</span>{" "}
         {ago.unit === "minute" ? "دقيقة" : ago.unit === "hour" ? "ساعة" : "يوم"}
@@ -121,6 +130,7 @@ export function HomeClient() {
   const [pending, setPending] = useState(0);
   const [period, setPeriod] = useState("today");
   const [branch, setBranch] = useState("");
+  const [deviceShift, setDeviceShift] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -156,6 +166,9 @@ export function HomeClient() {
   useEffect(() => {
     void load();
     void countLocalPending().then(setPending);
+    void readOpenShift(getStorage())
+      .then((sh) => setDeviceShift(sh !== null))
+      .catch(() => setDeviceShift(null));
   }, [load, online]);
 
   if (!summary) {
@@ -268,7 +281,13 @@ export function HomeClient() {
               <Notice
                 kind="empty"
                 title="يومٌ لم يبدأ"
-                action={<Button onClick={() => router.push("/shifts/open")}>افتح وردية</Button>}
+                action={
+                  summary.devices_total === 0 ? (
+                    <Button onClick={() => router.push("/setup-device")}>جهّز هذا الجهاز</Button>
+                  ) : (
+                    <Button onClick={() => router.push("/shifts/open")}>افتح وردية</Button>
+                  )
+                }
               >
                 <p className="acc-lead">لم يبدأ البيع بعد</p>
               </Notice>
@@ -286,7 +305,7 @@ export function HomeClient() {
                 ) : null}
                 <div className="home-kpis">
                   {summary.kpis.map((k) => (
-                    <KpiCard key={k.key} k={k} pending={pending > 0} />
+                    <KpiCard key={k.key} k={k} pending={pending > 0} deviceShift={deviceShift} />
                   ))}
                 </div>
                 <div className="home-columns">
@@ -301,17 +320,24 @@ export function HomeClient() {
                     </section>
                   ) : null}
                   {summary.margin_locked ? (
-                    <PhaseLocked
-                      kind="conditional"
-                      explanation="يتطلب سياسة تكلفة معتمدة. لن نعرض رقم ربح مبنياً على تخمين — الإيراد والمرتجعات والذمم أعلاه دقيقة ومستقلة عنه."
+                    <Notice
+                      kind="info"
+                      title="الهامش وصافي الربح غير محسوبين بعد"
+                      action={
+                        <Button
+                          variant="secondary"
+                          onClick={() => router.push("/purchasing/cost-margin")}
+                        >
+                          حدّد طريقة حساب التكلفة
+                        </Button>
+                      }
                     >
-                      <div className="acc-item">
-                        <div className="acc-item__label">الهامش وصافي الربح</div>
-                        <div className="acc-links" style={{ marginBlockStart: 8 }}>
-                          <Button variant="secondary">ما الذي تحتاجه سياسة التكلفة</Button>
-                        </div>
-                      </div>
-                    </PhaseLocked>
+                      <p className="acc-lead">
+                        لا نعرض رقم ربح مبنياً على تخمين: يحتاج قرارك في كيفية احتساب تكلفة الوحدة
+                        المباعة
+                        {summary.kpis.length > 0 ? "، والإيراد والذمم أعلاه مستقلان عنه" : ""}.
+                      </p>
+                    </Notice>
                   ) : null}
                 </div>
               </>
@@ -339,6 +365,7 @@ export function HomeClient() {
                 <span className="home-shift">
                   وردية مفتوحة منذ{" "}
                   <span className="sting-mono">{hhmm(summary.shift.open_since)}</span>
+                  {summary.shift.device_name ? <> · {summary.shift.device_name}</> : null}
                 </span>
               ) : null}
             </header>
