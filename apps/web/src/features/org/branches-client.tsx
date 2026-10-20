@@ -169,7 +169,7 @@ export function BranchesClient() {
 
   return (
     <Frame title="الفروع" nav={<AppNav currentId="org-branches" />} footer={null}>
-      <div className="sys" data-screen="ORG-03" data-state={state}>
+      <div className="sys sys--wide" data-screen="ORG-03" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">الفروع وتفاصيلها</h2>

@@ -86,3 +86,38 @@
     display: none;
   }
 }
+
+/*
+ * الصفحات الإدارية على الشاشة الكبيرة (0005 §١٨١). كانت كلها بطاقة واحدة بعرض 720 (`.pos-card` وُضع
+ * للوحات الكاشير) في وسط منطقة 1200 — فراغ 240 على كل جانب وجداول مضغوطة وتنبيهات مكدّسة.
+ * `sys--wide`: تأخذ البطاقة عرض المحتوى (حدّه `--layout-contentMax` في الإطار). `sys--cols` (صفحات
+ * الحالة والإعدادات): عمودان من 1100 فأكثر؛ التنبيهات تتجاور مثنى مثنى وكل ما سواها (جدول، نموذج،
+ * أزرار) يبقى بعرض كامل، والتنبيه المنفرد بعرض كامل كذلك. تحت 1100 يبقى العمود الواحد كما كان.
+ */
+.sys--wide > .cat-table {
+  max-inline-size: none;
+}
+@media (min-width: 1100px) {
+  .sys--cols > .cat-table > .acc-card__body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3, 12px) var(--space-4, 16px);
+    align-items: start;
+  }
+  .sys--cols > .cat-table > .acc-card__body > * {
+    grid-column: 1 / -1;
+  }
+  .sys--cols
+    > .cat-table
+    > .acc-card__body
+    > .c-notice:is(.c-notice + .c-notice, :has(+ .c-notice)) {
+    grid-column: auto;
+  }
+}
+/* صفوف الحقائق (المعاملات، الأطراف…) كانت شريطاً بعرض الصفحة لكل رقم؛ شبكة بطاقات صغيرة من 834 */
+@media (min-width: 834px) {
+  .sys--wide .shift-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}

@@ -154,7 +154,7 @@ export function ShareClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-share" />} footer={null}>
-      <div className="sys mp cus" data-screen="MP-07" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="MP-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مشاركة رابط ودعوة منشأة</h2>
@@ -411,7 +411,7 @@ export function InviteOpenClient({ token }: { token: string }) {
 
   return (
     <Frame title="السوق" footer={null}>
-      <div className="sys mp cus" data-screen="MP-07" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="MP-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مشاركة رابط ودعوة منشأة</h2>

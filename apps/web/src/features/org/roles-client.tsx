@@ -189,7 +189,7 @@ export function RolesClient() {
 
   return (
     <Frame title="الأدوار" nav={<AppNav currentId="org-roles" />} footer={null}>
-      <div className="sys" data-screen="ORG-02" data-state={state}>
+      <div className="sys sys--wide" data-screen="ORG-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">مصفوفة الأدوار والصلاحيات</h2>
