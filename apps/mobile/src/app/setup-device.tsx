@@ -4,7 +4,7 @@ import {
   percentDone,
   storeVerifiers,
 } from "@sting/sync-core";
-import { tx } from "@sting/texts";
+import { mtx, tx } from "@sting/texts";
 import {
   AppText,
   Button,
@@ -237,7 +237,7 @@ export default function SetupDevice() {
       ) : null}
 
       {screenState === "permission_denied" ? (
-        <StateView state="permission_denied" title={tx(T, "صلاحية مرفوضة")} />
+        <StateView state="permission_denied" title={mtx("deviceDenied")} />
       ) : null}
 
       {screenState === "success" ? (

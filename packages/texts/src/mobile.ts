@@ -16,6 +16,8 @@ export const MOBILE_TEXTS = {
   pinConfirm: "تأكيد الرمز",
   pinSave: "احفظ الرمز",
   pinInvalid: "الرمز ستة أرقام.",
+  // نصّ إطار ACC-05 حُذف من الويب في مراجعة التصميم (#200) والجوال ما زال يحتاجه لحالة الرفض
+  deviceDenied: "صلاحية مرفوضة",
   pinMismatch: "الرمزان غير متطابقين.",
   pinPasswordInvalid: "كلمة المرور غير صحيحة.",
   pinLater: "لاحقاً — أدخل بكلمة المرور",
