@@ -125,6 +125,36 @@ def test_export_preview_generate_limit_and_download(ctx: dict[str, Any]) -> None
     assert cc.get("/api/reports/exports", **ch).status_code == 403  # type: ignore[arg-type]
 
 
+def test_export_download_link_works_under_rls(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """رابط التنزيل بلا جلسة (404 على الإنتاج): الجدول تحت RLS والعرض بلا سياق مستأجر، فلا يرى
+    صفاً إلا بسياق المنصة. المشرف المحلي يتجاوز RLS فلا يظهر العطل، لذا نبدّل إلى دور التطبيق."""
+    from django.db import connection
+
+    from core.db.rls import APP_ROLE
+
+    sugar = str(ctx["sugar"].id)
+    assert do_push(ctx, _sale(ctx, sugar, invoice="S-RLS")) == ["accepted"]
+    c, h = _api(ctx)
+    r = c.post(
+        "/api/reports/exports",
+        {"report": "sales", "range": "custom", "start": "2026-09-01", "end": "2026-09-30"},
+        content_type="application/json",
+        **h,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 201, r.content
+    url = r.json()["export"]["url"]
+    with connection.cursor() as cursor:
+        cursor.execute(f"SET ROLE {APP_ROLE}")
+    try:
+        r = Client().get(f"{url}?download=1")
+        assert r.status_code == 200, r.content
+        assert r["Content-Disposition"].startswith("attachment")
+        assert Client().get("/api/reports/exports/nope").status_code == 404
+    finally:
+        with connection.cursor() as cursor:
+            cursor.execute("RESET ROLE")
+
+
 def test_export_preview_accepts_format_param_on_empty_tenant(ctx: dict[str, Any]) -> None:  # noqa: F811
     """فحص 2026-10-17 F02: الويب يرسل `?format=html|csv` — DRF كان يعدّه اختيار عارض فيعيد 404 دائماً.
     منشأة بلا بيع ولا مخزون: المعاينة تنجح بصفر صفوف (التقرير الفارغ نتيجة سليمة)."""
