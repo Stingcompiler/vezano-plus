@@ -18,6 +18,8 @@ import {
 } from "@sting/domain";
 import type { StoragePort } from "@sting/platform";
 
+import { unitDisplay } from "./unit-display";
+
 import type { LocalItem, LocalItemUnit } from "./catalog-local";
 import { saveOperation } from "./local-save";
 import type { OperationDraft } from "./types";
@@ -101,7 +103,7 @@ function factorLabel(factorMilli: string, baseUnitCode: string): string {
   const f = BigInt(factorMilli);
   const whole = f / FACTOR_ONE;
   const frac = (f % FACTOR_ONE).toString().padStart(3, "0").replace(/0+$/, "");
-  return `= ${whole}${frac ? "." + frac : ""} ${baseUnitCode}`;
+  return `= ${whole}${frac ? "." + frac : ""} ${unitDisplay(baseUnitCode)}`;
 }
 
 export function catalogRows(items: readonly LocalItem[]): CatalogRow[] {
@@ -115,7 +117,7 @@ export function catalogRows(items: readonly LocalItem[]): CatalogRow[] {
       unitCode: item.base_unit_code,
       unitName: item.base_unit_name,
       label: item.name,
-      unitLabel: item.base_unit_code,
+      unitLabel: unitDisplay(item.base_unit_code),
       factorMilli: "1000",
       decimalPlaces: baseDecimals,
       unitPriceMinor: item.sale_price_minor,
@@ -138,7 +140,7 @@ function unitRow(item: LocalItem, u: LocalItemUnit): CatalogRow {
     unitCode: u.code,
     unitName: u.name,
     label: `${item.name} — ${u.name}`,
-    unitLabel: `${u.code} ${factorLabel(u.factor_milli, item.base_unit_code)}`,
+    unitLabel: `${unitDisplay(u.code)} ${factorLabel(u.factor_milli, item.base_unit_code)}`,
     factorMilli: u.factor_milli,
     decimalPlaces: decimals,
     unitPriceMinor: lineTotalMinor(

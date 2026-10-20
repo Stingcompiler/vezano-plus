@@ -1,7 +1,7 @@
 "use client";
 
 import type { StoredOperation } from "@sting/platform";
-import { LAST_SALE_META, type LocalSale, readSale } from "@sting/sync-core";
+import { LAST_SALE_META, type LocalSale, readSale, unitDisplay } from "@sting/sync-core";
 import {
   Button,
   formatMinor,
@@ -39,7 +39,7 @@ export function receiptLines(sale: LocalSale): ReceiptLine[] {
     // «سكر — 1 كغ»: الكمية بلا أصفار زائدة على الورقة (1 لا 1.000)
     label: `${l.item_name} — ${formatQty(l.qty_milli, l.decimal_places as 0 | 1 | 2 | 3)
       .replace(/(\.\d*?)0+$/, "$1")
-      .replace(/\.$/, "")} ${l.unit_code}`,
+      .replace(/\.$/, "")} ${unitDisplay(l.unit_code)}`,
     value: formatMinor(l.line_total_minor),
     mono: true,
   }));

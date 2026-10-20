@@ -1,7 +1,7 @@
 "use client";
 
 import { capabilities, percentDone } from "@sting/sync-core";
-import { Button, Frame, Notice, ProgressRing, Status } from "@sting/ui-web";
+import { Button, Frame, Notice, ProgressRing } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -176,12 +176,26 @@ export function SetupDeviceClient() {
                   </p>
                   <p className="acc-lead">يعمل بلا اتصال ويُزامن حين تعود الشبكة</p>
                 </Notice>
-                {b.persist === "denied" ? <Status state="permission_denied" /> : null}
+                {/* رفض المتصفح للتخزين الدائم تحذير لا منع: البيع يعمل، والخطر أن يمسح المتصفح بيانات
+                    الجهاز عند ضيق مساحته (0005 §١٨٣ · FIX-01) */}
+                {b.persist === "denied" ? (
+                  <Notice kind="warning" title="المتصفح لم يثبّت التخزين على هذا الجهاز">
+                    <p className="acc-lead">
+                      تستطيع البيع الآن. لكن قد يمسح المتصفح بيانات الجهاز حين تضيق مساحته، فصدّر
+                      نسخة محلية بانتظام.
+                    </p>
+                    <div className="acc-links">
+                      <Button variant="secondary" onClick={b.retryPersist}>
+                        أعد طلب التثبيت
+                      </Button>
+                      <Button variant="quiet" onClick={() => router.push("/sync/backup")}>
+                        صدّر نسخة محلية
+                      </Button>
+                    </div>
+                  </Notice>
+                ) : null}
                 <div className="acc-actions">
-                  <Button
-                    onClick={() => router.push("/shifts/open")}
-                    disabledReason={b.persist === "denied" ? "صلاحية مرفوضة" : undefined}
-                  >
+                  <Button onClick={() => router.push("/shifts/open")}>
                     افتح وردية وابدأ البيع
                   </Button>
                 </div>
