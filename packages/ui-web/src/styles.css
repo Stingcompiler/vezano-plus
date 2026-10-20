@@ -697,6 +697,10 @@ h3 {
 .c-field__control .c-field__input {
   padding-inline-end: 52px;
 }
+/* حقل سرّي بأرقام (PIN): mono يجعله LTR، فطرف بدايته هو جانب الزرّ في صفحة RTL (0005 §١٧٤) */
+.c-field__control .c-field__input.sting-mono {
+  padding-inline: 52px 12px;
+}
 .c-field__reveal {
   position: absolute;
   inset-block: 0;

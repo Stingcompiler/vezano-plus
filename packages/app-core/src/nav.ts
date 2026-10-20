@@ -126,6 +126,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { id: "update", label: "تحديث التطبيق", href: "/sync/update", group: NAV_GROUPS.device },
   { id: "storage", label: "مساحة الجهاز", href: "/sync/storage", group: NAV_GROUPS.device },
   { id: "sessions", label: "الجلسات", href: "/account/sessions", group: NAV_GROUPS.device },
+  { id: "pin", label: "رمز PIN", href: "/account/pin", group: NAV_GROUPS.device },
   // البيانات: النسخ والاستعادة والاستيراد — نادرة وحسّاسة، آخر القائمة
   { id: "backup", label: "نسخة محلية", href: "/sync/backup", group: NAV_GROUPS.data },
   { id: "restore", label: "استعادة", href: "/sync/restore", group: NAV_GROUPS.data },

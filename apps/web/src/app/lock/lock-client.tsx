@@ -35,6 +35,8 @@ type State = "ready" | "validation_error" | "offline" | "permission_denied";
  * - بلا جلسة (أُعيد تحميل الصفحة — الرموز في الذاكرة فقط §٩.٤): الرمز الصحيح يقود إلى الدخول بكلمة
  *   المرور مرة واحدة بدل الصفحة العامة التي كانت تعيد إلى القفل (حلقة).
  * - جهاز بلا متحققات منزَّلة: يُقال ذلك ويُعرض الدخول بكلمة المرور بدل لوحة معطَّلة بلا تفسير.
+ * - 0005 §١٧٩: جلسة حيّة ومتحققات الجهاز لغير صاحبها: يُقال إن لا رمز له، ويُعرض ضبط الرمز (عبر
+ *   الدخول) والدخول بكلمة المرور — لا اسم مستخدم آخر ولوحته.
  */
 export function LockClient() {
   const router = useRouter();
@@ -84,11 +86,12 @@ export function LockClient() {
   }, [online, app.device]);
 
   const pinLength = device?.pin_length ?? 6;
-  // المستخدم المعروض: صاحب الجلسة الحيّة إن وُجد، وإلا الأول؛ المسحوب يبقى ظاهراً ليُعلَن له السحب
-  const user =
-    (sessionUserId ? device?.verifiers.find((v) => v.user_id === sessionUserId) : undefined) ??
-    device?.verifiers[0] ??
-    null;
+  // المستخدم المعروض: صاحب الجلسة الحيّة، وبلا جلسة الأول؛ المسحوب يبقى ظاهراً ليُعلَن له السحب.
+  // جلسة حيّة بلا رمز لصاحبها لا تعرض غيره (كان يقع على الأول — 0005 §١٧٩)
+  const user = sessionUserId
+    ? (device?.verifiers.find((v) => v.user_id === sessionUserId) ?? null)
+    : (device?.verifiers[0] ?? null);
+  const noOwnPin = Boolean(sessionUserId && device?.verifiers.length && !user);
   const next = () =>
     safeNext(
       typeof window === "undefined" ? null : new URLSearchParams(location.search).get("next"),
@@ -178,7 +181,7 @@ export function LockClient() {
           <div className="acc-card__body acc-pin">
             <div style={{ textAlign: "center" }}>
               <h2 className="acc-card__title" style={{ fontSize: 18 }}>
-                {user?.display_name ?? ""}
+                {user?.display_name ?? (noOwnPin ? (app.session.displayName ?? "") : "")}
               </h2>
               <p className="acc-lead">
                 {user ? (
@@ -195,6 +198,12 @@ export function LockClient() {
                 <p className="acc-lead">
                   القفل يحتاج رمزاً نُزّل عند تجهيز الجهاز. ادخل بكلمة المرور ثم جهّز الجهاز.
                 </p>
+                {/* لم يكن للمستخدم طريق لضبط رمزه خارج البذر (0005 §١٧٤) — بلا جلسة يمرّ بالدخول أولاً */}
+                <div className="acc-links">
+                  <Button variant="secondary" onClick={() => router.push("/account/pin")}>
+                    اضبط رمز PIN
+                  </Button>
+                </div>
               </Notice>
             ) : null}
             {needsLogin ? (
@@ -212,7 +221,29 @@ export function LockClient() {
                 </p>
               </Notice>
             ) : null}
-            {state === "permission_denied" ? (
+            {noOwnPin ? (
+              <Notice kind="info" title="لا رمز PIN لك على هذا الجهاز">
+                <p className="acc-lead">
+                  رموز هذا الجهاز لمستخدمين آخرين، فلا يُفتح القفل لجلستك برمز. اضبط رمزك، أو ادخل
+                  بكلمة المرور.
+                </p>
+                {/* الضبط يمرّ بالدخول: الذهاب إلى /account/pin مباشرة يتخطّى القفل مع جلسة حيّة */}
+                <div className="acc-links">
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push(`/login?next=${encodeURIComponent("/account/pin")}`)}
+                  >
+                    اضبط رمز PIN
+                  </Button>
+                  <Button
+                    variant="quiet"
+                    onClick={() => router.push(`/login?next=${encodeURIComponent(next())}`)}
+                  >
+                    ادخل بكلمة المرور
+                  </Button>
+                </div>
+              </Notice>
+            ) : state === "permission_denied" ? (
               <Notice kind="error" title="الرمز صحيح — لكن وصولك إلى هذا الجهاز سُحب">
                 <p className="acc-lead">
                   إن كان له عملٌ معلّق على هذا الجهاز فله تصديره أو طلب استرداده
