@@ -40,7 +40,8 @@
   align-items: start;
 }
 .pos-body--tablet {
-  grid-template-columns: 260px minmax(0, 1fr);
+  /* 260 كانت تضغط سطر السلة (الاسم + الكمية + السعر + الحذف) حتى يخرج الحذف من العمود (0005 §١٨٢) */
+  grid-template-columns: clamp(280px, 30vw, 340px) minmax(0, 1fr);
 }
 .pos-panel {
   display: flex;
@@ -134,6 +135,34 @@
   border-radius: var(--radius-card);
   background: var(--color-surface-card);
   padding: 12px 14px;
+}
+/*
+ * سطر السلة في عمود ضيق: الاسم والكمية في صفّ ومعهما الحذف، وتحتهما أزرار الكمية والمجموع —
+ * بدل صفّ واحد من أربعة عناصر يطحن الاسم ويُخرج زرّ الحذف من العمود (0005 §١٨٢).
+ */
+.pos-cart .c-cart__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+.pos-cart .c-cart__line > .c-cart__line-main {
+  grid-column: 1;
+  grid-row: 1;
+}
+.pos-cart .c-cart__line > :last-child {
+  grid-column: 2;
+  grid-row: 1;
+}
+.pos-cart .c-cart__line > .c-cart__step {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+}
+.pos-cart .c-cart__line > .c-cart__total {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
 }
 .pos-cart__head {
   display: flex;
