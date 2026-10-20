@@ -17,6 +17,7 @@ import { dayMonth, hhmm } from "@/features/home/format";
 import { Ago } from "@/features/org/ago";
 import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
+import { BRANCHES, Count, MISSING_OPERATIONS } from "@/lib/count";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
 import { CompletenessBadge, DevicesSynced } from "@/features/reports/completeness";
@@ -524,10 +525,13 @@ export function SalesReportClient() {
                         <>
                           {branchesSynced === 0 ? (
                             "لم يزامن أي فرع بعد"
+                          ) : branchesSynced === 1 ? (
+                            "من فرع واحد زامن"
+                          ) : branchesSynced === 2 ? (
+                            "من فرعين زامنا"
                           ) : (
                             <>
-                              من <Count n={branchesSynced} {...BRANCHES} /> زامن
-                              {branchesSynced === 1 ? "" : branchesSynced === 2 ? "ا" : "ت"}
+                              من <Count n={branchesSynced} {...BRANCHES} /> زامنت
                             </>
                           )}
                         </>
@@ -590,7 +594,7 @@ export function SalesReportClient() {
                           <span>
                             {b.pending > 0 ? (
                               <>
-                                ناقص <Count n={b.pending} {...OPERATIONS} />
+                                ناقص <Count n={b.pending} {...MISSING_OPERATIONS} />
                               </>
                             ) : (
                               "غير مكتمل — عدد العمليات الناقصة غير معروف"
