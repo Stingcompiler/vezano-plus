@@ -132,7 +132,7 @@ export function InstallClient() {
 
   return (
     <Frame title="التثبيت" nav={<AppNav currentId="install" />} footer={null}>
-      <div className="sys" data-screen="WEB-01" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="WEB-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تثبيت PWA أو عدم دعم التثبيت</h2>

@@ -226,7 +226,7 @@ export function ExportClient() {
 
   return (
     <Frame title="التقارير" nav={<AppNav currentId="reports-export" />} footer={null}>
-      <div className="sys rep" data-screen="REP-06" data-state={state}>
+      <div className="sys sys--wide rep" data-screen="REP-06" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تصدير تقرير ومعاينته</h2>

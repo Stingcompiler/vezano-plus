@@ -228,7 +228,7 @@ export function InboxClient({ initialId = "" }: { initialId?: string }) {
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="inbox" />} footer={null}>
-      <div className="sys not" data-screen="NOT-01" data-state={state}>
+      <div className="sys sys--wide not" data-screen="NOT-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">صندوق الوارد — التشغيلي فوق التسويقي دائماً</h2>

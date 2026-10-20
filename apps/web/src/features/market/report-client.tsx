@@ -253,7 +253,7 @@ export function ReportClient({ reportId = "" }: { reportId?: string }) {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-reports" />} footer={null}>
-      <div className="sys mp cus" data-screen="MP-15" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="MP-15" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">بلاغ عن عرض أو انتحال — سبب ودليل ومسار متابعة</h2>

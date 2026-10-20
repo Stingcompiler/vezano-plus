@@ -227,7 +227,7 @@ export function SyncCenterClient() {
 
   return (
     <Frame title="مركز الاتصال والمزامنة" nav={<AppNav currentId="sync" />} footer={null}>
-      <div className="sys" data-screen="SYS-01" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="SYS-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">حالة المزامنة</h2>

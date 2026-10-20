@@ -138,7 +138,7 @@ export function CampaignsClient() {
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="campaigns" />} footer={null}>
-      <div className="sys not" data-screen="NOT-03" data-state={state}>
+      <div className="sys sys--wide not" data-screen="NOT-03" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">قائمة الحملات</h2>
