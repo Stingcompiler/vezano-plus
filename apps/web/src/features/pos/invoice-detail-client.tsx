@@ -1,6 +1,6 @@
 "use client";
 
-import { type LocalSale, readSale } from "@sting/sync-core";
+import { type LocalSale, readSale, unitDisplay } from "@sting/sync-core";
 import { Button, formatMinor, formatQty, Frame, Notice, Table, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -180,7 +180,7 @@ export function InvoiceDetailClient({ saleId }: { saleId: string }) {
               .replace(/(\.\d*?)0+$/, "$1")
               .replace(/\.$/, "")}
           </span>{" "}
-          {l.unit_code}
+          {unitDisplay(l.unit_code)}
         </>
       ),
     },

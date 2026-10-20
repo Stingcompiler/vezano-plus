@@ -21,6 +21,7 @@ export const SYNC_PROTOCOL_VERSION = 1 as const;
 export type LocalOperationState = "local" | "pending" | "synced" | "conflict" | "quarantined";
 export * from "./shift-local";
 export * from "./pos-local";
+export { unitDisplay } from "./unit-display";
 export * from "./parties-list";
 export * from "./parties-local";
 export * from "./return-local";

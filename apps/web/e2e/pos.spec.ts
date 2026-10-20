@@ -76,12 +76,14 @@ interface Seed {
   readonly items?: typeof ITEMS;
   readonly shift?: boolean;
   readonly balances?: Record<string, string>;
+  /** الجهاز نزّل بياناته (الافتراضي نعم) — بدونه الكتالوج المحلي فارغ لأنه لم يصل (0005 §١٨٣) */
+  readonly setup?: boolean;
 }
 
 async function seed(page: Page, s: Seed = {}) {
   await page.goto("/welcome");
   await page.evaluate(
-    async ({ items, shift, balances, openedAt }) => {
+    async ({ items, shift, balances, openedAt, setup }) => {
       const req = indexedDB.open("sting-bootstrap");
       const db = await new Promise<IDBDatabase>((res, rej) => {
         req.onsuccess = () => res(req.result);
@@ -94,6 +96,7 @@ async function seed(page: Page, s: Seed = {}) {
           value: JSON.stringify({ deviceId: "d1", prefix: "A2", branchId: "b1" }),
         });
         tx.objectStore("meta").put({ key: "sync_epoch", value: "epoch-A" });
+        if (setup) tx.objectStore("meta").put({ key: "device.setup", value: "done" });
         tx.objectStore("meta").put({
           key: "shift.context",
           value: JSON.stringify({
@@ -171,6 +174,7 @@ async function seed(page: Page, s: Seed = {}) {
       items: s.items ?? ITEMS,
       shift: s.shift ?? true,
       balances: s.balances ?? {},
+      setup: s.setup ?? true,
       openedAt: (() => {
         const d = new Date();
         d.setHours(8, 0, 0, 0);
@@ -421,6 +425,20 @@ test.describe("POS-01", () => {
     await search.press("Enter");
     await expect(page.locator(".c-cart")).toContainText("سكر");
     await expect(page.locator(".c-cart")).toContainText("1,200.00");
+  });
+
+  test("جهاز لم ينزّل بياناته: لا «محل جديد» — بيانات لم تصل وزرّ تجهيز الجهاز (FIX-02 · 0005 §١٨٣)", async ({
+    page,
+  }) => {
+    await seed(page, { items: [], setup: false });
+    await balances(page, []);
+    await login(page);
+    const screen = page.locator('[data-screen="POS-01"]');
+    await expect(screen).toContainText("بيانات المنشأة لم تصل إلى هذا الجهاز بعد");
+    await expect(page.locator("body")).not.toContainText("كتالوج فارغ — محل جديد");
+    await expect(page.locator("body")).not.toContainText("منشأة جديدة لم تُدخل أصنافها.");
+    await page.getByRole("button", { name: "جهّز هذا الجهاز" }).click();
+    await expect(page).toHaveURL(/\/setup-device$/);
   });
 
   test("empty: كتالوج فارغ — منشأة جديدة لم تُدخل أصنافها، والبيع لا يقف على اكتمال الكتالوج", async ({

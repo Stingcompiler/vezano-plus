@@ -155,6 +155,26 @@ test.describe("ACC-05", () => {
     await expect(page).toHaveURL(/\/lock$/);
   });
 
+  test("success مع رفض المتصفح للتخزين الدائم: تحذير لا منع — زرّ البيع يعمل (FIX-01 · 0005 §١٨٣)", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      navigator.storage.persist = () => Promise.resolve(false);
+      navigator.storage.persisted = () => Promise.resolve(false);
+    });
+    await page.route("**/api/bootstrap/*/page**", pageRoute(servePage));
+    await loginToSetup(page);
+    const screen = page.locator('[data-screen="ACC-05"]');
+    await expect(screen).toContainText("الجهاز جاهز");
+    await expect(screen).toContainText("المتصفح لم يثبّت التخزين على هذا الجهاز");
+    await expect(screen).not.toContainText("صلاحية مرفوضة");
+    await expect(page.getByRole("button", { name: "أعد طلب التثبيت" })).toBeEnabled();
+    const start = page.getByRole("button", { name: "افتح وردية وابدأ البيع" });
+    await expect(start).toBeEnabled();
+    await start.click();
+    await expect(page).toHaveURL(/\/shifts\/open$/);
+  });
+
   test("server_error → partial: ثلاث محاولات متباعدة ثم وقوف يدوي، وما نزل يبقى ويُستأنف", async ({
     page,
   }, info) => {

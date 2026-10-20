@@ -1,5 +1,6 @@
 "use client";
 
+import { unitDisplay } from "@sting/sync-core";
 import { Button, formatMinor, formatQty, Frame, Notice, Status, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -84,7 +85,8 @@ function DocCard({ title, doc, decided }: { title: string; doc: Doc; decided?: s
                 .replace(/(\.\d*?)0+$/, "$1")
                 .replace(/\.$/, "")}
             </span>{" "}
-            {l.unit_code} · <span className="sting-mono">{formatMinor(l.line_total_minor)}</span>
+            {unitDisplay(l.unit_code)} ·{" "}
+            <span className="sting-mono">{formatMinor(l.line_total_minor)}</span>
           </li>
         ))}
       </ul>
