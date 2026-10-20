@@ -55,6 +55,13 @@ export function Frame({
     if (back === false) return;
     setCanBack(window.history.length > 1 && window.location.pathname !== "/");
   }, [back]);
+  // عنوان التبويب يتبع عنوان الشاشة (FIX-13 · 0005 §١٨٤): كانت شاشات التشغيل تحمل عنوان الصفحة التسويقية.
+  // الصفحات العامة (chrome) وإطار باسم المنتج نفسه يبقى عنوانهما من metadata الخاصة بهما.
+  const brandName = brand?.name;
+  useEffect(() => {
+    if (chrome || !brandName || title === brandName) return;
+    document.title = `${title} · ${brandName}`;
+  }, [title, brandName, chrome]);
   const rootRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);

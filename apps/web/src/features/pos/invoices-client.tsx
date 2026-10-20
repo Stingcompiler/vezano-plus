@@ -351,7 +351,7 @@ export function InvoicesClient() {
     });
 
   return (
-    <Frame title="نقطة البيع" nav={<PosNav currentId="invoices" />} footer={null}>
+    <Frame title="الفواتير" nav={<PosNav currentId="invoices" />} footer={null}>
       <div className="pos" data-screen="POS-09" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

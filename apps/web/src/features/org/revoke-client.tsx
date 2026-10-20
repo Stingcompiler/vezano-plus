@@ -14,6 +14,7 @@ import { AppNav } from "@/features/home/app-nav";
 import { agoParts } from "@/features/home/format";
 import { MonoText } from "@/features/org/mono";
 import { api } from "@/lib/api";
+import { BRANCHES, countText } from "@/lib/count";
 import { useApp } from "@/lib/app-context";
 
 type State = "ready" | "validation_error" | "permission_denied" | "pending_sync" | "success";
@@ -377,7 +378,8 @@ export function RevokeClient({ userId }: { userId: string }) {
                       {p.scopes.length > 1 ? (
                         <>
                           {" "}
-                          · كان يعمل في <MonoText text={`${p.scopes.length} فروع`} /> · يبقى في{" "}
+                          · كان يعمل في <MonoText text={countText(p.scopes.length, BRANCHES)} /> ·
+                          يبقى في{" "}
                           {p.scopes
                             .filter((x) => x.branch_id !== s.branch_id)
                             .map((x) => x.branch_name)

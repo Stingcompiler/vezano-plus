@@ -30,7 +30,7 @@ export function Pub404({ state }: { state: State }) {
                   <Button pos onClick={() => router.push("/")}>
                     الصفحة الرئيسية
                   </Button>
-                  <Button onClick={() => router.push("/welcome")}>دخول التطبيق</Button>
+                  <Button onClick={() => router.push("/login")}>دخول التطبيق</Button>
                   <Button onClick={() => router.push("/market")}>السوق</Button>
                 </div>
               </Notice>
