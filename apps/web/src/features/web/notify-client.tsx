@@ -171,7 +171,7 @@ export function NotifyClient() {
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="notify" />} footer={null}>
-      <div className="sys" data-screen="WEB-02" data-state={state}>
+      <div className="sys sys--wide sys--cols" data-screen="WEB-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">إذن Web Push وحالاته</h2>

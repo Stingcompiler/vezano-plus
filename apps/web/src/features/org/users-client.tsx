@@ -332,7 +332,7 @@ export function UsersClient() {
 
   return (
     <Frame title="المستخدمون" nav={<AppNav currentId="org-users" />} footer={null}>
-      <div className="sys" data-screen="ORG-01" data-state={state}>
+      <div className="sys sys--wide" data-screen="ORG-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">المستخدمون والدعوات</h2>

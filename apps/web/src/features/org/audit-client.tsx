@@ -177,7 +177,7 @@ export function AuditClient() {
 
   return (
     <Frame title="سجل التدقيق" nav={<AppNav currentId="org-audit" />} footer={null}>
-      <div className="sys" data-screen="ORG-10" data-state={state}>
+      <div className="sys sys--wide" data-screen="ORG-10" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">سجل التدقيق — فاعل ووقت وسبب، ولا تعديل</h2>

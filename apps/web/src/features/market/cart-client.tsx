@@ -159,7 +159,7 @@ export function CartClient() {
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-cart" />} footer={null}>
-      <div className="sys mp cus" data-screen="ORD-01" data-state={state}>
+      <div className="sys sys--wide mp cus" data-screen="ORD-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

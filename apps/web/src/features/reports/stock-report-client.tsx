@@ -249,7 +249,7 @@ export function StockReportClient() {
 
   return (
     <Frame title="التقارير" nav={<AppNav currentId="reports-stock" />} footer={null}>
-      <div className="sys rep" data-screen="REP-03" data-state={state}>
+      <div className="sys sys--wide rep" data-screen="REP-03" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">تقرير المخزون والحركات</h2>

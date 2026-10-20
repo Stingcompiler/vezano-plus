@@ -216,7 +216,7 @@ export function PriceListsClient({ listId, offerId }: { listId?: string; offerId
 
   return (
     <Frame title="السوق" nav={<AppNav currentId="market-lists" />} footer={null}>
-      <div className="sys mp" data-screen="MP-12" data-state={state}>
+      <div className="sys sys--wide mp" data-screen="MP-12" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">
