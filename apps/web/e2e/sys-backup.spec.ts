@@ -296,7 +296,6 @@ test.describe("SYS-06", () => {
       state: "ready",
       texts: fromFrame("SYS-06", "ready", [
         "استعادة نسخة ومعاينتها",
-        "أخطر فعل في النظام: يكتب فوق دفتر قائم.",
         "معاينة قبل أي كتابة",
         "لا استعادة كاملة عمياء",
         "الاستعادة دمجٌ بالهويات لا إحلال. الإحلال يمحو ما عمله الجهاز بعد النسخة.",
@@ -307,6 +306,8 @@ test.describe("SYS-06", () => {
     // فحص 2026-10-17 F10: قبل اختيار ملف لا «الملف قُرئ»
     await expect(root).toContainText("اختر ملف النسخة لعرض محتواه قبل أي كتابة.");
     await expect(root).not.toContainText("الملف قُرئ");
+    // 0005 §١٨٠: «يكتب فوق دفتر قائم» ملاحظة مصمّم تناقض الدمج — لا تعود
+    await expect(root).not.toContainText("يكتب فوق دفتر قائم");
     await chooseFile(page, "broken.stg", "{not json");
     await expectFrame(page, info, {
       screenId: "SYS-06",

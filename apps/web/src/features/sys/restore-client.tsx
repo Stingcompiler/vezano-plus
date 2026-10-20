@@ -167,7 +167,6 @@ export function RestoreClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">استعادة نسخة ومعاينتها</h2>
-            <span className="cat-head__hint">أخطر فعل في النظام: يكتب فوق دفتر قائم.</span>
           </div>
           <div className="acc-card__body">
             {state === "server_error" && progress ? (
