@@ -11,6 +11,7 @@ import {
   returnTotals,
   saleFromServer,
   saveReturnLocally,
+  unitDisplay,
 } from "@sting/sync-core";
 import {
   Button,
@@ -289,7 +290,7 @@ export function ReturnClient({ saleId }: { saleId: string }) {
           <div>{r.line.item_name}</div>
           <div className="acc-choice__note">
             المتاح <span className="sting-mono">{trimQty(r.available, r.line.decimal_places)}</span>{" "}
-            {r.line.unit_code}
+            {unitDisplay(r.line.unit_code)}
           </div>
         </div>
       ),

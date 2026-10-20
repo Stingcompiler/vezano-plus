@@ -178,3 +178,14 @@ describe("نقطة البيع محلياً (POS-01/02؛ §٦.٢)", () => {
     expect(looksLikeBarcode("سكر")).toBe(false);
   });
 });
+
+describe("unitDisplay (FIX-07)", () => {
+  it("يعرّب معرّفات الوحدات المعروفة ويترك المكتوبة بيد المالك", async () => {
+    const { unitDisplay } = await import("./unit-display");
+    expect(unitDisplay("piece")).toBe("حبة");
+    expect(unitDisplay("Carton")).toBe("كرتونة");
+    expect(unitDisplay("kg")).toBe("كيلو");
+    expect(unitDisplay("كغ")).toBe("كغ");
+    expect(unitDisplay("طبق")).toBe("طبق");
+  });
+});

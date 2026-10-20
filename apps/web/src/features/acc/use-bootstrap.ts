@@ -43,6 +43,8 @@ export interface BootstrapUi {
   readonly stop: StopReason;
   readonly progress: BootstrapProgress | null;
   readonly persist: PersistOutcome | null;
+  /** إعادة طلب التخزين الدائم بنقرة (بعض المتصفحات تسأل المستخدم فقط عند نقرة منه) */
+  readonly retryPersist: () => void;
   readonly expiredNotice: boolean;
   readonly retry: () => void;
 }
@@ -63,6 +65,9 @@ export function useBootstrap(online: boolean): BootstrapUi {
   onlineRef.current = online;
 
   const retry = useCallback(() => setRun((n) => n + 1), []);
+  const retryPersist = useCallback(() => {
+    void requestPersistentStorage().then(setPersist);
+  }, []);
 
   useEffect(() => {
     if (!app.tokens || !app.session.tenantId || running.current) return;
@@ -244,7 +249,7 @@ export function useBootstrap(online: boolean): BootstrapUi {
     // run وonline محفّزا الإعادة عمداً؛ app يُقرأ عند التشغيل لا عند كل تغيير
   }, [app.tokens, app.session.tenantId, run, online]);
 
-  return { phase, stop, progress, persist, expiredNotice, retry };
+  return { phase, stop, progress, persist, retryPersist, expiredNotice, retry };
 }
 
 class ExpiredError extends Error {}
