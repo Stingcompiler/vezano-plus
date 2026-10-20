@@ -17,6 +17,7 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
+import { BRANCHES, Count } from "@/lib/count";
 import { useOnline } from "@/lib/online";
 
 import { agoParts, hhmm } from "./format";
@@ -234,7 +235,7 @@ export function HomeClient() {
               </div>
               <div className="home-head__meta">
                 <span>
-                  <span className="sting-mono">{summary.branches.length}</span> فروع ·{" "}
+                  <Count n={summary.branches.length} {...BRANCHES} /> ·{" "}
                   {summary.devices_total === 0
                     ? "لا جهاز مسجّل بعد"
                     : summary.branches_synced

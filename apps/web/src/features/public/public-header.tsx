@@ -88,7 +88,7 @@ export function PublicHeader({
   };
 
   const ctaLabel = cta === "register" ? "حساب جديد" : "تسجيل الدخول";
-  const ctaHref = cta === "register" ? "/register" : "/welcome";
+  const ctaHref = cta === "register" ? "/register" : "/login";
 
   return (
     <div
