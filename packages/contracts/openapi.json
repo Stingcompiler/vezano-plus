@@ -38,6 +38,34 @@
         }
       }
     },
+    "/api/account/pin": {
+      "post": {
+        "operationId": "account_pin_create",
+        "description": "`POST {pin, password}` → 204. كلمة المرور الخاطئة 403 `password_invalid`، والرمز غير الصالح\n400 `pin_invalid` (أرقام بطول `PIN_LENGTH`).",
+        "tags": ["account"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnPin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No response body"
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/account/select": {
       "post": {
         "operationId": "account_select_create",
@@ -12868,6 +12896,20 @@
           }
         },
         "required": ["version"]
+      },
+      "OwnPin": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": ["password", "pin"]
       },
       "Page": {
         "type": "object",

@@ -212,6 +212,11 @@
   "PATCH /api/tenants/onboarding": [
    "413:logo_too_large"
   ],
+  "POST /api/account/pin": [
+   "400:pin_invalid",
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:password_invalid"
+  ],
   "POST /api/account/select": [
    "401:unauthenticated",
    "403:membership_suspended",

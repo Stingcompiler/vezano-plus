@@ -17,6 +17,7 @@ from core.auth.membership_views import (
     SectorsView,
     SelectView,
 )
+from core.auth.pin_views import OwnPinView
 from core.auth.session_views import RevokeSessionView, SessionsView
 from core.auth.views import (
     DeviceRefreshIssueView,
@@ -259,6 +260,7 @@ urlpatterns = [
     path("tenants", CreateTenantView.as_view(), name="tenants-create"),
     # ACC-09 (T1.5): الجلسات النشطة وإنهاؤها
     path("account/sessions", SessionsView.as_view(), name="account-sessions"),
+    path("account/pin", OwnPinView.as_view(), name="account-pin"),
     path(
         "account/sessions/<uuid:session_id>/revoke",
         RevokeSessionView.as_view(),

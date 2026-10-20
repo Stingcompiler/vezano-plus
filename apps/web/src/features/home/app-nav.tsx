@@ -99,6 +99,7 @@ const ITEMS = [
   { id: "update", label: "تحديث التطبيق", href: "/sync/update", group: G.device },
   { id: "storage", label: "مساحة الجهاز", href: "/sync/storage", group: G.device },
   { id: "sessions", label: "الجلسات", href: "/account/sessions", group: G.device },
+  { id: "pin", label: "رمز PIN", href: "/account/pin", group: G.device },
   // البيانات: النسخ والاستعادة والاستيراد — نادرة وحسّاسة، آخر القائمة
   { id: "backup", label: "نسخة محلية", href: "/sync/backup", group: G.data },
   { id: "restore", label: "استعادة", href: "/sync/restore", group: G.data },
