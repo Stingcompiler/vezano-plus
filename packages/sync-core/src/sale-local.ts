@@ -331,6 +331,14 @@ export async function readSaleCashRows(storage: StoragePort, shiftId: string): P
       inCashMinor: BigInt(s.cash_minor) > 0n ? s.cash_minor : null,
       outCashMinor: out > 0n ? out.toString() : null,
       sync: syncOf(ops.get(s.operation_id)),
+      mode:
+        out === 0n
+          ? undefined
+          : BigInt(s.cash_minor) > 0n
+            ? "mixed"
+            : BigInt(s.credit_minor) > 0n
+              ? "credit"
+              : "bank",
     };
   });
 }

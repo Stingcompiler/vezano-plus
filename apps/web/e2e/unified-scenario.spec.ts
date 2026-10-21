@@ -233,7 +233,7 @@ async function verifyEverywhere(
   await expect(page).toHaveURL(/\/shifts\/current$/);
   const shift = page.locator('[data-screen="SHIFT-02"]');
   await expect(shift).toContainText("INV-KRT-A2-26-000001");
-  await expect(shift).toContainText("بيع نقدي");
+  await expect(shift).toContainText("بيع مختلط");
   await expect(shift.locator(".shift-expected__v")).toContainText("1,880.00");
   await expect(shift).toContainText("40.00");
   await expect(shift).toContainText("60.00");

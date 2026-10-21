@@ -14146,6 +14146,9 @@
        "amount_minor": {
         "type": "string"
        },
+       "covers_until": {
+        "type": "string"
+       },
        "currency": {
         "type": "string"
        },
@@ -14199,6 +14202,33 @@
         },
         "type": "array"
        },
+       "pay_to": {
+        "anyOf": [
+         {
+          "type": "null"
+         },
+         {
+          "additionalProperties": false,
+          "properties": {
+           "account": {
+            "type": "string"
+           },
+           "bank": {
+            "type": "string"
+           },
+           "holder": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "bank",
+           "account",
+           "holder"
+          ],
+          "type": "object"
+         }
+        ]
+       },
        "period_label": {
         "type": "string"
        },
@@ -14228,7 +14258,9 @@
        "currency",
        "period_label",
        "review_sla",
-       "cycles"
+       "cycles",
+       "covers_until",
+       "pay_to"
       ],
       "type": "object"
      },
@@ -42140,6 +42172,9 @@
        "amount_minor": {
         "type": "string"
        },
+       "covers_until": {
+        "type": "string"
+       },
        "currency": {
         "type": "string"
        },
@@ -42193,6 +42228,33 @@
         },
         "type": "array"
        },
+       "pay_to": {
+        "anyOf": [
+         {
+          "type": "null"
+         },
+         {
+          "additionalProperties": false,
+          "properties": {
+           "account": {
+            "type": "string"
+           },
+           "bank": {
+            "type": "string"
+           },
+           "holder": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "bank",
+           "account",
+           "holder"
+          ],
+          "type": "object"
+         }
+        ]
+       },
        "period_label": {
         "type": "string"
        },
@@ -42222,7 +42284,9 @@
        "currency",
        "period_label",
        "review_sla",
-       "cycles"
+       "cycles",
+       "covers_until",
+       "pay_to"
       ],
       "type": "object"
      },

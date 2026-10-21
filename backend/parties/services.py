@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -909,7 +910,8 @@ def create_statement_export(
         raise CardRejected("too_long", "range")
     names = {str(b.id): b.name for b in Branch.objects.all()}
     rows = [{**r, "branch_name": names.get(str(r.get("branch_id", "")), "")} for r in body["rows"]]
-    now = timezone.localtime()
+    # الوقت في الاسم بتوقيت السودان (UTC+2) لا UTC (مراجعة 2026-10-19، بند 26)
+    now = timezone.now().astimezone(ZoneInfo("Africa/Khartoum"))
     range_label = "كامل" if rng == "all" else "30-يوماً"
     file_name = f"كشف-حساب-{party.name}-{range_label}-{now:%Y%m%d-%H%M}.pdf"
     export: StatementExport = StatementExport.objects.create(

@@ -220,6 +220,11 @@ test.describe("PTY-08", () => {
     });
     await expect(root).toContainText("كشف-حساب-أحمد الطيب — تجريبي-30-يوماً-20260917-1105.pdf");
     await expect(root).toContainText("لم يُفتح بعد");
+    // مراجعة 2026-10-19 (بند 25): الرابط الظاهر مطلق (يُلصق في واتساب فيفتح) وللواتساب زرّ
+    await expect(page.getByTestId("share-link")).toHaveText(
+      /^https?:\/\/[^/]+\/api\/parties\/exports\//,
+    );
+    await expect(page.getByRole("button", { name: "واتساب" })).toBeVisible();
     await page.getByRole("button", { name: "تحديث الحالة" }).click();
     await expect(root).toContainText("تم الاطلاع");
     expect(posted).toEqual([

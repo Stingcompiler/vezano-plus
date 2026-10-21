@@ -482,7 +482,7 @@ test.describe("POS-07", () => {
     const shift = page.locator('[data-screen="SHIFT-02"]');
     await expect(shift).toContainText("INV-KRT-A2-26-000001");
     await expect(shift.locator(".shift-expected__v")).toContainText("1,880.00");
-    await expect(shift).toContainText("بيع نقدي");
+    await expect(shift).toContainText("بيع مختلط");
   });
 
   test("validation_error: الأجزاء لا تساوي الإجمالي — الفارق يُعرض ولا يُوزَّع والحفظ معطّل", async ({
