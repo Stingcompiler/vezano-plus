@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, overload
 
+from django.db import transaction
 from django.utils import timezone
 
 from core.models import (
@@ -26,7 +27,7 @@ from core.models import (
     User,
     UserBranchAccess,
 )
-from core.tenancy import require_tenant
+from core.tenancy import platform_context, require_tenant
 
 TRIAL_DAYS = 30
 #: §١١.٢ — مهلة السماح بعد الانتهاء ثم تدرّج الحجب
@@ -893,14 +894,31 @@ def attach_image(
     return p
 
 
+@transaction.atomic
 def review_proof(
     p: SubscriptionProof, *, reviewer_name: str, approve: bool, reason: str = ""
 ) -> SubscriptionProof:
-    """المراجعة البشرية: الاعتماد يمدّد الاشتراك شهراً بمرجع الرقم مرة واحدة؛ الرفض بسبب مذكور."""
+    """المراجعة البشرية: الاعتماد يمدّد الاشتراك شهراً بمرجع الرقم مرة واحدة؛ الرفض بسبب مذكور.
+
+    0005 §١٨٧: المسار القديم لمراجعة المنصة كان يعتمد بلا فحص، فصار الفحص هنا لكل المسارات:
+    - الصف يُقفل (`select_for_update`) فلا يُعتمد إثبات واحد مرتين بتزامن مراجعَين (تمديد مضاعف)؛
+    - رقم عملية اعتُمد لمنشأة لا يُعتمد ثانيةً لمنشأة أخرى (إعادة استعمال إيصال الدفع)."""
+    SubscriptionProof.objects.select_for_update().filter(pk=p.pk).first()
+    p.refresh_from_db()
     if p.status != SubscriptionProof.Status.PENDING:
         raise ProofRejected("already_reviewed")
     now = timezone.now()
     if approve:
+        with platform_context():
+            reused = (
+                SubscriptionProof.unscoped.filter(
+                    reference=p.reference, status=SubscriptionProof.Status.APPROVED
+                )
+                .exclude(id=p.id)
+                .exists()
+            )
+        if reused:
+            raise ProofRejected("reference_used")
         sub = ensure_subscription()
         base = sub.expires_at if sub.expires_at > now else now
         if p.kind == "addon":
@@ -1239,10 +1257,6 @@ def reduce_addon(kind: str, qty: int, *, actor: User) -> dict[str, Any]:
 
 def _next_receipt_number(now: Any) -> str:
     """`SR-YYYY-NNNNNN` — عدّاد سنوي على مستوى المنصة تحت قفل صف."""
-    from django.db import transaction
-
-    from core.tenancy import platform_context
-
     with platform_context(), transaction.atomic():
         counter, _ = ReceiptCounter.objects.select_for_update().get_or_create(year=now.year)
         counter.last += 1
