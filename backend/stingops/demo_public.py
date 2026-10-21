@@ -195,6 +195,14 @@ def complete_submission(data: dict[str, Any], code: str, *, ip: str) -> dict[str
             phone_key=phone_key(s.whatsapp),
             name_key=name_key(s.name),
         )
+    from stingops.inbox import emit
+
+    emit(
+        "demo",
+        f"طلب جولة جديد: {s.name}",
+        body=f"القناة: {DemoRequest.Channel(s.channel).label}",
+        href="/platform/demo-requests",
+    )
     return {"id": str(req.id), "reference": reference(req), "track_url": "/demo/track"}
 
 

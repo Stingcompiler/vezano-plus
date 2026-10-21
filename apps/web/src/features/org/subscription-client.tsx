@@ -76,7 +76,7 @@ interface Payload {
     trial: boolean;
     /** 0005 §١٧٠ — الباقة التي بُنيت عليها التجريبية */
     trial_base_name?: string;
-    state: "trial" | "active" | "grace" | "expired" | "suspended";
+    state: "pending_approval" | "trial" | "active" | "grace" | "expired" | "suspended";
     expires_at: string;
     suspended_reason?: string;
     days_since_expiry: number;
@@ -276,6 +276,15 @@ export function SubscriptionClient() {
                 <p className="acc-lead">
                   الاشتراك التزام مالي على المنشأة — يراه المالك ومن فوّضه صراحة. مدير الفرع يرى أثر
                   الباقة على عمله (الحدود والميزات) دون المبالغ ولا وسيلة الدفع.
+                </p>
+              </Notice>
+            ) : null}
+
+            {p?.plan.state === "pending_approval" ? (
+              <Notice kind="info" title="منشأتك بانتظار اعتماد المنصة">
+                <p className="acc-lead">
+                  لا تبدأ التجربة ولا يُسجَّل جهاز حتى يعتمد مدير المنصة منشأتك. تجربتك تُحسب من
+                  لحظة الاعتماد، ونُعلمك في الإشعارات.
                 </p>
               </Notice>
             ) : null}

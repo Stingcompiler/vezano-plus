@@ -552,6 +552,15 @@ def report(
         evidence_name=evidence_name[:200],
         created_by_name=actor.display_name,
     )
+    from stingops.inbox import emit
+
+    emit(
+        "market_report",
+        f"بلاغ سوق RP-{r.number}: {MarketReport.Reason(reason).label}",
+        body=label[:200],
+        href="/platform/reports",
+        tenant_id=require_tenant(),
+    )
     audit.record(
         kind="market.reported",
         title=f"بلاغ RP-{r.number}: {MarketReport.Reason(reason).label}",

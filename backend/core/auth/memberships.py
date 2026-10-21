@@ -226,6 +226,10 @@ def create_tenant(
             UserBranchAccess.unscoped.create(
                 tenant=tenant, user=user, branch=branch, role=roles["owner"]
             )
+            # 0005 §١٨٧: التجربة لا تبدأ ولا يُسجَّل جهاز حتى يعتمد مدير المنصة المنشأة
+            from core.subscription import start_pending_trial
+
+            start_pending_trial(tenant)
             # حالة المزامنة (الجيل والعدّاد) تولد مع المنشأة (§٨.٢)
             from sync.counter import ensure_state
 
@@ -252,4 +256,14 @@ def create_tenant(
         if existing is None:
             raise
         return CreationResult(existing, already_existed=True)
+    # 0005 §١٩٠: فريق المنصة يعرف أن منشأة تنتظر اعتماده
+    from stingops.inbox import emit
+
+    emit(
+        "tenant_pending",
+        f"منشأة جديدة بانتظار الاعتماد: {name}",
+        body="لا تجربة ولا جهاز قبل اعتمادك.",
+        href=f"/platform/tenants/{creation.tenant_id}",
+        tenant_id=creation.tenant_id,
+    )
     return CreationResult(creation, already_existed=False)

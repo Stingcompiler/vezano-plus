@@ -10,7 +10,8 @@ import { useBootstrap } from "@/features/acc/use-bootstrap";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 
-type State = "loading" | "partial" | "stale" | "server_error" | "success" | "offline";
+type State =
+  "loading" | "partial" | "stale" | "server_error" | "success" | "offline" | "phase_locked";
 
 /** أسماء النطاقات المسمّاة كما في 34-D26 loading: الكتالوج، الأطراف، الأرصدة، الإعدادات. */
 const GROUP_LABEL: Record<string, string> = {
@@ -40,15 +41,17 @@ export function SetupDeviceClient() {
     ? "offline"
     : b.phase === "done"
       ? "success"
-      : b.stop === "expired"
-        ? "stale"
-        : b.stop === "error"
-          ? caps.sell || caps.inventory
-            ? "partial"
-            : "server_error"
-          : b.stop === "offline"
-            ? "offline"
-            : "loading";
+      : b.stop === "approval"
+        ? "phase_locked"
+        : b.stop === "expired"
+          ? "stale"
+          : b.stop === "error"
+            ? caps.sell || caps.inventory
+              ? "partial"
+              : "server_error"
+            : b.stop === "offline"
+              ? "offline"
+              : "loading";
 
   const pct = p ? percentDone(p) : 0;
   const counts = {
@@ -163,6 +166,18 @@ export function SetupDeviceClient() {
                 <p className="acc-lead">المُنزَّل سليم والباقي لا. ما نزل يبقى.</p>
                 <div className="acc-links">
                   <Button onClick={b.retry}>أعد المحاولة</Button>
+                </div>
+              </Notice>
+            ) : null}
+
+            {state === "phase_locked" ? (
+              <Notice kind="info" title="منشأتك بانتظار اعتماد المنصة">
+                <p className="acc-lead">
+                  تراجع المنصة كل منشأة جديدة قبل أن تبدأ تجربتها وتُسجَّل أجهزتها. لا شيء يُفقد،
+                  ونُعلمك في الإشعارات فور الاعتماد.
+                </p>
+                <div className="acc-links">
+                  <Button onClick={b.retry}>تحقّق الآن</Button>
                 </div>
               </Notice>
             ) : null}

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, overload
 
+from django.db import transaction
 from django.utils import timezone
 
 from core.models import (
@@ -26,7 +27,7 @@ from core.models import (
     User,
     UserBranchAccess,
 )
-from core.tenancy import require_tenant
+from core.tenancy import platform_context, require_tenant
 
 TRIAL_DAYS = 30
 #: §١١.٢ — مهلة السماح بعد الانتهاء ثم تدرّج الحجب
@@ -313,6 +314,21 @@ def ensure_subscription() -> TenantSubscription:
     return sub
 
 
+def start_pending_trial(tenant: Tenant) -> TenantSubscription:
+    """منشأة جديدة: صف اشتراك «بانتظار الاعتماد» — التجربة لا تبدأ ولا يُسجَّل جهاز حتى يعتمدها مدير
+    المنصة (`stingops.subscriptions.approve_trial`). المنشآت السابقة بلا صف تُبذر تجريبية كسولاً
+    (`ensure_subscription`) فلا يتغيّر وضعها. موعد الانتهاء هنا نائب يُعاد حسابه عند الاعتماد."""
+    now = timezone.now()
+    sub: TenantSubscription = TenantSubscription.unscoped.create(
+        tenant=tenant,
+        plan_code="trial",
+        state=TenantSubscription.State.PENDING,
+        started_at=now,
+        expires_at=now + timedelta(days=trial_days()),
+    )
+    return sub
+
+
 def trial_days() -> int:
     """مدة التجريبية من الكتالوج (PLT-16) — الثابت احتياطاً."""
     t = PLANS.get("trial")
@@ -331,6 +347,8 @@ def status_of(sub: TenantSubscription, now: Any = None) -> str:
     """`trial` | `active` | `grace` (0–14 يوماً بعد الانتهاء) | `expired` | `suspended` (PLT-13)."""
     if sub.suspended_at is not None:
         return "suspended"
+    if sub.state == TenantSubscription.State.PENDING:
+        return "pending_approval"
     d = days_since_expiry(sub, now)
     if d < 0:
         return "trial" if sub.plan_code == "trial" else "active"
@@ -386,6 +404,8 @@ def can_add_user(*, pending_invitations: int = 0) -> tuple[bool, str]:
     """حدّ المستخدمين (0005 §١١٤): الفعّالون + الدعوات المعلّقة ≥ الحدّ → لا دعوة جديدة. البيع لا
     يتوقف؛ يُعطَّل مستخدم أو تُلغى دعوة أو تُرقّى الباقة."""
     sub = ensure_subscription()
+    if sub.state == TenantSubscription.State.PENDING:
+        return False, "approval_pending"
     limit = effective_limits(sub)["users"]
     if limit is None:
         return True, ""
@@ -400,6 +420,8 @@ def has_feature(code: str, *, now: Any = None) -> bool:
     if code == "pos_core":
         return True
     sub = ensure_subscription()
+    if sub.state == TenantSubscription.State.PENDING:
+        return False  # 0005 §١٨٧: لا ميزة قبل اعتماد المنصة
     plan = plan_of(sub)
     # PLT-12: تجاوز على مستوى الباقة (لا فوق مستأجر) يغيّر الاستحقاق فوراً
     from stingops.growth import plan_feature_enabled
@@ -426,6 +448,8 @@ def has_feature(code: str, *, now: Any = None) -> bool:
 def can_register_device(*, now: Any = None) -> tuple[bool, str]:
     """حدّ الأجهزة رقم صريح: عند بلوغه لا نمنع البيع — نمنع إضافة جهاز جديد ونشرح البديل."""
     sub = ensure_subscription()
+    if sub.state == TenantSubscription.State.PENDING:
+        return False, "approval_pending"
     active = Device.objects.filter(status=Device.Status.ACTIVE).count()
     if active >= int(effective_limits(sub)["devices"] or 0):
         return False, "device_limit"
@@ -438,6 +462,8 @@ def can_register_device(*, now: Any = None) -> tuple[bool, str]:
 
 def can_add_branch() -> tuple[bool, str]:
     sub = ensure_subscription()
+    if sub.state == TenantSubscription.State.PENDING:
+        return False, "approval_pending"
     if Branch.objects.filter(is_active=True).count() >= int(effective_limits(sub)["branches"] or 0):
         return False, "branch_limit"
     return True, ""
@@ -509,6 +535,8 @@ def _plan_grants(code: str, plan: Plan) -> bool:
 def _feature_status(code: str, plan: Plan, sub: TenantSubscription) -> str:
     if code == "pos_core":
         return "open"
+    if sub.state == TenantSubscription.State.PENDING:
+        return "locked"
     granted = _plan_grants(code, plan)
     if code == "market_publish":
         return "conditional" if granted else "locked"
@@ -878,6 +906,15 @@ def submit_proof(
         note=note.strip()[:300],
         submitted_by_name=actor.display_name,
     )
+    from stingops.inbox import emit
+
+    emit(
+        "proof",
+        f"إيصال دفع جديد {ref}",
+        body=f"{label} — بانتظار المراجعة",
+        href="/platform/proofs",
+        tenant_id=require_tenant(),
+    )
     return proof
 
 
@@ -893,14 +930,31 @@ def attach_image(
     return p
 
 
+@transaction.atomic
 def review_proof(
     p: SubscriptionProof, *, reviewer_name: str, approve: bool, reason: str = ""
 ) -> SubscriptionProof:
-    """المراجعة البشرية: الاعتماد يمدّد الاشتراك شهراً بمرجع الرقم مرة واحدة؛ الرفض بسبب مذكور."""
+    """المراجعة البشرية: الاعتماد يمدّد الاشتراك شهراً بمرجع الرقم مرة واحدة؛ الرفض بسبب مذكور.
+
+    0005 §١٨٧: المسار القديم لمراجعة المنصة كان يعتمد بلا فحص، فصار الفحص هنا لكل المسارات:
+    - الصف يُقفل (`select_for_update`) فلا يُعتمد إثبات واحد مرتين بتزامن مراجعَين (تمديد مضاعف)؛
+    - رقم عملية اعتُمد لمنشأة لا يُعتمد ثانيةً لمنشأة أخرى (إعادة استعمال إيصال الدفع)."""
+    SubscriptionProof.objects.select_for_update().filter(pk=p.pk).first()
+    p.refresh_from_db()
     if p.status != SubscriptionProof.Status.PENDING:
         raise ProofRejected("already_reviewed")
     now = timezone.now()
     if approve:
+        with platform_context():
+            reused = (
+                SubscriptionProof.unscoped.filter(
+                    reference=p.reference, status=SubscriptionProof.Status.APPROVED
+                )
+                .exclude(id=p.id)
+                .exists()
+            )
+        if reused:
+            raise ProofRejected("reference_used")
         sub = ensure_subscription()
         base = sub.expires_at if sub.expires_at > now else now
         if p.kind == "addon":
@@ -1239,10 +1293,6 @@ def reduce_addon(kind: str, qty: int, *, actor: User) -> dict[str, Any]:
 
 def _next_receipt_number(now: Any) -> str:
     """`SR-YYYY-NNNNNN` — عدّاد سنوي على مستوى المنصة تحت قفل صف."""
-    from django.db import transaction
-
-    from core.tenancy import platform_context
-
     with platform_context(), transaction.atomic():
         counter, _ = ReceiptCounter.objects.select_for_update().get_or_create(year=now.year)
         counter.last += 1

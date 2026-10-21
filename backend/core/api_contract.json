@@ -120,6 +120,16 @@
   "GET /api/platform/demo-requests": [
    "403:operator_required"
   ],
+  "GET /api/platform/messages": [
+   "403:operator_required"
+  ],
+  "GET /api/platform/messages/{report_id}": [
+   "404:not_found"
+  ],
+  "GET /api/platform/notices": [
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:operator_required"
+  ],
   "GET /api/platform/operators": [
    "401:user_inactive",
    "403:operator_required",
@@ -307,7 +317,8 @@
    "409:revert_refused"
   ],
   "POST /api/devices/register": [
-   "401:Authorization header must contain two space-delimited values"
+   "401:Authorization header must contain two space-delimited values",
+   "403:approval_pending"
   ],
   "POST /api/devices/renew": [
    "401:bad_registration_secret"
@@ -610,6 +621,12 @@
    "400:invalid_current_password",
    "400:password_unchanged"
   ],
+  "POST /api/platform/messages/{report_id}/handle": [
+   "409:already_handled"
+  ],
+  "POST /api/platform/notices/read": [
+   "400:ids_invalid"
+  ],
   "POST /api/platform/operators": [
    "400:invalid_email",
    "400:password_too_short",
@@ -645,6 +662,9 @@
   "POST /api/platform/proofs/{tenant_id}/{proof_id}/{action}": [
    "400:reason_required",
    "400:reference_used",
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:admin_required",
+   "403:operator_required",
    "409:already_reviewed",
    "409:claimed_by_other"
   ],
@@ -666,14 +686,20 @@
    "400:nothing_to_change",
    "400:reason_required",
    "400:unknown_action",
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:admin_required",
    "403:operator_required",
    "409:already_suspended",
+   "409:not_pending_approval",
    "409:same_plan",
    "409:trial_not_reassignable"
   ],
   "POST /api/platform/tenants/{tenant_id}/subscription-proofs/{proof_id}/review": [
    "400:already_reviewed",
    "400:reason_required",
+   "400:reference_used",
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:admin_required",
    "403:platform_staff_required"
   ],
   "POST /api/platform/verifications/{tenant_id}/{action}": [
@@ -14348,10 +14374,10 @@
     },
     "required": [
      "due",
+     "plans",
      "proofs",
      "can_submit",
-     "review_sla",
-     "plans"
+     "review_sla"
     ],
     "type": "object"
    }
@@ -17153,6 +17179,222 @@
      "state",
      "month",
      "snapshot"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/messages": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "filter": {
+      "type": "string"
+     },
+     "messages": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "app_version": {
+         "type": "string"
+        },
+        "created_at": {
+         "type": "string"
+        },
+        "from_name": {
+         "type": "string"
+        },
+        "handled": {
+         "type": "boolean"
+        },
+        "handled_at": {
+         "type": "string"
+        },
+        "handled_by_name": {
+         "type": "string"
+        },
+        "handled_note": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "note": {
+         "type": "string"
+        },
+        "reference": {
+         "type": "string"
+        },
+        "tenant_name": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "reference",
+        "tenant_name",
+        "from_name",
+        "app_version",
+        "note",
+        "created_at",
+        "handled",
+        "handled_by_name",
+        "handled_at",
+        "handled_note"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "new_count": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "filter",
+     "new_count",
+     "messages"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/messages/{report_id}": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "app_version": {
+      "type": "string"
+     },
+     "created_at": {
+      "type": "string"
+     },
+     "from_name": {
+      "type": "string"
+     },
+     "handled": {
+      "type": "boolean"
+     },
+     "handled_at": {
+      "type": "string"
+     },
+     "handled_by_name": {
+      "type": "string"
+     },
+     "handled_note": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "payload": {
+      "additionalProperties": false,
+      "properties": {
+       "app_version": {
+        "type": "string"
+       },
+       "errors": {
+        "items": {},
+        "type": "array"
+       }
+      },
+      "required": [
+       "errors",
+       "app_version"
+      ],
+      "type": "object"
+     },
+     "reference": {
+      "type": "string"
+     },
+     "tenant_name": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "reference",
+     "tenant_name",
+     "from_name",
+     "app_version",
+     "note",
+     "created_at",
+     "handled",
+     "handled_by_name",
+     "handled_at",
+     "handled_note",
+     "payload"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/notices": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "new_messages": {
+      "type": "integer"
+     },
+     "notices": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "body": {
+         "type": "string"
+        },
+        "created_at": {
+         "type": "string"
+        },
+        "href": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "kind": {
+         "type": "string"
+        },
+        "kind_label": {
+         "type": "string"
+        },
+        "read": {
+         "type": "boolean"
+        },
+        "read_by_name": {
+         "type": "string"
+        },
+        "tenant_name": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "kind",
+        "kind_label",
+        "title",
+        "body",
+        "href",
+        "tenant_name",
+        "created_at",
+        "read",
+        "read_by_name"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "unread": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "unread",
+     "new_messages",
+     "notices"
     ],
     "type": "object"
    }
@@ -42222,10 +42464,10 @@
     "required": [
      "proof",
      "due",
+     "plans",
      "proofs",
      "can_submit",
-     "review_sla",
-     "plans"
+     "review_sla"
     ],
     "type": "object"
    }
@@ -44796,6 +45038,148 @@
     },
     "required": [
      "ok"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/messages/{report_id}/handle": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "app_version": {
+      "type": "string"
+     },
+     "created_at": {
+      "type": "string"
+     },
+     "from_name": {
+      "type": "string"
+     },
+     "handled": {
+      "type": "boolean"
+     },
+     "handled_at": {
+      "type": "string"
+     },
+     "handled_by_name": {
+      "type": "string"
+     },
+     "handled_note": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     },
+     "payload": {
+      "additionalProperties": false,
+      "properties": {
+       "app_version": {
+        "type": "string"
+       },
+       "errors": {
+        "items": {},
+        "type": "array"
+       }
+      },
+      "required": [
+       "errors",
+       "app_version"
+      ],
+      "type": "object"
+     },
+     "reference": {
+      "type": "string"
+     },
+     "tenant_name": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "reference",
+     "tenant_name",
+     "from_name",
+     "app_version",
+     "note",
+     "created_at",
+     "handled",
+     "handled_by_name",
+     "handled_at",
+     "handled_note",
+     "payload"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/notices/read": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "new_messages": {
+      "type": "integer"
+     },
+     "notices": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "body": {
+         "type": "string"
+        },
+        "created_at": {
+         "type": "string"
+        },
+        "href": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "kind": {
+         "type": "string"
+        },
+        "kind_label": {
+         "type": "string"
+        },
+        "read": {
+         "type": "boolean"
+        },
+        "read_by_name": {
+         "type": "string"
+        },
+        "tenant_name": {
+         "type": "string"
+        },
+        "title": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "kind",
+        "kind_label",
+        "title",
+        "body",
+        "href",
+        "tenant_name",
+        "created_at",
+        "read",
+        "read_by_name"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "unread": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "unread",
+     "new_messages",
+     "notices"
     ],
     "type": "object"
    }

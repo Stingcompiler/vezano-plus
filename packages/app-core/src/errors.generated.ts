@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (195 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (199 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -13,6 +13,7 @@ export const API_ERROR_CODES = [
   "allocation_mismatch",
   "already_cancelled",
   "already_decided",
+  "already_handled",
   "already_in_state",
   "already_invited",
   "already_received",
@@ -21,6 +22,7 @@ export const API_ERROR_CODES = [
   "already_suspended",
   "ambiguous_name",
   "amount_mismatch",
+  "approval_pending",
   "audience_or_duration_required",
   "audience_out_of_tenant",
   "backup_unusable",
@@ -76,6 +78,7 @@ export const API_ERROR_CODES = [
   "freeze_reconciliation",
   "group_exists",
   "identifier_invalid",
+  "ids_invalid",
   "image_expired",
   "image_not_found",
   "image_too_large",
@@ -109,6 +112,7 @@ export const API_ERROR_CODES = [
   "not_applied",
   "not_found",
   "not_pending",
+  "not_pending_approval",
   "not_remembered",
   "not_resendable",
   "not_the_new_owner",
@@ -422,6 +426,24 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
   ],
   "GET /api/platform/demo-requests": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
+  "GET /api/platform/messages": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
+  "GET /api/platform/messages/{report_id}": [
+    {
+      status: 404,
+      code: "not_found",
+    },
+  ],
+  "GET /api/platform/notices": [
     {
       status: 403,
       code: "operator_required",
@@ -825,6 +847,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 409,
       code: "revert_refused",
+    },
+  ],
+  "POST /api/devices/register": [
+    {
+      status: 403,
+      code: "approval_pending",
     },
   ],
   "POST /api/devices/renew": [
@@ -1593,6 +1621,18 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "password_unchanged",
     },
   ],
+  "POST /api/platform/messages/{report_id}/handle": [
+    {
+      status: 409,
+      code: "already_handled",
+    },
+  ],
+  "POST /api/platform/notices/read": [
+    {
+      status: 400,
+      code: "ids_invalid",
+    },
+  ],
   "POST /api/platform/operators": [
     {
       status: 400,
@@ -1701,6 +1741,14 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "reference_used",
     },
     {
+      status: 403,
+      code: "admin_required",
+    },
+    {
+      status: 403,
+      code: "operator_required",
+    },
+    {
       status: 409,
       code: "already_reviewed",
     },
@@ -1762,11 +1810,19 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
     {
       status: 403,
+      code: "admin_required",
+    },
+    {
+      status: 403,
       code: "operator_required",
     },
     {
       status: 409,
       code: "already_suspended",
+    },
+    {
+      status: 409,
+      code: "not_pending_approval",
     },
     {
       status: 409,
@@ -1785,6 +1841,14 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "reason_required",
+    },
+    {
+      status: 400,
+      code: "reference_used",
+    },
+    {
+      status: 403,
+      code: "admin_required",
     },
     {
       status: 403,

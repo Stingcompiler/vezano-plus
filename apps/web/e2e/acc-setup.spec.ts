@@ -34,7 +34,7 @@ const PAGES: Record<string, unknown[][]> = {
   settings: [[ENT("core.Unit", "u1"), ENT("core.Unit", "u2")]],
 };
 
-async function loginToSetup(page: Page) {
+async function loginToSetup(page: Page, register?: (route: Route) => Promise<void> | void) {
   await page.route("**/api/auth/account/login", (route) =>
     route.fulfill(
       json(200, { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" }),
@@ -43,17 +43,20 @@ async function loginToSetup(page: Page) {
   await page.route("**/api/devices/renew", (route) =>
     route.fulfill(json(404, { detail: "device_not_found" })),
   );
-  await page.route("**/api/devices/register", (route) =>
-    route.fulfill(
-      json(201, {
-        device_id: "33333333-3333-7333-8333-333333333333",
-        prefix: "A2",
-        branch_id: "44444444-4444-7444-8444-444444444444",
-        registration_secret: "secret",
-        access: "da",
-        refresh: "dr",
-      }),
-    ),
+  await page.route(
+    "**/api/devices/register",
+    register ??
+      ((route) =>
+        route.fulfill(
+          json(201, {
+            device_id: "33333333-3333-7333-8333-333333333333",
+            prefix: "A2",
+            branch_id: "44444444-4444-7444-8444-444444444444",
+            registration_secret: "secret",
+            access: "da",
+            refresh: "dr",
+          }),
+        )),
   );
   await page.route("**/api/bootstrap/start", (route) => route.fulfill(json(201, IMAGE)));
   await page.route("**/api/bootstrap/*/complete", (route) =>
@@ -173,6 +176,34 @@ test.describe("ACC-05", () => {
     await expect(start).toBeEnabled();
     await start.click();
     await expect(page).toHaveURL(/\/shifts\/open$/);
+  });
+
+  test("منشأة جديدة بانتظار اعتماد المنصة: انتظار لا خطأ — وبعد الاعتماد يكتمل التجهيز (0005 §١٨٧)", async ({
+    page,
+  }) => {
+    let approved = false;
+    await page.route("**/api/bootstrap/*/page**", pageRoute(servePage));
+    await loginToSetup(page, (route) =>
+      approved
+        ? route.fulfill(
+            json(201, {
+              device_id: "33333333-3333-7333-8333-333333333333",
+              prefix: "A2",
+              branch_id: "44444444-4444-7444-8444-444444444444",
+              registration_secret: "secret",
+              access: "da",
+              refresh: "dr",
+            }),
+          )
+        : route.fulfill(json(403, { detail: "approval_pending" })),
+    );
+    const screen = page.locator('[data-screen="ACC-05"]');
+    await expect(screen).toHaveAttribute("data-state", "phase_locked");
+    await expect(screen).toContainText("منشأتك بانتظار اعتماد المنصة");
+    await expect(screen).not.toContainText("انقطع التنزيل بخطأ");
+    approved = true;
+    await page.getByRole("button", { name: "تحقّق الآن" }).click();
+    await expect(screen).toContainText("الجهاز جاهز");
   });
 
   test("server_error → partial: ثلاث محاولات متباعدة ثم وقوف يدوي، وما نزل يبقى ويُستأنف", async ({

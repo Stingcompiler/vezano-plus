@@ -91,7 +91,7 @@ const DETAIL = (o: Record<string, unknown> = {}) => ({
   ...o,
 });
 
-async function operatorLogin(page: Page) {
+async function operatorLogin(page: Page, row: ReturnType<typeof DETAIL> = DETAIL()) {
   await page.route("**/api/platform/login", (route) =>
     route.fulfill(
       json(200, { access: "op", refresh: "r", session_id: "s", display_name: "هدى — تشغيل" }),
@@ -100,7 +100,7 @@ async function operatorLogin(page: Page) {
   await page.route(/\/api\/platform\/tenants(\?.*)?$/, (route) =>
     route.fulfill(
       json(200, {
-        tenants: [DETAIL()],
+        tenants: [row],
         total: 1,
         shown: 1,
         active_count: 1,
@@ -119,6 +119,52 @@ async function operatorLogin(page: Page) {
 }
 
 test.describe("PLT-13", () => {
+  test("منشأة جديدة بانتظار الاعتماد: تبويب «اعتماد التجربة» وحده يبدأ التجربة (0005 §١٨٧)", async ({
+    page,
+  }) => {
+    const pending = DETAIL({
+      status: "pending_approval",
+      status_label: "بانتظار الاعتماد",
+      due_line: "طلب جديد منذ 20/10 · لا تجربة ولا جهاز قبل اعتمادك",
+      plan_code: "trial",
+      plan_label: "تجريبية",
+      devices: 0,
+      entitlement: { ...DETAIL().entitlement, plan_code: "trial", state: "pending" },
+    });
+    let detail = pending;
+    const posted: Record<string, unknown>[] = [];
+    await page.route("**/api/platform/tenants/t1", (route) =>
+      route.fulfill(json(200, { tenant: detail })),
+    );
+    await page.route("**/api/platform/tenants/t1/subscription", (route) => {
+      const b = route.request().postDataJSON() as { action: string; reason?: string };
+      posted.push(b);
+      detail = DETAIL({
+        status: "trial",
+        status_label: "تجريبي",
+        plan_code: "trial",
+        plan_label: "تجريبية",
+        entitlement: { ...DETAIL().entitlement, plan_code: "trial", state: "trial" },
+      });
+      return route.fulfill(json(200, { result: {}, tenant: detail }));
+    });
+    await operatorLogin(page, pending);
+    await expect(page.locator(".c-table__row--openable", { hasText: "بقالة النيل" })).toContainText(
+      "بانتظار الاعتماد",
+    );
+    await page.locator(".c-table__row--openable", { hasText: "بقالة النيل" }).first().click();
+    await expect(page).toHaveURL(/\/platform\/tenants\/t1$/);
+    const root = page.locator('[data-screen="PLT-02"]');
+    await page.getByRole("tab", { name: "اعتماد التجربة" }).click();
+    await expect(root).toContainText("الاعتماد يبدأ التجربة كاملة المدة من الآن");
+    await page.getByLabel("السبب").fill("طلب موثَّق بالهاتف");
+    await page.getByRole("button", { name: "اعتمد المنشأة وابدأ التجربة" }).click();
+    await expect(root).toContainText("اعتُمدت المنشأة وبدأت التجربة");
+    expect(posted[0]).toMatchObject({ action: "approve_trial", reason: "طلب موثَّق بالهاتف" });
+    // بعد الاعتماد لا تبويب اعتماد
+    await expect(page.getByRole("tab", { name: "اعتماد التجربة" })).toHaveCount(0);
+  });
+
   test("تمديد بسبب → الخط الزمني؛ رفض بلا سبب؛ إيقاف → موقوف بسببه واستئناف؛ ملاحظة", async ({
     page,
   }, info) => {
