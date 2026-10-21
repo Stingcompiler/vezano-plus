@@ -55,7 +55,7 @@ export function NoticesClient() {
         params: { query: { limit: 100, ...(unreadOnly ? { unread: "1" } : {}) } },
       });
       if (response.ok && d) {
-        setData(d as unknown as Payload);
+        setData(d);
         setFailed(false);
       } else setFailed(true);
     } catch {
