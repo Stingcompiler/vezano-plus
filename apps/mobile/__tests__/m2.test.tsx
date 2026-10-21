@@ -247,6 +247,7 @@ describe("M2 — البيع والورديات (0005 §١٩٣)", () => {
     expect(nativeRoute("/pos/invoices/abc/return")).toBe("/pos/invoices/abc/return");
     expect(nativeRoute("/shifts/close")).toBe("/shifts/close");
     expect(nativeRoute("/catalog")).toBe("/catalog");
-    expect(nativeRoute("/org/users")).toBeNull();
+    expect(nativeRoute("/org/users")).toBe("/org/users");
+    expect(nativeRoute("/no/such/screen")).toBeNull();
   });
 });

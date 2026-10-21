@@ -152,6 +152,7 @@ describe("M1 — ما بقي (0005 §١٩٢)", () => {
   it("المسارات: المبني يُفتح داخلياً، وما سواه null", () => {
     expect(nativeRoute("/sync/update")).toBe("/device");
     expect(nativeRoute("/invite/abc")).toBe("/invite/abc");
-    expect(nativeRoute("/org/users")).toBeNull();
+    expect(nativeRoute("/org/users")).toBe("/org/users");
+    expect(nativeRoute("/no/such/screen")).toBeNull();
   });
 });
