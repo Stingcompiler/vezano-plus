@@ -23,7 +23,12 @@ ADMIN = OperatorProfile.Role.ADMIN
 SUPPORT = OperatorProfile.Role.SUPPORT
 
 #: ما يغيّره «الدعم» — مسارات لا أثر مالياً ولا عاماً لها
-SUPPORT_WRITE_PREFIXES = ("/api/platform/demo-requests",)
+SUPPORT_WRITE_PREFIXES = (
+    "/api/platform/demo-requests",
+    # 0005 §١٩٠: الدعم يقرأ الرسائل ويعالجها ويعلّم الإشعارات مقروءة
+    "/api/platform/messages",
+    "/api/platform/notices",
+)
 
 
 def role_of(user: User) -> str:

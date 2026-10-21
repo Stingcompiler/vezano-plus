@@ -8536,6 +8536,174 @@
         }
       }
     },
+    "/api/platform/messages": {
+      "get": {
+        "operationId": "platform_messages_retrieve",
+        "description": "رسائل الدعم الواردة من المنشآت (SYS-11) — جديدة/معالَجة/الكل.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformMessagesResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/messages/{report_id}": {
+      "get": {
+        "operationId": "platform_messages_retrieve_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformMessagesByReportIdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/messages/{report_id}/handle": {
+      "post": {
+        "operationId": "platform_messages_handle_create",
+        "description": "«تمّت المعالجة» بملاحظة — باسم المشغّل ووقته.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "report_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformMessagesByReportIdHandleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/notices": {
+      "get": {
+        "operationId": "platform_notices_retrieve",
+        "description": "إشعارات فريق المنصة: القائمة وعدد غير المقروء (للقراءة لكل مشغّل).",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unread",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformNoticesResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/notices/read": {
+      "post": {
+        "operationId": "platform_notices_read_create",
+        "description": "يعلّم إشعارات (`ids`) أو كلها مقروءة باسم المشغّل.",
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformNoticesReadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/operators": {
       "get": {
         "operationId": "platform_operators_retrieve",
@@ -42728,7 +42896,7 @@
             "type": "string"
           }
         },
-        "required": ["due", "proofs", "can_submit", "review_sla", "plans"],
+        "required": ["due", "plans", "proofs", "can_submit", "review_sla"],
         "type": "object"
       },
       "PostOrgSubscriptionProofsResponse": {
@@ -43077,7 +43245,7 @@
             "type": "string"
           }
         },
-        "required": ["proof", "due", "proofs", "can_submit", "review_sla", "plans"],
+        "required": ["proof", "due", "plans", "proofs", "can_submit", "review_sla"],
         "type": "object"
       },
       "PostOrgSubscriptionProofsByProofIdImageResponse": {
@@ -48152,6 +48320,336 @@
           }
         },
         "required": ["ok"],
+        "type": "object"
+      },
+      "GetPlatformMessagesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "app_version": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "from_name": {
+                  "type": "string"
+                },
+                "handled": {
+                  "type": "boolean"
+                },
+                "handled_at": {
+                  "type": "string"
+                },
+                "handled_by_name": {
+                  "type": "string"
+                },
+                "handled_note": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "tenant_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "reference",
+                "tenant_name",
+                "from_name",
+                "app_version",
+                "note",
+                "created_at",
+                "handled",
+                "handled_by_name",
+                "handled_at",
+                "handled_note"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "new_count": {
+            "type": "integer"
+          }
+        },
+        "required": ["filter", "new_count", "messages"],
+        "type": "object"
+      },
+      "GetPlatformMessagesByReportIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "handled": {
+            "type": "boolean"
+          },
+          "handled_at": {
+            "type": "string"
+          },
+          "handled_by_name": {
+            "type": "string"
+          },
+          "handled_note": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": false,
+            "properties": {
+              "app_version": {
+                "type": "string"
+              },
+              "errors": {
+                "items": {},
+                "type": "array"
+              }
+            },
+            "required": ["errors", "app_version"],
+            "type": "object"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "tenant_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "tenant_name",
+          "from_name",
+          "app_version",
+          "note",
+          "created_at",
+          "handled",
+          "handled_by_name",
+          "handled_at",
+          "handled_note",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "PostPlatformMessagesByReportIdHandleResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "handled": {
+            "type": "boolean"
+          },
+          "handled_at": {
+            "type": "string"
+          },
+          "handled_by_name": {
+            "type": "string"
+          },
+          "handled_note": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": false,
+            "properties": {
+              "app_version": {
+                "type": "string"
+              },
+              "errors": {
+                "items": {},
+                "type": "array"
+              }
+            },
+            "required": ["errors", "app_version"],
+            "type": "object"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "tenant_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "tenant_name",
+          "from_name",
+          "app_version",
+          "note",
+          "created_at",
+          "handled",
+          "handled_by_name",
+          "handled_at",
+          "handled_note",
+          "payload"
+        ],
+        "type": "object"
+      },
+      "GetPlatformNoticesResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "new_messages": {
+            "type": "integer"
+          },
+          "notices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "body": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "read": {
+                  "type": "boolean"
+                },
+                "read_by_name": {
+                  "type": "string"
+                },
+                "tenant_name": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "kind_label",
+                "title",
+                "body",
+                "href",
+                "tenant_name",
+                "created_at",
+                "read",
+                "read_by_name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "unread": {
+            "type": "integer"
+          }
+        },
+        "required": ["unread", "new_messages", "notices"],
+        "type": "object"
+      },
+      "PostPlatformNoticesReadResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "new_messages": {
+            "type": "integer"
+          },
+          "notices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "body": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "read": {
+                  "type": "boolean"
+                },
+                "read_by_name": {
+                  "type": "string"
+                },
+                "tenant_name": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "kind_label",
+                "title",
+                "body",
+                "href",
+                "tenant_name",
+                "created_at",
+                "read",
+                "read_by_name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "unread": {
+            "type": "integer"
+          }
+        },
+        "required": ["unread", "new_messages", "notices"],
         "type": "object"
       },
       "GetPlatformOperatorsResponse": {
