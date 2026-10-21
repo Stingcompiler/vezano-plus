@@ -20,7 +20,7 @@ import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
-import { DevicesSynced } from "@/features/reports/completeness";
+import { CompletenessBadge, DevicesSynced } from "@/features/reports/completeness";
 import { pushPending } from "@/lib/sync";
 
 type State = "ready" | "loading" | "empty" | "stale" | "pending_sync";
@@ -378,6 +378,11 @@ export function StockReportClient() {
                     حركة الأصناف — {p.range.label}
                     {p.branch ? ` · ${p.branch.name}` : ""}
                   </h3>
+                  <CompletenessBadge
+                    synced={p.completeness.devices_synced}
+                    total={p.completeness.devices_total}
+                    computedAt={p.computed_at}
+                  />
                   <p className="acc-choice__note">
                     <DevicesSynced
                       synced={p.completeness.devices_synced}

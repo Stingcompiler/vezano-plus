@@ -46,3 +46,10 @@ export const GROUPS: CountForms = {
   few: "مجموعات",
   many: "مجموعة",
 };
+/** بعد «ناقص» (منصوب): «ناقص عمليتين» لا «عمليتان» */
+export const MISSING_OPERATIONS: CountForms = {
+  one: "عملية واحدة",
+  two: "عمليتين",
+  few: "عمليات",
+  many: "عملية",
+};
