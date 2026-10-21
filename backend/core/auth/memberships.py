@@ -256,4 +256,14 @@ def create_tenant(
         if existing is None:
             raise
         return CreationResult(existing, already_existed=True)
+    # 0005 §١٩٠: فريق المنصة يعرف أن منشأة تنتظر اعتماده
+    from stingops.inbox import emit
+
+    emit(
+        "tenant_pending",
+        f"منشأة جديدة بانتظار الاعتماد: {name}",
+        body="لا تجربة ولا جهاز قبل اعتمادك.",
+        href=f"/platform/tenants/{creation.tenant_id}",
+        tenant_id=creation.tenant_id,
+    )
     return CreationResult(creation, already_existed=False)

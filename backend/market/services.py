@@ -165,6 +165,15 @@ def submit_verification(*, actor: User, viewer: home.Viewer) -> MarketAccount:
     acc.submitted_at = timezone.now()
     acc.review_reasons = {}
     acc.save(update_fields=["verification", "submitted_at", "review_reasons", "updated_at"])
+    from stingops.inbox import emit
+
+    emit(
+        "verification",
+        "طلب تحقّق بائع جديد",
+        body="قُدِّم لمشرف السوق ويحتاج مراجعة.",
+        href="/platform/verifications",
+        tenant_id=require_tenant(),
+    )
     audit.record(
         kind="market.verification_submitted",
         title="طلب تحقق البائع قُدِّم لمشرف السوق",
