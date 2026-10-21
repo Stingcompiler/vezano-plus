@@ -37,6 +37,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "نستعمل الكاميرا لقراءة الباركود فقط، ولا نحفظ صوراً.",
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

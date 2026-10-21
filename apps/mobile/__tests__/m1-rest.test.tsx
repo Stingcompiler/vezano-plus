@@ -36,10 +36,10 @@ const METRICS = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const server = (routes: Record<string, () => Response>) =>
-  jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const req = input instanceof Request ? input : new Request(String(input), init);
     const r = routes[`${req.method} ${new URL(req.url).pathname}`];
-    return r ? r() : json(404, {});
+    return Promise.resolve(r ? r() : json(404, {}));
   }) as unknown as typeof fetch;
 
 const ACTIVE: SessionState = {
@@ -83,7 +83,7 @@ const INVITE = {
   expires_at: new Date(Date.now() + 5 * 3_600_000).toISOString(),
 };
 
-describe("M1 — ما بقي (0005 §١٨٨)", () => {
+describe("M1 — ما بقي (0005 §١٩٢)", () => {
   it("ACC-06: دعوة صالحة تُعرض بدورها ونطاقها، والقبول يغيّر الحالة إلى success", async () => {
     const f = server({
       "GET /api/invites/tok1": () => json(200, INVITE),

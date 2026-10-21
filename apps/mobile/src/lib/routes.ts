@@ -25,6 +25,25 @@ export const ROUTES: readonly Row[] = [
   exact("/sync/update", "/device"),
   exact("/sync/storage", "/device"),
   param("/invite/:id", (id) => `/invite/${id}`),
+  // M2 — البيع والورديات والأصلية (0005 §١٩٣)
+  exact("/pos"),
+  exact("/pos/discount"),
+  exact("/pos/customer"),
+  exact("/pos/pay"),
+  exact("/pos/pay/credit", "/pos/pay-credit"),
+  exact("/pos/pay/mixed", "/pos/pay-mixed"),
+  exact("/pos/invoices"),
+  exact("/pos/duplicates"),
+  param("/pos/receipt/:id", (id) => `/pos/receipt/${id}`),
+  param("/pos/receipt/:id/problem", (id) => `/pos/receipt/${id}/problem`),
+  param("/pos/invoices/:id", (id) => `/pos/invoices/${id}`),
+  param("/pos/invoices/:id/return", (id) => `/pos/invoices/${id}/return`),
+  exact("/shifts/open"),
+  exact("/shifts/current"),
+  exact("/shifts/movements"),
+  exact("/shifts/close"),
+  exact("/shifts/review"),
+  exact("/print", "/printer"),
 ];
 
 /** المسار الأصلي لعنوان ويب، أو null إن لم تُبنَ شاشته بعد. */

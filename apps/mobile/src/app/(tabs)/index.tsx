@@ -3,6 +3,7 @@ import { mtx, tx } from "@sting/texts";
 import {
   AppText,
   Button,
+  Chip,
   FONT,
   GroupedList,
   RADIUS,
@@ -521,27 +522,3 @@ const chips = {
   gap: SPACE["2"],
   marginBottom: SPACE["2"],
 } as const;
-
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
-  const c = useColors();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      onPress={onPress}
-      style={{
-        minHeight: TOUCH.min,
-        paddingHorizontal: SPACE["3"],
-        borderRadius: RADIUS.button,
-        borderWidth: 1,
-        borderColor: on ? c.brandPrimary : c.border,
-        backgroundColor: on ? c.brandTint : c.surfaceCard,
-        justifyContent: "center",
-      }}
-    >
-      <AppText variant="secondary" style={{ color: on ? c.brandStrong : c.inkStrong }}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}

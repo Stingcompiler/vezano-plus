@@ -8,3 +8,15 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(() => Promise.resolve()),
   deleteItemAsync: jest.fn(() => Promise.resolve()),
 }));
+jest.mock("expo-print", () => ({
+  printAsync: jest.fn(() => Promise.resolve()),
+  printToFileAsync: jest.fn(() => Promise.resolve({ uri: "file:///r.pdf" })),
+}));
+jest.mock("expo-sharing", () => ({
+  isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+  shareAsync: jest.fn(() => Promise.resolve()),
+}));
+jest.mock("expo-camera", () => ({
+  CameraView: () => null,
+  useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
+}));

@@ -22,13 +22,16 @@
     "@sting/texts": "workspace:*",
     "@sting/ui-native": "workspace:*",
     "expo": "58.0.11",
+    "expo-camera": "~58.0.11",
     "expo-constants": "~58.0.12",
     "expo-crypto": "~58.0.7",
     "expo-font": "~58.0.8",
     "expo-linking": "~58.0.13",
     "expo-localization": "~58.0.4",
+    "expo-print": "~58.0.7",
     "expo-router": "58.0.20",
     "expo-secure-store": "~58.0.2",
+    "expo-sharing": "~58.0.19",
     "expo-splash-screen": "58.0.9",
     "expo-sqlite": "~58.0.13",
     "expo-status-bar": "~58.0.3",
@@ -60,6 +63,9 @@
     ],
     "setupFiles": [
       "<rootDir>/jest.setup.ts"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.after-env.ts"
     ]
   }
 }

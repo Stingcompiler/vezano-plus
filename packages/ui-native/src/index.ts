@@ -1,4 +1,7 @@
 export { Button } from "./button";
+export { Chip } from "./chip";
+export { Keypad } from "./keypad";
+export { Sheet } from "./sheet";
 export { TextField } from "./field";
 export { GroupedList, ListRow } from "./list";
 export { Money, Mono, Qty } from "./money";

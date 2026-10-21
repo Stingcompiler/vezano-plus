@@ -50,7 +50,29 @@ export default function RootLayout() {
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
           >
             {/* الشاشات المدفوعة فوق التبويبات: سهم رجوع وحده — العنوان الكبير في جسم الشاشة */}
-            {["search", "sync", "onboarding", "device"].map((name) => (
+            {[
+              "search",
+              "sync",
+              "onboarding",
+              "device",
+              "printer",
+              "pos/discount",
+              "pos/customer",
+              "pos/pay",
+              "pos/pay-credit",
+              "pos/pay-mixed",
+              "pos/receipt/[id]/index",
+              "pos/receipt/[id]/problem",
+              "pos/invoices/index",
+              "pos/invoices/[id]/index",
+              "pos/invoices/[id]/return",
+              "pos/duplicates",
+              "shifts/open",
+              "shifts/current",
+              "shifts/movements",
+              "shifts/close",
+              "shifts/review",
+            ].map((name) => (
               <Stack.Screen
                 key={name}
                 name={name}
