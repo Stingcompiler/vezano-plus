@@ -652,6 +652,14 @@ export function PosClient() {
             action={<Button onClick={() => router.push("/shifts/open")}>افتح وردية</Button>}
           >
             <p className="acc-lead">البيع النقدي يحتاج صندوقاً مفتوحاً يستقبل النقد.</p>
+            {/* FIX-03 (0005 §١٨٤): الرئيسية تعدّ ورديات المنشأة كلها؛ وردية جهاز آخر لا تفتح البيع هنا */}
+            <p className="acc-lead">
+              الوردية تخصّ هذا الجهاز
+              {ctx?.deviceName ? <> ({ctx.deviceName}</> : null}
+              {ctx?.deviceName && ctx.branchName ? <> · {ctx.branchName})</> : null}
+              {ctx?.deviceName && !ctx.branchName ? ")" : null}؛ وردية مفتوحة على جهاز آخر لا تُحسب
+              له.
+            </p>
           </Notice>
         ) : null}
         {notDownloaded ? (

@@ -3,7 +3,7 @@
 import { Button, Frame } from "@sting/ui-web";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import "./platform.css";
 import { ThemeToggle } from "@/features/home/theme-toggle";
@@ -12,10 +12,14 @@ import {
   operatorMustChangePassword,
   operatorName,
   operatorRole,
+  operatorToken,
+  platformApi,
 } from "@/features/platform/operator-session";
 
 export type PlatformSection =
   | "overview"
+  | "notices"
+  | "messages"
   | "tenants"
   | "login"
   | "proofs"
@@ -37,7 +41,7 @@ export type PlatformSection =
 /** شاشات بلا قائمة أقسام: الدخول وتغيير كلمة مرور مؤقتة (0005 §١٣٨). */
 type Bare = "login" | "password";
 
-type NavItem = { id: Exclude<PlatformSection, Bare>; label: string };
+type NavItem = { id: Exclude<PlatformSection, Bare>; label: string; badge?: "unread" | "messages" };
 
 /**
  * أقسام المشغّل بعلاقة موضوعاتها (0005 §١٣٥): النظرة العامة أعلى القائمة بلا مجموعة، ثم ما يخصّ
@@ -46,6 +50,14 @@ type NavItem = { id: Exclude<PlatformSection, Bare>; label: string };
  */
 const GROUPS: readonly { readonly title: string; readonly items: readonly NavItem[] }[] = [
   { title: "", items: [{ id: "overview", label: "النظرة العامة" }] },
+  {
+    // 0005 §١٩٠: ما وصل من التجار وينتظر نظر الفريق — فوق كل شيء بعد النظرة العامة
+    title: "الوارد",
+    items: [
+      { id: "notices", label: "الإشعارات", badge: "unread" },
+      { id: "messages", label: "الرسائل", badge: "messages" },
+    ],
+  },
   {
     title: "المستأجرون والاشتراكات",
     items: [
@@ -90,6 +102,8 @@ const GROUPS: readonly { readonly title: string; readonly items: readonly NavIte
 
 const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
   overview: "/platform",
+  notices: "/platform/notices",
+  messages: "/platform/messages",
   tenants: "/platform/tenants",
   proofs: "/platform/proofs",
   entitlements: "/platform/entitlements",
@@ -113,6 +127,33 @@ const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
  */
 export function PlatformNav({ current }: { current: PlatformSection }) {
   const listRef = useRef<HTMLUListElement | null>(null);
+  // عدّادا الوارد: إشعارات غير مقروءة ورسائل جديدة — يُحدَّثان كل دقيقة وعند تغيير القسم
+  const [counts, setCounts] = useState<{ unread: number; messages: number }>({
+    unread: 0,
+    messages: 0,
+  });
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      if (!operatorToken()) return;
+      try {
+        const { data, response } = await platformApi().GET("/api/platform/notices", {
+          params: { query: { limit: 1 } },
+        });
+        const b = data as unknown as { unread?: number; new_messages?: number } | undefined;
+        if (alive && response.ok && b)
+          setCounts({ unread: b.unread ?? 0, messages: b.new_messages ?? 0 });
+      } catch {
+        /* بلا اتصال: العدّاد يبقى كما كان */
+      }
+    };
+    void load();
+    const t = setInterval(() => void load(), 60_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [current]);
   // على الهاتف الشريط يتمرّر أفقياً — القسم الحالي يظهر داخل المرئي
   useEffect(() => {
     const on = listRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
@@ -133,6 +174,14 @@ export function PlatformNav({ current }: { current: PlatformSection }) {
                 aria-current={current === it.id ? "page" : undefined}
               >
                 {it.label}
+                {it.badge && counts[it.badge === "unread" ? "unread" : "messages"] > 0 ? (
+                  <span
+                    className="plt-nav__badge sting-mono"
+                    aria-label={`${counts[it.badge === "unread" ? "unread" : "messages"]} جديد`}
+                  >
+                    {counts[it.badge === "unread" ? "unread" : "messages"]}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </li>

@@ -118,6 +118,12 @@ def _sub_status(sub: TenantSubscription | None, now: Any) -> tuple[str, str, str
     """(الرمز، التسمية، سطر الاستحقاق)."""
     if sub is None:
         return "trial", "تجريبي", "بلا اشتراك مسجَّل"
+    if sub.state == TenantSubscription.State.PENDING and sub.suspended_at is None:
+        return (
+            "pending_approval",
+            "بانتظار الاعتماد",
+            f"طلب جديد منذ {sub.started_at:%d/%m} · لا تجربة ولا جهاز قبل اعتمادك",
+        )
     if sub.suspended_at is not None:
         return (
             "suspended",
@@ -200,6 +206,8 @@ def tenant_row(t: Tenant, now: Any) -> dict[str, Any]:
 
 def _actions(code: str, sub: TenantSubscription | None) -> str:
     """«ما يمكنك فعله» — بلا «دخول كالمالك»."""
+    if code == "pending_approval":
+        return "اعتماد التجربة أو إيقافها بسبب · لا بيانات للمنشأة بعد"
     if code == "payment_pending":
         return "مراجعة دفع · لا حجب بيانات ولا حذف"
     if code == "expired":
@@ -230,6 +238,8 @@ def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
         rows = [r for r in rows if r["status"] in {"expired", "payment_pending"}]
     elif filter_code == "suspended":
         rows = [r for r in rows if r["status"] == "suspended"]
+    elif filter_code == "pending_approval":
+        rows = [r for r in rows if r["status"] == "pending_approval"]
     # فحص 2026-10-17 VP05: بطاقتا «نشط» و«تجريبي» في النظرة العامة تفتحان مرشّحهما بتعريف العدّاد نفسه
     elif filter_code == "active":
         rows = [r for r in rows if r["status"] == "active"]

@@ -556,6 +556,8 @@ class TenantSubscription(TenantScoped):
     (§١١.٢) — يُقرأ عبر `core.subscription`. صف واحد لكل منشأة (يُبذر تجريبياً كسولاً)."""
 
     class State(models.TextChoices):
+        # 0005 §١٨٧: منشأة جديدة بانتظار اعتماد المنصة — لا تجربة ولا جهاز ولا ميزات قبله
+        PENDING = "pending", "بانتظار الاعتماد"
         TRIAL = "trial", "تجريبية"
         ACTIVE = "active", "سارية"
         EXPIRED = "expired", "منتهية"
