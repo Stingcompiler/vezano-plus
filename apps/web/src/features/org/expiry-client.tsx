@@ -19,7 +19,7 @@ type State = "ready" | "expired" | "permission_denied";
 
 interface Payload {
   // «موقوف» من المشغّل (PLT-13) — كشفه عقد الردود (0005 §١٦١)
-  state: "trial" | "active" | "grace" | "expired" | "suspended";
+  state: "pending_approval" | "trial" | "active" | "grace" | "expired" | "suspended";
   expired: boolean;
   expired_at: string;
   days_since_expiry: number;

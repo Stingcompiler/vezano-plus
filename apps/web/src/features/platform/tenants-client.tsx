@@ -18,7 +18,8 @@ import { operatorToken, platformApi } from "@/features/platform/operator-session
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "loading" | "ready" | "empty" | "permission_denied";
-type Filter = "all" | "active" | "trial" | "due14" | "sync_stuck" | "late" | "suspended";
+type Filter =
+  "all" | "pending_approval" | "active" | "trial" | "due14" | "sync_stuck" | "late" | "suspended";
 
 export interface TenantRow {
   id: string;
@@ -32,7 +33,14 @@ export interface TenantRow {
   last_sync_at: string;
   sync_stuck: boolean;
   technical: string;
-  status: "active" | "trial" | "expired" | "payment_pending" | "sync_late" | "suspended";
+  status:
+    | "pending_approval"
+    | "active"
+    | "trial"
+    | "expired"
+    | "payment_pending"
+    | "sync_late"
+    | "suspended";
   status_label: string;
   support_access: string;
   actions: string;
@@ -74,6 +82,7 @@ const tenantsWord = (n: number) =>
 
 const FILTERS = [
   ["all", "كل الاستحقاقات"],
+  ["pending_approval", "بانتظار الاعتماد"],
   ["active", "نشط"],
   ["trial", "تجريبي"],
   ["due14", "الاستحقاق خلال 14 يوماً"],
@@ -92,7 +101,8 @@ export function TenantsClient() {
   const params = useSearchParams();
   const initial = params.get("filter");
   const [filter, setFilter] = useState<Filter>(
-    initial === "active" ||
+    initial === "pending_approval" ||
+      initial === "active" ||
       initial === "trial" ||
       initial === "due14" ||
       initial === "late" ||
@@ -168,7 +178,7 @@ export function TenantsClient() {
                 ? "success"
                 : t.status === "expired"
                   ? "expired"
-                  : t.status === "payment_pending"
+                  : t.status === "payment_pending" || t.status === "pending_approval"
                     ? "stale"
                     : t.status === "sync_late"
                       ? "conflict"

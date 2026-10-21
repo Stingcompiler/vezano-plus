@@ -226,6 +226,10 @@ def create_tenant(
             UserBranchAccess.unscoped.create(
                 tenant=tenant, user=user, branch=branch, role=roles["owner"]
             )
+            # 0005 §١٨٧: التجربة لا تبدأ ولا يُسجَّل جهاز حتى يعتمد مدير المنصة المنشأة
+            from core.subscription import start_pending_trial
+
+            start_pending_trial(tenant)
             # حالة المزامنة (الجيل والعدّاد) تولد مع المنشأة (§٨.٢)
             from sync.counter import ensure_state
 
