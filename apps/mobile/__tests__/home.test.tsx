@@ -197,7 +197,8 @@ describe("HOME-03 — البحث", () => {
     expect(new URL(req.url).searchParams.get("q")).toBe("سكر");
     // المبني على الهاتف يُفتح داخله، وما سواه على الويب
     await fireEvent.press(screen.getByText("سكر كنانة"));
-    expect(mockOpenOnWeb).toHaveBeenCalledWith("/catalog/i1");
+    expect(mockPush).toHaveBeenCalledWith("/catalog/i1");
+    expect(mockOpenOnWeb).not.toHaveBeenCalled();
   });
 
   it("بلا اتصال: بحث محلي على ما خُزّن على الجهاز", async () => {
