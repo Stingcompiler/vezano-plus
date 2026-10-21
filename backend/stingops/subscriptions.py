@@ -14,7 +14,7 @@ from typing import Any
 from django.utils import timezone
 
 from core.models import SubscriptionProof, Tenant, TenantSubscription
-from core.subscription import PLANS, TRIAL_DAYS, ensure_subscription
+from core.subscription import PLANS, TRIAL_DAYS, ensure_subscription, trial_days
 from core.tenancy import platform_context, tenant_context
 from stingops.models import SubscriptionEvent
 
@@ -129,6 +129,56 @@ def change_plan(tenant: Tenant, *, plan_code: str, reason: str, by_name: str) ->
         reason=reason,
     )
     return {"plan_code": plan_code}
+
+
+def approve_trial(tenant: Tenant, *, reason: str, by_name: str) -> dict[str, Any]:
+    """اعتماد منشأة جديدة (0005 §١٨٧): تبدأ التجربة الآن لمدتها كاملة ويُسمح بتسجيل الأجهزة.
+    قبل الاعتماد لا تجربة تجري؛ بعده تُحسب المدة من لحظة الاعتماد لا من لحظة الإنشاء."""
+    reason = reason.strip()[:300]  # سبب اختياري هنا: الاعتماد قرار بدء لا استثناء
+    now = timezone.now()
+    with tenant_context(tenant.id):
+        days = trial_days()
+        sub = ensure_subscription()
+        if sub.state != TenantSubscription.State.PENDING:
+            raise SubscriptionOpRejected("not_pending_approval", 409)
+        before = sub.expires_at
+        sub.state = TenantSubscription.State.TRIAL
+        sub.started_at = now
+        sub.expires_at = now + timedelta(days=days)
+        sub.save(update_fields=["state", "started_at", "expires_at", "updated_at"])
+        from core import notifications
+
+        notifications.emit(
+            kind="trial_approved",
+            category="account",
+            title="اعتُمدت منشأتك — بدأت التجربة",
+            body=(
+                f"اعتمد مشغّل المنصة منشأتك. تجربتك تنتهي في {sub.expires_at:%Y-%m-%d}. "
+                "جهّز جهازك الآن وابدأ البيع."
+            ),
+            href="/setup-device",
+            screen="ORG-06",
+            needs_action=True,
+            owner_only=True,
+            dedupe_key=f"trial_approved:{sub.id}",
+        )
+    _event(
+        tenant,
+        kind=SubscriptionEvent.Kind.TRIAL_APPROVED,
+        days=days,
+        expires_before=before,
+        expires_after=sub.expires_at,
+        reason=reason,
+        by_name=by_name,
+    )
+    _audit(
+        tenant.id,
+        kind="subscription.trial_approved",
+        title=f"اعتمد مشغّل المنصة المنشأة — بدأت التجربة {days} يوماً",
+        detail=f"حتى {sub.expires_at:%Y-%m-%d} · بواسطة {by_name}",
+        reason=reason,
+    )
+    return {"expires_at": _iso(sub.expires_at)}
 
 
 def suspend(tenant: Tenant, *, reason: str, by_name: str) -> dict[str, Any]:
@@ -295,6 +345,8 @@ def apply(tenant: Tenant, *, action: str, body: dict[str, Any], by_name: str) ->
         return change_plan(
             tenant, plan_code=str(body.get("plan_code") or ""), reason=reason, by_name=by_name
         )
+    if action == "approve_trial":
+        return approve_trial(tenant, reason=reason, by_name=by_name)
     if action == "suspend":
         return suspend(tenant, reason=reason, by_name=by_name)
     if action == "resume":

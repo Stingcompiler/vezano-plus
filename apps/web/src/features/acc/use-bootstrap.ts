@@ -25,7 +25,7 @@ import { type DeviceTokens, useApp } from "@/lib/app-context";
 import { getStorage } from "@/lib/storage";
 
 export type Phase = "idle" | "registering" | "downloading" | "activating" | "done" | "stopped";
-export type StopReason = "error" | "expired" | "offline" | null;
+export type StopReason = "error" | "expired" | "offline" | "approval" | null;
 
 const RETRY_DELAYS_MS = [1000, 3000, 7000] as const;
 const DEVICE_META = "device.registration";
@@ -111,12 +111,18 @@ export function useBootstrap(online: boolean): BootstrapUi {
           return d;
         }
       }
-      const { data, response } = await api().POST("/api/devices/register", {
+      const { data, error, response } = await api().POST("/api/devices/register", {
         body: {
           name: deviceName(),
           ...(app.session.branchId ? { branch_id: app.session.branchId } : {}),
         },
       });
+      // 0005 §١٨٧: منشأة جديدة لم يعتمدها مدير المنصة بعد — ليس خطأً بل انتظار
+      if (
+        response.status === 403 &&
+        (error as { detail?: string } | undefined)?.detail === "approval_pending"
+      )
+        throw new ApprovalPendingError();
       if (!response.ok || !data) throw new Error("register_failed");
       await storage.transaction((tx) =>
         tx.putMeta(
@@ -232,6 +238,8 @@ export function useBootstrap(online: boolean): BootstrapUi {
           await expireBootstrap(storage);
           setExpiredNotice(true);
           setStop("expired");
+        } else if (e instanceof ApprovalPendingError) {
+          setStop("approval");
         } else if (e instanceof OfflineError || !onlineRef.current) {
           setStop("offline");
         } else {
@@ -253,6 +261,7 @@ export function useBootstrap(online: boolean): BootstrapUi {
 }
 
 class ExpiredError extends Error {}
+class ApprovalPendingError extends Error {}
 class OfflineError extends Error {}
 
 /** اسم الجهاز كما يراه الخادم — بيانات لا نص واجهة (لاتيني من المتصفح). */

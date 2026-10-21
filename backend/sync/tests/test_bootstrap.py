@@ -59,6 +59,14 @@ def owner_session() -> dict[str, Any]:
         currency="SDG",
         first_branch_name="فرع بحري",
     )
+    # 0005 §١٨٧: المنشأة الجديدة بانتظار اعتماد المنصة — نحاكي اعتماد المشغّل ليعمل تسجيل الجهاز
+    from core.models import Tenant
+    from core.tenancy import platform_context
+    from stingops.subscriptions import approve_trial
+
+    with platform_context():
+        tenant = Tenant.unscoped.get(id=result.creation.tenant_id)
+    approve_trial(tenant, reason="", by_name="اختبار")
     client = Client()
     code, data = post(
         client, "/api/auth/account/login", {"identifier": "0912447001", "password": PASSWORD}, ""
