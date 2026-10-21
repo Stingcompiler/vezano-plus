@@ -174,7 +174,7 @@ test.describe("HOME-01", () => {
     await expect(home).not.toContainText("مرحلة غير مفعّلة");
     await expect(home).not.toContainText("يحتاج تفعيلاً");
     await page.getByRole("button", { name: "حدّد طريقة حساب التكلفة" }).click();
-    await expect(page).toHaveURL(/\/purchasing\/cost-margin$/);
+    await expect(page).toHaveURL(/\/reports\/margin$/);
   });
 
   test("FIX-03: بطاقة النقد تجميع كل الأجهزة — وتقول إن لا وردية على هذا الجهاز", async ({
