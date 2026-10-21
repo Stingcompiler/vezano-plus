@@ -61,6 +61,20 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 
 const pct = (bp: number) => `${(bp / 100).toFixed(2)}%`;
 
+/** طرق التكلفة التي يقبلها الخادم (`COST_POLICIES`)؛ «الوارد أولاً» غير مدعومة بعد فلا تُعرض. */
+const POLICIES = [
+  {
+    code: "last_purchase",
+    label: "آخر سعر شراء",
+    note: "تُحتسب تكلفة الوحدة المباعة بآخر سعر شراء مسجَّل للصنف — الأبسط، وتتأثر الأرقام بآخر فاتورة مورد.",
+  },
+  {
+    code: "weighted_average",
+    label: "المتوسط المرجَّح",
+    note: "تُحتسب بمتوسط أسعار الشراء مرجَّحاً بالكميات — الأثبت حين تتغيّر أسعار الموردين.",
+  },
+] as const;
+
 const LOCK_EXPLANATION =
   "ليس نقص صلاحية ولا عطلاً. حساب الهامش يحتاج قراراً لم يُتخذ بعد: كيف تُحتسب تكلفة الوحدة المباعة — بآخر سعر شراء، أم بالمتوسط المرجّح، أم بالوارد أولاً صادر أولاً. الثلاثة تعطي أرقام ربح مختلفة للبضاعة نفسها.";
 
@@ -76,6 +90,11 @@ export function MarginReportClient() {
   const [range, setRange] = useState<RangeKey>("30d");
   const [data, setData] = useState<Payload | null>(null);
   const [denied, setDenied] = useState<string | null>(null);
+  // 0005 §١٨٩: تفعيل الهامش باعتماد طريقة التكلفة من الشاشة نفسها (كان الزرّ بلا فعل ولا شاشة للقرار)
+  const [choosing, setChoosing] = useState(false);
+  const [policy, setPolicy] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -107,6 +126,41 @@ export function MarginReportClient() {
   useEffect(() => {
     void fetchServer();
   }, [fetchServer]);
+
+  const activate = async () => {
+    if (!policy || saving) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const cur = await api().GET("/api/org/settings", {});
+      const version = (cur.data as unknown as { version?: number } | undefined)?.version;
+      if (!cur.response.ok || version === undefined) {
+        setSaveError(cur.response.status === 403 ? "owner" : "load");
+        return;
+      }
+      const { response } = await api().PUT("/api/org/settings", {
+        body: { version, cost_policy: policy },
+      });
+      if (response.status === 403) {
+        setSaveError("owner");
+        return;
+      }
+      if (response.status === 409) {
+        setSaveError("conflict");
+        return;
+      }
+      if (!response.ok) {
+        setSaveError("server");
+        return;
+      }
+      setChoosing(false);
+      await fetchServer();
+    } catch {
+      setSaveError("offline");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const p = data;
   const state: State | null = denied !== null ? "permission_denied" : p ? p.state : null;
@@ -149,7 +203,12 @@ export function MarginReportClient() {
             ) : null}
 
             {state === "phase_locked" && p ? (
-              <PhaseLocked kind="conditional" explanation={LOCK_EXPLANATION}>
+              <PhaseLocked
+                kind="conditional"
+                explanation={LOCK_EXPLANATION}
+                onActivate={() => setChoosing(true)}
+                activateLabel="اختر طريقة التكلفة"
+              >
                 <Notice kind="info" title="هذا التقرير مصمَّم ولا يعمل الآن">
                   <p className="acc-lead">{LOCK_EXPLANATION}</p>
                 </Notice>
@@ -185,6 +244,56 @@ export function MarginReportClient() {
                   تُلتقط تلقائياً من فواتير الموردين بعد اليوم.
                 </p>
               </PhaseLocked>
+            ) : null}
+
+            {state === "phase_locked" && p && choosing ? (
+              <Notice kind="info" title="اعتمد طريقة حساب التكلفة">
+                <p className="acc-lead">
+                  قرار يُسجَّل مرة ويُطبَّق على كل الأصناف والفروع، ويُكتب في رأس التقرير. الاعتماد
+                  للمالك وحده.
+                </p>
+                <div className="pos-chips" role="group" aria-label="طريقة التكلفة">
+                  {POLICIES.map((o) => (
+                    <button
+                      key={o.code}
+                      type="button"
+                      className={`pos-chip${policy === o.code ? " pos-chip--on" : ""}`}
+                      aria-pressed={policy === o.code}
+                      onClick={() => setPolicy(o.code)}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                {POLICIES.filter((o) => o.code === policy).map((o) => (
+                  <p key={o.code} className="acc-choice__note">
+                    {o.note}
+                  </p>
+                ))}
+                {saveError ? (
+                  <p className="acc-choice__note" role="alert">
+                    {saveError === "owner"
+                      ? "الاعتماد للمالك وحده."
+                      : saveError === "conflict"
+                        ? "تغيّرت الإعدادات من جهة أخرى — أعد المحاولة."
+                        : saveError === "offline"
+                          ? "الاعتماد يحتاج اتصالاً."
+                          : "تعذّر الاعتماد. أعد المحاولة بعد قليل."}
+                  </p>
+                ) : null}
+                <div className="acc-links">
+                  <Button
+                    onClick={() => void activate()}
+                    loading={saving}
+                    disabledReason={policy ? undefined : "اختر طريقة التكلفة أولاً"}
+                  >
+                    اعتمد الطريقة وفعّل الهامش
+                  </Button>
+                  <Button variant="quiet" onClick={() => setChoosing(false)}>
+                    إلغاء
+                  </Button>
+                </div>
+              </Notice>
             ) : null}
 
             {state === "empty" && p && p.missing ? (

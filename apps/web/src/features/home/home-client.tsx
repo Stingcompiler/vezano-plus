@@ -324,10 +324,7 @@ export function HomeClient() {
                       kind="info"
                       title="الهامش وصافي الربح غير محسوبين بعد"
                       action={
-                        <Button
-                          variant="secondary"
-                          onClick={() => router.push("/purchasing/cost-margin")}
-                        >
+                        <Button variant="secondary" onClick={() => router.push("/reports/margin")}>
                           حدّد طريقة حساب التكلفة
                         </Button>
                       }

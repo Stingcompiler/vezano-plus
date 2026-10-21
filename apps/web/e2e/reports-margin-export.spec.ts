@@ -171,6 +171,25 @@ test.describe("REP-05", () => {
     );
     const root = page.locator('[data-screen="REP-05"]');
     await expect(root).not.toContainText("%");
+    // 0005 §١٨٩: التفعيل من الشاشة نفسها — اختيار طريقة التكلفة ثم اعتمادها (كان الزرّ بلا فعل)
+    const putBodies: unknown[] = [];
+    await page.route("**/api/org/settings", (route) => {
+      if (route.request().method() === "PUT") {
+        putBodies.push(route.request().postDataJSON());
+        mode = "empty";
+        return route.fulfill(json(200, { version: 4 }));
+      }
+      return route.fulfill(json(200, { version: 3 }));
+    });
+    await page.getByRole("button", { name: "اختر طريقة التكلفة" }).click();
+    await expect(root).toContainText("اعتمد طريقة حساب التكلفة");
+    const confirm = page.getByRole("button", { name: "اعتمد الطريقة وفعّل الهامش" });
+    await expect(confirm).toBeDisabled();
+    await page.getByRole("button", { name: "المتوسط المرجَّح" }).click();
+    await expect(root).toContainText("الأثبت حين تتغيّر أسعار الموردين");
+    await confirm.click();
+    await expect(root).toContainText("تقرير الهامش — غير متاح بعد");
+    expect(putBodies).toEqual([{ version: 3, cost_policy: "weighted_average" }]);
     // سياسة معتمدة لكن الأصناف بلا تكلفة: نمتنع عن الرقم
     mode = "empty";
     await page.getByRole("button", { name: "آخر 7 أيام" }).click();
