@@ -95,6 +95,9 @@ test.describe("POS-09", () => {
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     const root = page.locator('[data-screen="POS-09"]');
+    // FIX-13: عنوان الشاشة والتبويب «الفواتير» لا «نقطة البيع» ولا عنوان الصفحة التسويقية
+    await expect(page.getByRole("heading", { level: 1, name: "الفواتير" })).toBeVisible();
+    await expect(page).toHaveTitle(/^الفواتير · /);
     // 5 فواتير: 2 محليتان + 3 من جهاز آخر؛ المجموع 100+100+640+1740+318
     await expect(root).toContainText("5 فواتير · إجمالي اليوم 2,898.00");
     await expect(root).toContainText("40.00");
@@ -102,6 +105,7 @@ test.describe("POS-09", () => {
     // فتح الفاتورة المحلية → التفاصيل من الجهاز فوراً
     await root.getByRole("button", { name: "فتح" }).first().click();
     await expect(page).toHaveURL(/\/pos\/invoices\/l1043$/);
+    await expect(page).toHaveTitle(/^فاتورة .*1043 · /);
     await expectFrame(page, info, {
       screenId: "POS-09",
       state: "ready",

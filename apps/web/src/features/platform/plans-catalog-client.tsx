@@ -24,6 +24,7 @@ import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { BRANCHES, Count, DEVICES } from "@/lib/count";
 
 type State = "loading" | "ready" | "permission_denied";
 
@@ -587,8 +588,8 @@ export function PlansCatalogClient() {
                         )}
                       </div>
                       <div className="cus-sub">
-                        <span className="sting-mono">{p.max_branches}</span> فروع ·{" "}
-                        <span className="sting-mono">{p.max_devices}</span> أجهزة ·{" "}
+                        <Count n={p.max_branches} {...BRANCHES} /> ·{" "}
+                        <Count n={p.max_devices} {...DEVICES} /> ·{" "}
                         {p.max_users === null ? (
                           "مستخدمون بلا حدّ"
                         ) : (
