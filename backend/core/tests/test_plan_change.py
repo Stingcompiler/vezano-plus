@@ -134,3 +134,22 @@ def test_trial_renews_on_a_bigger_plan(ctx: dict[str, Any]) -> None:  # noqa: F8
     assert _post(c, oh, approve, {}).status_code == 200
     with tenant_context(ctx["tenant"].id):
         assert TenantSubscription.objects.get().plan_code == "dual"
+
+
+def test_payment_instructions_shown_only_when_configured(
+    ctx: dict[str, Any],  # noqa: F811
+    settings: Any,
+) -> None:
+    """بند 10: بطاقة «حوّل إلى» من إعداد المنصّة؛ ناقصة أو غير مضبوطة = لا بطاقة (لا حساب مخترع)."""
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    settings.PAYMENT_INSTRUCTIONS = ""
+    assert c.get(PROOFS, headers=owner).json()["due"]["pay_to"] is None
+    settings.PAYMENT_INSTRUCTIONS = (
+        '{"bank": "بنك الخرطوم", "account": "1234567", "holder": "فيزانو"}'
+    )
+    due = c.get(PROOFS, headers=owner).json()["due"]
+    assert due["pay_to"] == {"bank": "بنك الخرطوم", "account": "1234567", "holder": "فيزانو"}
+    assert due["covers_until"]
+    settings.PAYMENT_INSTRUCTIONS = '{"bank": "بنك الخرطوم"}'
+    assert c.get(PROOFS, headers=owner).json()["due"]["pay_to"] is None

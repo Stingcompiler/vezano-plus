@@ -316,14 +316,33 @@ def timeline(tenant: Tenant) -> list[dict[str, Any]]:
         for e in events
     ]
     if sub is not None:
+        # مراجعة 2026-10-19 (بند 9): سطر البداية يصف ما بدأ به الاشتراك لا ما صار إليه —
+        # الباقة الأولى هي «من» أقدم تغيير باقة مسجَّل، وإلا فالحالية (لم تتغيّر قط)
+        with platform_context():
+            first_change = (
+                SubscriptionEvent.objects.filter(tenant=tenant)
+                .exclude(from_plan="")
+                .order_by("at")
+                .first()
+            )
+        began = first_change.from_plan if first_change is not None else sub.plan_code
+        if first_change is None and began != "trial":
+            # الترقية والتجديد بإثبات معتمد لا يكتبان حدثاً: كل متجر يبدأ تجريبياً، فمن اعتُمد له إثبات
+            # كانت بدايته التجريبية لا باقته الحالية
+            with platform_context():
+                paid_via_proof = SubscriptionProof.unscoped.filter(
+                    tenant=tenant, status="approved"
+                ).exists()
+            if paid_via_proof:
+                began = "trial"
         rows.append(
             {
                 "id": "start",
                 "kind": "start",
-                "kind_label": "بدء التجريبية" if sub.plan_code == "trial" else "بدء الاشتراك",
-                "days": TRIAL_DAYS if sub.plan_code == "trial" else 0,
+                "kind_label": "بدء التجريبية" if began == "trial" else "بدء الاشتراك",
+                "days": TRIAL_DAYS if began == "trial" else 0,
                 "from_plan": "",
-                "to_plan": _plan_name(sub.plan_code),
+                "to_plan": _plan_name(began),
                 "expires_after": "",
                 "reason": "",
                 "by_name": "",

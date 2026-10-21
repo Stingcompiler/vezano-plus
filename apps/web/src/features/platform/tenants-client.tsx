@@ -297,7 +297,7 @@ export function TenantsClient() {
                         : data.total <= 10
                           ? "متاجر"
                           : "متجراً"}
-                  </strong>
+                  </strong>{" "}
                   <span className="acc-choice__note">{tenantsWord(data.shown)} في هذا المرشّح</span>
                 </div>
                 <Table
