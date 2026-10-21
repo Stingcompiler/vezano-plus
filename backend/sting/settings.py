@@ -139,3 +139,8 @@ SPECTACULAR_SETTINGS = {
         "core.api_contract.postprocess_schema",
     ],
 }
+
+
+# تعليمات الدفع التي يراها التاجر في ORG-07 (مراجعة 2026-10-19، بند 10): JSON من
+# {"bank": "...", "account": "...", "holder": "..."}. غير مضبوط = لا بطاقة تحويل (لا حساب مخترع).
+PAYMENT_INSTRUCTIONS = os.environ.get("STING_PAYMENT_INSTRUCTIONS", "")

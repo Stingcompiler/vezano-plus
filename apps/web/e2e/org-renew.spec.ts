@@ -83,13 +83,23 @@ test.describe("ORG-07", () => {
         json(200, {
           ...payload(),
           plans: PLANS,
-          due: { ...DUE, plan_code: pl.code, plan_name: pl.name, amount_minor: pl.price_minor },
+          due: {
+            ...DUE,
+            plan_code: pl.code,
+            plan_name: pl.name,
+            amount_minor: pl.price_minor,
+            covers_until: "2026-11-16T00:00:00Z",
+            pay_to: { bank: "بنك الخرطوم", account: "1234567", holder: "فيزانو" },
+          },
         }),
       );
     });
     await login(page, "/org/subscription/renew");
     const root = page.locator('[data-screen="ORG-07"]');
     await expect(root).toContainText("المستحق: 45,000.00 SDG");
+    // بند 10: تعليمات التحويل من إعداد المنصّة حين تُضبط، و«يغطي حتى»
+    await expect(root.getByTestId("pay-to")).toContainText("بنك الخرطوم");
+    await expect(root).toContainText("يغطي حتى");
     const plans = page.getByRole("group", { name: "الباقات" });
     await expect(plans.getByRole("button", { name: /فرع واحد/ })).toHaveAttribute(
       "aria-pressed",

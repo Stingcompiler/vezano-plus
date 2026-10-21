@@ -55,7 +55,6 @@ export const MOBILE_TEXTS = {
   printerTest: "اطبع إيصال تجربة",
   printerBluetoothTitle: "طابعة بلوتوث حرارية",
   printerBluetoothBody: "ربط الطابعات الحرارية بالبلوتوث لم يُفعَّل بعد في هذا الإصدار.",
-  shiftClose: "أقفل الوردية",
   discountClear: "إزالة الخصم",
   pinMismatch: "الرمزان غير متطابقين.",
   pinPasswordInvalid: "كلمة المرور غير صحيحة.",

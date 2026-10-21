@@ -27,6 +27,14 @@ type State = "ready" | "loading" | "permission_denied" | "success" | "server_err
 type Range = "30" | "all";
 type Kind = "pdf" | "link";
 
+/**
+ * رابط مطلق (مراجعة 2026-10-19، بند 25): `apiBaseUrl()` فارغ في الإنتاج (نفس الأصل) فكان النسخ يضع
+ * مساراً نسبياً `/api/parties/exports/…` لا يفتح حين يُلصق في واتساب.
+ */
+function absoluteUrl(path: string): string {
+  return new URL(`${apiBaseUrl()}${path}`, window.location.origin).href;
+}
+
 interface Row {
   readonly doc: string;
   readonly doc_id: string;
@@ -202,7 +210,7 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
   };
 
   const copy = async (what: "reminder" | "link") => {
-    const text = what === "reminder" ? reminder : exp ? `${apiBaseUrl()}${exp.url}` : "";
+    const text = what === "reminder" ? reminder : exp ? absoluteUrl(exp.url) : "";
     try {
       await navigator.clipboard.writeText(text);
       setCopied(what);
@@ -305,17 +313,37 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                     </Button>
                   </div>
                 </Notice>
+                {exp.kind === "link" ? (
+                  <p className="acc-choice__note sting-mono" dir="ltr" data-testid="share-link">
+                    {absoluteUrl(exp.url)}
+                  </p>
+                ) : null}
                 <div className="cat-form__actions">
                   <Button
                     pos
-                    onClick={() => window.open(`${apiBaseUrl()}${exp.url}`, "_blank", "noopener")}
+                    onClick={() => window.open(absoluteUrl(exp.url), "_blank", "noopener")}
                   >
                     {exp.kind === "pdf" ? "تصدير PDF" : "مشاركة رابط"}
                   </Button>
                   {exp.kind === "link" ? (
-                    <Button variant="secondary" onClick={() => void copy("link")}>
-                      {copied === "link" ? "نُسخ الرابط" : "نسخ الرابط"}
-                    </Button>
+                    <>
+                      <Button variant="secondary" onClick={() => void copy("link")}>
+                        {copied === "link" ? "نُسخ الرابط" : "نسخ الرابط"}
+                      </Button>
+                      {/* بند 25: الرابط الكامل مرئي ويُرسل إلى واتساب بنقرة */}
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          window.open(
+                            `https://wa.me/?text=${encodeURIComponent(absoluteUrl(exp.url))}`,
+                            "_blank",
+                            "noopener",
+                          )
+                        }
+                      >
+                        واتساب
+                      </Button>
+                    </>
                   ) : null}
                   <Button variant="quiet" onClick={() => setPhase("idle")}>
                     إلغاء

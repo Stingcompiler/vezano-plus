@@ -10,7 +10,7 @@ import {
   readShiftCash,
   type ShiftCash,
 } from "@sting/sync-core";
-import { mtx, tx } from "@sting/texts";
+import { tx } from "@sting/texts";
 import {
   AppText,
   Button,
@@ -40,9 +40,6 @@ const KIND_LABEL: Record<CashRow["kind"], string> = {
   refund: "مرتجع نقدي",
 };
 const MODE_LABEL = { credit: "بيع آجل", bank: "بيع بالتحويل", mixed: "بيع مختلط" } as const;
-/** وسيلة البيع غير النقدي (يضيفها محرّك الجهاز في CashRow.mode — 0005 §١٩١) — تُقرأ بتسامح حتى يصل. */
-const modeOf = (r: CashRow): keyof typeof MODE_LABEL | undefined =>
-  r.kind === "sale" ? (r as CashRow & { mode?: keyof typeof MODE_LABEL }).mode : undefined;
 const SYNC_LABEL = { synced: "مؤكد", pending: "معلّق", conflict: "تعارض", quarantined: "محجور" };
 
 function M({ children }: { children: string }) {
@@ -188,7 +185,7 @@ export default function CurrentShift() {
             {cash.rows.map((r, i) => (
               <ListRow
                 key={r.doc + r.time}
-                title={modeOf(r) ? MODE_LABEL[modeOf(r)!] : KIND_LABEL[r.kind]}
+                title={r.kind === "sale" && r.mode ? MODE_LABEL[r.mode] : KIND_LABEL[r.kind]}
                 subtitle={`${r.doc} · ${hhmm(r.time)}${r.note ? ` · ${r.note}` : ""}`}
                 trailing={
                   <AppText variant="note">
@@ -218,7 +215,7 @@ export default function CurrentShift() {
           {shift.state === "open" ? (
             <>
               <Button
-                label={mtx("shiftClose")}
+                label={tx(T, "أقفل الوردية")}
                 financial
                 onPress={() => router.push("/shifts/close")}
               />

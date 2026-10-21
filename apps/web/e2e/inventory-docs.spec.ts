@@ -206,6 +206,47 @@ const LIST = {
 };
 
 test.describe("INV-03", () => {
+  test("مراجعة 2026-10-19 (بنود 6 و7): صنف أُنشئ للتوّ يظهر في القائمة ويُختار مسبقاً من ?item=", async ({
+    page,
+  }) => {
+    await seed(page);
+    await openingsRoute(page, LIST, () => ({ status: 201, body: {} }));
+    // الإسقاط المحلي لا يعرفه بعد — الخادم يعرفه
+    await page.route("**/api/catalog/items**", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill(
+            json(200, {
+              items: [
+                {
+                  id: "new1",
+                  name: "صنف حديث",
+                  name_normalized: "صنف حديث",
+                  group_id: "",
+                  group_name: "",
+                  base_unit_id: "u1",
+                  base_unit_code: "piece",
+                  base_unit_name: "قطعة",
+                  units: [],
+                  barcode: "",
+                  sale_price_minor: "1000",
+                  price_updated_at: "",
+                  aliases: [],
+                  is_active: true,
+                  deactivated_at: "",
+                  updated_at: "",
+                },
+              ],
+              total: 1,
+              all_total: 1,
+              groups: [],
+            }),
+          )
+        : route.continue(),
+    );
+    await login(page, "/inventory/openings?item=new1");
+    await expect(page.getByLabel("الصنف").first()).toHaveValue("new1");
+  });
+
   test("ready → success: مستند واحد بتحويل صريح إلى وحدة المخزون، ولا نقبل تقديراً، ثم سُجّلت الافتتاحيات", async ({
     page,
   }, info) => {

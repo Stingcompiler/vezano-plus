@@ -361,6 +361,9 @@ test.describe("SHIFT-02", () => {
     await expect(page.locator('[data-screen="SHIFT-02"]')).toContainText("مؤكد");
     await expect(page.locator(".cat-head__title")).toContainText("وردية سميرة ع. — 4 ساعات");
     await expect(page.locator(".shift-expected__v")).toHaveText("500.00");
+    // مراجعة 2026-10-19 (بند 12): الإقفال بنقرة من شاشة الوردية نفسها
+    await page.getByRole("button", { name: "أقفل الوردية" }).click();
+    await expect(page).toHaveURL(/\/shifts\/close$/);
   });
 
   test("pending_sync: يشمل حركة معلقة من هذا الجهاز — والمرتجع النقدي يخرج من الصندوق", async ({

@@ -12810,6 +12810,7 @@ export interface components {
                 }[];
                 addons_amount_minor: string;
                 amount_minor: string;
+                covers_until: string;
                 currency: string;
                 /** @enum {string} */
                 cycle: "monthly" | "quarterly" | "yearly";
@@ -12823,6 +12824,11 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
+                pay_to: null | {
+                    account: string;
+                    bank: string;
+                    holder: string;
+                };
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -12877,6 +12883,7 @@ export interface components {
                 }[];
                 addons_amount_minor: string;
                 amount_minor: string;
+                covers_until: string;
                 currency: string;
                 /** @enum {string} */
                 cycle: "monthly" | "quarterly" | "yearly";
@@ -12890,6 +12897,11 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
+                pay_to: null | {
+                    account: string;
+                    bank: string;
+                    holder: string;
+                };
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;

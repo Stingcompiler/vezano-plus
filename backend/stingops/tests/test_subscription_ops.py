@@ -88,3 +88,24 @@ def test_operator_subscription_actions(ctx: dict[str, Any]) -> None:  # noqa: F8
     # الوقت لا يُلمس بالإيقاف: ما زال حتى التاريخ الممدَّد
     with tenant_context(tid):
         assert TenantSubscription.objects.get().expires_at > timezone.now() + timedelta(days=20)
+
+
+def test_start_line_survives_upgrade_by_proof(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-10-19 (بند 9): سطر البداية لا يتبدّل باسم الباقة الحالية بعد ترقية بإثبات."""
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    oh = _operator_headers("ops10", "هدى — تشغيل")
+    tid = ctx["tenant"].id
+    url = f"/api/platform/tenants/{tid}/subscription"
+    with tenant_context(tid):
+        ensure_subscription()
+    first = _post(c, oh, url, {"action": "note", "reason": "ملاحظة"}).json()["tenant"]["timeline"]
+    assert first[-1]["kind_label"] == "بدء التجريبية"
+    proofs = "/api/org/subscription/proofs"
+    pr = _post(c, owner, proofs, {"reference": "TRX-9", "plan_code": "dual"})
+    pid = pr.json()["proof"]["id"]
+    assert _post(c, oh, f"/api/platform/proofs/{tid}/{pid}/approve", {}).status_code == 200
+    after = _post(c, oh, url, {"action": "note", "reason": "ملاحظة ثانية"}).json()["tenant"]
+    start = after["timeline"][-1]
+    assert start["kind"] == "start"
+    assert start["kind_label"] == "بدء التجريبية" and start["to_plan"] == "تجريبية"

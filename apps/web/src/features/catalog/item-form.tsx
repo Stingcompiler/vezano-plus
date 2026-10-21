@@ -413,7 +413,7 @@ export function ItemForm({
             خطأ.
           </p>
           <div className="acc-links">
-            <Link href={`/inventory/opening?item=${saved.id}`} className="c-btn c-btn--primary">
+            <Link href={`/inventory/openings?item=${saved.id}`} className="c-btn c-btn--primary">
               أضف رصيداً افتتاحياً لهذا الصنف
             </Link>
             <Button

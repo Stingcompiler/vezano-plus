@@ -86,6 +86,14 @@ interface TimelineRow {
 
 type OpAction = "approve_trial" | "extend" | "plan" | "suspend" | "resume" | "note" | "limits";
 
+/** حالة الجهاز بالعربية (بند 20ب: كانت «active» بالإنجليزية). */
+const DEVICE_STATUS: Record<string, string> = {
+  active: "فعّال",
+  revoked: "مسحوب",
+  wiped: "ممسوح",
+  suspended: "موقوف",
+};
+
 interface UsageRow {
   used: number;
   max: number | null;
@@ -567,7 +575,7 @@ export function TenantDetailClient({ id }: { id: string }) {
                       </div>
                       <Status
                         state={dev.status === "active" ? "success" : "expired"}
-                        label={dev.status}
+                        label={DEVICE_STATUS[dev.status] ?? dev.status}
                       />
                     </li>
                   ))}

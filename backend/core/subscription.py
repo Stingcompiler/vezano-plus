@@ -8,11 +8,13 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, overload
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -741,6 +743,21 @@ def _default_paid_code() -> str:
     return "single"
 
 
+def payment_instructions() -> dict[str, str] | None:
+    """بنك/رقم الحساب/الاسم من إعداد المنصّة؛ ناقص أو غير صالح = None فلا تُعرض بطاقة ناقصة."""
+    raw = getattr(settings, "PAYMENT_INSTRUCTIONS", "")
+    if not raw:
+        return None
+    try:
+        v = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(v, dict):
+        return None
+    out = {k: str(v.get(k, "")).strip() for k in ("bank", "account", "holder")}
+    return out if all(out.values()) else None
+
+
 def due_payload(plan_code: str | None = None, cycle: str = "monthly") -> dict[str, Any]:
     """المستحق: سعر الباقة للدورة المختارة والفترة التالية (0005 §١١٠: شهري/ربعي/سنوي)."""
     sub = ensure_subscription()
@@ -775,6 +792,9 @@ def due_payload(plan_code: str | None = None, cycle: str = "monthly") -> dict[st
         if cycle == "monthly"
         else f"{cycle_label} من {MONTHS_AR[month]}",
         "review_sla": REVIEW_SLA_TEXT,
+        # بند 10: «يغطي حتى …» — نهاية الفترة المدفوعة بعد الاعتماد، وتعليمات التحويل إن ضُبطت
+        "covers_until": _iso(nxt + timedelta(days=days)),
+        "pay_to": payment_instructions(),
         "cycles": [
             {
                 "cycle": c,
