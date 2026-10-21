@@ -168,7 +168,25 @@ test.describe("HOME-01", () => {
     // كل رقم يفتح على مصدره (R-01)
     await expect(page.locator("a.home-kpi")).toHaveCount(3);
     await expect(page.locator(".home-kpi__value").first()).toHaveText("8,420 ج.س");
-    await expect(page.locator('[data-screen="HOME-01"]')).toContainText("الهامش وصافي الربح");
+    const home = page.locator('[data-screen="HOME-01"]');
+    // FIX-04/05: بطاقة واحدة بسبب واحد وإجراء يعمل — لا «مرحلة غير مفعّلة» ولا «يحتاج تفعيلاً» ولا زرّ بلا فعل
+    await expect(home).toContainText("الهامش وصافي الربح غير محسوبين بعد");
+    await expect(home).not.toContainText("مرحلة غير مفعّلة");
+    await expect(home).not.toContainText("يحتاج تفعيلاً");
+    await page.getByRole("button", { name: "حدّد طريقة حساب التكلفة" }).click();
+    await expect(page).toHaveURL(/\/purchasing\/cost-margin$/);
+  });
+
+  test("FIX-03: بطاقة النقد تجميع كل الأجهزة — وتقول إن لا وردية على هذا الجهاز", async ({
+    page,
+  }) => {
+    await loginTo(page, OWNER);
+    await expect(page.locator("a.home-kpi", { hasText: "نقد الصناديق" })).toContainText(
+      "3 ورديات مفتوحة",
+    );
+    await expect(page.locator("a.home-kpi", { hasText: "نقد الصناديق" })).toContainText(
+      "لا وردية مفتوحة على هذا الجهاز",
+    );
   });
 
   test("empty: يومٌ لم يبدأ — لا أصفار", async ({ page }, info) => {

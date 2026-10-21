@@ -17,7 +17,7 @@ import { Ago } from "@/features/org/ago";
 import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
-import { DevicesSynced } from "@/features/reports/completeness";
+import { CompletenessBadge, DevicesSynced } from "@/features/reports/completeness";
 import { getStorage } from "@/lib/storage";
 
 type State = "ready" | "loading" | "empty" | "conflict" | "stale";
@@ -386,6 +386,11 @@ export function CashReportClient() {
                       </div>
                     </div>
                   </div>
+                  <CompletenessBadge
+                    synced={p.completeness.devices_synced}
+                    total={p.completeness.devices_total}
+                    computedAt={p.computed_at}
+                  />
                   <p className="acc-choice__note">
                     <DevicesSynced
                       synced={p.completeness.devices_synced}

@@ -194,6 +194,10 @@ def test_cash_movements_change_expected_cash_and_home_reports_shift(ctx: dict[st
         out = home.home_summary(ctx["tenant"].id, viewer)
         assert out["shift"]["open_since"] == f"{D}T08:00:00Z"
         assert out["shift"]["user_name"] == "سالم" and out["shift"]["device_name"] == "كاشير 2"
+        # FIX-03: بطاقة النقد تسمّي نطاقها وتفتح قائمة الورديات لا وردية هذا الجهاز
+        cash = next(k for k in out["kpis"] if k["key"] == "cash")
+        assert cash["scope"].startswith("وردية مفتوحة في ")
+        assert cash["href"] == "/shifts/review"
 
 
 def test_current_endpoint_uses_device_branch_and_isolation(ctx: dict[str, Any]) -> None:

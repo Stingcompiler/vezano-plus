@@ -273,6 +273,7 @@ test.describe("REP-01", () => {
     await expect(page.locator("body")).toContainText("وتظهر في «تقرير الهامش» مقفلةً حتى تُعتمد.");
     const root = page.locator('[data-screen="REP-01"]');
     await expect(root).toContainText("4 أجهزة من 4 زامنت.");
+    await expect(root).toContainText("بيانات مكتملة حتى");
     await expect(root).toContainText("8,420.00");
     await expect(root).toContainText("من 4 فروع زامنت");
     await expect(root).toContainText("4 مرتجعات");
@@ -298,9 +299,11 @@ test.describe("REP-01", () => {
       "هذا التقرير لا يشمل 9 عمليات معلّقة من هاتف المخزن وجهاز الكاشير 3",
     );
     await expect(root).toContainText("طبعه الآن يعني طبع رقم ناقص تعرف مقداره.");
-    await expect(root).toContainText("2 أجهزة من 4 زامنت.");
+    // FIX-10 (0005 §١٨٤): جمع صحيح وشارة واحدة تحسم «هل الرقم نهائي؟»
+    await expect(root).toContainText("جهازان من 4 زامنت.");
     await expect(root).toContainText("ناقص 7 عمليات");
-    await expect(root).toContainText("ناقص 2 عمليات");
+    await expect(root).toContainText("ناقص عمليتين");
+    await expect(root).toContainText("بيانات غير مكتملة");
     // المدى بلا مبيعات → اقتراح المدى الأقرب بزرّ ينتقل إليه
     await page.getByRole("button", { name: "كل وسائل الدفع" }).click();
     await page.getByRole("button", { name: "أمس", exact: true }).click();

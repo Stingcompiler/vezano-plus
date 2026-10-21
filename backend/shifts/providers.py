@@ -57,16 +57,23 @@ def _home_cash(viewer: home.Viewer, out: dict[str, Any]) -> None:
     if not shifts:
         return
     total = sum(expected_cash_minor(cash_totals(sh)) for sh in shifts)
+    # FIX-03 (0005 §١٨٤): الرقم تجميع ورديات المنشأة (أو الفرع) على كل الأجهزة، لا وردية هذا الجهاز؛
+    # فيسمّى نطاقه، وتفتح البطاقة قائمة الورديات لا وردية الجهاز الحالية.
+    where = "في المنشأة" if viewer.branch is None else f"في {viewer.branch.name}"
     out["kpis"].append(
         {
             "key": "cash",
             "label": "نقد الصناديق",
             "value": {"kind": "money", "amount_minor": str(total), "exponent": 2},
-            "scope": f"{len(shifts)} ورديات مفتوحة" if len(shifts) > 1 else "وردية مفتوحة",
+            "scope": (
+                f"{len(shifts)} ورديات مفتوحة {where}"
+                if len(shifts) > 1
+                else f"وردية مفتوحة {where}"
+            ),
             "note": "المتوقَّع قبل العدّ",
             "note_kind": "warn",
             "as_of": timezone.now().isoformat().replace("+00:00", "Z"),
-            "href": "/shifts/current",
+            "href": "/shifts/review",
         }
     )
 

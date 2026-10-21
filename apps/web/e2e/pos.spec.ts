@@ -562,6 +562,10 @@ test.describe("POS-01", () => {
       ]),
     });
     await expect(page.locator('[data-screen="POS-01"]')).not.toContainText("ليست لديك صلاحية");
+    // FIX-03: نطاق الوردية مسمّى — لهذا الجهاز لا لجهاز آخر
+    await expect(page.locator('[data-screen="POS-01"]')).toContainText(
+      "الوردية تخصّ هذا الجهاز (كاشير 2 · الفرع الرئيسي)",
+    );
     await page.getByRole("button", { name: "افتح وردية" }).click();
     await expect(page).toHaveURL(/\/shifts\/open$/);
   });
