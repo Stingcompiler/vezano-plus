@@ -2,6 +2,7 @@ import type { HomeSummary, SearchResponse } from "@sting/app-core";
 import type { StoragePort } from "@sting/platform";
 import { tx } from "@sting/texts";
 
+import { nativeRoute } from "@/lib/routes";
 import { openOnWeb } from "@/lib/web";
 
 /**
@@ -79,13 +80,9 @@ export async function searchLocal(storage: StoragePort, q: string): Promise<Sear
   };
 }
 
-/** الشاشات المبنية على الهاتف تُفتح داخله؛ ما سواها على الويب (الإطلاق التدريجي §٢.٤). */
-const NATIVE: Record<string, string> = { "/sync": "/sync", "/search": "/search", "/": "/" };
-
 export function openHref(href: string, push: (path: string) => void): void {
   if (!href) return;
-  const path = href.split("?")[0] ?? href;
-  const native = NATIVE[path];
+  const native = nativeRoute(href);
   if (native) push(native);
   else void openOnWeb(href);
 }

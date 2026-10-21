@@ -16,6 +16,7 @@ import TajawalRegular from "@sting/design/fonts/Tajawal-Regular.ttf";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { BackgroundSync } from "@/lib/background-sync";
 import { SessionProvider } from "@/lib/session";
 
 void SplashScreen.preventAutoHideAsync();
@@ -43,12 +44,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SessionProvider>
+          <BackgroundSync />
           <StatusBar style="auto" />
           <Stack
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.surfacePage } }}
           >
             {/* الشاشات المدفوعة فوق التبويبات: سهم رجوع وحده — العنوان الكبير في جسم الشاشة */}
-            {["search", "sync", "onboarding"].map((name) => (
+            {["search", "sync", "onboarding", "device"].map((name) => (
               <Stack.Screen
                 key={name}
                 name={name}

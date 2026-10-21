@@ -17,6 +17,8 @@ export default function TabsLayout() {
   const { state } = useSession();
   // التبويبات بجلسة نشطة على جهاز مجهّز وحدها (0005 §١٧٢–§١٧٣)
   if (state.status === "booting") return null;
+  // 401 بعد فشل الاستئناف: ACC-08 (العمل محفوظ) لا الترحيب
+  if (state.status === "anonymous" && state.expired) return <Redirect href="/session-expired" />;
   if (state.status === "anonymous") return <Redirect href="/welcome" />;
   if (state.status === "selecting") return <Redirect href="/select-org" />;
   if (state.status === "locked") return <Redirect href="/lock" />;

@@ -1,7 +1,8 @@
-import { countPending, hhmm } from "@sting/app-core";
+import { countPending, hhmm, type Notice } from "@sting/app-core";
 import { tx } from "@sting/texts";
 import {
   AppText,
+  Button,
   FONT,
   GroupedList,
   ListRow,
@@ -48,6 +49,17 @@ export default function Search() {
   const [pending, setPending] = useState(0);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const seq = useRef(0);
+  const [tab, setTab] = useState<"results" | "notices">("results");
+  const [notices, setNotices] = useState<{ items: Notice[]; needs_action: number } | null>(null);
+
+  useEffect(() => {
+    void api
+      .GET("/api/notices")
+      .then(({ data }) => {
+        if (data) setNotices(data);
+      })
+      .catch(() => undefined);
+  }, [api]);
 
   useEffect(() => {
     void (async () => {
@@ -133,69 +145,111 @@ export default function Search() {
           marginBottom: SPACE["2"],
         }}
       />
-      <View style={{ marginBottom: SPACE["4"] }}>
-        {state === "loading" ? (
-          <AppText variant="note" muted>
-            {tx(T, "نبحث في")} <N>{SEARCH_KIND_COUNT}</N> {tx(T, "أنواع")}
-          </AppText>
-        ) : result && result.total > 0 ? (
-          <AppText variant="note" muted>
-            <N>{result.total}</N> {tx(T, "نتائج في")} <N>{result.kinds_with_results}</N>{" "}
-            {tx(T, "أنواع ·")} <N>{(result.elapsed_ms / 1000).toFixed(1)}</N> {tx(T, "ث")}
-          </AppText>
-        ) : null}
-        {offline ? (
-          <AppText variant="note" muted>
-            {tx(T, "محلي")} · {tx(T, "آخر مزامنة")} <N>{lastSync ? hhmm(lastSync) : "—"}</N>{" "}
-            {tx(T, "· لم يُزامَن من جهازك")} <N>{pending}</N>
-          </AppText>
-        ) : null}
+      <View style={{ flexDirection: "row", gap: SPACE["2"], marginBottom: SPACE["3"] }}>
+        <View style={{ flex: 1 }}>
+          <Button
+            label={tx(T, "نتائج")}
+            variant={tab === "results" ? "primary" : "secondary"}
+            onPress={() => setTab("results")}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button
+            label={tx(T, "إشعارات سريعة")}
+            variant={tab === "notices" ? "primary" : "secondary"}
+            onPress={() => setTab("notices")}
+          />
+        </View>
       </View>
 
-      {state === "empty" && result ? (
-        <StateView state="empty" title={tx(T, "لا نتائج")}>
-          <AppText variant="secondary">
-            {tx(T, "بحثٌ عن «")}
-            {result.query}
-            {tx(T, "» بلا تطابق.")}
-          </AppText>
-        </StateView>
-      ) : null}
-
-      {result && restricted > 0 ? (
-        <StateView state="permission_denied" title={tx(T, "نتائج خارج صلاحيتك")}>
-          {result.restricted.map((r) => (
-            <AppText key={r.kind_label} variant="secondary">
-              <N>{r.count}</N> {tx(T, "في")} {r.kind_label} {tx(T, "خارج صلاحيتك")}
-            </AppText>
-          ))}
-        </StateView>
-      ) : null}
-
-      {result && result.total > 0
-        ? result.groups
-            .filter((g) => g.results.length > 0)
-            .map((g) => (
-              <GroupedList key={g.kind} title={g.label}>
-                {g.results.map((r, i) => (
-                  <ListRow
-                    key={r.id}
-                    title={r.title}
-                    subtitle={r.meta || undefined}
-                    trailing={
-                      r.tag ? (
-                        <AppText variant="note" muted>
-                          {r.tag}
-                        </AppText>
-                      ) : undefined
-                    }
-                    onPress={r.href ? () => openHref(r.href, (p) => router.push(p)) : undefined}
-                    last={i === g.results.length - 1}
-                  />
-                ))}
-              </GroupedList>
+      {tab === "notices" ? (
+        <GroupedList title={tx(T, "إشعارات سريعة")}>
+          {offline || !notices ? (
+            <ListRow title={tx(T, "متوقفة بلا اتصال")} last />
+          ) : (
+            notices.items.map((n, i) => (
+              <ListRow
+                key={n.id}
+                title={n.title}
+                subtitle={n.detail}
+                trailing={
+                  n.when ? (
+                    <Text style={{ fontFamily: FONT.mono, writingDirection: "ltr" }}>{n.when}</Text>
+                  ) : undefined
+                }
+                onPress={() => openHref(n.href, (p) => router.push(p))}
+                last={i === notices.items.length - 1}
+              />
             ))
-        : null}
+          )}
+        </GroupedList>
+      ) : (
+        <>
+          <View style={{ marginBottom: SPACE["4"] }}>
+            {state === "loading" ? (
+              <AppText variant="note" muted>
+                {tx(T, "نبحث في")} <N>{SEARCH_KIND_COUNT}</N> {tx(T, "أنواع")}
+              </AppText>
+            ) : result && result.total > 0 ? (
+              <AppText variant="note" muted>
+                <N>{result.total}</N> {tx(T, "نتائج في")} <N>{result.kinds_with_results}</N>{" "}
+                {tx(T, "أنواع ·")} <N>{(result.elapsed_ms / 1000).toFixed(1)}</N> {tx(T, "ث")}
+              </AppText>
+            ) : null}
+            {offline ? (
+              <AppText variant="note" muted>
+                {tx(T, "محلي")} · {tx(T, "آخر مزامنة")} <N>{lastSync ? hhmm(lastSync) : "—"}</N>{" "}
+                {tx(T, "· لم يُزامَن من جهازك")} <N>{pending}</N>
+              </AppText>
+            ) : null}
+          </View>
+
+          {state === "empty" && result ? (
+            <StateView state="empty" title={tx(T, "لا نتائج")}>
+              <AppText variant="secondary">
+                {tx(T, "بحثٌ عن «")}
+                {result.query}
+                {tx(T, "» بلا تطابق.")}
+              </AppText>
+            </StateView>
+          ) : null}
+
+          {result && restricted > 0 ? (
+            <StateView state="permission_denied" title={tx(T, "نتائج خارج صلاحيتك")}>
+              {result.restricted.map((r) => (
+                <AppText key={r.kind_label} variant="secondary">
+                  <N>{r.count}</N> {tx(T, "في")} {r.kind_label} {tx(T, "خارج صلاحيتك")}
+                </AppText>
+              ))}
+            </StateView>
+          ) : null}
+
+          {result && result.total > 0
+            ? result.groups
+                .filter((g) => g.results.length > 0)
+                .map((g) => (
+                  <GroupedList key={g.kind} title={g.label}>
+                    {g.results.map((r, i) => (
+                      <ListRow
+                        key={r.id}
+                        title={r.title}
+                        subtitle={r.meta || undefined}
+                        trailing={
+                          r.tag ? (
+                            <AppText variant="note" muted>
+                              {r.tag}
+                            </AppText>
+                          ) : undefined
+                        }
+                        onPress={r.href ? () => openHref(r.href, (p) => router.push(p)) : undefined}
+                        last={i === g.results.length - 1}
+                      />
+                    ))}
+                  </GroupedList>
+                ))
+            : null}
+        </>
+      )}
     </Screen>
   );
 }
