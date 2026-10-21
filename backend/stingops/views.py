@@ -1041,3 +1041,111 @@ class OperatorPlanActionView(APIView):
                 operator=auth.user, tenant=None, action=f"plan.{action}", detail=code
             )
         return Response(out)
+
+
+# ------------------------------------------------------------------ 0005 §١٩٠ الوارد والإشعارات
+
+
+class OperatorNoticesView(APIView):
+    """إشعارات فريق المنصة: القائمة وعدد غير المقروء (للقراءة لكل مشغّل)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("unread", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("limit", int, OpenApiParameter.QUERY, required=False),
+        ],
+        responses={200: None, 403: None},
+    )
+    def get(self, request: Request) -> Response:
+        from stingops import inbox
+
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            limit = int(request.query_params.get("limit") or 50)
+        except ValueError:
+            limit = 50
+        return Response(
+            inbox.notices_payload(
+                unread_only=request.query_params.get("unread") == "1", limit=limit
+            )
+        )
+
+
+class OperatorNoticesReadView(APIView):
+    """يعلّم إشعارات (`ids`) أو كلها مقروءة باسم المشغّل."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 400: None, 403: None})
+    def post(self, request: Request) -> Response:
+        from stingops import inbox
+
+        auth = _operator(request)
+        if auth is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        raw = body.get("ids")
+        ids = [str(i) for i in raw] if isinstance(raw, list) else None
+        try:
+            return Response(inbox.mark_read(ids=ids, by_name=auth.user.display_name))
+        except inbox.InboxRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+
+
+class OperatorMessagesView(APIView):
+    """رسائل الدعم الواردة من المنشآت (SYS-11) — جديدة/معالَجة/الكل."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False)],
+        responses={200: None, 403: None},
+    )
+    def get(self, request: Request) -> Response:
+        from stingops import inbox
+
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            inbox.messages_payload(status_filter=str(request.query_params.get("status") or "new"))
+        )
+
+
+class OperatorMessageDetailView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None, 404: None})
+    def get(self, request: Request, report_id: uuid.UUID) -> Response:
+        from stingops import inbox
+
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            return Response(inbox.message_detail(report_id))
+        except inbox.InboxRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+
+
+class OperatorMessageHandleView(APIView):
+    """«تمّت المعالجة» بملاحظة — باسم المشغّل ووقته."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 403: None, 404: None, 409: None})
+    def post(self, request: Request, report_id: uuid.UUID) -> Response:
+        from stingops import inbox
+
+        auth = _operator(request)
+        if auth is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        try:
+            out = inbox.handle_message(
+                report_id, note=str(body.get("note") or ""), by_name=auth.user.display_name
+            )
+        except inbox.InboxRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+        return Response(out)

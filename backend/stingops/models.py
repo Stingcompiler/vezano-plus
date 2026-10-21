@@ -421,3 +421,53 @@ class SubscriptionEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} · {self.tenant_id} · {self.at:%Y-%m-%d}"
+
+
+class OperatorNotice(models.Model):
+    """0005 §١٩٠ — إشعار لفريق المنصة: حدثٌ وصل من تاجر ويحتاج نظراً (منشأة جديدة بانتظار الاعتماد،
+    إيصال دفع، رسالة دعم، طلب جولة، تحقّق، بلاغ سوق). صندوق مشترك للفريق: أول من يقرأ يعلّمه مقروءاً
+    باسمه. لا يحمل بيانات دفتر؛ يحمل عنواناً قصيراً ورابطاً إلى شاشة الأصل."""
+
+    class Kind(models.TextChoices):
+        TENANT_PENDING = "tenant_pending", "منشأة بانتظار الاعتماد"
+        PROOF = "proof", "إيصال دفع"
+        MESSAGE = "message", "رسالة دعم"
+        DEMO = "demo", "طلب جولة"
+        VERIFICATION = "verification", "طلب تحقّق"
+        MARKET_REPORT = "market_report", "بلاغ سوق"
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    title = models.CharField(max_length=200)
+    body = models.CharField(max_length=400, blank=True, default="")
+    href = models.CharField(max_length=200, blank=True, default="")
+    tenant = models.ForeignKey(
+        Tenant, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    read_at = models.DateTimeField(null=True, blank=True)
+    read_by_name = models.CharField(max_length=200, blank=True, default="")
+
+    objects: ClassVar[models.Manager[OperatorNotice]] = models.Manager()
+
+    class Meta:
+        indexes = [models.Index(fields=["read_at", "created_at"], name="stingops_notice_read")]
+
+    def __str__(self) -> str:
+        return f"{self.kind}: {self.title}"
+
+
+class MessageTriage(models.Model):
+    """0005 §١٩٠ — فرز رسالة دعم (`sync.SupportReport`) على مستوى المنصة: «تمّت المعالجة» بملاحظة
+    ومن عالجها. الرسالة نفسها تبقى في جدول المستأجر لا تُعدَّل."""
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    report_id = models.UUIDField(unique=True)
+    handled_at = models.DateTimeField(default=timezone.now)
+    handled_by_name = models.CharField(max_length=200)
+    note = models.CharField(max_length=300, blank=True, default="")
+
+    objects: ClassVar[models.Manager[MessageTriage]] = models.Manager()
+
+    def __str__(self) -> str:
+        return f"triage:{self.report_id}"

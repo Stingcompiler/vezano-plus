@@ -906,6 +906,15 @@ def submit_proof(
         note=note.strip()[:300],
         submitted_by_name=actor.display_name,
     )
+    from stingops.inbox import emit
+
+    emit(
+        "proof",
+        f"إيصال دفع جديد {ref}",
+        body=f"{label} — بانتظار المراجعة",
+        href="/platform/proofs",
+        tenant_id=require_tenant(),
+    )
     return proof
 
 

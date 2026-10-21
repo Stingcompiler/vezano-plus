@@ -350,6 +350,15 @@ class SupportReportView(APIView):
                 payload=payload,
                 note=s.validated_data.get("note", ""),
             )
+        from stingops.inbox import emit
+
+        emit(
+            "message",
+            f"رسالة دعم {report.reference}",
+            body=(report.note or "تقرير تشخيص بلا ملاحظة")[:200],
+            href="/platform/messages",
+            tenant_id=auth.tenant_id,
+        )
         return Response(
             {
                 "reference": report.reference,

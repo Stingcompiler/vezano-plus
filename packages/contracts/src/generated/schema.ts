@@ -3411,6 +3411,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description رسائل الدعم الواردة من المنشآت (SYS-11) — جديدة/معالَجة/الكل. */
+        get: operations["platform_messages_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/messages/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_messages_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/messages/{report_id}/handle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description «تمّت المعالجة» بملاحظة — باسم المشغّل ووقته. */
+        post: operations["platform_messages_handle_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description إشعارات فريق المنصة: القائمة وعدد غير المقروء (للقراءة لكل مشغّل). */
+        get: operations["platform_notices_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/notices/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description يعلّم إشعارات (`ids`) أو كلها مقروءة باسم المشغّل. */
+        post: operations["platform_notices_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/operators": {
         parameters: {
             query?: never;
@@ -14132,6 +14216,89 @@ export interface components {
         };
         PostPlatformMePasswordResponse: {
             ok: boolean;
+        };
+        GetPlatformMessagesResponse: {
+            filter: string;
+            messages: {
+                app_version: string;
+                created_at: string;
+                from_name: string;
+                handled: boolean;
+                handled_at: string;
+                handled_by_name: string;
+                handled_note: string;
+                id: string;
+                note: string;
+                reference: string;
+                tenant_name: string;
+            }[];
+            new_count: number;
+        };
+        GetPlatformMessagesByReportIdResponse: {
+            app_version: string;
+            created_at: string;
+            from_name: string;
+            handled: boolean;
+            handled_at: string;
+            handled_by_name: string;
+            handled_note: string;
+            id: string;
+            note: string;
+            payload: {
+                app_version: string;
+                errors: unknown[];
+            };
+            reference: string;
+            tenant_name: string;
+        };
+        PostPlatformMessagesByReportIdHandleResponse: {
+            app_version: string;
+            created_at: string;
+            from_name: string;
+            handled: boolean;
+            handled_at: string;
+            handled_by_name: string;
+            handled_note: string;
+            id: string;
+            note: string;
+            payload: {
+                app_version: string;
+                errors: unknown[];
+            };
+            reference: string;
+            tenant_name: string;
+        };
+        GetPlatformNoticesResponse: {
+            new_messages: number;
+            notices: {
+                body: string;
+                created_at: string;
+                href: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                read: boolean;
+                read_by_name: string;
+                tenant_name: string;
+                title: string;
+            }[];
+            unread: number;
+        };
+        PostPlatformNoticesReadResponse: {
+            new_messages: number;
+            notices: {
+                body: string;
+                created_at: string;
+                href: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                read: boolean;
+                read_by_name: string;
+                tenant_name: string;
+                title: string;
+            }[];
+            unread: number;
         };
         GetPlatformOperatorsResponse: {
             active_count: number;
@@ -25732,6 +25899,178 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostPlatformMePasswordResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_messages_retrieve: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformMessagesResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_messages_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformMessagesByReportIdResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_messages_handle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformMessagesByReportIdHandleResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_notices_retrieve: {
+        parameters: {
+            query?: {
+                limit?: number;
+                unread?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformNoticesResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_notices_read_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformNoticesReadResponse"];
                 };
             };
             /** @description No response body */

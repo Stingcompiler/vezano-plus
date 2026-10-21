@@ -1129,3 +1129,66 @@
   cursor: pointer;
   min-block-size: 32px;
 }
+
+/* 0005 §١٩٠ — عدّاد الوارد في القائمة الجانبية */
+.plt-nav__badge {
+  display: inline-block;
+  min-inline-size: 22px;
+  margin-inline-start: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-danger, #b42318);
+  color: #fff;
+  font-size: var(--text-badge);
+  text-align: center;
+}
+
+.plt-notices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plt-notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-stat);
+  background: var(--color-surface-card);
+}
+.plt-notice--new {
+  border-color: var(--color-brand-line);
+  background: var(--color-brand-tint);
+}
+.plt-notice__title {
+  font-weight: var(--font-weight-semibold);
+}
+.plt-notice__main {
+  flex: 1;
+  min-inline-size: min(100%, 260px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plt-notice__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.plt-msg__payload {
+  direction: ltr;
+  text-align: left;
+  max-block-size: 320px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-badge);
+  background: var(--color-surface-sunken);
+  font-size: var(--text-note);
+}
