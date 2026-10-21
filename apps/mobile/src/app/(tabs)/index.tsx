@@ -405,13 +405,19 @@ export default function Home() {
                 </GroupedList>
               ) : null}
               {summary.margin_locked ? (
-                <StateView state="phase_locked" title={tx(T, "الهامش وصافي الربح")}>
+                <StateView state="phase_locked" title={tx(T, "الهامش وصافي الربح غير محسوبين بعد")}>
                   <AppText variant="secondary">
                     {tx(
                       T,
-                      "يتطلب سياسة تكلفة معتمدة. لن نعرض رقم ربح مبنياً على تخمين — الإيراد والمرتجعات والذمم أعلاه دقيقة ومستقلة عنه.",
+                      "لا نعرض رقم ربح مبنياً على تخمين: يحتاج قرارك في كيفية احتساب تكلفة الوحدة المباعة",
                     )}
+                    {summary.kpis.length > 0 ? tx(T, "، والإيراد والذمم أعلاه مستقلان عنه") : ""}.
                   </AppText>
+                  <Button
+                    label={tx(T, "حدّد طريقة حساب التكلفة")}
+                    variant="secondary"
+                    onPress={() => go("/purchasing/cost-margin")}
+                  />
                 </StateView>
               ) : null}
             </>

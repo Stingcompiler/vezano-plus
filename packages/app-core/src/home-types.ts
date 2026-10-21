@@ -69,7 +69,7 @@ export interface HomeSummary {
   readonly quick_actions: readonly ("sale" | "payment" | "return")[];
   readonly can_see_finance: boolean;
   readonly margin_locked: boolean;
-  readonly shift: { readonly open_since: string } | null;
+  readonly shift: { readonly open_since: string; readonly device_name?: string } | null;
 }
 export interface SearchResult {
   readonly id: string;
