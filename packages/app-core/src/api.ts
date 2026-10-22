@@ -24,11 +24,15 @@ export interface ApiClientOptions {
   readonly fetch?: typeof fetch | undefined;
 }
 
-/** ردّ من صنف Response العام كما يشترط openapi-fetch لما يعيده الوسيط (انظر onResponse). */
+/**
+ * ردّ من صنف Response العام كما يشترط openapi-fetch لما يعيده الوسيط (انظر onResponse). يُبنى من النص
+ * المفكوك لا من `arrayBuffer`: `Response` في RN (whatwg-fetch) يقرأ ArrayBuffer حرفاً لكل بايت بلا
+ * UTF-8، فكان العربي في ردّ الإعادة بعد الاستئناف يظهر «Ø¨Ø­Ø±ÙŠ» (أسماء الفروع في تقرير المبيعات).
+ */
 async function asResponse(r: Response): Promise<Response> {
   // الصنف المعلن Response، لكنه في الجوال FetchResponse من expo/fetch
   if ((r as unknown) instanceof Response) return r;
-  return new Response(r.status === 204 ? null : await r.arrayBuffer(), {
+  return new Response(r.status === 204 ? null : await r.text(), {
     status: r.status,
     statusText: r.statusText,
     headers: r.headers,

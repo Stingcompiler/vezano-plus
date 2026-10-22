@@ -140,7 +140,7 @@ describe("عميل الـAPI", () => {
       const ok = input.headers.get("Authorization") === "Bearer new";
       return Promise.resolve(
         new ForeignResponse(
-          new Response(JSON.stringify({ ok: true }), {
+          new Response(JSON.stringify({ ok: true, name: "بحري — المزاد" }), {
             status: input.url.endsWith("/api/health") || ok ? 200 : 401,
             headers: { "Content-Type": "application/json" },
           }),
@@ -158,10 +158,12 @@ describe("عميل الـAPI", () => {
     });
     const health = await api.GET("/api/health");
     expect(health.response.status).toBe(200);
-    expect(health.data).toEqual({ ok: true });
+    expect(health.data).toEqual({ ok: true, name: "بحري — المزاد" });
     // الاستئناف بعد 401 يعيد ردّاً من الصنف الآخر أيضاً
     const r2 = await api.GET("/api/org/audit", { params: { query: {} } });
     expect(r2.response.status).toBe(200);
+    // العربي يبقى سليماً في ردّ الإعادة (لا «Ø¨Ø­Ø±ÙŠ»)
+    expect(r2.data).toEqual({ ok: true, name: "بحري — المزاد" });
   });
 });
 
