@@ -3,6 +3,7 @@ import { mtx, tx } from "@sting/texts";
 import {
   AppText,
   Button,
+  Card,
   Chip,
   FONT,
   GroupedList,
@@ -211,7 +212,6 @@ export default function Home() {
     <Screen
       screenId={isOwner ? "HOME-01" : "HOME-02"}
       state={state}
-      title={summary.tenant_name}
       onRefresh={() => void refresh()}
       refreshing={refreshing}
     >
@@ -248,45 +248,48 @@ export default function Home() {
       </Pressable>
       {isOwner ? (
         <>
-          <AppText variant="bodyStrong">
-            {greeting()} — {summary.tenant_name}
-          </AppText>
-          <AppText variant="secondary" muted style={{ marginBottom: SPACE["2"] }}>
-            {summary.user.display_name} — {summary.user.role_name} {tx(T, "· كل الفروع")}
-          </AppText>
-          <AppText variant="secondary" muted style={{ marginBottom: SPACE["3"] }}>
-            <BranchCount n={summary.branches.length} /> ·{" "}
-            {summary.devices_total === 0
-              ? tx(T, "لا جهاز مسجّل بعد")
-              : summary.branches_synced
-                ? tx(T, "كلها زامنت")
-                : tx(T, "بعضها لم يزامن")}
-          </AppText>
+          {/* كبطاقة التحية في الويب: الاسم والدور والفروع ثم الفترة والفرع داخل بطاقة واحدة */}
+          <Card>
+            <AppText variant="bodyStrong">
+              {greeting()} — {summary.tenant_name}
+            </AppText>
+            <AppText variant="secondary" muted style={{ marginBottom: SPACE["2"] }}>
+              {summary.user.display_name} — {summary.user.role_name} {tx(T, "· كل الفروع")}
+            </AppText>
+            <AppText variant="secondary" muted style={{ marginBottom: SPACE["3"] }}>
+              <BranchCount n={summary.branches.length} /> ·{" "}
+              {summary.devices_total === 0
+                ? tx(T, "لا جهاز مسجّل بعد")
+                : summary.branches_synced
+                  ? tx(T, "كلها زامنت")
+                  : tx(T, "بعضها لم يزامن")}
+            </AppText>
 
-          {/* الفترة والفرع: شرائح لمس لا قوائم منسدلة */}
-          <View accessibilityLabel={tx(T, "الفترة")} style={chips}>
-            {PERIODS.map((p) => (
-              <Chip
-                key={p.value}
-                on={period === p.value}
-                label={p.label}
-                onPress={() => setPeriod(p.value)}
-              />
-            ))}
-          </View>
-          {summary.branches.length > 1 ? (
-            <View accessibilityLabel={tx(T, "الفرع")} style={[chips, { marginBottom: SPACE["4"] }]}>
-              <Chip on={branch === ""} label={tx(T, "كل الفروع")} onPress={() => setBranch("")} />
-              {summary.branches.map((b) => (
+            {/* الفترة والفرع: شرائح لمس لا قوائم منسدلة */}
+            <View accessibilityLabel={tx(T, "الفترة")} style={chips}>
+              {PERIODS.map((p) => (
                 <Chip
-                  key={b.id}
-                  on={branch === b.id}
-                  label={b.name}
-                  onPress={() => setBranch(b.id)}
+                  key={p.value}
+                  on={period === p.value}
+                  label={p.label}
+                  onPress={() => setPeriod(p.value)}
                 />
               ))}
             </View>
-          ) : null}
+            {summary.branches.length > 1 ? (
+              <View accessibilityLabel={tx(T, "الفرع")} style={chips}>
+                <Chip on={branch === ""} label={tx(T, "كل الفروع")} onPress={() => setBranch("")} />
+                {summary.branches.map((b) => (
+                  <Chip
+                    key={b.id}
+                    on={branch === b.id}
+                    label={b.name}
+                    onPress={() => setBranch(b.id)}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </Card>
 
           {state === "empty" ? (
             <StateView state="empty" title={tx(T, "يومٌ لم يبدأ")}>
@@ -296,7 +299,10 @@ export default function Home() {
           ) : (
             <>
               {summary.decisions.length > 0 ? (
-                <GroupedList title={`${tx(T, "يحتاج قرارك —")} ${summary.decisions_count}`}>
+                <GroupedList
+                  tone="offline"
+                  title={`${tx(T, "يحتاج قرارك —")} ${summary.decisions_count}`}
+                >
                   {summary.decisions.map((d, i) => (
                     <Row
                       key={d.id}
@@ -306,7 +312,8 @@ export default function Home() {
                       trailing={
                         <AppText
                           variant="secondary"
-                          style={{ color: d.severity === "danger" ? c.danger : c.brandStrong }}
+                          // كالويب: الفعل بلون العلامة عريضاً، والخطورة على النقطة لا على الفعل
+                          style={{ color: c.brandStrong, fontFamily: FONT.bold }}
                         >
                           {d.action}
                         </AppText>

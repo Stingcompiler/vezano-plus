@@ -39,7 +39,8 @@ describe("قشرة الجوال (M1)", () => {
 
   it("الوحدة غير المبنية تعرض حالة مسجّلة وزرّ الويب", async () => {
     await renderApp(<NotBuilt href="/pos" />);
-    expect(screen.getByText(states.phase_locked.label)).toBeTruthy();
+    // اسم الحالة لقارئ الشاشة لا نصّاً مرئياً (كـNotice في الويب — 0005 §١٩٨)
+    expect(screen.getByLabelText(new RegExp(states.phase_locked.label))).toBeTruthy();
     expect(screen.getByText(mtx("notBuiltTitle"))).toBeTruthy();
     expect(screen.getByRole("button", { name: mtx("openWeb") })).toBeTruthy();
   });

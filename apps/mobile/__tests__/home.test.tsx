@@ -129,7 +129,8 @@ describe("HOME-01 — الرئيسية (0005 §١٧٥)", () => {
     const s = server({ "GET /api/home": () => json(200, SUMMARY) });
     await renderWith(<Home />, s.fetch);
     expect(await screen.findByText("مرتجع ينتظر موافقتك")).toBeTruthy();
-    expect(screen.getAllByText("بقالة النيل").length).toBeGreaterThan(0);
+    // اسم المحل في سطر التحية داخل بطاقتها كالويب (0005 §١٩٨)
+    expect(screen.getAllByText(/بقالة النيل/).length).toBeGreaterThan(0);
     await waitFor(async () =>
       expect((await readHomeCache(storage))?.summary.tenant_name).toBe("بقالة النيل"),
     );

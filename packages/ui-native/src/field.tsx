@@ -28,6 +28,14 @@ export function TextField({
   mono?: boolean;
 }) {
   const c = useColors();
+  // المعرّفات والأرقام وكلمات المرور نصّ لاتيني من اليسار (لئلا يظهر «+249…» مقلوباً «…249+»)
+  const ltr =
+    mono ||
+    secure ||
+    input.keyboardType === "email-address" ||
+    input.keyboardType === "phone-pad" ||
+    input.keyboardType === "number-pad" ||
+    input.keyboardType === "decimal-pad";
   const [reveal, setReveal] = useState(false);
   const [focused, setFocused] = useState(false);
   return (
@@ -51,6 +59,8 @@ export function TextField({
           accessibilityLabel={label}
           placeholderTextColor={c.inkFaint}
           secureTextEntry={secure && !reveal}
+          // iOS يكبّر الحرف الأول ويصحّح الإملاء افتراضياً — في كلمة المرور يُفسد الدخول
+          {...(secure ? { autoCapitalize: "none" as const, autoCorrect: false } : {})}
           onFocus={(e) => {
             setFocused(true);
             input.onFocus?.(e);
@@ -67,8 +77,9 @@ export function TextField({
               color: c.inkStrong,
               fontSize: 17,
               fontFamily: mono ? FONT.mono : FONT.regular,
-              textAlign: mono ? "left" : "right",
-              writingDirection: mono ? "ltr" : "rtl",
+              // TextInput لا يبدّل left/right في RTL (بخلاف Text) — القيمة هنا فيزيائية
+              textAlign: ltr ? "left" : "right",
+              writingDirection: ltr ? "ltr" : "rtl",
             },
             style,
           ]}

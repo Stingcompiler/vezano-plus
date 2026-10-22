@@ -23,19 +23,18 @@ export function StateView({
   return (
     <View
       accessibilityRole="alert"
+      // كـ`Notice` في الويب: العنوان والنص وحدهما مرئيّان، واسم الحالة لقارئ الشاشة
+      accessibilityLabel={`${states[state].label} — ${title}`}
       style={{
         backgroundColor: tone.bg,
         borderColor: tone.border,
         borderWidth: 1,
-        borderRadius: RADIUS.panelSm,
+        borderRadius: RADIUS.card,
         padding: SPACE["4"],
         gap: SPACE["2"],
         marginBottom: SPACE["4"],
       }}
     >
-      <AppText variant="note" style={{ color: tone.fg }}>
-        {states[state].label}
-      </AppText>
       <AppText variant="bodyStrong" style={{ color: tone.fg }}>
         {title}
       </AppText>

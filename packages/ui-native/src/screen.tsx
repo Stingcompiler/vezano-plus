@@ -3,10 +3,10 @@ import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText } from "./text";
-import { SPACE, useColors } from "./theme";
+import { RADIUS, SPACE, useColors } from "./theme";
 
 /**
- * C-FRAME للجوال: الأرضية، المناطق الآمنة، عنوان كبير يبدأ الشاشة، وسحب للتحديث اختياري. الرأس
+ * C-FRAME للجوال: الأرضية، المناطق الآمنة، بطاقة الصفحة برأس العنوان كالويب، وسحب للتحديث اختياري. الرأس
  * والتبويبات يرسمها Expo Router؛ هذا جسم الشاشة. `data-screen`/`data-state` في الويب = `testID`
  * و`accessibilityHint` هنا لاختبارات المطابقة.
  */
@@ -41,13 +41,35 @@ export function Screen({
       }
     >
       {title ? (
-        <View style={{ marginBottom: SPACE["4"] }}>
-          <AppText variant="largeTitle" accessibilityRole="header">
-            {title}
-          </AppText>
+        // كبطاقة الصفحة في الويب (`acc-card` برأس `--tone`): العنوان في شريط مصبوغ بلون العلامة
+        // داخل البطاقة، والمحتوى في جسمها
+        <View
+          style={{
+            backgroundColor: c.surfaceCard,
+            borderWidth: 1,
+            borderColor: c.border,
+            borderRadius: RADIUS.card,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: SPACE["4"],
+              paddingVertical: SPACE["3.5"],
+              backgroundColor: c.brandTint,
+              borderBottomWidth: 1,
+              borderBottomColor: c.brandLine,
+            }}
+          >
+            <AppText variant="title" accessibilityRole="header">
+              {title}
+            </AppText>
+          </View>
+          <View style={{ padding: SPACE["4"] }}>{children}</View>
         </View>
-      ) : null}
-      {children}
+      ) : (
+        children
+      )}
     </ScrollView>
   );
 }

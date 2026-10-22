@@ -1,30 +1,56 @@
+import type { StateCode } from "@sting/design";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "./text";
-import { RADIUS, SPACE, TOUCH, useColors } from "./theme";
+import { FONT, RADIUS, SPACE, TOUCH, useColors } from "./theme";
 
-/** قائمة صفوف داخل بطاقة الويب (حدّ شعري وزوايا 18): عنوان قسم ثم صفوف بفواصل شعرية. */
-export function GroupedList({ title, children }: { title?: string; children: ReactNode }) {
+/**
+ * قائمة صفوف داخل بطاقة الويب (حدّ شعري وزوايا 18). العنوان رأس داخل البطاقة بخط سفلي كما في الويب
+ * (`home-decisions__head`)، و`tone` يصبغ البطاقة ورأسها بألوان إحدى الحالات (مثل «يحتاج قرارك»).
+ */
+export function GroupedList({
+  title,
+  tone,
+  children,
+}: {
+  title?: string | undefined;
+  tone?: StateCode | undefined;
+  children: ReactNode;
+}) {
   const c = useColors();
+  const t = tone ? c.state[tone] : null;
   return (
-    <View style={{ marginBottom: SPACE["6"] }}>
+    <View
+      style={{
+        marginBottom: SPACE["4"],
+        backgroundColor: t ? t.bg : c.surfaceCard,
+        borderWidth: 1,
+        borderColor: t ? t.border : c.border,
+        borderRadius: RADIUS.card,
+        overflow: "hidden",
+      }}
+    >
       {title ? (
-        <AppText variant="section" muted style={{ marginBottom: SPACE["2"], paddingHorizontal: 4 }}>
-          {title}
-        </AppText>
+        <View
+          style={{
+            paddingHorizontal: SPACE["4"],
+            paddingVertical: SPACE["2.5"],
+            borderBottomWidth: 1,
+            borderBottomColor: t ? t.border : c.border,
+            backgroundColor: t ? "transparent" : c.surfaceSunken,
+          }}
+        >
+          <AppText
+            variant="note"
+            accessibilityRole="header"
+            style={{ fontFamily: FONT.bold, color: t ? t.fg : c.inkStrong }}
+          >
+            {title}
+          </AppText>
+        </View>
       ) : null}
-      <View
-        style={{
-          backgroundColor: c.surfaceCard,
-          borderWidth: 1,
-          borderColor: c.border,
-          borderRadius: RADIUS.card,
-          overflow: "hidden",
-        }}
-      >
-        {children}
-      </View>
+      {children}
     </View>
   );
 }

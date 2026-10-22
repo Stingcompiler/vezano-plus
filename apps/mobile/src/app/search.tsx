@@ -1,7 +1,6 @@
 import { countPending, hhmm, type Notice } from "@sting/app-core";
 import { tx } from "@sting/texts";
 import {
-  ALIGN_RIGHT,
   AppText,
   Button,
   FONT,
@@ -141,7 +140,7 @@ export default function Search() {
           fontFamily: FONT.regular,
           fontSize: 17,
           color: c.inkStrong,
-          textAlign: ALIGN_RIGHT,
+          textAlign: "right", // TextInput: قيمة فيزيائية (لا تبديل في RTL)
           writingDirection: "rtl",
           marginBottom: SPACE["2"],
         }}

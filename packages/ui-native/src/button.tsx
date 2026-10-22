@@ -25,7 +25,13 @@ export function Button({
   const c = useColors();
   const disabled = Boolean(disabledReason) || loading;
   const bg =
-    variant === "primary" ? c.brandPrimary : variant === "danger" ? c.danger : "transparent";
+    variant === "primary"
+      ? c.brandPrimary
+      : variant === "danger"
+        ? c.danger
+        : variant === "secondary"
+          ? c.surfaceCard
+          : "transparent";
   const fg = variant === "primary" || variant === "danger" ? "#FFFFFF" : c.brandStrong;
   return (
     <View>
@@ -50,7 +56,7 @@ export function Button({
         {loading ? (
           <ActivityIndicator color={fg} />
         ) : (
-          <AppText variant="bodyStrong" style={{ color: fg, fontFamily: FONT.medium }}>
+          <AppText variant="bodyStrong" style={{ color: fg, fontFamily: FONT.bold }}>
             {label}
           </AppText>
         )}

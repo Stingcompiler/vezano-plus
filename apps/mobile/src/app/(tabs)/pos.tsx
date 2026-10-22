@@ -25,7 +25,6 @@ import {
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
-  ALIGN_RIGHT,
   AppText,
   Button,
   Chip,
@@ -232,7 +231,7 @@ export default function Pos() {
     <View style={{ flex: 1, backgroundColor: c.surfacePage }}>
       <Screen screenId={T} state={state} title={tx(T, "نقطة البيع")}>
         {shift === null ? (
-          <StateView state="permission_denied" title={tx(T, "لا وردية مفتوحة")}>
+          <StateView state="phase_locked" title={tx(T, "لا وردية مفتوحة")}>
             <AppText variant="secondary">
               {tx(T, "البيع النقدي يحتاج صندوقاً مفتوحاً يستقبل النقد.")}
             </AppText>
@@ -273,7 +272,7 @@ export default function Pos() {
             fontFamily: FONT.regular,
             fontSize: 17,
             color: c.inkStrong,
-            textAlign: ALIGN_RIGHT,
+            textAlign: "right", // TextInput: قيمة فيزيائية (لا تبديل في RTL)
             writingDirection: "rtl",
             marginBottom: SPACE["2"],
           }}
