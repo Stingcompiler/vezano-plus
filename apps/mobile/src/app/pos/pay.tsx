@@ -10,6 +10,7 @@ import {
   GroupedList,
   Keypad,
   ListRow,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -169,7 +170,7 @@ export default function Pay() {
       </AppText>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           flexWrap: "wrap",
           gap: SPACE["2"],
           marginBottom: SPACE["3"],

@@ -1,6 +1,6 @@
 import { agoParts, dayMonth, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, FONT, Screen, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import { AppText, FONT, ROW_RTL, Screen, SPACE, TOUCH, useColors } from "@sting/ui-native";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -94,7 +94,7 @@ export function Row({
 /** حقول صغيرة «تسمية فوق قيمة» تتدفق في صفّ ملتفّ (بديل أعمدة الجدول على الهاتف). */
 export function Cells({ items }: { items: readonly [string, ReactNode][] }) {
   return (
-    <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: SPACE["4"] }}>
+    <View style={{ flexDirection: ROW_RTL, flexWrap: "wrap", gap: SPACE["4"] }}>
       {items.map(([label, value]) => (
         <View key={label} style={{ minWidth: 72 }}>
           <AppText variant="note" muted>
@@ -148,7 +148,7 @@ export function ChipRow({ children }: { children: ReactNode }) {
   return (
     <View
       style={{
-        flexDirection: "row-reverse",
+        flexDirection: ROW_RTL,
         flexWrap: "wrap",
         gap: SPACE["2"],
         marginBottom: SPACE["3"],

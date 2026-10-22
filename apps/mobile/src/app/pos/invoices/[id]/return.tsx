@@ -19,6 +19,7 @@ import {
   FONT,
   GroupedList,
   ListRow,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -279,7 +280,7 @@ export default function Return() {
       </AppText>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           gap: SPACE["2"],
           marginBottom: SPACE["3"],
           flexWrap: "wrap",
@@ -301,7 +302,7 @@ export default function Return() {
       </AppText>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           gap: SPACE["2"],
           marginBottom: SPACE["3"],
           flexWrap: "wrap",

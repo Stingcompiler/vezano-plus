@@ -6,6 +6,7 @@ import {
   FONT,
   GroupedList,
   ListRow,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -83,7 +84,7 @@ export default function Invoices() {
     <Screen screenId={T} state={state} title={tx(T, "قائمة الفواتير")}>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           flexWrap: "wrap",
           gap: SPACE["2"],
           marginBottom: SPACE["3"],

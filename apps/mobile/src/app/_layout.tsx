@@ -14,8 +14,9 @@ import TajawalBold from "@sting/design/fonts/Tajawal-Bold.ttf";
 import TajawalMedium from "@sting/design/fonts/Tajawal-Medium.ttf";
 import TajawalRegular from "@sting/design/fonts/Tajawal-Regular.ttf";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { BrandBar } from "@/components/brand-bar";
 import { BackgroundSync } from "@/lib/background-sync";
 import { SessionProvider } from "@/lib/session";
 
@@ -53,17 +54,16 @@ export default function RootLayout() {
 }
 
 /**
- * المكدّس الجذري. الشاشات بلا رأس (الترحيب، الدخول، التبويبات) تبدأ تحت شريط الحالة والنتوء
- * (`insets.top`)؛ المدفوعة برأس يتكفّل رأسها بالمسافة فلا تُزاد.
+ * المكدّس الجذري. الشاشات الجذرية (الترحيب، الدخول، التبويبات) تحت ترويسة العلامة كما في الويب،
+ * وهي تتكفّل بمسافة شريط الحالة؛ المدفوعة فوقها برأس أصلي فيه سهم الرجوع.
  */
 function AppStack() {
   const c = useColors();
-  const insets = useSafeAreaInsets();
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: c.surfacePage, paddingTop: insets.top },
+        header: () => <BrandBar />,
+        contentStyle: { backgroundColor: c.surfacePage },
       }}
     >
       {/* الشاشات المدفوعة فوق التبويبات: سهم رجوع وحده — العنوان الكبير في جسم الشاشة */}
@@ -206,6 +206,7 @@ function AppStack() {
           name={name}
           options={{
             headerShown: true,
+            header: undefined,
             contentStyle: { backgroundColor: c.surfacePage },
             headerTitle: "",
             headerBackButtonDisplayMode: "minimal",

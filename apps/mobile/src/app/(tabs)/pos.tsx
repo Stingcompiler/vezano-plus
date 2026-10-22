@@ -25,6 +25,7 @@ import {
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
+  ALIGN_RIGHT,
   AppText,
   Button,
   Chip,
@@ -32,6 +33,7 @@ import {
   GroupedList,
   ListRow,
   RADIUS,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -271,7 +273,7 @@ export default function Pos() {
             fontFamily: FONT.regular,
             fontSize: 17,
             color: c.inkStrong,
-            textAlign: "right",
+            textAlign: ALIGN_RIGHT,
             writingDirection: "rtl",
             marginBottom: SPACE["2"],
           }}
@@ -279,7 +281,7 @@ export default function Pos() {
         <Button label={tx(T, "مسح باركود")} variant="secondary" onPress={() => setScanning(true)} />
         <View
           style={{
-            flexDirection: "row-reverse",
+            flexDirection: ROW_RTL,
             flexWrap: "wrap",
             gap: SPACE["2"],
             marginBottom: SPACE["3"],
@@ -442,7 +444,7 @@ export default function Pos() {
           accessibilityRole="summary"
           accessibilityLabel={tx(T, "ملخّص السلة")}
           style={{
-            flexDirection: "row-reverse",
+            flexDirection: ROW_RTL,
             alignItems: "center",
             gap: SPACE["3"],
             padding: SPACE["3"],

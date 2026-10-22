@@ -1,7 +1,7 @@
 import { formatMinor } from "@sting/app-core";
 import type { StateCode } from "@sting/design";
 import { tx } from "@sting/texts";
-import { AppText, Button, Screen, SPACE, TextField } from "@sting/ui-native";
+import { AppText, Button, ROW_RTL, Screen, SPACE, TextField } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { Fragment, type ReactNode, useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
@@ -270,7 +270,7 @@ export function DocumentScreen({
 
         {doc ? (
           <Block>
-            <View style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: ROW_RTL, justifyContent: "space-between" }}>
               <AppText variant="bodyStrong">
                 {tx(T, "مستند شراء")} <M>{doc.number}</M>
               </AppText>
@@ -516,7 +516,7 @@ export function DocumentScreen({
       </Screen>
       {doc ? (
         <StickyBar>
-          <View style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: ROW_RTL, justifyContent: "space-between" }}>
             <AppText variant="bodyStrong">{tx(T, "الإجمالي للاعتماد")}</AppText>
             <AppText variant="bodyStrong">
               <M>{formatMinor(doc.total_minor)}</M>

@@ -11,6 +11,7 @@ import {
   Button,
   Mono,
   RADIUS,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -180,7 +181,7 @@ export default function Lock() {
 
       {failed > 0 && wait <= 0 ? (
         <StateView state="validation_error" title={tx(T, "محاولة خاطئة —")}>
-          <View style={{ flexDirection: "row-reverse", gap: SPACE["1"], alignItems: "baseline" }}>
+          <View style={{ flexDirection: ROW_RTL, gap: SPACE["1"], alignItems: "baseline" }}>
             <Mono>{failed}</Mono>
             <AppText variant="secondary">{tx(T, "من")}</AppText>
             <Mono>{PIN_LOCK_POLICY.maxAttempts}</Mono>
@@ -191,7 +192,7 @@ export default function Lock() {
 
       {wait > 0 ? (
         <StateView state="validation_error" title={tx(T, "بعد الخامسة يُقفل الجهاز")}>
-          <View style={{ flexDirection: "row-reverse", gap: SPACE["1"], alignItems: "baseline" }}>
+          <View style={{ flexDirection: ROW_RTL, gap: SPACE["1"], alignItems: "baseline" }}>
             <Mono>{wait}</Mono>
             <AppText variant="secondary">{tx(T, "ثانية")}</AppText>
           </View>
@@ -207,7 +208,7 @@ export default function Lock() {
           <View
             accessibilityLabel={`${pin.length} / ${pinLength}`}
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: ROW_RTL,
               justifyContent: "center",
               gap: SPACE["3"],
               marginVertical: SPACE["4"],
@@ -232,7 +233,7 @@ export default function Lock() {
           ) : null}
           <View
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: ROW_RTL,
               flexWrap: "wrap",
               justifyContent: "center",
               gap: SPACE["3"],
@@ -250,6 +251,8 @@ export default function Lock() {
                     width: 88,
                     height: TOUCH.financial + 8,
                     borderRadius: RADIUS.button,
+                    borderWidth: 1,
+                    borderColor: c.border,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: pressed ? c.surfaceSunken : c.surfaceCard,

@@ -2,7 +2,16 @@ import { countPending, formatMinorShort, readLastPush, type LastPush } from "@st
 import { type StoredOperation } from "@sting/platform";
 import { type LocalSale, readSale } from "@sting/sync-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, FONT, Screen, SPACE, StateView, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  FONT,
+  ROW_RTL,
+  Screen,
+  SPACE,
+  StateView,
+  useColors,
+} from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
@@ -23,9 +32,7 @@ function Act({ k, v, tone }: { k: string; v: string; tone: Tone }) {
         ? c.state.server_error.fg
         : c.state.pending_sync.fg;
   return (
-    <View
-      style={{ flexDirection: "row-reverse", gap: SPACE["2"], alignItems: "center", minHeight: 36 }}
-    >
+    <View style={{ flexDirection: ROW_RTL, gap: SPACE["2"], alignItems: "center", minHeight: 36 }}>
       <AppText variant="bodyStrong">{k}</AppText>
       <AppText variant="secondary" style={{ color }}>
         {v}

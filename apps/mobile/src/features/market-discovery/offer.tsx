@@ -4,6 +4,7 @@ import {
   AppText,
   Button,
   GroupedList,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -224,7 +225,7 @@ export default function MarketOffer() {
 
         {showBody ? (
           <>
-            <View style={{ flexDirection: "row-reverse", gap: SPACE["3"], flexWrap: "wrap" }}>
+            <View style={{ flexDirection: ROW_RTL, gap: SPACE["3"], flexWrap: "wrap" }}>
               {state === "expired" ? (
                 <StatusWord tone="expired" label={tx(T, "منتهي الصلاحية")} />
               ) : state === "stale" ? (

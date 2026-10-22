@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, TextInput, type TextInputProps, View } from "react-native";
 
 import { AppText } from "./text";
-import { FONT, RADIUS, SPACE, TOUCH, useColors } from "./theme";
+import { FONT, RADIUS, ROW_RTL, SPACE, TOUCH, useColors } from "./theme";
 
 /**
  * C-FIELD للجوال: تسمية ظاهرة فوق الحقل (لا placeholder بديلاً عنها)، ارتفاع 52 نقطة، والخطأ نصّ
@@ -38,7 +38,7 @@ export function TextField({
       </AppText>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           alignItems: "center",
           minHeight: TOUCH.row,
           borderWidth: 1,
@@ -87,9 +87,7 @@ export function TextField({
               justifyContent: "center",
             }}
           >
-            <AppText variant="note" muted>
-              {reveal ? "إخفاء الحروف" : "إظهار الحروف"}
-            </AppText>
+            <EyeGlyph color={c.inkMuted} crossed={reveal} />
           </Pressable>
         ) : null}
       </View>
@@ -101,6 +99,38 @@ export function TextField({
         <AppText variant="note" muted>
           {hint}
         </AppText>
+      ) : null}
+    </View>
+  );
+}
+
+/** أيقونة العين كما في حقل كلمة المرور في الويب، مرسومة بعناصر RN بلا مكتبة أيقونات. */
+function EyeGlyph({ color, crossed }: { color: string; crossed: boolean }) {
+  return (
+    <View style={{ width: 24, height: 24, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          width: 22,
+          height: 14,
+          borderRadius: 11,
+          borderWidth: 1.8,
+          borderColor: color,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
+      </View>
+      {crossed ? (
+        <View
+          style={{
+            position: "absolute",
+            width: 26,
+            height: 1.8,
+            backgroundColor: color,
+            transform: [{ rotate: "-35deg" }],
+          }}
+        />
       ) : null}
     </View>
   );

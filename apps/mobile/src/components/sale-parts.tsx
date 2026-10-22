@@ -1,5 +1,5 @@
 import { tx } from "@sting/texts";
-import { AppText, Button, Chip, FONT, SPACE, StateView } from "@sting/ui-native";
+import { AppText, Button, Chip, FONT, ROW_RTL, SPACE, StateView } from "@sting/ui-native";
 import type { LocalSale } from "@sting/sync-core";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
@@ -12,7 +12,7 @@ const T = "POS-05";
 export function PayMethods({ current }: { current: "cash" | "credit" | "mixed" }) {
   const router = useRouter();
   return (
-    <View style={{ flexDirection: "row-reverse", gap: SPACE["2"], marginBottom: SPACE["3"] }}>
+    <View style={{ flexDirection: ROW_RTL, gap: SPACE["2"], marginBottom: SPACE["3"] }}>
       <Chip
         label={tx("POS-01", "نقداً")}
         on={current === "cash"}

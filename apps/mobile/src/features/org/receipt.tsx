@@ -1,6 +1,6 @@
 import { dayMonth, formatMinor, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, Screen, SPACE, StateView } from "@sting/ui-native";
+import { ALIGN_LEFT, AppText, Button, Screen, SPACE, StateView } from "@sting/ui-native";
 import * as Print from "expo-print";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -125,7 +125,7 @@ export function Receipt({ id }: { id: string }) {
           <Button variant="quiet" label={tx(T, "سجل الاشتراك")} onPress={toLog} />
           <View style={{ height: SPACE["3"] }} />
           <AppText variant="title">{tx(T, "إيصال اشتراك")}</AppText>
-          <AppText variant="moneyLarge" style={{ textAlign: "left" }}>
+          <AppText variant="moneyLarge" style={{ textAlign: ALIGN_LEFT }}>
             <N>{r.number}</N>
           </AppText>
           <Note>
@@ -154,7 +154,7 @@ export function Receipt({ id }: { id: string }) {
           <KV label={tx(T, "اعتمده")}>{r.issued_by_name}</KV>
           <View style={{ height: SPACE["3"] }} />
           <AppText variant="bodyStrong">{tx(T, "المبلغ المستلم")}</AppText>
-          <AppText variant="moneyLarge" style={{ textAlign: "left" }}>
+          <AppText variant="moneyLarge" style={{ textAlign: ALIGN_LEFT }}>
             <N>{`${formatMinor(r.amount_minor)} ${r.currency}`}</N>
           </AppText>
           <Note>{r.note}</Note>

@@ -1,6 +1,6 @@
 import { formatQty } from "@sting/app-core";
 import type { LocalItem } from "@sting/sync-core";
-import { AppText, Chip, FONT, GroupedList, SPACE } from "@sting/ui-native";
+import { AppText, Chip, FONT, GroupedList, ROW_RTL, SPACE } from "@sting/ui-native";
 import type { ReactNode } from "react";
 import { Text, View } from "react-native";
 
@@ -16,7 +16,7 @@ export function Wrap({ children }: { children: ReactNode }) {
   return (
     <View
       style={{
-        flexDirection: "row-reverse",
+        flexDirection: ROW_RTL,
         flexWrap: "wrap",
         gap: SPACE["2"],
         marginBottom: SPACE["3"],

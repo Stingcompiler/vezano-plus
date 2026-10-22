@@ -16,6 +16,7 @@ import {
   Chip,
   FONT,
   Keypad,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -112,7 +113,7 @@ export default function Discount() {
   const state = check && !check.ok ? "validation_error" : "ready";
   return (
     <Screen screenId={T} state={state} title={tx(T, "خصم على الفاتورة")}>
-      <View style={{ flexDirection: "row-reverse", gap: SPACE["2"], marginBottom: SPACE["3"] }}>
+      <View style={{ flexDirection: ROW_RTL, gap: SPACE["2"], marginBottom: SPACE["3"] }}>
         <Chip
           label={tx(T, "مبلغ")}
           on={mode === "amount"}

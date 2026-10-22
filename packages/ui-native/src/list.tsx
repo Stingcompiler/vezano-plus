@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "./text";
 import { RADIUS, SPACE, TOUCH, useColors } from "./theme";
 
-/** قائمة مجمّعة بنمط الإعدادات (HIG inset grouped): عنوان قسم ثم صفوف بفواصل شعرية. */
+/** قائمة صفوف داخل بطاقة الويب (حدّ شعري وزوايا 18): عنوان قسم ثم صفوف بفواصل شعرية. */
 export function GroupedList({ title, children }: { title?: string; children: ReactNode }) {
   const c = useColors();
   return (
@@ -17,7 +17,9 @@ export function GroupedList({ title, children }: { title?: string; children: Rea
       <View
         style={{
           backgroundColor: c.surfaceCard,
-          borderRadius: RADIUS.panelSm,
+          borderWidth: 1,
+          borderColor: c.border,
+          borderRadius: RADIUS.card,
           overflow: "hidden",
         }}
       >

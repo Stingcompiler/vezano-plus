@@ -1,5 +1,5 @@
 import type { StateCode } from "@sting/design";
-import { AppText, FONT, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import { AppText, FONT, ROW_RTL, SPACE, TOUCH, useColors } from "@sting/ui-native";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
@@ -72,7 +72,7 @@ export function ChipRow({ children }: { children: ReactNode }) {
   return (
     <View
       style={{
-        flexDirection: "row-reverse",
+        flexDirection: ROW_RTL,
         flexWrap: "wrap",
         gap: SPACE["2"],
         marginBottom: SPACE["3"],

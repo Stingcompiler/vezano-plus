@@ -11,6 +11,7 @@ import {
   GroupedList,
   ListRow,
   Mono,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -161,7 +162,7 @@ export default function SetupDevice() {
         <View accessibilityRole="progressbar" accessibilityLabel={tx(T, "تقدّم تجهيز الجهاز")}>
           <View
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: ROW_RTL,
               alignItems: "center",
               gap: SPACE["3"],
               marginBottom: SPACE["4"],
@@ -179,7 +180,7 @@ export default function SetupDevice() {
                 trailing={
                   <View
                     style={{
-                      flexDirection: "row-reverse",
+                      flexDirection: ROW_RTL,
                       gap: SPACE["1"],
                       alignItems: "baseline",
                     }}

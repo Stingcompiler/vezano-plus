@@ -13,6 +13,7 @@ import {
   Chip,
   FONT,
   GroupedList,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -194,7 +195,7 @@ export default function CatalogIndex() {
       </AppText>
       <View
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: ROW_RTL,
           flexWrap: "wrap",
           gap: SPACE["2"],
           marginBottom: SPACE["4"],
@@ -211,7 +212,7 @@ export default function CatalogIndex() {
           onPress={() => setIncludeInactive(true)}
         />
       </View>
-      <View style={{ flexDirection: "row-reverse", gap: SPACE["2"], marginBottom: SPACE["4"] }}>
+      <View style={{ flexDirection: ROW_RTL, gap: SPACE["2"], marginBottom: SPACE["4"] }}>
         <View style={{ flex: 1 }}>
           <Button label={tx(T, "صنف جديد")} onPress={() => router.push("/catalog/new")} />
         </View>

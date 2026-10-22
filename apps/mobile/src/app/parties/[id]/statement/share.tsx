@@ -1,9 +1,11 @@
 import { dayMonth, formatMinor, formatMinorShort, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
 import {
+  ALIGN_LEFT,
   AppText,
   Button,
   GroupedList,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -300,7 +302,7 @@ export default function ShareScreen() {
             <AppText variant="secondary">
               {tx(T, "المشاركة تُنشئ رابطاً ولا تَعِد بأن الطرف قرأه. «أُرسل» ليست «وصل».")}
             </AppText>
-            <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: SPACE["3"] }}>
+            <View style={{ flexDirection: ROW_RTL, alignItems: "center", gap: SPACE["3"] }}>
               <AppText
                 style={{ color: exp.opened_at ? c.state.synced.fg : c.state.pending_sync.fg }}
               >
@@ -327,7 +329,7 @@ export default function ShareScreen() {
             accessibilityLabel={tx(T, "نسخ الرابط")}
             style={{
               writingDirection: "ltr",
-              textAlign: "left",
+              textAlign: ALIGN_LEFT,
               color: c.inkStrong,
               marginBottom: SPACE["3"],
             }}

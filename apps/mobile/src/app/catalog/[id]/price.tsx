@@ -5,6 +5,7 @@ import {
   AppText,
   Button,
   GroupedList,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -303,7 +304,7 @@ export default function PriceScreen() {
             <View
               key={u.id}
               style={{
-                flexDirection: "row-reverse",
+                flexDirection: ROW_RTL,
                 justifyContent: "space-between",
                 marginBottom: SPACE["2"],
               }}

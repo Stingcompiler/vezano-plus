@@ -1,4 +1,4 @@
-import { FONT, SPACE, TOUCH, AppText, useColors } from "@sting/ui-native";
+import { AppText, FONT, ROW_RTL, SPACE, TOUCH, useColors } from "@sting/ui-native";
 import { Pressable, TextInput, View } from "react-native";
 
 import { INV_TEXTS } from "@/features/inventory/texts";
@@ -49,7 +49,7 @@ export function Stepper({
     </Pressable>
   );
   return (
-    <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: SPACE["2"] }}>
+    <View style={{ flexDirection: ROW_RTL, alignItems: "center", gap: SPACE["2"] }}>
       {btn(1, plusLabel)}
       <TextInput
         accessibilityLabel={inputLabel}

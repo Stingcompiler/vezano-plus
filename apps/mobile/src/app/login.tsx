@@ -1,8 +1,19 @@
 import { tx } from "@sting/texts";
-import { AppText, Button, Screen, SPACE, StateView, TextField } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  ROW_RTL,
+  Screen,
+  SPACE,
+  StateView,
+  TextField,
+  useColors,
+} from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { Image, View } from "react-native";
+
+import icon from "../../assets/images/icon.png";
 
 import { useSession } from "@/lib/session";
 import { openOnWeb } from "@/lib/web";
@@ -17,6 +28,7 @@ const T = "ACC-02";
  */
 export default function Login() {
   const router = useRouter();
+  const c = useColors();
   const { api, signIn } = useSession();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -62,7 +74,16 @@ export default function Login() {
 
   const state = offline ? "offline" : invalid ? "validation_error" : "ready";
   return (
-    <Screen screenId={T} state={state} title={tx(T, "الدخول إلى فيزانو بلص")}>
+    <Screen screenId={T} state={state}>
+      {/* كالويب: الشعار فوق العنوان */}
+      <Image
+        source={icon}
+        accessibilityIgnoresInvertColors
+        style={{ width: 56, height: 56, borderRadius: 14, marginBottom: SPACE["3"] }}
+      />
+      <AppText variant="largeTitle" accessibilityRole="header" style={{ marginBottom: SPACE["2"] }}>
+        {tx(T, "الدخول إلى فيزانو بلص")}
+      </AppText>
       <AppText variant="secondary" muted style={{ marginBottom: SPACE["4"] }}>
         {tx(T, "حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.")}
       </AppText>
@@ -76,7 +97,7 @@ export default function Login() {
           {wait > 0 ? (
             // الرقم بخط mono والكلمة العربية بجانبه لا داخله (لا حرف عربي داخل عنصر mono)
             <View
-              style={{ flexDirection: "row-reverse", alignItems: "baseline", gap: SPACE["1"] }}
+              style={{ flexDirection: ROW_RTL, alignItems: "baseline", gap: SPACE["1"] }}
               accessibilityLiveRegion="polite"
             >
               <AppText variant="money">{String(wait)}</AppText>
@@ -121,7 +142,8 @@ export default function Login() {
         onSubmitEditing={() => void submit()}
         required
       />
-      <View style={{ alignItems: "flex-start", marginBottom: SPACE["3"] }}>
+      {/* كالويب: «نسيت كلمة المرور» عند نهاية السطر (اليسار) */}
+      <View style={{ alignItems: "flex-end", marginBottom: SPACE["3"] }}>
         <Button
           label={tx(T, "نسيت كلمة المرور")}
           variant="quiet"
@@ -135,7 +157,22 @@ export default function Login() {
         disabledReason={wait > 0 ? `${wait} ${tx(T, "ثانية")}` : undefined}
         onPress={() => void submit()}
       />
-      <View style={{ marginTop: SPACE["6"], alignItems: "center" }}>
+      {/* كالويب: فاصل ثم «ليس لديك حساب؟ أنشئ حساب متجر» في سطر واحد */}
+      <View
+        style={{
+          marginTop: SPACE["6"],
+          paddingTop: SPACE["3"],
+          borderTopWidth: 1,
+          borderTopColor: c.border,
+          flexDirection: ROW_RTL,
+          justifyContent: "center",
+          alignItems: "center",
+          gap: SPACE["1"],
+        }}
+      >
+        <AppText variant="secondary" muted>
+          {tx(T, "ليس لديك حساب؟")}
+        </AppText>
         <Button
           label={tx(T, "أنشئ حساب متجر")}
           variant="quiet"

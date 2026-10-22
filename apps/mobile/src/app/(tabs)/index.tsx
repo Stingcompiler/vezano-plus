@@ -7,6 +7,7 @@ import {
   FONT,
   GroupedList,
   RADIUS,
+  ROW_RTL,
   Screen,
   SPACE,
   StateView,
@@ -340,7 +341,7 @@ export default function Home() {
                           k.value.kind === "money" ? (
                             <View
                               style={{
-                                flexDirection: "row-reverse",
+                                flexDirection: ROW_RTL,
                                 alignItems: "baseline",
                                 gap: 4,
                               }}
@@ -517,7 +518,7 @@ export default function Home() {
 }
 
 const chips = {
-  flexDirection: "row-reverse",
+  flexDirection: ROW_RTL,
   flexWrap: "wrap",
   gap: SPACE["2"],
   marginBottom: SPACE["2"],

@@ -2,7 +2,7 @@ import { lineTotalMinor } from "@sting/domain";
 import { formatMinorShort, formatQty } from "@sting/app-core";
 import { type CatalogRow, checkQty, unitRowsOf } from "@sting/sync-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, Chip, FONT, Keypad, Sheet, SPACE } from "@sting/ui-native";
+import { AppText, Button, Chip, FONT, Keypad, ROW_RTL, Sheet, SPACE } from "@sting/ui-native";
 import { useState } from "react";
 import { Text, View } from "react-native";
 
@@ -50,7 +50,7 @@ export function UnitSheet({
       <AppText variant="note" muted style={{ marginBottom: SPACE["3"] }}>
         {tx(T, "الوحدة المختارة تُثبَّت على سطر البيع ولا تتأثر بتغيير المعامل لاحقاً")}
       </AppText>
-      <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: SPACE["2"] }}>
+      <View style={{ flexDirection: ROW_RTL, flexWrap: "wrap", gap: SPACE["2"] }}>
         {units.map((u) => (
           <Chip
             key={u.key}

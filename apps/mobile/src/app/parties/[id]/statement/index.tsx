@@ -10,6 +10,7 @@ import {
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
+  ALIGN_LEFT,
   AppText,
   Button,
   GroupedList,
@@ -380,7 +381,7 @@ export default function StatementScreen() {
         <AppText variant="secondary" muted>
           {tx(T, "الرصيد الحالي — عليه")}
         </AppText>
-        <AppText variant="largeTitle" style={{ writingDirection: "ltr", textAlign: "left" }}>
+        <AppText variant="largeTitle" style={{ writingDirection: "ltr", textAlign: ALIGN_LEFT }}>
           <M strong>{balance === null ? "—" : formatMinorShort(balance.toString())}</M>
         </AppText>
         <AppText variant="note" muted>

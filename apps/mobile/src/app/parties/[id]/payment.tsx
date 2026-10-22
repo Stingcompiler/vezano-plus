@@ -13,6 +13,7 @@ import {
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
+  ALIGN_LEFT,
   AppText,
   Button,
   FONT,
@@ -303,7 +304,7 @@ export default function Payment() {
                     fontFamily: FONT.monoSemiBold,
                     fontSize: 32,
                     writingDirection: "ltr",
-                    textAlign: "left",
+                    textAlign: ALIGN_LEFT,
                     color: amount ? c.inkStrong : c.inkFaint,
                   }}
                 >
