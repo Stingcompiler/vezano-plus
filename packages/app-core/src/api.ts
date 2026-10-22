@@ -24,6 +24,17 @@ export interface ApiClientOptions {
   readonly fetch?: typeof fetch | undefined;
 }
 
+/** ردّ من صنف Response العام كما يشترط openapi-fetch لما يعيده الوسيط (انظر onResponse). */
+async function asResponse(r: Response): Promise<Response> {
+  // الصنف المعلن Response، لكنه في الجوال FetchResponse من expo/fetch
+  if ((r as unknown) instanceof Response) return r;
+  return new Response(r.status === 204 ? null : await r.arrayBuffer(), {
+    status: r.status,
+    statusText: r.statusText,
+    headers: r.headers,
+  });
+}
+
 export function createApiClient(opts: ApiClientOptions): ContractsClient {
   const doFetch = opts.fetch ?? ((req: Request) => fetch(req));
   const client = createContractsClient({
@@ -42,22 +53,24 @@ export function createApiClient(opts: ApiClientOptions): ContractsClient {
       const original = pending.get(id);
       pending.delete(id);
       const path = new URL(request.url).pathname;
+      // لا تغيير = لا نعيد شيئاً: openapi-fetch يرفض ردّاً ليس من صنف Response العام، وردّ expo/fetch
+      // (Expo SDK 58 يستبدل fetch العام) من صنف آخر — إعادته كانت ترمي فتظهر الشاشات «بلا اتصال».
       if (
         response.status !== 401 ||
         !opts.getAccessToken() ||
         PUBLIC_PATHS.some((p) => path.startsWith(p))
       ) {
-        return response;
+        return undefined;
       }
       const fresh = original && opts.resume ? await opts.resume() : null;
       if (fresh && original) {
         const headers = new Headers(original.headers);
         headers.set("Authorization", `Bearer ${fresh.access}`);
         const retried = await doFetch(new Request(original, { headers }));
-        if (retried.status !== 401) return retried;
+        if (retried.status !== 401) return asResponse(retried);
       }
       opts.onUnauthorized?.(path);
-      return response;
+      return undefined;
     },
   });
   return client;
