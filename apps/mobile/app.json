@@ -2,6 +2,7 @@
   "expo": {
     "name": "فيزانو بلص",
     "slug": "vezano-plus",
+    "owner": "vezano-plus",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -48,6 +49,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "58f400de-a0a0-42dc-a59d-30f8ed144b42"
+      }
     }
   }
 }
