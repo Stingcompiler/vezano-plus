@@ -45,7 +45,8 @@
           "cameraPermission": "نستعمل الكاميرا لقراءة الباركود فقط، ولا نحفظ صوراً.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "react-native-quick-crypto"
     ],
     "experiments": {
       "typedRoutes": true

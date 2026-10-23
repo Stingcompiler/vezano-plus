@@ -20,3 +20,10 @@ jest.mock("expo-camera", () => ({
   CameraView: () => null,
   useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
 }));
+
+// التشفير الأصلي (react-native-quick-crypto) — بديله في Jest يحيل إلى node:crypto (0005 §٢٠٠)
+jest.mock(
+  "react-native-quick-crypto",
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  () => require("react-native-quick-crypto/jest") as Record<string, unknown>,
+);

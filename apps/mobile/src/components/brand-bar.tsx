@@ -1,5 +1,13 @@
 import { mtx } from "@sting/texts";
-import { FONT, ROW_RTL, SPACE, ThemedText as Text, TOUCH, useColors } from "@sting/ui-native";
+import {
+  FONT,
+  RADIUS,
+  ROW_RTL,
+  SPACE,
+  ThemedText as Text,
+  TOUCH,
+  useColors,
+} from "@sting/ui-native";
 import { ArrowRight } from "lucide-react-native";
 import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,7 +16,7 @@ import icon from "../../assets/images/icon.png";
 
 /**
  * ترويسة العلامة كما في الويب (`PublicHeader` / رأس `AppNav`): الشعار ثم «فيزانو بلص» بخط العلامة،
- * على سطح أبيض بخط سفلي. تُرسم فوق الشاشات بلا رأس تنقّل، وتتكفّل بمسافة شريط الحالة.
+ * على سطح أبيض بخط سفلي، و«→ عودة» قبلهما حين توجد شاشة سابقة. فوق كل شاشة، وتتكفّل بمسافة شريط الحالة.
  */
 export function BrandBar({ onBack }: { onBack?: (() => void) | undefined } = {}) {
   const c = useColors();
@@ -28,15 +36,26 @@ export function BrandBar({ onBack }: { onBack?: (() => void) | undefined } = {})
       }}
     >
       {onBack ? (
-        // رجوع حين يوجد ما قبله (الدخول والتسجيل وإذن الإشعارات) — لا زرّ رجوع للنظام في iOS
+        // كزرّ «→ عودة» في ترويسة الويب: محدود ومعنون، لا سهم وحده
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={mtx("back")}
           onPress={onBack}
-          hitSlop={8}
-          style={{ minWidth: TOUCH.min, minHeight: TOUCH.min, justifyContent: "center" }}
+          hitSlop={4}
+          style={({ pressed }) => ({
+            minHeight: TOUCH.min,
+            paddingHorizontal: SPACE["3"],
+            borderRadius: RADIUS.button,
+            borderWidth: 1,
+            borderColor: c.border,
+            backgroundColor: pressed ? c.surfaceSunken : c.surfaceCard,
+            flexDirection: ROW_RTL,
+            alignItems: "center",
+            gap: SPACE["1"],
+          })}
         >
-          <ArrowRight color={c.brandPrimary} size={24} />
+          <ArrowRight color={c.inkStrong} size={18} />
+          <Text style={{ fontFamily: FONT.bold, fontSize: 15 }}>{mtx("back")}</Text>
         </Pressable>
       ) : null}
       <Image

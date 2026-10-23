@@ -22,7 +22,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
-import { noblePbkdf2 } from "@/lib/kdf";
+import { devicePbkdf2 } from "@/lib/kdf";
 import { SECRET_KEYS, secrets } from "@/lib/secrets";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
@@ -87,7 +87,7 @@ export default function Lock() {
       setBusy(true);
       try {
         const r = await attemptUnlock(await getStorage(), candidate, undefined, {
-          kdf: noblePbkdf2,
+          kdf: devicePbkdf2,
           preferUserId: preferUser,
         });
         setPin("");
