@@ -32,7 +32,8 @@ export function Button({
         : variant === "secondary"
           ? c.surfaceCard
           : "transparent";
-  const fg = variant === "primary" || variant === "danger" ? "#FFFFFF" : c.brandStrong;
+  // على العلامة `onBrand` كالويب؛ والخطر أبيض كـ`.c-btn--danger`
+  const fg = variant === "primary" ? c.onBrand : variant === "danger" ? "#FFFFFF" : c.brandStrong;
   return (
     <View>
       <Pressable

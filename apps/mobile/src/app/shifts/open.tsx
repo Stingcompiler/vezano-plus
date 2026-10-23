@@ -1,4 +1,4 @@
-import { hhmm, parseMoneyInput, pushPending } from "@sting/app-core";
+import { formatMinor, hhmm, parseMoneyInput, pushPending } from "@sting/app-core";
 import { type LocalShift, openShiftLocally, readOpenShift } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
@@ -218,7 +218,7 @@ export default function OpenShift() {
         <AppText variant="note" muted style={{ marginBottom: SPACE["3"] }}>
           {tx(T, "ما تركته في الدرج")}{" "}
           <Text style={{ fontFamily: FONT.mono, writingDirection: "ltr" }}>
-            {(Number(previous.counted_cash_minor) / 100).toFixed(2)}
+            {formatMinor(previous.counted_cash_minor)}
           </Text>
         </AppText>
       ) : null}

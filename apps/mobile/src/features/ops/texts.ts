@@ -1,24 +1,24 @@
+import { mtx } from "@sting/texts";
 /**
  * نصوص جوال بلا مقابل في الويب (القاعدة 1): تغطي ما لا تملكه نصوص الشاشات المولَّدة — حالات الاتصال في
  * شاشات الإشعارات التي كان الويب يتركها معلّقة، وقيود الجوال (لا مستعرض ملفات ولا AES-GCM أصلي)،
  * وشاشة إذن الإشعارات الأصلية (NAT-03). قليلة عمداً.
  */
 export const OPS = {
-  offlineCached: "بلا اتصال — تُعرض آخر نسخة محفوظة على هذا الجهاز.",
-  offlineNone: "بلا اتصال ولا نسخة محفوظة بعد — تُعرض عند عودة الشبكة.",
-  pasteFile: "الصق محتوى الملف",
-  pasteHint: "الجوال بلا مستعرض ملفات في هذه النسخة: افتح الملف وانسخ محتواه هنا.",
-  cryptoMissing: "تعذّر إنشاء النسخة المشفّرة على هذا الجهاز — لم يُكتب شيء.",
-  sharePrompt: "شارك الملف",
-  fileLabel: "اسم الملف",
+  offlineCached: mtx("opsOfflineCached"),
+  offlineNone: mtx("opsOfflineNone"),
+  pasteFile: mtx("opsPasteFile"),
+  pasteHint: mtx("opsPasteHint"),
+  cryptoMissing: mtx("opsCryptoMissing"),
+  sharePrompt: mtx("opsSharePrompt"),
+  fileLabel: mtx("opsFileLabel"),
   // NAT-03 — إذن الإشعارات الأصلي
-  permTitle: "إشعارات الجهاز",
-  permNotEnabled: "غير مفعّلة بعد",
-  permBody:
-    "نطلب الإذن بعد أن نشرح السبب: تنبيهات الورديات والذمم والمزامنة وطلبات السوق تصلك على هذا الهاتف حتى والتطبيق مغلق.",
-  permNote: "رفض الإذن لا يمنع شيئاً: الصندوق داخل التطبيق يعمل دائماً.",
-  permBuild: "التسجيل مع الخادم يحتاج وحدة الإشعارات الأصلية — لم تُضمَّن في هذا الإصدار.",
-  permOpenInbox: "صندوق الوارد",
-  permSettings: "إعدادات الجهاز",
-  permLinks: "الروابط العميقة تعمل الآن: vezanoplus://",
+  permTitle: mtx("opsPermTitle"),
+  permNotEnabled: mtx("opsPermNotEnabled"),
+  permBody: mtx("opsPermBody"),
+  permNote: mtx("opsPermNote"),
+  permBuild: mtx("opsPermBuild"),
+  permOpenInbox: mtx("opsPermOpenInbox"),
+  permSettings: mtx("opsPermSettings"),
+  permLinks: mtx("opsPermLinks"),
 } as const;

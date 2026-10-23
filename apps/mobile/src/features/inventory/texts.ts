@@ -1,13 +1,14 @@
+import { mtx } from "@sting/texts";
 /**
  * نصوص جوال المخزون وحده — لا مقابل لها في الويب (اختيار الصنف بورقة والمسح بالكاميرا). قليلة عمداً؛
  * كل ما له نظير في الويب يُؤخذ من `tx`.
  */
 export const INV_TEXTS = {
-  pickItem: "اختر الصنف",
-  searchHint: "ابحث بالاسم أو الباركود",
-  noMatch: "لا صنف بهذا الباركود",
-  scanItems: "امسح صنفاً بالكاميرا",
-  needsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  pickItem: mtx("invPickItem"),
+  searchHint: mtx("invSearchHint"),
+  noMatch: mtx("invNoMatch"),
+  scanItems: mtx("invScanItems"),
+  needsServer: mtx("invNeedsServer"),
   stepUp: "+",
   stepDown: "−",
 } as const;

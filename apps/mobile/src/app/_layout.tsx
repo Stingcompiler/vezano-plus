@@ -62,7 +62,9 @@ function AppStack() {
   return (
     <Stack
       screenOptions={{
-        header: () => <BrandBar />,
+        header: ({ navigation, back }) => (
+          <BrandBar onBack={back ? () => navigation.goBack() : undefined} />
+        ),
         contentStyle: { backgroundColor: c.surfacePage },
       }}
     >

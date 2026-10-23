@@ -284,6 +284,7 @@ export default function Pos() {
             flexDirection: ROW_RTL,
             flexWrap: "wrap",
             gap: SPACE["2"],
+            marginTop: SPACE["3"],
             marginBottom: SPACE["3"],
           }}
         >

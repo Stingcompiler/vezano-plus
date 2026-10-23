@@ -23,7 +23,7 @@ export function Chip({ label, on, onPress }: { label: string; on: boolean; onPre
     >
       <AppText
         variant="secondary"
-        style={{ color: on ? "#FFFFFF" : c.inkStrong, fontFamily: on ? FONT.bold : FONT.regular }}
+        style={{ color: on ? c.onBrand : c.inkStrong, fontFamily: on ? FONT.bold : FONT.regular }}
       >
         {label}
       </AppText>

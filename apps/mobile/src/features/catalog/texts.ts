@@ -1,18 +1,19 @@
+import { mtx } from "@sting/texts";
 /**
  * نصوص الكتالوج على الجوال وحده — لا مقابل حرفي لها في الويب. قليلة عمداً: صيغ العدّ مأخوذة من
  * `lib/count.tsx` في الويب (لا تدخل في مولّد النصوص)، والباقي أزرار ملازمة لكون الجوال بلا مستعرض ملفات.
  */
 export const CT = {
-  showMore: "عرض المزيد",
-  pasteFirst: "الصق محتوى CSV أولاً",
-  pasteLabel: "محتوى CSV",
-  pasteHint: "الصق الأسطر هنا — سطر لكل صنف: الصنف، السعر.",
-  groupsOne: "مجموعة واحدة",
-  groupsTwo: "مجموعتان",
-  groupsFew: "مجموعات",
-  groupsMany: "مجموعة",
-  itemsOne: "صنف واحد",
-  itemsTwo: "صنفان",
-  itemsFew: "أصناف",
-  itemsMany: "صنفاً",
+  showMore: mtx("catShowMore"),
+  pasteFirst: mtx("catPasteFirst"),
+  pasteLabel: mtx("catPasteLabel"),
+  pasteHint: mtx("catPasteHint"),
+  groupsOne: mtx("catGroupsOne"),
+  groupsTwo: mtx("catGroupsTwo"),
+  groupsFew: mtx("catGroupsFew"),
+  groupsMany: mtx("catGroupsMany"),
+  itemsOne: mtx("catItemsOne"),
+  itemsTwo: mtx("catItemsTwo"),
+  itemsFew: mtx("catItemsFew"),
+  itemsMany: mtx("catItemsMany"),
 } as const;

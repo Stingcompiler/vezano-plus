@@ -1,5 +1,7 @@
-import { FONT, ROW_RTL, SPACE, useColors, ThemedText as Text } from "@sting/ui-native";
-import { Image, View } from "react-native";
+import { mtx } from "@sting/texts";
+import { FONT, ROW_RTL, SPACE, ThemedText as Text, TOUCH, useColors } from "@sting/ui-native";
+import { ArrowRight } from "lucide-react-native";
+import { Image, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import icon from "../../assets/images/icon.png";
@@ -8,7 +10,7 @@ import icon from "../../assets/images/icon.png";
  * ترويسة العلامة كما في الويب (`PublicHeader` / رأس `AppNav`): الشعار ثم «فيزانو بلص» بخط العلامة،
  * على سطح أبيض بخط سفلي. تُرسم فوق الشاشات بلا رأس تنقّل، وتتكفّل بمسافة شريط الحالة.
  */
-export function BrandBar() {
+export function BrandBar({ onBack }: { onBack?: (() => void) | undefined } = {}) {
   const c = useColors();
   const insets = useSafeAreaInsets();
   return (
@@ -25,6 +27,18 @@ export function BrandBar() {
         gap: SPACE["2"],
       }}
     >
+      {onBack ? (
+        // رجوع حين يوجد ما قبله (الدخول والتسجيل وإذن الإشعارات) — لا زرّ رجوع للنظام في iOS
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={mtx("back")}
+          onPress={onBack}
+          hitSlop={8}
+          style={{ minWidth: TOUCH.min, minHeight: TOUCH.min, justifyContent: "center" }}
+        >
+          <ArrowRight color={c.brandPrimary} size={24} />
+        </Pressable>
+      ) : null}
       <Image
         source={icon}
         accessibilityIgnoresInvertColors

@@ -5,8 +5,14 @@
 import { darkColors, lightColors, type NativeColors, radius, space } from "@sting/design/native";
 import { I18nManager, useColorScheme } from "react-native";
 
-/** أسماء الألوان الدلالية (الفاتح والداكن من الشكل نفسه — `satisfies` في المولّد). */
-export type Colors = NativeColors;
+/**
+ * أسماء الألوان الدلالية (الفاتح والداكن من الشكل نفسه — `satisfies` في المولّد)، ومعها `onBrand`: لون
+ * النص فوق لون العلامة كـ`--color-on-brand` في الويب — أبيض في الفاتح، وحبر داكن في الداكن حيث العلامة
+ * فاتحة (كان الأبيض فوق الفيروزي الفاتح لا يُقرأ في الأزرار والشرائح المختارة).
+ */
+export type Colors = NativeColors & { readonly onBrand: string };
+const LIGHT: Colors = { ...lightColors, onBrand: lightColors.surfaceCard };
+const DARK: Colors = { ...darkColors, onBrand: darkColors.surfacePage };
 
 /** أسماء الخطوط كما تُحمَّل في التطبيق (`useFonts`) — عائلة لكل وزن لأن RN لا يركّب الأوزان المخصّصة. */
 export const FONT = {
@@ -38,7 +44,7 @@ export const RADIUS = { ...radius, button: 12, sheet: 16 } as const;
 export const TOUCH = { min: 44, financial: 56, row: 52 } as const;
 
 export function useColors(): Colors {
-  return useColorScheme() === "dark" ? darkColors : lightColors;
+  return useColorScheme() === "dark" ? DARK : LIGHT;
 }
 
 /**

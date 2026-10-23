@@ -1,14 +1,14 @@
-import { type TextKey, type TextOf, tx } from "@sting/texts";
+import { type TextKey, type TextOf, tx, mtx } from "@sting/texts";
 
 /**
  * نصوص جوال سوق الطلبات وحده — لا مقابل لها في الويب (الويب يعرض الأخطاء بصمت أو يعيد التوجيه). قليلة
  * عمداً؛ كل ما له نظير في الويب يُؤخذ من `tx`.
  */
 export const MO_TEXTS = {
-  cached: "من آخر جلب — التغيير يحتاج اتصالاً",
-  needsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
-  retry: "أعد المحاولة",
-  loadFailed: "تعذّر الجلب الآن",
+  cached: mtx("moCached"),
+  needsServer: mtx("moNeedsServer"),
+  retry: mtx("moRetry"),
+  loadFailed: mtx("moLoadFailed"),
 } as const;
 
 /** مترجم شاشة: يقبل فقط نصاً موجوداً حرفياً في نصوص شاشة الويب `key` (فحص النوع). */

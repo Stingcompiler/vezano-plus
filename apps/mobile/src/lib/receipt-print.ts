@@ -1,5 +1,6 @@
 import { formatMinorShort, formatQty } from "@sting/app-core";
 import { type LocalSale, unitDisplay } from "@sting/sync-core";
+import { tx } from "@sting/texts";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
@@ -50,9 +51,9 @@ export function receiptHtml(opts: {
     .join("");
   return `<html dir="rtl" lang="ar"><body style="font-family:-apple-system,Roboto,sans-serif;padding:16px;max-width:380px">
 <h2 style="text-align:center;margin:0">${esc(opts.shop || "—")}</h2>
-<p style="text-align:center;margin:4px 0">فاتورة <span dir="ltr" style="font-family:monospace">${esc(opts.sale.invoice_number)}</span>${opts.copy ? " — نسخة" : ""}</p>
+<p style="text-align:center;margin:4px 0">${tx("POS-08", "فاتورة")} <span dir="ltr" style="font-family:monospace">${esc(opts.sale.invoice_number)}</span>${opts.copy ? ` — ${tx("POS-08", "نسخة")}` : ""}</p>
 <table style="width:100%;border-collapse:collapse">${rows}</table>
-${opts.localOnly ? '<p style="text-align:center;font-size:12px">محفوظ على الجهاز</p>' : ""}
+${opts.localOnly ? `<p style="text-align:center;font-size:12px">${tx("POS-08", "محفوظ على الجهاز")}</p>` : ""}
 </body></html>`;
 }
 
