@@ -3,6 +3,7 @@ import { AppText, Button, Card, Choice, Screen, StateView } from "@sting/ui-nati
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 
+import { SignedInRedirect } from "@/lib/nav";
 import { useSession } from "@/lib/session";
 import { openOnWeb } from "@/lib/web";
 
@@ -41,6 +42,7 @@ export default function Welcome() {
 
   return (
     <Screen screenId={T} state={state}>
+      <SignedInRedirect />
       {state === "offline" ? (
         <StateView state="offline" title={tx(T, "بلا اتصال")}>
           <AppText variant="secondary">

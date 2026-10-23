@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 
+import { SignedInRedirect } from "@/lib/nav";
 import { API_URL, useSession } from "@/lib/session";
 
 const T = "ACC-02";
@@ -196,6 +197,7 @@ export default function Register() {
             : tx(T, "اختر كلمة مرور")
       }
     >
+      <SignedInRedirect />
       <View
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 1, max: 3, now: stepNo }}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText } from "./text";
@@ -28,48 +28,58 @@ export function Screen({
   const c = useColors();
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      testID={screenId}
-      accessibilityHint={state}
+    // لوحة المفاتيح لا تغطي الحقل (0005 §٢٠٢): في iOS يضبط التمرير حوافّه بنفسه، وفي أندرويد (الرسم
+    // حتى الحواف في Expo 58 فلا تصغر النافذة) تُقلَّص المساحة فيُمرَّر الحقل المركَّز فوق المفاتيح
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "android" ? "padding" : undefined}
       style={{ flex: 1, backgroundColor: c.surfacePage }}
-      contentContainerStyle={{
-        padding: SPACE["4"],
-        paddingBottom: SPACE["8"] + insets.bottom,
-      }}
-      refreshControl={
-        onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
-      }
     >
-      {title ? (
-        // كبطاقة الصفحة في الويب (`acc-card` برأس `--tone`): العنوان في شريط مصبوغ بلون العلامة
-        // داخل البطاقة، والمحتوى في جسمها
-        <View
-          style={{
-            backgroundColor: c.surfaceCard,
-            borderWidth: 1,
-            borderColor: c.border,
-            borderRadius: RADIUS.card,
-            overflow: "hidden",
-          }}
-        >
+      <ScrollView
+        testID={screenId}
+        accessibilityHint={state}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        style={{ flex: 1, backgroundColor: c.surfacePage }}
+        contentContainerStyle={{
+          padding: SPACE["4"],
+          paddingBottom: SPACE["8"] + insets.bottom,
+        }}
+        refreshControl={
+          onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
+        }
+      >
+        {title ? (
+          // كبطاقة الصفحة في الويب (`acc-card` برأس `--tone`): العنوان في شريط مصبوغ بلون العلامة
+          // داخل البطاقة، والمحتوى في جسمها
           <View
             style={{
-              paddingHorizontal: SPACE["4"],
-              paddingVertical: SPACE["3.5"],
-              backgroundColor: c.brandTint,
-              borderBottomWidth: 1,
-              borderBottomColor: c.brandLine,
+              backgroundColor: c.surfaceCard,
+              borderWidth: 1,
+              borderColor: c.border,
+              borderRadius: RADIUS.card,
+              overflow: "hidden",
             }}
           >
-            <AppText variant="title" accessibilityRole="header">
-              {title}
-            </AppText>
+            <View
+              style={{
+                paddingHorizontal: SPACE["4"],
+                paddingVertical: SPACE["3.5"],
+                backgroundColor: c.brandTint,
+                borderBottomWidth: 1,
+                borderBottomColor: c.brandLine,
+              }}
+            >
+              <AppText variant="title" accessibilityRole="header">
+                {title}
+              </AppText>
+            </View>
+            <View style={{ padding: SPACE["4"] }}>{children}</View>
           </View>
-          <View style={{ padding: SPACE["4"] }}>{children}</View>
-        </View>
-      ) : (
-        children
-      )}
-    </ScrollView>
+        ) : (
+          children
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

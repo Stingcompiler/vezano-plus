@@ -3,6 +3,7 @@ import { mtx } from "@sting/texts";
 import { GroupedList, ListRow, Screen } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 
+import { LogoutButton } from "@/components/logout-button";
 import { openHref } from "@/lib/home";
 
 /**
@@ -30,6 +31,8 @@ export default function More() {
           </GroupedList>
         );
       })}
+      {/* كأسفل قائمة الويب: الخروج بعد كل البنود */}
+      <LogoutButton />
     </Screen>
   );
 }

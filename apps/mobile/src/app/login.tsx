@@ -15,6 +15,7 @@ import { Image, View } from "react-native";
 
 import icon from "../../assets/images/icon.png";
 
+import { SignedInRedirect, resetTo } from "@/lib/nav";
 import { useSession } from "@/lib/session";
 import { openOnWeb } from "@/lib/web";
 
@@ -64,7 +65,7 @@ export default function Login() {
         return;
       }
       const next = signIn(data);
-      router.replace(next.status === "active" ? "/" : "/select-org");
+      resetTo(router, next.status === "active" ? "/" : "/select-org");
     } catch {
       setOffline(true);
     } finally {
@@ -75,6 +76,7 @@ export default function Login() {
   const state = offline ? "offline" : invalid ? "validation_error" : "ready";
   return (
     <Screen screenId={T} state={state}>
+      <SignedInRedirect />
       {/* كالويب: الشعار فوق العنوان */}
       <Image
         source={icon}

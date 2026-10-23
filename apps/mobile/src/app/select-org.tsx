@@ -4,6 +4,7 @@ import { Redirect, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 
+import { resetTo } from "@/lib/nav";
 import { type Membership, useSession } from "@/lib/session";
 import { openOnWeb } from "@/lib/web";
 
@@ -58,7 +59,7 @@ export default function SelectOrg() {
       }
       if (data) {
         signIn(data);
-        router.replace("/");
+        resetTo(router, "/");
       }
     } catch {
       setOffline(true);

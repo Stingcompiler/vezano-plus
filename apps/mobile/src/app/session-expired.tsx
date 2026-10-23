@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { shareLocalBackup } from "@/lib/local-backup";
+import { resetTo } from "@/lib/nav";
 import { getStorage } from "@/lib/storage";
 
 const T = "ACC-08";
@@ -66,7 +67,7 @@ export default function SessionExpired() {
 
   const n = pending?.total ?? 0;
   const state: State = !online ? "offline" : n > 0 ? "saved_local" : "expired";
-  const reauth = () => router.replace("/login");
+  const reauth = () => resetTo(router, "/login");
   const exportBackup = async () => setExported(await shareLocalBackup());
 
   return (

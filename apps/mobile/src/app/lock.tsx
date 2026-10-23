@@ -24,6 +24,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { devicePbkdf2 } from "@/lib/kdf";
 import { SECRET_KEYS, secrets } from "@/lib/secrets";
+import { resetTo } from "@/lib/nav";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
@@ -102,7 +103,7 @@ export default function Lock() {
             setRevoked(true);
             return;
           }
-          router.replace("/");
+          resetTo(router, "/");
           return;
         }
         setOtherUser("");
@@ -131,7 +132,7 @@ export default function Lock() {
 
   const toPassword = () => {
     signOut();
-    router.replace("/login");
+    resetTo(router, "/login");
   };
 
   const screenState = revoked ? "permission_denied" : failed > 0 ? "validation_error" : "ready";

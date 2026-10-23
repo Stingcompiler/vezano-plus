@@ -70,6 +70,11 @@ function AppStack() {
         ),
         contentStyle: { backgroundColor: c.surfacePage },
       }}
-    />
+    >
+      {/* جذور بلا رجوع: لوحة التحكم والقفل وما بعد الدخول — «عودة» منها كانت ترجع إلى الدخول (0005 §٢٠٢) */}
+      {["(tabs)", "lock", "set-pin", "session-expired"].map((name) => (
+        <Stack.Screen key={name} name={name} options={{ header: () => <BrandBar /> }} />
+      ))}
+    </Stack>
   );
 }

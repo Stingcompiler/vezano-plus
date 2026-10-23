@@ -8,6 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { NotBuilt } from "@/components/not-built";
 import More from "@/app/(tabs)/more";
+import { SessionProvider } from "@/lib/session";
 
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn(), replace: jest.fn() }) }));
 jest.mock("expo-web-browser", () => ({ openBrowserAsync: jest.fn() }));
@@ -16,8 +17,13 @@ const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
+// «المزيد» فيه زرّ الخروج فيحتاج الجلسة (0005 §٢٠٢)
 const renderApp = (ui: ReactElement) =>
-  render(<SafeAreaProvider initialMetrics={METRICS}>{ui}</SafeAreaProvider>);
+  render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <SessionProvider>{ui}</SessionProvider>
+    </SafeAreaProvider>,
+  );
 
 describe("قشرة الجوال (M1)", () => {
   it("«المزيد» يعرض كل مجموعات تنقّل الويب وبنودها — لا شاشة ويب تغيب", async () => {
