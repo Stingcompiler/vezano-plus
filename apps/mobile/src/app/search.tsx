@@ -12,10 +12,11 @@ import {
   StateView,
   TOUCH,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 
 import {
   openHref,

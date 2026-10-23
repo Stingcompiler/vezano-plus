@@ -24,10 +24,11 @@ import {
   StateView,
   TextField,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { Composite, M, PRow, Segments, Stack } from "@/components/parties/parts";
 import { newId } from "@/lib/crypto";

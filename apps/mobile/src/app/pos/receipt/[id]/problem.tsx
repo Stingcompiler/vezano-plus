@@ -11,10 +11,11 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { printReceipt, receiptHtml } from "@/lib/receipt-print";
 import { getStorage } from "@/lib/storage";

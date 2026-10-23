@@ -1,8 +1,17 @@
 import { tx } from "@sting/texts";
-import { AppText, Button, Chip, FONT, ROW_RTL, SPACE, StateView } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  Chip,
+  FONT,
+  ROW_RTL,
+  SPACE,
+  StateView,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { LocalSale } from "@sting/sync-core";
 import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import type { PushResult } from "@/lib/pos";
 

@@ -1,6 +1,15 @@
-import { AppText, Chip, FONT, ROW_RTL, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  Chip,
+  FONT,
+  ROW_RTL,
+  SPACE,
+  TOUCH,
+  useColors,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { Pressable, StyleSheet, Switch, View } from "react-native";
 
 /** رقم لاتيني بخط mono معزول الاتجاه — لا حرف عربي داخله (القاعدة 2). */
 export function M({ children, strong = false }: { children: string | number; strong?: boolean }) {

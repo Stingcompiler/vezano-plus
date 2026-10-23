@@ -12,10 +12,10 @@ import {
   Screen,
   SPACE,
   StateView,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text } from "react-native";
 
 import { newId } from "@/lib/crypto";
 import { printReceipt, receiptHtml, receiptLines, shareReceipt } from "@/lib/receipt-print";

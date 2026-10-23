@@ -11,11 +11,12 @@ import {
   StateView,
   TextField,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import * as Print from "expo-print";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Linking, Share, Text, View } from "react-native";
+import { Linking, Share, View } from "react-native";
 
 import { M, PRow, Segments, Stack, SwitchRow } from "@/components/parties/parts";
 import { absoluteUrl } from "@/features/parties/lib";

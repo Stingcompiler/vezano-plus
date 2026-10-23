@@ -21,10 +21,10 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text } from "react-native";
 
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";

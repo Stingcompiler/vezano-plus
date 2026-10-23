@@ -1,9 +1,9 @@
 import { dayMonth } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, Chip, FONT, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import { AppText, Chip, FONT, SPACE, TOUCH, useColors, ThemedText as Text } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, type TextStyle, View } from "react-native";
+import { Pressable, StyleSheet, type TextStyle, View } from "react-native";
 
 /** رقم/مبلغ/وقت لاتيني بخط mono واتجاه LTR — لا حرف عربي داخله (القاعدة 2). */
 export function N({ children, style }: { children: string | number; style?: TextStyle }) {

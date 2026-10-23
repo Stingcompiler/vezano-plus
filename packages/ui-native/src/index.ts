@@ -8,7 +8,7 @@ export { GroupedList, ListRow } from "./list";
 export { Money, Mono, Qty } from "./money";
 export { Screen } from "./screen";
 export { StateView } from "./state-view";
-export { AppText } from "./text";
+export { AppText, ThemedText } from "./text";
 export {
   ALIGN_LEFT,
   ALIGN_RIGHT,

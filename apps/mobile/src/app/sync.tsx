@@ -20,9 +20,10 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { Ago, supportLine } from "@/lib/ago";
 import { newId } from "@/lib/crypto";

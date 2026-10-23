@@ -8,9 +8,10 @@ import {
   SPACE,
   TOUCH,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 /** رقم لاتيني بخط mono معزول الاتجاه (القاعدة 2) — لا حرف عربي داخله. */
 export function M({ children }: { children: string | number }) {

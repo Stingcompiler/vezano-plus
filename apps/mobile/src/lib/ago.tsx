@@ -1,7 +1,6 @@
 import { agoParts } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { FONT } from "@sting/ui-native";
-import { Text } from "react-native";
+import { FONT, ThemedText as Text } from "@sting/ui-native";
 
 const F = "shared:features/sys/sys-format.tsx";
 

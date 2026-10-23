@@ -23,10 +23,11 @@ import {
   Screen,
   SPACE,
   StateView,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { newId } from "@/lib/crypto";
 import { type ShiftContext, readShiftContext, today } from "@/lib/pos";

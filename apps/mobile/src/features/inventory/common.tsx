@@ -1,8 +1,16 @@
 import { formatQty } from "@sting/app-core";
 import type { LocalItem } from "@sting/sync-core";
-import { AppText, Chip, FONT, GroupedList, ROW_RTL, SPACE } from "@sting/ui-native";
+import {
+  AppText,
+  Chip,
+  FONT,
+  GroupedList,
+  ROW_RTL,
+  SPACE,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import type { Dp, UnitOption } from "./units";
 

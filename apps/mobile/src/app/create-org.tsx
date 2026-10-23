@@ -10,10 +10,11 @@ import {
   StateView,
   TextField,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { Redirect, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { markFreshOrg } from "@/lib/after-setup";
 import { newId } from "@/lib/crypto";

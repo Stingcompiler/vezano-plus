@@ -8,10 +8,11 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { openHref } from "@/lib/home";
 import { useSession } from "@/lib/session";

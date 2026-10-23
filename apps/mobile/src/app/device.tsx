@@ -9,11 +9,11 @@ import {
   Screen,
   SPACE,
   StateView,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
 
 import { shareLocalBackup } from "@/lib/local-backup";
 import { useSession } from "@/lib/session";

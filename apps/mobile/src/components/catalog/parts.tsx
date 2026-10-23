@@ -1,6 +1,5 @@
-import { AppText, FONT } from "@sting/ui-native";
+import { AppText, FONT, ThemedText as Text } from "@sting/ui-native";
 import { Fragment, type ComponentProps, type ReactNode } from "react";
-import { Text } from "react-native";
 
 import type { Part } from "@/features/catalog/lib";
 

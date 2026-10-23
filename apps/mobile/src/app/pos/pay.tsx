@@ -14,9 +14,10 @@ import {
   Screen,
   SPACE,
   StateView,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { PayMethods, SaleDone } from "@/components/sale-parts";
 import { parseAmount, useSale } from "@/lib/pos";

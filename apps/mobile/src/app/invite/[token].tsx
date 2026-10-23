@@ -1,8 +1,16 @@
 import { tx } from "@sting/texts";
-import { AppText, Button, GroupedList, ListRow, Screen, SPACE, StateView } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  GroupedList,
+  ListRow,
+  Screen,
+  SPACE,
+  StateView,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text } from "react-native";
 
 import { FONT } from "@sting/ui-native";
 import { useSession } from "@/lib/session";

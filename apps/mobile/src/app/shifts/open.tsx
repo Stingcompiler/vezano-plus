@@ -11,10 +11,11 @@ import {
   SPACE,
   StateView,
   FONT,
+  ThemedText as Text,
+  useColors,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Text } from "react-native";
 
 import { newId } from "@/lib/crypto";
 import { storeShiftContext, type ShiftContext, useShiftContext } from "@/lib/pos";
@@ -35,6 +36,7 @@ interface Previous {
  * البيع وتُرفع مع عملياتها عند العودة. الفراغ ليس صفراً: «لم أعدّ» تختلف عن «الدرج فارغ».
  */
 export default function OpenShift() {
+  const c = useColors();
   const router = useRouter();
   const { state: session, api } = useSession();
   const stored = useShiftContext();
@@ -237,7 +239,7 @@ export default function OpenShift() {
         {counted || "0.00"}
       </Text>
       {error ? (
-        <AppText variant="note" style={{ color: "#B3261E", marginBottom: SPACE["2"] }}>
+        <AppText variant="note" style={{ color: c.danger, marginBottom: SPACE["2"] }}>
           {error}
         </AppText>
       ) : null}

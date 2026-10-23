@@ -21,10 +21,11 @@ import {
   SPACE,
   StateView,
   TextField,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { newId } from "@/lib/crypto";
 import { parseAmount, useShiftContext } from "@/lib/pos";

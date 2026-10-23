@@ -9,10 +9,11 @@ import {
   StateView,
   TextField,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { API_URL, useSession } from "@/lib/session";
 

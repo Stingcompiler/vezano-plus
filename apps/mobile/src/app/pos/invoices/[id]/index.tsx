@@ -1,10 +1,18 @@
 import { formatMinorShort, formatQty, hhmm } from "@sting/app-core";
 import { type LocalSale, readSale, unitDisplay } from "@sting/sync-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, FONT, GroupedList, ListRow, Screen, StateView } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  FONT,
+  GroupedList,
+  ListRow,
+  Screen,
+  StateView,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
 
 import { dayLabel, localDateSuspect, type RowSync } from "@/lib/invoices";
 import { useSession } from "@/lib/session";

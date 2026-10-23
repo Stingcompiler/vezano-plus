@@ -1,8 +1,16 @@
 import { agoParts } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, FONT, RADIUS, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  FONT,
+  RADIUS,
+  SPACE,
+  TOUCH,
+  useColors,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, type TextStyle, View } from "react-native";
+import { Pressable, StyleSheet, type TextStyle, View } from "react-native";
 
 /** رقم/مبلغ/وقت لاتيني بخط mono واتجاه LTR — لا حرف عربي داخله (القاعدة 2). */
 export function N({ children, style }: { children: string | number; style?: TextStyle }) {

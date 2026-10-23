@@ -1,8 +1,17 @@
 import { agoParts, dayMonth, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, FONT, ROW_RTL, Screen, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  FONT,
+  ROW_RTL,
+  Screen,
+  SPACE,
+  TOUCH,
+  useColors,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { MO_TEXTS } from "@/features/market-orders/texts";
 

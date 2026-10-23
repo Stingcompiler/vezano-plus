@@ -11,9 +11,9 @@ import {
   SPACE,
   StateView,
   TextField,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRef, useState } from "react";
-import { Text } from "react-native";
 
 import { PayMethods, SaleDone } from "@/components/sale-parts";
 import { newId } from "@/lib/crypto";

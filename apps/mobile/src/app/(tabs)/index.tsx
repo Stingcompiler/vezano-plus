@@ -14,10 +14,11 @@ import {
   StateView,
   TOUCH,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { type HomeSummary, openHref, readHomeCache, writeHomeCache } from "@/lib/home";
 import { useSession } from "@/lib/session";

@@ -13,10 +13,10 @@ import {
   StateView,
   TextField,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text } from "react-native";
 
 import { useShiftContext } from "@/lib/pos";
 import { useSession } from "@/lib/session";

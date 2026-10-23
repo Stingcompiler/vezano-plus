@@ -1,7 +1,15 @@
 import { agoParts } from "@sting/app-core";
-import { AppText, FONT, ROW_RTL, SPACE, TOUCH, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  FONT,
+  ROW_RTL,
+  SPACE,
+  TOUCH,
+  useColors,
+  ThemedText as Text,
+} from "@sting/ui-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { pluralForm, untilParts } from "@/features/market-discovery/lib";
 

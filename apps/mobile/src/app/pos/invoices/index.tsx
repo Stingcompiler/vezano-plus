@@ -11,10 +11,11 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import {
   dayLabel,

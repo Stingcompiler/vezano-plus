@@ -2,9 +2,20 @@ import { lineTotalMinor } from "@sting/domain";
 import { formatMinorShort, formatQty } from "@sting/app-core";
 import { type CatalogRow, checkQty, unitRowsOf } from "@sting/sync-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, Chip, FONT, Keypad, ROW_RTL, Sheet, SPACE } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  Chip,
+  FONT,
+  Keypad,
+  ROW_RTL,
+  Sheet,
+  SPACE,
+  ThemedText as Text,
+  useColors,
+} from "@sting/ui-native";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 const T = "POS-02";
 const WEIGHT_ERROR =
@@ -26,6 +37,7 @@ export function UnitSheet({
   onConfirm: (row: CatalogRow, qtyMilli: string) => void;
   onClose: () => void;
 }) {
+  const c = useColors();
   const units = unitRowsOf(initial.item);
   const [row, setRow] = useState<CatalogRow>(initial);
   const [text, setText] = useState(() =>
@@ -77,7 +89,7 @@ export function UnitSheet({
         {text || "0"}
       </Text>
       {error ? (
-        <AppText variant="note" style={{ color: "#B3261E", marginBottom: SPACE["2"] }}>
+        <AppText variant="note" style={{ color: c.danger, marginBottom: SPACE["2"] }}>
           {error}
         </AppText>
       ) : null}

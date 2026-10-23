@@ -1,5 +1,5 @@
-import { FONT, ROW_RTL, SPACE, useColors } from "@sting/ui-native";
-import { Image, Text, View } from "react-native";
+import { FONT, ROW_RTL, SPACE, useColors, ThemedText as Text } from "@sting/ui-native";
+import { Image, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import icon from "../../assets/images/icon.png";

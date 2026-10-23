@@ -38,10 +38,11 @@ import {
   StateView,
   TOUCH,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
 
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { UnitSheet } from "@/components/unit-sheet";

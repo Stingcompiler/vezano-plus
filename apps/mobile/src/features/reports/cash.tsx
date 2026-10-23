@@ -9,10 +9,11 @@ import {
   SPACE,
   StateView,
   useColors,
+  ThemedText as Text,
 } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { ChipGroup, N, ReportNav, Row, Strong } from "@/components/reports/ui";
 import { Ago } from "@/lib/ago";
