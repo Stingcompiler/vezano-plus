@@ -27,3 +27,9 @@ jest.mock(
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   () => require("react-native-quick-crypto/jest") as Record<string, unknown>,
 );
+
+// أيقونات lucide حزمة ESM لا تُحوَّل في Jest — كل أيقونة عنصر فارغ (الاختبارات تفحص التسميات لا الرسم)
+jest.mock(
+  "lucide-react-native",
+  () => new Proxy({}, { get: (_t, name) => (name === "__esModule" ? false : () => null) }),
+);

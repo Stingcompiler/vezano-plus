@@ -18,9 +18,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { BrandBar } from "@/components/brand-bar";
 import { BackgroundSync } from "@/lib/background-sync";
+import { restoreTheme } from "@/lib/theme";
 import { SessionProvider } from "@/lib/session";
 
 void SplashScreen.preventAutoHideAsync();
+// المظهر المختار (☾/☀) قبل أول رسم، كـ`vz-theme` في الويب
+void restoreTheme();
 
 /**
  * جذر التطبيق: الخطوط من `@sting/design/fonts` (محمّلة داخل التطبيق — يعمل بلا اتصال)، والعربية من
