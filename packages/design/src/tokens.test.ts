@@ -27,16 +27,16 @@ describe("توليد الرموز من handoff/tokens.json (T0.2)", () => {
 
   it("الإصدار DS-1.2 وخطوط هوية فيزانو (Tajawal للواجهة، IBM Plex Mono للأرقام) محلية بلا CDN ولا Noto", () => {
     expect(DESIGN_SYSTEM_VERSION).toBe("DS-1.2");
-    expect(font.heading).toMatch(/^Tajawal/);
-    expect(font.ui).toMatch(/^Tajawal/);
-    expect(font.mono).toMatch(/^IBM Plex Mono/);
-    expect(font.mono).not.toMatch(/Inter/);
+    // ثلاث عائلات لا غير (0005 §٢٠٣)
+    expect(font.heading).toBe("Tajawal, system-ui, sans-serif");
+    expect(font.ui).toBe("Tajawal, system-ui, sans-serif");
+    expect(font.mono).toBe('"IBM Plex Mono", ui-monospace, monospace');
     const css = (
       read("theme.css") + readFileSync(resolve(import.meta.dirname, "fonts.css"), "utf8")
     )
       // التعليقات تذكر الخطوط الممنوعة بالاسم؛ الفحص على القيم الفعلية فقط
       .replace(/\/\*[\s\S]*?\*\//g, "");
-    expect(css).not.toMatch(/Noto|Roboto|fonts\.googleapis|fonts\.gstatic/);
+    expect(css).not.toMatch(/Noto|Roboto|Inter|Cairo|Plex Sans|fonts\.googleapis|fonts\.gstatic/);
   });
 
   it("كل قيمة لون خام في tokens.json موجودة في theme.css باسمها", () => {

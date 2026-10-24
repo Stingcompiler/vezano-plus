@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 /**
  * خط الواجهة Tajawal عبر next/font (0005 §١٤٢): يُحمَّل مسبقاً من <head> فيصل مع الصفحة، وبخط احتياطي
  * مضبوط المقاييس — كان يصل بعد الرسم الأول فيتّسع النصّ وتنزاح الصفحة (CLS في PageSpeed).
- * الرموز `--font-ui`/`--font-heading` تبدأ به ثم سلسلة التصميم كما هي.
+ * الرموز `--font-ui`/`--font-heading` تبدأ به ثم system-ui — لا عائلة نصية أخرى (0005 §٢٠٣).
  */
 const vezanoUi = localFont({
   src: [
@@ -56,8 +56,8 @@ const vezanoUi = localFont({
   adjustFontFallback: "Arial",
 });
 const FONT_TOKENS = {
-  "--font-ui": `${vezanoUi.style.fontFamily}, "IBM Plex Sans Arabic", system-ui, sans-serif`,
-  "--font-heading": `${vezanoUi.style.fontFamily}, Cairo, sans-serif`,
+  "--font-ui": `${vezanoUi.style.fontFamily}, system-ui, sans-serif`,
+  "--font-heading": `${vezanoUi.style.fontFamily}, system-ui, sans-serif`,
 } as CSSProperties;
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0F1D2C" };

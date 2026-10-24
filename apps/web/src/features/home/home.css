@@ -20,11 +20,13 @@
   gap: 9px;
   align-items: flex-end;
   flex-wrap: wrap;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-brand-primary);
 }
 .home-shift {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-brand-strong);
   background: var(--color-brand-tint);
   border: 1px solid var(--color-brand-line);
@@ -101,7 +103,8 @@
   display: block;
 }
 .home-kpi__label {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .home-kpi__value {
@@ -116,7 +119,8 @@
   color: var(--color-ink-muted);
 }
 .home-kpi__scope {
-  font-size: var(--text-badgeMin);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   line-height: 1.6;
   margin-block-start: 3px;
@@ -250,7 +254,8 @@
   background: transparent;
 }
 .search-box__meta {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-faint);
   white-space: nowrap;
 }
@@ -260,7 +265,7 @@
   display: flex;
   gap: 9px;
   align-items: baseline;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: 700;
   color: var(--color-ink-muted);
 }
@@ -282,7 +287,8 @@
   font-weight: 600;
 }
 .search-result__meta {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .search-layout {
@@ -316,7 +322,8 @@
   align-items: flex-start;
 }
 .notice-row__when {
-  font-size: var(--text-badgeMin);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-faint);
   white-space: nowrap;
 }
@@ -379,7 +386,8 @@
     transparent
   );
   color: var(--color-sidebar-text);
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   line-height: 1.6;
 }
 .app-nav__logout-confirm p {
@@ -428,6 +436,7 @@
   color: var(--color-ink-muted);
   text-decoration: none;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .app-search:hover {
   border-color: var(--color-brand-line);

@@ -12,7 +12,8 @@
   gap: 8px;
   align-items: center;
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--text-badgeMin);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.08em;
   padding: 2px 8px;
   border: 1px solid currentColor;
@@ -37,7 +38,8 @@
   flex: none;
 }
 .plt-banner__hint {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -52,7 +54,8 @@
   flex: none;
 }
 .plt-banner__name {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   white-space: nowrap;
 }
@@ -382,7 +385,8 @@
 }
 .plt-kpi__note {
   grid-area: note;
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .plt-kpi svg,
@@ -456,7 +460,8 @@
   font-size: 15px;
 }
 .plt-row .plt-tile__note {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .plt-pill.plt-tile__value {
   min-inline-size: 36px;
@@ -535,7 +540,8 @@
   color: var(--color-ink-muted);
 }
 .plt-legend__item .plt-tile__note {
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .plt-dist {
   block-size: 12px;
@@ -620,9 +626,10 @@
   background: rgb(255 255 255 / 0.12);
 }
 .plt-start__steps span {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: rgb(255 255 255 / 0.72);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 .plt-tile {
   display: grid;
@@ -656,9 +663,10 @@
   color: var(--color-danger);
 }
 .plt-tile__note {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* PLT-01 — دخول المشغّل: بطاقة واحدة متوسّطة على أرضية كحلية خفيفة */
@@ -789,7 +797,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .plt-login__kicker strong {
@@ -810,7 +819,8 @@
 .plt-badge--me {
   margin-inline-start: 8px;
   color: var(--color-brand-strong);
-  font-size: 11px;
+  font-size: var(--text-badgeMin);
+  font-weight: var(--font-weight-medium);
 }
 .plt-ops-row {
   flex-direction: row;
@@ -934,7 +944,8 @@
   accent-color: var(--color-brand-primary);
 }
 .plt-change {
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   overflow-wrap: anywhere;
   direction: ltr;
@@ -998,7 +1009,8 @@
 .plt-demo__verified {
   inline-size: fit-content;
   color: var(--color-ok);
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .plt-demo__comments {
   list-style: none;
@@ -1081,6 +1093,7 @@
 .plt-backup__tech > summary {
   cursor: pointer;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   min-block-size: 32px;
   display: flex;
@@ -1089,7 +1102,8 @@
 .plt-backup__tech > code {
   display: block;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   overflow-wrap: anywhere;
   user-select: all;
   text-align: start;
@@ -1140,6 +1154,7 @@
   background: var(--color-danger, #b42318);
   color: #fff;
   font-size: var(--text-badge);
+  font-weight: var(--font-weight-medium);
   text-align: center;
 }
 
@@ -1191,4 +1206,5 @@
   border-radius: var(--radius-badge);
   background: var(--color-surface-sunken);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }

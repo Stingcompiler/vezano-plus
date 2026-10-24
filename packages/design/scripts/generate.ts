@@ -196,12 +196,12 @@ function px(key: string, v: string | number) {
 /** "ink.strong" / "sidebar-text" → "inkStrong" / "sidebarText". */
 const camel = (key: string) => key.replace(/[.-]([a-z0-9])/gi, (_, c: string) => c.toUpperCase());
 
-/** "Tajawal, IBM Plex Sans Arabic, system-ui, sans-serif" → العائلات المسمّاة بلا العامة. */
+/** '"IBM Plex Mono", ui-monospace, monospace' → العائلات المسمّاة بلا العامة ولا علامات الاقتباس. */
 const families = (stack: string) =>
   stack
     .split(",")
-    .map((f) => f.trim())
-    .filter((f) => !/^(system-ui|sans-serif|serif|monospace)$/.test(f));
+    .map((f) => f.trim().replace(/^"(.*)"$/, "$1"))
+    .filter((f) => !/^(system-ui|ui-monospace|sans-serif|serif|monospace)$/.test(f));
 
 function nativeTs(
   t: Record<string, unknown> & { $meta: { version: string } },

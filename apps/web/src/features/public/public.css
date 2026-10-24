@@ -95,7 +95,7 @@
   place-items: center;
   background: var(--color-brand-tint);
   color: var(--color-brand-strong);
-  font-size: 13px;
+  font-size: var(--text-note);
   font-weight: 600;
 }
 .pub-index__label {
@@ -150,7 +150,7 @@
   background: var(--color-brand-tint);
   border: 1px solid var(--color-brand-line);
   color: var(--color-brand-strong);
-  font-size: 13px;
+  font-size: var(--text-note);
   font-weight: 600;
   margin-block-end: 4px;
 }
@@ -289,7 +289,7 @@
   gap: 8px;
 }
 .pb-section__n {
-  font-size: 13px;
+  font-size: var(--text-note);
   font-weight: 600;
   color: var(--color-ink-faint);
 }
@@ -456,7 +456,8 @@
   box-sizing: border-box;
 }
 .pb-timeline__at {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   padding-block-start: 3px;
   min-inline-size: 44px;
@@ -574,7 +575,7 @@
 .pl-table__group th {
   background: var(--color-brand-tint);
   color: var(--color-brand-strong);
-  font-size: 13px;
+  font-size: var(--text-note);
   font-weight: 700;
   letter-spacing: 0.02em;
 }

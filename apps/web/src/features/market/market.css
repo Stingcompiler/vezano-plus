@@ -15,12 +15,14 @@
 
 .mp-check__hint {
   color: var(--color-ink-muted, #6b7280);
-  font-size: var(--text-badge, 0.875rem);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 
 .mp-reason {
   color: var(--color-red-700, #b91c1c);
-  font-size: var(--text-badge, 0.875rem);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 
 .mp-preview {
@@ -33,7 +35,8 @@
 
 .mp-preview dt {
   color: var(--color-ink-muted, #6b7280);
-  font-size: var(--text-badge, 0.875rem);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 
 .mp-preview dd {

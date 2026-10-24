@@ -9,6 +9,18 @@ import { join, relative } from "node:path";
 const ROOT = new URL("../../", import.meta.url).pathname;
 const SCOPE = ["apps/web/src", "packages/ui-web/src"];
 const NEUTRAL = /var\(--color-border\)|currentColor|transparent/;
+// حدود Tajawal (0005 §٢٠٣ B3): 12–12.5px للشارات وحدها؛ لا نص دون 14px خارجها
+const BADGE = /badge|(?:^|[-_.])tag\b|chip|\.c-status\b/;
+const SMALL_FONT =
+  /font-size\s*:\s*(var\(--text-(?:badge|badgeMin)\b[^)]*\)|(?:1[0-3]|\d)(?:\.\d+)?px|0?\.(?:[0-7]\d*|8|8[0-6]\d*)r?em\b)/;
+// قاعدة الأرقام الواحدة (B2): عنصر رقمي مباشر بلا .num (أو بديله .sting-mono / data-num / data-mono)
+const NUM_FMT =
+  "formatMinor\\w*|formatQty|qty|num|trimQty|maskPhone|hhmm|hhmmss|fullDate|pct|wholeMinor|Number";
+const NUM_EL = new RegExp(
+  `<(td|th|span|div|p|li|dd|strong|b|time|small|em|output|data|a)\\b([^<>]*?)>\\s*(?:\\{\\s*(?:${NUM_FMT})\\(|[\\d٠-٩][\\d٠-٩.,:%+−-]*\\s*<)`,
+  "g",
+);
+const HAS_NUM = /\bnum\b|sting-mono|data-num|data-mono/;
 
 /** قاعدة CSS: المحدِّد والمتن وسطر البداية. */
 function* rules(css) {
@@ -78,11 +90,31 @@ function checkCss(file, css) {
       /linear-gradient|background-clip\s*:\s*text/.test(body)
     )
       add(file, r, "gradient-ui", "تدرّج لوني على زرّ أو عنوان");
+    // 7) نص دون 14px خارج الشارات
+    const tiny = body.match(SMALL_FONT);
+    if (tiny && !BADGE.test(sel))
+      add(file, r, "small-font", `${tiny[1]} خارج الشارات (الأدنى 14px)`);
+    // 8) النص الثانوي بارتفاع سطر < 1.6
+    if (/var\(--text-note\)/.test(body) && /line-height\s*:\s*1\.[0-5]\d*\b/.test(body))
+      add(file, r, "note-leading", "ارتفاع سطر النص الثانوي دون 1.6");
   }
 }
 
 function checkTsx(file, src) {
-  src.split("\n").forEach((l, i) => {
+  const lines = src.split("\n");
+  for (const m of src.matchAll(NUM_EL)) {
+    const i = src.slice(0, m.index).split("\n").length - 1;
+    if (HAS_NUM.test(m[2]) || /ui-allow:/.test(lines[i]) || /ui-allow:/.test(lines[i - 1] ?? ""))
+      continue;
+    found.push({
+      file,
+      line: i + 1,
+      rule: "num-class",
+      why: "رقم بلا .num (Plex Mono جدولية LTR)",
+      sel: m[0].replace(/\s+/g, " ").slice(0, 80),
+    });
+  }
+  lines.forEach((l, i) => {
     if (/ui-allow:/.test(l) || /ui-allow:/.test(src.split("\n")[i - 1] ?? "")) return;
     // Tailwind احتياطاً (غير مستعمل هنا): شريط جانبي أو علوي
     if (/border-(?:l|r|s|e|t)-(?:2|4|8)\b|border-\[(?:2|3|4|5|6)px\]/.test(l))
@@ -91,6 +123,15 @@ function checkTsx(file, src) {
         line: i + 1,
         rule: "stripe-class",
         why: "صنف شريط جانبي/علوي",
+        sel: l.trim().slice(0, 80),
+      });
+    // حجم خط دون 14px في style مضمَّن
+    if (/fontSize\s*:\s*["'`]?(?:1[0-3]|\d)(?:\.\d+)?(?:px)?["'`]?\s*[,}]/.test(l))
+      found.push({
+        file,
+        line: i + 1,
+        rule: "small-font",
+        why: "fontSize مضمَّن دون 14px",
         sel: l.trim().slice(0, 80),
       });
     // ألوان حرفية في style المضمَّن لشريط
@@ -119,7 +160,8 @@ for (const scope of SCOPE)
   for (const p of walk(join(ROOT, scope))) {
     const f = relative(ROOT, p);
     if (p.endsWith(".css")) checkCss(f, readFileSync(p, "utf8"));
-    else if (/\.(tsx|jsx)$/.test(p)) checkTsx(f, readFileSync(p, "utf8"));
+    else if (/\.(tsx|jsx)$/.test(p) && !/\.(stories|test)\./.test(p))
+      checkTsx(f, readFileSync(p, "utf8"));
   }
 
 if (found.length) {

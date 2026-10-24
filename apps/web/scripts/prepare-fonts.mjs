@@ -6,13 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fontsDir = resolve(here, "../../../packages/design/fonts");
-const required = [
-  "Tajawal-Regular.ttf",
-  "Inter[opsz,wght].ttf",
-  "Cairo[slnt,wght].ttf",
-  "IBMPlexSansArabic-Regular.ttf",
-  "IBMPlexMono-Regular.ttf",
-];
+const required = ["Tajawal-Regular.ttf", "IBMPlexMono-Regular.ttf", "ReemKufi-Wordmark.woff2"];
 const present = required.every((f) => existsSync(resolve(fontsDir, f)));
 const out = resolve(here, "../src/app/fonts.generated.css");
 mkdirSync(dirname(out), { recursive: true });

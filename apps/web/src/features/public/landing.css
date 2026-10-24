@@ -310,6 +310,7 @@
   background: var(--color-surface-card);
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   margin-block-end: 20px;
 }
 @media (max-width: 833px) {
@@ -417,7 +418,8 @@
   padding: 16px;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .lp__side strong {
   color: #fff;
@@ -463,7 +465,8 @@
 .lp__card p {
   margin: 0;
   color: var(--color-ink-muted);
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .lp__stats {
   display: grid;
@@ -479,7 +482,8 @@
 .lp__stat small {
   display: block;
   color: var(--color-ink-faint);
-  font-size: 12px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .lp__stat b {
   font-family: var(--font-mono);
@@ -599,7 +603,8 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--text-badgeMin);
+  font-weight: var(--font-weight-medium);
   background: var(--color-brand-tint);
   color: var(--color-brand-strong);
   border: 1px solid var(--color-brand-line);
@@ -694,7 +699,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-note);
   color: var(--color-ink-muted);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-medium);
 }
 .lp__plan .c-btn {
   margin-block-start: auto;
@@ -1112,6 +1117,7 @@
 }
 .lp-flow__node span {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .lp-flow__node[data-end] {

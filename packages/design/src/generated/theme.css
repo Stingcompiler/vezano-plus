@@ -135,9 +135,9 @@
   --color-state-phase_locked-bg: #F1F5F9;
   --color-state-phase_locked-fg: #0F172A;
   --color-state-phase_locked-border: #94A3B8;
-  --font-heading: Tajawal, Cairo, sans-serif;
-  --font-ui: Tajawal, IBM Plex Sans Arabic, system-ui, sans-serif;
-  --font-mono: IBM Plex Mono, monospace;
+  --font-heading: Tajawal, system-ui, sans-serif;
+  --font-ui: Tajawal, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -150,7 +150,7 @@
   --text-subTitle: 16px;
   --text-body: 15px;
   --text-bodyDense: 14px;
-  --text-note: 13px;
+  --text-note: 14px;
   --text-badge: 12.5px;
   --text-badgeMin: 12px;
   --leading-tight: 1.25;
@@ -314,9 +314,9 @@
   --color-state-phase_locked-bg: #F1F5F9;
   --color-state-phase_locked-fg: #0F172A;
   --color-state-phase_locked-border: #94A3B8;
-  --font-heading: Tajawal, Cairo, sans-serif;
-  --font-ui: Tajawal, IBM Plex Sans Arabic, system-ui, sans-serif;
-  --font-mono: IBM Plex Mono, monospace;
+  --font-heading: Tajawal, system-ui, sans-serif;
+  --font-ui: Tajawal, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -329,7 +329,7 @@
   --text-subTitle: 16px;
   --text-body: 15px;
   --text-bodyDense: 14px;
-  --text-note: 13px;
+  --text-note: 14px;
   --text-badge: 12.5px;
   --text-badgeMin: 12px;
   --leading-tight: 1.25;

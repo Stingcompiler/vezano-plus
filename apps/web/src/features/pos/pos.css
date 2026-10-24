@@ -5,7 +5,7 @@
   gap: 14px;
 }
 .pos-nav__group {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: 700;
   color: var(--color-ink-muted);
   padding: 10px 12px 4px;
@@ -78,6 +78,7 @@
 .pos-tag {
   display: inline-block;
   font-size: var(--text-badge);
+  font-weight: var(--font-weight-medium);
   border-radius: var(--radius-badge);
   padding: 1px 7px;
   background: var(--color-surface-sunken);
@@ -96,7 +97,8 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .pos-tiles {
@@ -237,7 +239,8 @@
   font-weight: 600;
 }
 .pos-empty__foot {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   background: var(--color-surface-sunken);
   border: 1px solid var(--color-border);
@@ -277,7 +280,8 @@
   font-weight: 700;
 }
 .pos-unit__factor {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .pos-unit__value {
@@ -466,7 +470,7 @@
   font-weight: 600;
 }
 .pos-act__v {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: 600;
   color: var(--color-ink-muted);
   white-space: nowrap;
