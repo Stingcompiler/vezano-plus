@@ -21,6 +21,9 @@ const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // زر أدوات التطوير العائم يغطي التنقل السفلي في 390 ويعترض النقر في Playwright — لا أثر له في الإنتاج
   devIndicators: false,
+  // لا يُستعمل `next/image` في أي ملف، فنقطة `/_next/image` مغلقة كلها: ثغرة تنفيذ شيفرة عن بُعد عبر
+  // تحسين الصور مع SVG (GHSA-2464-fhr4-w9xw) — تقرير الفحص الشامل 2026-10-24
+  images: { unoptimized: true },
   // الحزم المشتركة تُترجم من المصدر (TS) داخل مساحة العمل
   transpilePackages: [
     "@sting/ui-web",
