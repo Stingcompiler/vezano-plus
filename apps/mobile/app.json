@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "فيزانو بلص",
+    "slug": "vezano-plus",
+    "owner": "vezano-plus",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "vezanoplus",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "app.vezano.plus",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "app.vezano.plus",
+      "adaptiveIcon": {
+        "backgroundColor": "#12253B",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-localization",
+        {
+          "forcesRTL": true,
+          "supportsRTL": true
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#12253B",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "نستعمل الكاميرا لقراءة الباركود فقط، ولا نحفظ صوراً.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "react-native-quick-crypto"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "58f400de-a0a0-42dc-a59d-30f8ed144b42"
+      }
+    }
+  }
+}

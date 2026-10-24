@@ -10,7 +10,8 @@
     ".": "./src/index.ts",
     "./memory": "./src/memory/index.ts",
     "./contract-tests": "./src/contract-tests/index.ts",
-    "./dexie": "./src/dexie/index.ts"
+    "./dexie": "./src/dexie/index.ts",
+    "./sqlite": "./src/sqlite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

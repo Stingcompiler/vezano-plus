@@ -36,20 +36,44 @@ const b64 = {
   decode: (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0)),
 };
 
+/**
+ * اشتقاق PBKDF2-SHA256 — منفذ قابل للحقن (0005 §١٧٣): الويب على WebCrypto افتراضياً، والجوال (لا
+ * `crypto.subtle` في React Native) يحقن تنفيذه. الناتج `length` بايت.
+ */
+export type Pbkdf2Sha256 = (
+  password: Uint8Array,
+  salt: Uint8Array,
+  iterations: number,
+  length: number,
+) => Promise<Uint8Array>;
+
+export const webCryptoPbkdf2: Pbkdf2Sha256 = async (password, salt, iterations, length) => {
+  const key = await crypto.subtle.importKey("raw", password as BufferSource, "PBKDF2", false, [
+    "deriveBits",
+  ]);
+  return new Uint8Array(
+    await crypto.subtle.deriveBits(
+      { name: "PBKDF2", hash: "SHA-256", salt: salt as BufferSource, iterations },
+      key,
+      length * 8,
+    ),
+  );
+};
+
 /** يتحقق من PIN مقابل متحقق مشفَّر `pbkdf2_sha256$iterations$salt$hash`. */
-export async function verifyPin(pin: string, encoded: string): Promise<boolean> {
+export async function verifyPin(
+  pin: string,
+  encoded: string,
+  kdf: Pbkdf2Sha256 = webCryptoPbkdf2,
+): Promise<boolean> {
   const [algorithm, iterations, salt, hash] = encoded.split("$");
   if (algorithm !== PIN_ALGORITHM || !iterations || !salt || !hash) return false;
   const expected = b64.decode(hash);
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin), "PBKDF2", false, [
-    "deriveBits",
-  ]);
-  const bits = new Uint8Array(
-    await crypto.subtle.deriveBits(
-      { name: "PBKDF2", hash: "SHA-256", salt: b64.decode(salt), iterations: Number(iterations) },
-      key,
-      expected.length * 8,
-    ),
+  const bits = await kdf(
+    new TextEncoder().encode(pin),
+    b64.decode(salt),
+    Number(iterations),
+    expected.length,
   );
   // مقارنة بزمن ثابت
   let diff = bits.length ^ expected.length;
@@ -82,6 +106,11 @@ export async function attemptUnlock(
   storage: StoragePort,
   pin: string,
   now: () => Date = () => new Date(),
+  opts: {
+    readonly kdf?: Pbkdf2Sha256;
+    /** يُجرَّب متحقق هذا المستخدم أولاً — على الجوال كل محاولة اشتقاق مكلفة */
+    readonly preferUserId?: string | null;
+  } = {},
 ): Promise<UnlockOutcome> {
   const [lock, rawVerifiers] = await storage.read(async (tx) => [
     await tx.getMeta(PIN_STATE_KEY),
@@ -95,8 +124,14 @@ export async function attemptUnlock(
   }
   const device = rawVerifiers ? (JSON.parse(rawVerifiers) as DeviceVerifiers) : null;
   if (!device || device.verifiers.length === 0) return { kind: "no_verifiers" };
-  for (const v of device.verifiers) {
-    if (await verifyPin(pin, v.encoded)) {
+  const ordered = opts.preferUserId
+    ? [
+        ...device.verifiers.filter((v) => v.user_id === opts.preferUserId),
+        ...device.verifiers.filter((v) => v.user_id !== opts.preferUserId),
+      ]
+    : device.verifiers;
+  for (const v of ordered) {
+    if (await verifyPin(pin, v.encoded, opts.kdf)) {
       await storage.transaction((tx) =>
         tx.putMeta(PIN_STATE_KEY, JSON.stringify({ failed: 0, lockedUntil: null })),
       );

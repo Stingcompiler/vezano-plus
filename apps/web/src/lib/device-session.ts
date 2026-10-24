@@ -114,7 +114,5 @@ export function renewDeviceSession(): Promise<DeviceTokens | null> {
   return p;
 }
 
-/** 403 بسبب جلسة مستخدم مكان جلسة الجهاز — يستحق تجديداً ثم إعادة واحدة. */
-export function needsDeviceSession(status: number, detail: string | undefined): boolean {
-  return status === 403 && detail === "device_session_required";
-}
+// 403 «جلسة جهاز مطلوبة» — القاعدة في المحرّك المشترك
+export { needsDeviceSession } from "@sting/app-core";

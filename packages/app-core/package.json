@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sting/contracts": "workspace:*"
+    "@sting/contracts": "workspace:*",
+    "@sting/platform": "workspace:*",
+    "@sting/sync-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
