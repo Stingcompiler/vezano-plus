@@ -18,7 +18,7 @@ const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-
 @font-face{font-family:T;font-weight:700;src:${font("Tajawal-Bold.woff2")}}
 @font-face{font-family:T;font-weight:800;src:${font("Tajawal-ExtraBold.woff2")}}
 @font-face{font-family:W;src:${font("ReemKufi-Wordmark.woff2")}}
-@font-face{font-family:L;src:${font("Inter-Latin[wght].woff2")}}
+@font-face{font-family:L;src:${font("IBMPlexMono-Medium.woff2")}}
 *{margin:0;box-sizing:border-box}
 body{width:1200px;height:630px;background:#0F1D2C;color:#F6F8FB;font-family:T,sans-serif;
   display:flex;flex-direction:column;justify-content:space-between;padding:72px 84px;position:relative;overflow:hidden}

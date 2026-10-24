@@ -174,7 +174,7 @@ export function AboutClient() {
                   </div>
                   <div className="lp__stat">
                     <small>أصناف تحت الحدّ</small>
-                    <b>6</b>
+                    <b className="num">6</b>
                   </div>
                 </div>
                 <div className="lp__card">
@@ -488,7 +488,7 @@ export function AboutClient() {
             </div>
             <div className="lp__grid lp__grid--3">
               <div className="lp__box lp__step">
-                <div className="lp__num">1</div>
+                <div className="lp__num num">1</div>
                 <h3>أنشئ منشأتك</h3>
                 <p>
                   اسمك وبريدك ورقم واتساب، ثم رمز يصلك على بريدك وكلمة مرور، ثم اسم المحل وفرعه
@@ -504,7 +504,7 @@ export function AboutClient() {
                 </p>
               </div>
               <div className="lp__box lp__step">
-                <div className="lp__num">2</div>
+                <div className="lp__num num">2</div>
                 <h3>جهّز الجهاز</h3>
                 <p>
                   ثبّت التطبيق على هاتف الكاشير أو حاسوب المحل، وسجّل الجهاز باسمه وفرعه. أضف أصنافك
@@ -512,7 +512,7 @@ export function AboutClient() {
                 </p>
               </div>
               <div className="lp__box lp__step">
-                <div className="lp__num">3</div>
+                <div className="lp__num num">3</div>
                 <h3>بِع من اليوم الأول</h3>
                 <p>
                   افتح وردية وابدأ البيع — بشبكة أو بدونها. الذمم والمخزون يتحدّثان من الفاتورة

@@ -149,9 +149,9 @@ export const stateColor = {
 } as const;
 
 export const font = {
-  "heading": "Tajawal, Cairo, sans-serif",
-  "ui": "Tajawal, IBM Plex Sans Arabic, system-ui, sans-serif",
-  "mono": "IBM Plex Mono, monospace"
+  "heading": "Tajawal, system-ui, sans-serif",
+  "ui": "Tajawal, system-ui, sans-serif",
+  "mono": "\"IBM Plex Mono\", ui-monospace, monospace"
 } as const;
 export const fontWeight = {
   "regular": 400,
@@ -168,7 +168,7 @@ export const fontSize = {
   "subTitle": "16px",
   "body": "15px",
   "bodyDense": "14px",
-  "note": "13px",
+  "note": "14px",
   "badge": "12.5px",
   "badgeMin": "12px"
 } as const;

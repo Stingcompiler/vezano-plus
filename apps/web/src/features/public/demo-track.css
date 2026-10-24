@@ -16,7 +16,7 @@
   gap: 6px;
 }
 .dt__kicker {
-  font-size: 13px;
+  font-size: var(--text-note);
   color: var(--color-brand-strong);
   font-weight: var(--font-weight-bold);
 }
@@ -50,7 +50,8 @@
   gap: 2px;
 }
 .dt__ref {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .dt__name {
@@ -73,7 +74,8 @@
   gap: 2px;
 }
 .dt__facts dt {
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .dt__facts dd {

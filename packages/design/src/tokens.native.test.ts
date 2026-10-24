@@ -89,7 +89,13 @@ describe("رموز الجوال tokens.native.ts (خطة الجوال M0 §٢.١
       expect(v, k).toBe(pxOf(`--spacing-${k.replace(".", "-")}`));
     for (const [k, v] of Object.entries(radius)) expect(v, k).toBe(pxOf(`--radius-${k}`));
     for (const [k, v] of Object.entries(fontFamily))
-      expect(v, k).toBe(root.get(`--font-${k}`)?.split(",")[0]?.trim());
+      expect(v, k).toBe(
+        root
+          .get(`--font-${k}`)
+          ?.split(",")[0]
+          ?.trim()
+          .replace(/^"(.*)"$/, "$1"),
+      );
     expect(fontFamily.ui).toBe("Tajawal");
     expect(fontFamily.mono).toBe("IBM Plex Mono");
     expect(space["1.5"]).toBe(6);
