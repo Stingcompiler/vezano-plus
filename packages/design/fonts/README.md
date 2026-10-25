@@ -8,22 +8,32 @@
 |---|---|---|
 | `Tajawal-{Regular,Medium,Bold,ExtraBold}.ttf` (+ `.woff2`) | github.com/google/fonts — `ofl/tajawal/` | 400 / 500 / 700 / 800 — **الواجهة والعناوين** (هوية فيزانو 2026-09-22) |
 | `IBMPlexMono-{Regular,Medium,SemiBold}.ttf` (+ `.woff2`) | github.com/google/fonts — `ofl/ibmplexmono/` | 400 / 500 / 600 — **كل الأرقام والتواريخ والمبالغ والمعرفات** (`.num`) |
-| `ReemKufi[wght].ttf` (المصدر) + `ReemKufi-Wordmark.woff2` (مقتطع) | github.com/google/fonts — `ofl/reemkufi/` | متغيّر 400–700 — **اسم الشعار «فيزانو بلص» وحده** (0005 §١٣٢) |
+| `source/ReemKufi[wght].ttf` (المصدر) + `ReemKufi[wght].ttf` و`ReemKufi-Wordmark.woff2` (مقتطعان) | github.com/google/fonts — `ofl/reemkufi/` | متغيّر 400–700 — **اسم الشعار «فيزانو بلص» وحده** (0005 §١٣٢) |
 
 ملف `OFL.txt` لكل عائلة يُنسخ بجانبها. تحويل TTF إلى WOFF2 اختياري (أصغر حجماً)؛ CSS يذكر الصيغتين.
 
 **الحالة:** نُزِّلت بإذن المالك من `github.com/google/fonts` مع `OFL-*.txt` لكل عائلة. اختبار `fonts.test.ts` يثبت وجود الملفات وغياب أي عائلة رابعة.
 
-**IBM Plex Mono للويب** (0005 §٢٠٣): ملفات `.woff2` مقتطعة للاتينية والأرقام والرموز الشائعة (~13 ك.ب للوزن بدل ~39)، كي تبقى خطوط أول عرض ≤ 200 ك.ب. ملفات `.ttf` كاملة، وهي مصدر إعادة الاقتطاع ويقرؤها الجوال:
+**الاقتطاع** (0005 §٢٠٣، «ادرس تقليل حجم الخطوط»): المصادر الكاملة من google/fonts في `source/`، والملفات في هذا المجلد
+مقتطعة منها بالأسماء نفسها التي يستوردها الويب (`.woff2`) والجوال (`.ttf`). أعد التوليد بعد أي تغيير:
 
 ```bash
-cd packages/design/fonts
-for w in Regular Medium SemiBold; do uvx --from "fonttools[woff]" pyftsubset "IBMPlexMono-$w.ttf" --unicodes="U+0020-007E,U+00A0-00FF,U+2010-2027,U+2030,U+2032-2033,U+2039-203A,U+2044,U+20AC,U+2190-2199,U+2212,U+2215,U+2116,U+2122" --layout-features='kern,liga,calt,tnum,case,zero' --flavor=woff2 --output-file="IBMPlexMono-$w.woff2"; done
+bash packages/design/scripts/subset-fonts.sh
 ```
 
-**Reem Kufi** (نُزِّل بإذن المالك 2026-09-26 مع `OFL-ReemKufi.txt`): الواجهة تحمّل `ReemKufi-Wordmark.woff2` وحده (~5 ك.ب)، مقتطعاً لحروف «فيزانو بلص Vezano Plus». لإعادة الاقتطاع إن تغيّر الاسم:
+- **Tajawal:** العربية كاملة، لأن أسماء الزبائن والأصناف قد تحوي أي حرف. معها اللاتينية 1 والممتدة، والترقيم والرموز والأسهم والأشكال.
+- **IBM Plex Mono:** الأرقام والمعرفات وحدها، أي اللاتينية 1 والترقيم والعملات والرموز المستعملة (≤ ≥ ≠ ≈ ∞ ✓ …).
+- **Reem Kufi:** حروف «فيزانو بلص Vezano Plus» وحدها، متغيّراً 400–700.
+- `src/fonts.coverage.test.ts` يفشل إن أسقط الاقتطاع حرفاً من نصوص الواجهة (الويب والحزم والجوال) يغطيه المصدر.
+
+| | قبل | بعد |
+|---|---|---|
+| الويب، أول عرض (4 Tajawal + 3 Plex + الشعار) | 204 ك.ب | 119 ك.ب |
+| الجوال، الخطوط المضمَّنة (3 Tajawal + 3 Plex + Reem Kufi) | 722 ك.ب | 275 ك.ب |
+
+**Reem Kufi** (نُزِّل بإذن المالك 2026-09-26 مع `OFL-ReemKufi.txt`): الويب يحمّل `ReemKufi-Wordmark.woff2` (~5 ك.ب)، والجوال `ReemKufi[wght].ttf` المقتطع (~12 ك.ب)، كلاهما لحروف «فيزانو بلص Vezano Plus». إن تغيّر الاسم فعدّل `NAME` في السكربت. الأمر اليدوي القديم للمرجع:
 
 ```bash
 cd packages/design/fonts
-uvx --from "fonttools[woff]" pyftsubset "ReemKufi[wght].ttf" --text="فيزانو بلص Vezano Plus" --layout-features='*' --flavor=woff2 --output-file=ReemKufi-Wordmark.woff2
+uvx --from "fonttools[woff]" pyftsubset "source/ReemKufi[wght].ttf" --text="فيزانو بلص Vezano Plus" --layout-features='*' --flavor=woff2 --output-file=ReemKufi-Wordmark.woff2
 ```
