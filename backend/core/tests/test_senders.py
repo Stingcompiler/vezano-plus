@@ -89,3 +89,15 @@ def test_code_text_fits_one_arabic_sms_segment() -> None:
     from core.auth.senders import CODE_TEXT
 
     assert len(CODE_TEXT.format(code="123456")) <= 70
+
+
+def test_email_has_html_alternative_without_links() -> None:
+    """البريد نصّ + HTML (من اليمين لليسار، الرمز فيه مهرَّباً)، وكلاهما بلا روابط تُضغط (0005 §١١٧)."""
+    build_sender(ENV, post=Recorder()).send("owner@example.com", "854921")
+    m = mail.outbox[-1]
+    assert isinstance(m, mail.EmailMultiAlternatives)
+    assert m.subject == "رمز التحقق في فيزانو بلص" and "854921" in m.body
+    [(html, mime)] = m.alternatives
+    assert isinstance(html, str)
+    assert mime == "text/html" and 'dir="rtl"' in html and "854921" in html
+    assert "{{" not in html and "<a " not in html and "https://" not in m.body

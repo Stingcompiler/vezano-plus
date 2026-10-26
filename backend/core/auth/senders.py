@@ -4,7 +4,8 @@
 أفريقيا» بجدول Meta الساري من 2026-07-01؛ `docs/research/otp-providers-sudan.md`) ثم رسالة نصية
 عبر مجمِّع بمسارات مباشرة لمشغّلي السودان (زين، MTN، سوداني) — النصية تصل أثناء قطع بيانات الجوال
 ولذا هي الاحتياط لا الأصل لغلائها (0.15–0.47$ للرسالة).
-للبريد: SMTP (أي مزوّد: Resend، Amazon SES…). بعد فشل كل القنوات يبقى التحقق اليدوي (§٢).
+للبريد: SMTP (أي مزوّد: Resend، Amazon SES…) بنسخة نصية وأخرى HTML (`verify_code_email.html`).
+بعد فشل كل القنوات يبقى التحقق اليدوي (§٢).
 
 لا شيء يُفعَّل بلا إعداد: بلا متغيرات البيئة يبقى `StoredSender` (التطوير والاختبار) كما كان.
 
@@ -20,15 +21,17 @@
 
 from __future__ import annotations
 
+import html
 import json
 import logging
 import os
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
+from pathlib import Path
 from typing import Any
 
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 
 from core.auth.verify import SendFailed, StoredSender, VerificationSender
 
@@ -40,6 +43,15 @@ GRAPH_VERSION = "v21.0"
 #: نصّ الرسالة النصية والبريد — الرمز بأرقام لاتينية، بلا رابط (رسائل الرموز بروابط تُحجب وتُصاد).
 #: حرف عربي واحد يجعل الرسالة UCS-2: مقطع واحد ≤ 70 حرفاً وإلا 67 لكل جزء — هذا النصّ 65 (مقطع واحد)
 CODE_TEXT = "رمز التحقق في فيزانو بلص: {code}\nصالح 10 دقائق. لا تشاركه مع أحد."
+EMAIL_SUBJECT = "رمز التحقق في فيزانو بلص"
+#: نسخة HTML لبريد الرمز (جداول وأنماط مضمّنة، من اليمين لليسار، بلا روابط كالنص)؛
+#: `CODE_TEXT` جزؤها النصّي
+EMAIL_HTML = Path(__file__).with_name("verify_code_email.html").read_text(encoding="utf-8")
+
+
+def code_email_html(code: str) -> str:
+    return EMAIL_HTML.replace("{{code}}", html.escape(code))
+
 
 Poster = Callable[[str, dict[str, Any], dict[str, str]], None]
 
@@ -127,14 +139,12 @@ class EmailSender:
         self.from_email = from_email
 
     def send(self, identifier: str, code: str) -> None:
+        msg = EmailMultiAlternatives(
+            EMAIL_SUBJECT, CODE_TEXT.format(code=code), self.from_email, [identifier]
+        )
+        msg.attach_alternative(code_email_html(code), "text/html")
         try:
-            send_mail(
-                "رمز التحقق في فيزانو بلص",
-                CODE_TEXT.format(code=code),
-                self.from_email,
-                [identifier],
-                fail_silently=False,
-            )
+            msg.send(fail_silently=False)
         except Exception as e:  # noqa: BLE001 — أي فشل SMTP = فشل إرسال يُحصى
             raise SendFailed from e
 
