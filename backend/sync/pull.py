@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -26,23 +27,42 @@ from sync.push import PROTOCOL_VERSION, PushError
 from sync.reference import resolve
 from sync.scopes import CursorKey, readable_keys
 
+log = logging.getLogger(__name__)
+
 
 @contextmanager
 def repeatable_read() -> Iterator[None]:
     """معاملة قراءة بعزل REPEATABLE READ (§٨.٧).
 
-    سياق المستأجر يفتح معاملة وينفّذ فيها استعلامات، وSET TRANSACTION يجب أن يسبق أول استعلام؛
-    لذلك نحاول ضبط العزل داخل savepoint: إن رُفض (معاملة جارية باستعلامات) تراجعنا عن الـsavepoint
-    واعتمدنا لقطة المعاملة الجارية نفسها — وهي معاملة واحدة أيضاً فيتحقق «الفهرس والمحتوى من
-    لقطة واحدة» ما دام العزل REPEATABLE READ مضبوطاً في مسار الإنتاج (DATABASES OPTIONS).
+    SET TRANSACTION يجب أن يسبق أول استعلام في المعاملة؛ لذلك يفتح `PullView` المعاملة ويضبط العزل
+    قبل سياق المستأجر (`begin_repeatable_read`)، وهنا نتحقق فقط. معاملة جارية بعزل أدنى (مسار
+    داخلي أو اختبار ملفوف بمعاملة) لم يعد يُتجاوز بصمت: يُجرَّب الضبط ثم يُسجَّل تحذير صريح
+    (مراجعة 2026-10-26 بند 13: كان الخطأ يُبتلع فيعمل PULL بعزل READ COMMITTED).
     """
     with transaction.atomic():
-        try:
-            with transaction.atomic():  # savepoint
-                with connection.cursor() as cur:
-                    cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-        except InternalError:
-            pass  # استعلام سابق في المعاملة — نعتمد لقطتها
+        if _isolation() != "repeatable read":
+            try:
+                with transaction.atomic():  # savepoint
+                    with connection.cursor() as cur:
+                        cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            except InternalError:
+                log.warning("pull: transaction already started below REPEATABLE READ")
+        yield
+
+
+def _isolation() -> str:
+    with connection.cursor() as cur:
+        cur.execute("SHOW transaction_isolation")
+        row = cur.fetchone()
+    return str(row[0]) if row else ""
+
+
+@contextmanager
+def begin_repeatable_read() -> Iterator[None]:
+    """يفتح معاملة عزلها REPEATABLE READ قبل أي استعلام — يُستدعى خارج أي معاملة (طرف الطلب)."""
+    with transaction.atomic():
+        with connection.cursor() as cur:
+            cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         yield
 
 

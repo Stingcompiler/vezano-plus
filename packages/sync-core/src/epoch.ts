@@ -34,10 +34,16 @@ export async function adoptEpoch(
         if (s.syncEpoch === previous && s.state !== "discarded")
           await tx.putSnapshot({ ...s, state: "discarded" });
       await tx.putMeta("active_snapshot", "");
+      // مؤشرات الجيل القديم تُؤرشف ثم تبدأ من الصفر بوسم الجيل الجديد: أرقامه تبدأ من جديد وقد تكون
+      // أصغر، فلا يمنع مؤشرٌ قديم تنزيلَها (مراجعة 2026-10-26 بند 12)
+      const cursors = await tx.listCursors();
       await tx.putMeta(
         `epoch_archive:${previous}`,
-        JSON.stringify({ archivedAt: "epoch_change", snapshots: snapshots.length }),
+        JSON.stringify({ archivedAt: "epoch_change", snapshots: snapshots.length, cursors }),
       );
+      for (const c of cursors)
+        if (c.syncEpoch !== newEpoch)
+          await tx.advanceCursor({ ...c, serverSeq: "0", syncEpoch: newEpoch });
       // المؤكد سابقاً يعود للرفع بهويته الأصلية؛ أرقامه القديمة لا تُقدَّم كرصيد
       for (const op of await tx.listOperationsByState("synced")) {
         await tx.putOperation({

@@ -75,11 +75,19 @@ class MemoryTx implements StorageTransaction {
     return Promise.resolve(this.draft.cursors.get(cursorKey(scope, scopeId, group)) ?? null);
   }
 
+  listCursors(): Promise<CursorRow[]> {
+    return Promise.resolve([...this.draft.cursors.values()]);
+  }
+
   advanceCursor(row: CursorRow): Promise<void> {
     const key = cursorKey(row.scope, row.scopeId, row.entityGroup);
     const current = this.draft.cursors.get(key);
-    // لا تراجع داخل الجيل (§٨.٧)
-    if (current === undefined || BigInt(row.serverSeq) > BigInt(current.serverSeq)) {
+    // لا تراجع داخل الجيل (§٨.٧)؛ رقم جيل آخر لا يُقارن به (§٨.١٢)
+    if (
+      current === undefined ||
+      current.syncEpoch !== row.syncEpoch ||
+      BigInt(row.serverSeq) > BigInt(current.serverSeq)
+    ) {
       this.draft.cursors.set(key, row);
     }
     return Promise.resolve();

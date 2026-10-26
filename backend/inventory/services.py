@@ -455,7 +455,9 @@ def create_opening(
             )
         if approve:
             _post_opening(opening)
-        log_reference(require_tenant(), "inventory.StockOpening", opening.id)
+        log_reference(
+            require_tenant(), "inventory.StockOpening", opening.id, str(opening.branch_id)
+        )
     return opening
 
 
@@ -504,7 +506,9 @@ def approve_opening(opening: Any, *, actor: Any) -> Any:
             update_fields=["status", "approved_by_user_id", "approved_by_name", "approved_at"]
         )
         _post_opening(opening)
-        log_reference(require_tenant(), "inventory.StockOpening", opening.id)
+        log_reference(
+            require_tenant(), "inventory.StockOpening", opening.id, str(opening.branch_id)
+        )
     return opening
 
 
@@ -750,7 +754,7 @@ def adjust_session(session: Any, *, reasons: Mapping[str, str], actor: Any) -> A
             )
         session.status = "adjusted"
         session.save(update_fields=["status"])
-        log_reference(require_tenant(), "inventory.StockAdjustment", adj.id)
+        log_reference(require_tenant(), "inventory.StockAdjustment", adj.id, str(adj.branch_id))
     return adj
 
 
@@ -888,7 +892,7 @@ def record_damage(
                 source_id=rec.id,
                 occurred_at=rec.occurred_at,
             )
-        log_reference(require_tenant(), "inventory.DamageRecord", rec.id)
+        log_reference(require_tenant(), "inventory.DamageRecord", rec.id, str(rec.branch_id))
     return rec
 
 
@@ -1096,7 +1100,7 @@ def cancel_transfer(t: Any, *, actor: Any) -> Any:
         t.cancelled_at = timezone.now()
         t.cancelled_by_name = actor.display_name
         t.save(update_fields=["status", "cancelled_at", "cancelled_by_name"])
-        log_reference(require_tenant(), "inventory.StockTransfer", t.id)
+        log_reference(require_tenant(), "inventory.StockTransfer", t.id, str(t.branch_from_id))
     return t
 
 

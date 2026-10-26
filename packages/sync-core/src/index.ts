@@ -10,6 +10,7 @@ export * from "./pusher";
 export * from "./balance";
 export * from "./snapshots";
 export * from "./pull-apply";
+export * from "./pull";
 export * from "./epoch";
 export * from "./pruning";
 export * from "./receipt-local";

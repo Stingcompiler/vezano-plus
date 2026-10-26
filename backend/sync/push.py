@@ -19,9 +19,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from django.db import DatabaseError, transaction
+from django.db import DatabaseError
 
-from core.tenancy import require_tenant
+from core.tenancy import require_tenant, tenant_context
 from sync.appliers import BusinessConflict, apply_member
 from sync.canonical import HASH_VERSION, CanonicalError, content_hash, members_hash
 from sync.counter import EpochMismatch, lock_and_reserve
@@ -239,9 +239,10 @@ def _dependency_satisfied(
 ) -> bool:
     if dep in accepted_now or dep in entities_now:
         return True
-    if Operation.unscoped.filter(tenant_id=tenant_id, operation_id=dep).exists():
-        return True
-    return Member.unscoped.filter(tenant_id=tenant_id, entity_id=dep).exists()
+    with tenant_context(tenant_id):
+        if Operation.unscoped.filter(tenant_id=tenant_id, operation_id=dep).exists():
+            return True
+        return Member.unscoped.filter(tenant_id=tenant_id, entity_id=dep).exists()
 
 
 def _compare_existing(existing: Operation, op: ParsedOperation) -> OperationResult:
@@ -273,7 +274,7 @@ def _quarantine(
         op_uuid = uuid.UUID(str(op_id))
     except (ValueError, TypeError):
         op_uuid = uuid.UUID(int=0)
-    with transaction.atomic():
+    with tenant_context(tenant_id):
         QuarantinedOperation.unscoped.create(
             tenant_id=tenant_id,
             operation_id=op_uuid,
@@ -315,7 +316,9 @@ def _commit_operation_tx(
     expected_epoch: str,
     scope_id: str,
 ) -> OperationResult:
-    with transaction.atomic():
+    # معاملة مستقلة لكل عملية (§٨.٣): التزامها لا ينتظر بقية النقل، وقفل عدّاد المستأجر ينتهي بها —
+    # كان النقل كله معاملة واحدة من سياق الطلب فيمتد القفل ويُسقط فشلُ الالتزام ما قبله (بند 13)
+    with tenant_context(tenant_id):
         lock_and_reserve(tenant_id, 0, expected_epoch=expected_epoch)
         existing = Operation.unscoped.filter(
             tenant_id=tenant_id, operation_id=op.operation_id
@@ -358,6 +361,9 @@ def _commit_operation_tx(
             )
             receipts.append(MemberReceipt(m.entity, str(m.entity_id), str(seq)))
             scope, group = scope_for(m.entity)
+            if scope == "branch" and not scope_id:
+                # خطأ برمجي لا حالة عادية: الكيان الفرعي بلا فرع لا يصل إلى سحب أي جهاز (بند 11)
+                raise ValueError(f"{m.entity}: branch-scoped member pushed without branch_id")
             SyncLog.unscoped.create(
                 tenant_id=tenant_id,
                 scope=scope,
@@ -395,7 +401,8 @@ def push(
     epoch = str(envelope.get("sync_epoch", ""))
     from sync.counter import ensure_state
 
-    state = ensure_state(tenant_id)
+    with tenant_context(tenant_id):
+        state = ensure_state(tenant_id)
     if epoch != state.sync_epoch:
         # الجيل القديم لا يُقبل ولا يُطبَّق (§٨.١٢) — الجهاز ينتقل إلى مسار إعادة التهيئة
         raise PushError("epoch_mismatch", state.sync_epoch)
@@ -490,7 +497,8 @@ def push(
     known = {r.operation_id for r in ordered_results}
     ordered_results.extend(r for r in results.values() if r.operation_id not in known)
 
-    state.refresh_from_db()
+    with tenant_context(tenant_id):
+        state.refresh_from_db()
     return PushResponse(
         PROTOCOL_VERSION, state.sync_epoch, request_id, ordered_results, str(state.sync_counter)
     )

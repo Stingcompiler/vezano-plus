@@ -111,3 +111,61 @@ def _home_decisions(viewer: _home.Viewer, out: dict[str, Any]) -> None:
 
 
 _home.HOME_PROVIDERS.append(_home_decisions)
+
+
+# ---------- محلّلات PULL للمستندات المكتوبة خادمياً (مراجعة 2026-10-26 بند 11) ----------
+# الافتتاحية والتسوية والتالف تُسجَّل في sync_log بـ`log_reference` ولا عضو PUSH لها؛ بلا محلّل كان
+# PULL يتقدّم بالمؤشر فوقها ولا يُنزلها فلا يراها جهاز آخر. الأرقام سلاسل كبقية الحمولات (§٧.١).
+
+import uuid as _uuid  # noqa: E402
+from collections.abc import Iterable as _Iterable  # noqa: E402
+from datetime import datetime as _datetime  # noqa: E402
+
+from django.db import models as _models  # noqa: E402
+
+from inventory.models import DamageRecord, StockAdjustment, StockOpening  # noqa: E402
+from sync.reference import register_resolver  # noqa: E402
+
+
+def _plain(obj: _models.Model, *, skip: tuple[str, ...] = ("tenant",)) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for f in obj._meta.concrete_fields:
+        if f.name in skip:
+            continue
+        v = getattr(obj, f.attname)
+        if isinstance(v, _datetime):
+            v = v.isoformat().replace("+00:00", "Z")
+        elif isinstance(v, (_uuid.UUID, int)) and not isinstance(v, bool):
+            v = str(v)
+        out[f.attname] = v
+    return out
+
+
+def _resolver(model: type[_models.Model], lines: str | None) -> Any:
+    def resolve(
+        _tenant_id: _uuid.UUID, ids: _Iterable[_uuid.UUID]
+    ) -> dict[_uuid.UUID, dict[str, Any]]:
+        qs = model._default_manager.filter(id__in=list(ids))
+        if lines:
+            qs = qs.prefetch_related(lines)
+        out: dict[_uuid.UUID, dict[str, Any]] = {}
+        for obj in qs:
+            payload = _plain(obj)
+            if lines:
+                parent = next(
+                    f.name
+                    for f in getattr(obj, lines).model._meta.concrete_fields
+                    if f.is_relation and f.related_model is model
+                )
+                payload["lines"] = [
+                    _plain(ln, skip=("tenant", parent)) for ln in getattr(obj, lines).all()
+                ]
+            out[obj.pk] = payload
+        return out
+
+    return resolve
+
+
+register_resolver("inventory.StockOpening", _resolver(StockOpening, "lines"))
+register_resolver("inventory.StockAdjustment", _resolver(StockAdjustment, "lines"))
+register_resolver("inventory.DamageRecord", _resolver(DamageRecord, None))

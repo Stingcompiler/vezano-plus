@@ -655,6 +655,17 @@
     }
    },
    "$comment": "«إعادة الإرسال» تعيد الرابط والمنح؛ الاختبارات رصدت «السحب» وحده"
+  },
+  {
+   "ops": [
+    "POST /api/sync/pull"
+   ],
+   "at": "entities[].payload",
+   "schema": {
+    "type": "object",
+    "additionalProperties": true,
+    "description": "حمولة الكيان كما رُفعت أو حلّها محلّله — شكلها بحسب `entity` (مراجعة 2026-10-26 بند 11)"
+   }
   }
  ]
 }

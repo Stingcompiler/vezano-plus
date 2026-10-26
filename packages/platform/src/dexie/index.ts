@@ -31,6 +31,13 @@ interface CursorTableRow extends CursorRow {
 }
 
 const cursorKey = (scope: string, scopeId: string, group: string) => `${scope}|${scopeId}|${group}`;
+const toCursor = (row: CursorTableRow): CursorRow => ({
+  scope: row.scope,
+  scopeId: row.scopeId,
+  entityGroup: row.entityGroup,
+  serverSeq: row.serverSeq,
+  ...(row.syncEpoch === undefined ? {} : { syncEpoch: row.syncEpoch }),
+});
 const LOCAL_SEQ_KEY = "local_seq";
 
 class StingDatabase extends Dexie {
@@ -84,19 +91,23 @@ class DexieTx implements StorageTransaction {
   async getCursor(scope: string, scopeId: string, entityGroup: string): Promise<CursorRow | null> {
     const row = await this.db.cursors.get(cursorKey(scope, scopeId, entityGroup));
     if (!row) return null;
-    return {
-      scope: row.scope,
-      scopeId: row.scopeId,
-      entityGroup: row.entityGroup,
-      serverSeq: row.serverSeq,
-    };
+    return toCursor(row);
+  }
+
+  async listCursors(): Promise<CursorRow[]> {
+    return (await this.db.cursors.toArray()).map(toCursor);
   }
 
   async advanceCursor(row: CursorRow): Promise<void> {
     const key = cursorKey(row.scope, row.scopeId, row.entityGroup);
     const current = await this.db.cursors.get(key);
-    // لا تراجع داخل الجيل (§٨.٧) — المقارنة بـ BigInt على السلاسل القانونية
-    if (current === undefined || BigInt(row.serverSeq) > BigInt(current.serverSeq)) {
+    // لا تراجع داخل الجيل (§٨.٧) — المقارنة بـ BigInt على السلاسل القانونية؛ رقم جيل آخر لا يُقارن
+    // به بل يُستبدل (§٨.١٢؛ مراجعة 2026-10-26 بند 12)
+    if (
+      current === undefined ||
+      current.syncEpoch !== row.syncEpoch ||
+      BigInt(row.serverSeq) > BigInt(current.serverSeq)
+    ) {
       await this.db.cursors.put({ key, ...row });
     }
   }

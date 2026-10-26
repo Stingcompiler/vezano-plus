@@ -376,3 +376,159 @@ class TestSyncStatus:
 
     def test_status_requires_device_session(self, ctx: dict[str, Any]) -> None:
         assert Client().get("/api/sync/status").status_code in (401, 403)
+
+
+class TestHttpBranchScope:
+    """مراجعة 2026-10-26 بند 11: PUSH عبر HTTP يكتب نطاق فرع الجهاز في sync_log فيصل ما رفعه جهاز
+    إلى جهاز آخر في الفرع نفسه عبر PULL، ولا يصل فرعاً آخر؛ والمستند المكتوب خادمياً بفرعه ومحلّله."""
+
+    @staticmethod
+    def _http(reg: Any, path: str, body: dict[str, Any]) -> dict[str, Any]:
+        r = Client().post(
+            path, body, content_type="application/json", HTTP_AUTHORIZATION=f"Bearer {reg.access}"
+        )
+        assert r.status_code == 200, r.content
+        out: dict[str, Any] = r.json()
+        return out
+
+    def test_http_pull_reads_at_repeatable_read(
+        self, ctx: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """بند 13: PULL عبر HTTP يقرأ الفهرس والمحتوى بعزل REPEATABLE READ فعلاً — كان ضبط العزل
+        يُرفض بعد استعلامات سياق المستأجر ويُبتلع فيعمل بـREAD COMMITTED."""
+        from sync import pull as pull_module
+
+        seen: list[str] = []
+        real = pull_module._manifest
+
+        def spy(*args: Any, **kwargs: Any) -> Any:
+            seen.append(pull_module._isolation())
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(pull_module, "_manifest", spy)
+        self._pull(ctx, ctx["krt"])
+        assert seen == ["repeatable read"]
+
+    def _pull(self, c: dict[str, Any], reg: Any) -> dict[str, Any]:
+        return self._http(
+            reg,
+            "/api/sync/pull",
+            {"protocol_version": PROTOCOL_VERSION, "sync_epoch": c["epoch"], "request_id": U()},
+        )
+
+    def test_http_push_reaches_same_branch_pull_only(self, ctx: dict[str, Any]) -> None:
+        krt, bhr = ctx["krt"], ctx["bhr"]
+        with tenant_context(ctx["tenant"].id):
+            krt2 = register_device(user=ctx["owner"], branch=ctx["branches"][0], name="كاشير 2")
+        op = shift_open(str(krt.device.branch_id), str(krt.device.id), str(ctx["owner"].id))
+        res = self._http(krt, "/api/sync/push", envelope(ctx["epoch"], op))
+        assert res["results"][0]["status"] == "accepted"
+        with tenant_context(ctx["tenant"].id):
+            row = SyncLog.objects.get(entity="shifts.ShiftOpened")
+            assert row.scope_id == str(krt.device.branch_id)
+        same = self._pull(ctx, krt2)
+        assert [e["entity"] for e in same["entities"]] == ["shifts.ShiftOpened"]
+        assert same["entities"][0]["operation_id"] == op["operation_id"]
+        assert self._pull(ctx, bhr)["entities"] == []
+
+    def test_server_written_branch_document_is_scoped_and_resolved(
+        self, ctx: dict[str, Any]
+    ) -> None:
+        from inventory.models import DamageRecord
+        from sync.reference import log_reference
+
+        branch = ctx["branches"][0]
+        with tenant_context(ctx["tenant"].id):
+            rec = DamageRecord.objects.create(
+                tenant=ctx["tenant"],
+                branch=branch,
+                damage_number="TL-0001",
+                item_id=uuid.uuid4(),
+                qty_milli=1000,
+                base_qty_milli=1000,
+                destination="write_off",
+                reason="كسر",
+                decided_by_user_id=ctx["owner"].id,
+            )
+            with pytest.raises(ValueError):
+                log_reference(ctx["tenant"].id, "inventory.DamageRecord", rec.id)
+            log_reference(ctx["tenant"].id, "inventory.DamageRecord", rec.id, str(branch.id))
+        (e,) = self._pull(ctx, ctx["krt"])["entities"]
+        assert (
+            e["entity"] == "inventory.DamageRecord" and e["payload"]["damage_number"] == "TL-0001"
+        )
+        assert e["payload"]["qty_milli"] == "1000" and e["operation_id"] == ""
+        assert self._pull(ctx, ctx["bhr"])["entities"] == []
+
+    def test_http_push_commits_each_operation_on_its_own(
+        self, ctx: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """بند 13: معاملة لكل عملية — أثناء تطبيق الثانية تكون الأولى ملتزمة ومرئية لاتصال آخر،
+        وقفل عدّاد المستأجر محرَّر بينهما (كان النقل كله معاملة الطلب الواحدة)."""
+        from sync import push as push_module
+        from sync.models import Operation
+
+        first, second = probe(lines=0), probe(lines=0)
+        seen: list[bool] = []
+        real = push_module.apply_member  # type: ignore[attr-defined]
+
+        def other_connection_sees_first() -> None:
+            try:
+                with platform_context():
+                    seen.append(
+                        Operation.unscoped.filter(operation_id=first["operation_id"]).exists()
+                    )
+            finally:
+                connections.close_all()
+
+        def spy(tenant_id: Any, device_id: Any, actor: Any, entity: str, eid: Any, p: Any) -> None:
+            if str(eid) == second["members"][0]["id"]:
+                t = threading.Thread(target=other_connection_sees_first)
+                t.start()
+                t.join(10)
+            real(tenant_id, device_id, actor, entity, eid, p)
+
+        monkeypatch.setattr(push_module, "apply_member", spy)
+        res = self._http(ctx["krt"], "/api/sync/push", envelope(ctx["epoch"], first, second))
+        assert [r["status"] for r in res["results"]] == ["accepted", "accepted"]
+        assert seen == [True]
+
+
+def test_scope_repair_reports_then_fixes_legacy_rows(ctx: dict[str, Any]) -> None:
+    """بند 11 (السجلات القديمة): التقرير يستنتج الفرع من جهاز الرفع أو من المستند ولا يكتب؛ التطبيق
+    يكتبه برقم جديد فيصل إلى سحب جهاز تجاوز مؤشره الرقم القديم؛ المجهول لا يُخمَّن."""
+    from django.core.management import call_command
+
+    from sync.scope_repair import apply_fixes, find_unscoped
+
+    krt, branch = ctx["krt"], ctx["branches"][0]
+    op = shift_open(str(branch.id), str(krt.device.id), str(ctx["owner"].id))
+    do_push(ctx, krt, op)
+    stray = uuid.uuid4()
+    with tenant_context(ctx["tenant"].id), transaction.atomic():
+        # سجلات «قديمة»: نطاق فارغ كما كان يكتبه PUSH عبر HTTP، وصف بلا عضو ولا مستند معروف
+        _, seq = lock_and_reserve(ctx["tenant"].id, 1)
+        SyncLog.objects.filter(entity="shifts.ShiftOpened").update(scope_id="")
+        SyncLog.unscoped.create(
+            tenant=ctx["tenant"],
+            scope="branch",
+            entity_group="inventory",
+            entity="inventory.DamageRecord",
+            entity_id=stray,
+            server_seq=seq,
+        )
+    before = do_pull(ctx, krt)
+    assert before["entities"] == []
+    fixes = find_unscoped(ctx["tenant"].id)
+    assert {(f.entity, f.source, f.branch_id) for f in fixes} == {
+        ("shifts.ShiftOpened", "device", str(branch.id)),
+        ("inventory.DamageRecord", "unknown", None),
+    }
+    call_command("sync_scope_repair")  # تقرير فقط
+    with tenant_context(ctx["tenant"].id):
+        assert SyncLog.objects.filter(scope="branch", scope_id="").count() == 2
+    assert apply_fixes(ctx["tenant"].id, fixes) == 1
+    after = do_pull(ctx, krt, cursors=before["cursors"])
+    assert [e["entity"] for e in after["entities"]] == ["shifts.ShiftOpened"]
+    with tenant_context(ctx["tenant"].id):
+        assert SyncLog.objects.get(entity_id=stray).scope_id == ""
