@@ -281,6 +281,18 @@ class ItemDetailView(APIView):
             item = Item.objects.filter(id=item_id).select_related("base_unit").first()
             if item is None:
                 return Response({"detail": "item_not_found"}, status=status.HTTP_404_NOT_FOUND)
+            price = d.get("sale_price_minor") or None
+            if price is not None and str(price) != str(item.sale_price_minor):
+                from catalog.prices import can_change_price
+
+                who = request.auth
+                assert isinstance(who, AuthContext)
+                v = home.viewer_for(who.user, who.device)
+                if not can_change_price(v):
+                    return Response(
+                        {"detail": "price_owner_only", "role_name": v.role_name},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             group: ItemGroup | None | bool = False
             if "group_id" in d:
                 gid = _uuid(d.get("group_id") or "")

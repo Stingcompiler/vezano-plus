@@ -13,6 +13,7 @@ from datetime import date
 from typing import Any
 
 from django.db import IntegrityError
+from django.db.models import F
 from django.utils import timezone
 
 from core import audit, home
@@ -210,13 +211,16 @@ def match_payment(
     if found is None or found[1] != "supplier":
         raise MarketRejected("not_found")
     o = found[0]
+    # الفحص والقرار والتوزيع معاملة واحدة على صفّ الدفعة مقفولاً: طلبان متزامنان كانا يقرآن
+    # «مسجَّلة» معاً فتُضاف الدفعة مرتين (مراجعة 2026-10-26 بند 4). platform_context معاملة ذرّية.
     with platform_context():
-        pay: MarketPayment | None = MarketPayment.unscoped.filter(order=o, id=payment_id).first()
-    if pay is None:
-        raise MarketRejected("payment_unknown")
-    if pay.status != MarketPayment.Status.RECORDED:
-        raise MarketRejected("already_decided", "status")
-    with platform_context():
+        pay: MarketPayment | None = (
+            MarketPayment.unscoped.select_for_update().filter(order=o, id=payment_id).first()
+        )
+        if pay is None:
+            raise MarketRejected("payment_unknown")
+        if pay.status != MarketPayment.Status.RECORDED:
+            raise MarketRejected("already_decided", "status")
         pay.status = MarketPayment.Status.MATCHED if accept else MarketPayment.Status.REJECTED
         pay.matched_at = timezone.now()
         pay.matched_by_name = actor.display_name
@@ -226,12 +230,19 @@ def match_payment(
             targets = pay.allocations or [
                 {"order_id": str(o.id), "amount_minor": str(pay.amount_minor)}
             ]
+            amounts: dict[str, int] = {}
             for t in targets:
-                tgt = MarketOrder.unscoped.filter(id=t["order_id"]).first()
-                if tgt is None:
-                    continue
-                tgt.paid_minor = int(tgt.paid_minor or 0) + int(t["amount_minor"])
-                tgt.save(update_fields=["paid_minor", "updated_at"])
+                amounts[str(t["order_id"])] = amounts.get(str(t["order_id"]), 0) + int(
+                    t["amount_minor"]
+                )
+            # الطلبات المستهدفة تُقفل بترتيب ثابت (لا جمود بين مطابقتين)، والزيادة بتعبير قاعدة
+            # البيانات فلا تضيع زيادة دفعة أخرى متزامنة على الطلب نفسه
+            locked = MarketOrder.unscoped.select_for_update().filter(id__in=list(amounts))
+            for tgt in locked.order_by("id"):
+                MarketOrder.unscoped.filter(id=tgt.id).update(
+                    paid_minor=F("paid_minor") + amounts[str(tgt.id)],
+                    updated_at=timezone.now(),
+                )
     record_event(
         o,
         kind="payment_matched" if accept else "payment_rejected",

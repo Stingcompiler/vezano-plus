@@ -36,7 +36,7 @@ def _viewer(request: Request) -> home.Viewer:
 
 
 def _can_change(v: home.Viewer) -> bool:
-    return v.is_owner or v.role_code in prices.PRICE_ROLES
+    return prices.can_change_price(v)
 
 
 def _can_see_cost(v: home.Viewer) -> bool:

@@ -26,6 +26,7 @@ pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.usefixtures("
 
 
 def shift_open(branch_id: str, device_id: str, user_id: str) -> dict[str, Any]:
+    shift_id = U()
     return {
         "operation_id": U(),
         "kind": "shift_open",
@@ -34,10 +35,10 @@ def shift_open(branch_id: str, device_id: str, user_id: str) -> dict[str, Any]:
         "members": [
             {
                 "entity": "shifts.ShiftOpened",
-                "id": U(),
+                "id": shift_id,
                 "schema_version": 1,
                 "payload": {
-                    "shift_id": U(),
+                    "shift_id": shift_id,
                     "branch_id": branch_id,
                     "device_id": device_id,
                     "user_id": user_id,
