@@ -370,7 +370,7 @@ def decide(
                     source_id=rev.id,
                     occurred_at=rev.occurred_at,
                 )
-            log_reference(tenant_id, "sales.SaleReversal", rev.id)
+            log_reference(tenant_id, "sales.SaleReversal", rev.id, str(rev.branch_id))
         d: DuplicateDecision = DuplicateDecision.objects.create(
             tenant_id=tenant_id,
             first_sale_id=first.id,

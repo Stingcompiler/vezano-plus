@@ -20,9 +20,9 @@ from core.auth.sessions import report_pending
 from core.auth.tokens import AuthContext, RecoveryAuthentication
 from core.models import Device
 from core.scenario import faults
-from core.tenancy import tenant_context
+from core.tenancy import tenant_context, tenant_scope
 from sync.models import BackupCopy, Operation, QuarantinedOperation, SupportReport, SyncState
-from sync.pull import pull
+from sync.pull import begin_repeatable_read, pull
 from sync.push import PushError, push
 from sync.recovery import (
     RecoveryRejected,
@@ -65,9 +65,15 @@ class PushView(APIView):
                 {"detail": sorted(blocked)[0]}, status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
         try:
-            with tenant_context(auth.tenant_id):
+            # بلا معاملة جامعة: PUSH يفتح سياق المستأجر ومعاملته لكل عملية مستقلة (بند 13)
+            with tenant_scope(auth.tenant_id):
+                # فرع الجهاز من المصادقة: نطاق سجلات الكيانات الفرعية في sync_log — بدونه تُكتب فارغة
+                # ولا تصل إلى سحب أي فرع (مراجعة 2026-10-26 بند 11)
                 response = push(
-                    device_id=auth.device.id, actor_user_id=auth.user.id, envelope=s.validated_data
+                    device_id=auth.device.id,
+                    actor_user_id=auth.user.id,
+                    envelope=s.validated_data,
+                    branch_id=str(auth.device.branch_id),
                 )
         except PushError as e:
             code = (
@@ -111,7 +117,8 @@ class PullView(APIView):
         # الفروع المصرح بها للجهاز: فرع تسجيله (تعدد الفروع لجهاز واحد يُفتح مع باقة السلسلة §١٠.١)
         branch_ids = [str(auth.device.branch_id)]
         try:
-            with tenant_context(auth.tenant_id):
+            # العزل أول أمر في المعاملة ثم سياق المستأجر: الفهرس والمحتوى من لقطة واحدة (بند 13)
+            with begin_repeatable_read(), tenant_context(auth.tenant_id):
                 page = pull(
                     device_id=auth.device.id, branch_ids=branch_ids, envelope=s.validated_data
                 )

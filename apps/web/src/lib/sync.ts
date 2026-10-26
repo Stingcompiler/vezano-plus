@@ -5,6 +5,7 @@
  * المحاولة التالية، والمصادقة/الجيل يوقفان الرفع. `pendingAfter` يبلّغ الخادم بالمعلّق المتبقي
  * (ACC-09 «المعلّق على الأجهزة»).
  */
+import { withWriterLock } from "@sting/platform/dexie";
 import {
   attemptsKey,
   adoptEpoch,
@@ -20,6 +21,11 @@ import {
   pushOnce,
   type PushResponse,
   type PushTransport,
+  pullAll,
+  type PullOutcome,
+  type PullPage,
+  type PullTransport,
+  recoverStalePending,
 } from "@sting/sync-core";
 
 import { api, apiBaseUrl, getDeviceRefresh } from "@/lib/api";
@@ -50,6 +56,26 @@ export function createPushTransport(
   };
 }
 
+export function createPullTransport(): PullTransport {
+  return {
+    async pull(envelope) {
+      const { data, error, response } = await api().POST("/api/sync/pull", {
+        body: { ...envelope, cursors: envelope.cursors.map((c) => ({ ...c })) },
+      });
+      const err = error as unknown as { detail?: string; sync_epoch?: string } | undefined;
+      if (response.ok && data) return { ok: true, page: data as unknown as PullPage };
+      if (response.status === 401 || response.status === 403)
+        return { ok: false, kind: "auth", status: response.status, detail: err?.detail ?? "" };
+      if (response.status === 409)
+        return { ok: false, kind: "epoch_mismatch", currentEpoch: err?.sync_epoch ?? "" };
+      return { ok: false, kind: "transient", reason: "server_error", status: response.status };
+    },
+  };
+}
+
+/** كاتب واحد للطابور والمؤشرات عبر التبويبات (§٨.٢): الرفع والسحب يمرّان بالقفل نفسه. */
+const SYNC_LOCK = "sting-sync-writer";
+
 export async function countPending(): Promise<number> {
   return getStorage().read(
     async (tx) =>
@@ -66,6 +92,46 @@ export async function countPending(): Promise<number> {
 export async function pushPending(
   maxRounds = 10,
   opts: { manual?: boolean } = {},
+): Promise<PushOnceOutcome> {
+  return withWriterLock(SYNC_LOCK, async () => {
+    // تحت القفل لا رافع آخر: ما بقي pending متروك من انهيار سابق فيعود local (مراجعة 2026-10-26 بند 10)
+    await recoverStalePending(getStorage());
+    const out = await pushUnlocked(maxRounds, opts);
+    // بعد الرفع يُسحب ما كتبته أجهزة الفرع الأخرى — فشل السحب لا يغيّر نتيجة الرفع (بند 11)
+    if (out.kind !== "halt") await pullUnlocked().catch(() => undefined);
+    return out;
+  });
+}
+
+/** السحب وحده (عند فتح شاشة أو عودة الاتصال): الصفحات حتى نهايتها تحت قفل الكاتب. */
+export async function pullPending(): Promise<PullOutcome> {
+  return withWriterLock(SYNC_LOCK, () => pullUnlocked());
+}
+
+async function pullUnlocked(): Promise<PullOutcome> {
+  const storage = getStorage();
+  const epoch = (await storage.read((tx) => tx.getMeta("sync_epoch"))) ?? "";
+  const options = {
+    transport: createPullTransport(),
+    syncEpoch: epoch,
+    newRequestId: () => crypto.randomUUID(),
+  };
+  let out = await pullAll(storage, options);
+  if (
+    out.kind === "halt" &&
+    out.failure.kind === "auth" &&
+    needsDeviceSession(out.failure.status, out.failure.detail) &&
+    (await renewDeviceSession())
+  ) {
+    out = await pullAll(storage, options);
+  }
+  if (out.kind === "halt") await onHalt(out.failure, epoch);
+  return out;
+}
+
+async function pushUnlocked(
+  maxRounds: number,
+  opts: { manual?: boolean },
 ): Promise<PushOnceOutcome> {
   const storage = getStorage();
   const epoch = (await storage.read((tx) => tx.getMeta("sync_epoch"))) ?? "";

@@ -36,6 +36,8 @@ export interface CursorRow {
   readonly scopeId: string;
   readonly entityGroup: string;
   readonly serverSeq: string;
+  /** جيل المزامنة الذي يخصّه الرقم — لا تُقارن أرقام جيلين (§٨.١٢؛ مراجعة 2026-10-26 بند 12). */
+  readonly syncEpoch?: string;
 }
 
 export interface SnapshotRow {
@@ -68,7 +70,9 @@ export interface StorageTransaction {
   /** آخر رقم إنشاء محلي مخصَّص — يُسجَّل حدَّ استقبال مرشح اللقطة `local_frontier` (§٨.٩ بند ٢). */
   currentLocalSeq(): Promise<number>;
   getCursor(scope: string, scopeId: string, entityGroup: string): Promise<CursorRow | null>;
-  /** يدمج تقدماً بلا تراجع داخل الجيل (§٨.٧). */
+  /** كل المؤشرات المحفوظة — منها يُبنى طلب PULL التالي. */
+  listCursors(): Promise<CursorRow[]>;
+  /** يدمج تقدماً بلا تراجع داخل الجيل (§٨.٧)؛ مؤشر جيل آخر يُستبدل لا يُقارن. */
   advanceCursor(row: CursorRow): Promise<void>;
   getSnapshot(snapshotId: string): Promise<SnapshotRow | null>;
   putSnapshot(row: SnapshotRow): Promise<void>;

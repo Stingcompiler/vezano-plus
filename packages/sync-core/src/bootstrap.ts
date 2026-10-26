@@ -204,6 +204,7 @@ export async function activateBootstrap(
         scopeId: p.branchId,
         entityGroup: group,
         serverSeq: p.image.cutoff_server_seq,
+        syncEpoch: p.image.sync_epoch,
       });
     }
     const tenantsRaw = await tx.getMeta(DEVICE_SETUP_TENANTS_KEY);

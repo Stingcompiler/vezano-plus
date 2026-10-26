@@ -153,6 +153,20 @@ export async function applyResults(
   });
 }
 
+/**
+ * عمليات بقيت `pending` بلا رافع (انهار التبويب أو أُغلق بعد تحويلها وقبل الرد) تعود `local` فيلتقطها
+ * الرفع التالي — وإلا بقيت «قيد الرفع» إلى الأبد (مراجعة 2026-10-26 بند 10). **يُستدعى تحت قفل
+ * الكاتب المشترك بين التبويبات فقط**: خارج القفل قد تكون عملية تبويب آخر في الطريق. إعادة رفعها آمنة
+ * لو كان الخادم قد التزم بها: يعيدها `duplicate` بهويتها فلا يتضاعف أثر.
+ */
+export async function recoverStalePending(storage: StoragePort): Promise<number> {
+  return storage.transaction(async (tx) => {
+    const stale = await tx.listOperationsByState("pending");
+    for (const op of stale) await tx.putOperation({ ...op, state: "local" });
+    return stale.length;
+  });
+}
+
 export async function pushOnce(
   storage: StoragePort,
   options: PushOnceOptions,

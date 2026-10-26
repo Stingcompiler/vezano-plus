@@ -91,7 +91,10 @@ export async function applyPullPage(
       const key = entityKey(e.entity, e.id);
       const current = await tx.getProjection(key);
       const storedSeq = current?.value.server_seq;
-      const currentSeq = typeof storedSeq === "string" ? BigInt(storedSeq) : -1n;
+      // رقم جيل سابق لا يُقارن بأرقام الجيل الجديد (§٨.١٢؛ مراجعة 2026-10-26 بند 12): الجيل الجديد
+      // يبدأ أرقامه من جديد فيبدو أقدم ويُرفض — يُعامل غيابَ رقم
+      const sameEpoch = current?.value.sync_epoch === page.sync_epoch;
+      const currentSeq = typeof storedSeq === "string" && sameEpoch ? BigInt(storedSeq) : -1n;
       const incoming = BigInt(e.server_seq);
       if (incoming < currentSeq) {
         outcome.skippedOlder++;
@@ -108,6 +111,7 @@ export async function applyPullPage(
             schema_version: e.schema_version,
             payload: e.payload,
             server_seq: e.server_seq,
+            sync_epoch: page.sync_epoch,
             operation_id: e.operation_id,
             deleted: false,
           },
@@ -171,6 +175,7 @@ export async function applyPullPage(
           ...(current?.value ?? { entity: t.entity, id: t.id }),
           deleted: true,
           server_seq: t.server_seq,
+          sync_epoch: page.sync_epoch,
         },
       });
       outcome.tombstoned++;
@@ -183,6 +188,7 @@ export async function applyPullPage(
         scopeId: c.scope_id ?? "",
         entityGroup: c.entity_group,
         serverSeq: c.server_seq,
+        syncEpoch: page.sync_epoch,
       });
     }
     await tx.putMeta("access_manifest_version", page.access_manifest_version);

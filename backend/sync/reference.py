@@ -31,18 +31,25 @@ def register_lister(group: str, fn: Lister) -> None:
     LISTERS.setdefault(group, []).append(fn)
 
 
-def log_reference(tenant_id: uuid.UUID, entity: str, entity_id: uuid.UUID) -> int:
-    """يحجز رقماً تحت قفل المستأجر ويرفع علامة الكيان في sync_log (upsert). داخل معاملة."""
+def log_reference(
+    tenant_id: uuid.UUID, entity: str, entity_id: uuid.UUID, scope_id: str = ""
+) -> int:
+    """يحجز رقماً تحت قفل المستأجر ويرفع علامة الكيان في sync_log (upsert). داخل معاملة.
+
+    الكيان الفرعي يحمل فرعه في `scope_id` وإلا لا يصل إلى سحب أي فرع (مراجعة 2026-10-26 بند 11:
+    كانت تُكتب فارغة)؛ المؤسسي بلا `scope_id`."""
+    scope, group = scope_for(entity)
+    if scope == "branch" and not scope_id:
+        raise ValueError(f"{entity}: branch-scoped reference needs scope_id")
     with transaction.atomic():
         _, seq = lock_and_reserve(tenant_id, 1)
-        scope, group = scope_for(entity)
         SyncLog.unscoped.update_or_create(
             tenant_id=tenant_id,
             entity=entity,
             entity_id=entity_id,
             defaults={
                 "scope": scope,
-                "scope_id": "",
+                "scope_id": scope_id if scope == "branch" else "",
                 "entity_group": group,
                 "server_seq": seq,
                 "tombstone": False,

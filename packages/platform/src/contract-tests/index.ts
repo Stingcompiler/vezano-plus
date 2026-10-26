@@ -100,6 +100,23 @@ export function runStorageContractTests(name: string, make: () => Promise<Storag
       expect(cur!.serverSeq).toBe("121");
     });
 
+    it("رقم جيل جديد يستبدل مؤشر الجيل القديم ولا يُقارن به (§٨.١٢)", async () => {
+      const storage = await make();
+      const row = { scope: "branch", scopeId: "b1", entityGroup: "sales" };
+      await storage.transaction((tx) =>
+        tx.advanceCursor({ ...row, serverSeq: "100", syncEpoch: "e1" }),
+      );
+      await storage.transaction((tx) =>
+        tx.advanceCursor({ ...row, serverSeq: "5", syncEpoch: "e2" }),
+      );
+      await storage.transaction((tx) =>
+        tx.advanceCursor({ ...row, serverSeq: "3", syncEpoch: "e2" }),
+      );
+      const cur = await storage.read((tx) => tx.getCursor("branch", "b1", "sales"));
+      expect(cur).toEqual({ ...row, serverSeq: "5", syncEpoch: "e2" });
+      expect(await storage.read((tx) => tx.listCursors())).toEqual([cur]);
+    });
+
     it("قائمة المعلّق مرتبة برقم الإنشاء المحلي", async () => {
       const storage = await make();
       await storage.transaction(async (tx) => {

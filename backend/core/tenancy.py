@@ -79,6 +79,19 @@ def tenant_context(tenant_id: uuid.UUID) -> Iterator[TenantContext]:
 
 
 @contextmanager
+def tenant_scope(tenant_id: uuid.UUID) -> Iterator[TenantContext]:
+    """يعيّن المستأجر الجاري بلا معاملة ولا متغيّري الجلسة — لمسار يفتح `tenant_context` لكل وحدة
+    عمل ويلتزم بها مستقلة (PUSH: معاملة لكل عملية — مراجعة 2026-10-26 بند 13). أي استعلام خارج
+    `tenant_context` داخله لا يرى شيئاً (RLS بلا متغيّر المستأجر) فيفشل آمناً لا متسرّباً."""
+    ctx = TenantContext(tenant_id=tenant_id)
+    token = _current.set(ctx)
+    try:
+        yield ctx
+    finally:
+        _current.reset(token)
+
+
+@contextmanager
 def platform_context() -> Iterator[TenantContext]:
     """سياق مشغّل المنصة: يرى كل المستأجرين. للتهيئة والدعم المدقَّق فقط (§٣.١، §١٣.٥)."""
     ctx = TenantContext(tenant_id=None, platform=True)
