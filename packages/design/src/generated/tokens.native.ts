@@ -247,12 +247,10 @@ export const fontFamily = {
 /** السلسلة كاملة بلا العائلات العامة — للمنصة التي تحمّل بديلاً. */
 export const fontFamilyFallbacks = {
   "heading": [
-    "Tajawal",
-    "Cairo"
+    "Tajawal"
   ],
   "ui": [
-    "Tajawal",
-    "IBM Plex Sans Arabic"
+    "Tajawal"
   ],
   "mono": [
     "IBM Plex Mono"
@@ -275,7 +273,7 @@ export const fontSize = {
   "subTitle": 16,
   "body": 15,
   "bodyDense": 14,
-  "note": 13,
+  "note": 14,
   "badge": 12.5,
   "badgeMin": 12
 } as const;

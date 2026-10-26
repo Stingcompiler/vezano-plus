@@ -37,7 +37,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `node scripts/prepare-fonts.mjs && NEXT_DIST_DIR=.next-e2e next dev -p ${PORT}`,
+    // CI (16GB): next dev يأخذ نصف الذاكرة (8GB) ويعيد التشغيل عند 80% منها — كان يقع مرة في كل وظيفة
+    // قرب نهايتها فتسقط الصفحة الجارية وتنتهي إعادتها بترجمة باردة (REP-03 على #209). 12GB = إعادة عند ~9.8GB.
+    command: `node scripts/prepare-fonts.mjs && ${process.env.CI ? "NODE_OPTIONS=--max-old-space-size=12288 " : ""}NEXT_DIST_DIR=.next-e2e next dev -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

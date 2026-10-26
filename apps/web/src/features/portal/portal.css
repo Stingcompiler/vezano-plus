@@ -15,7 +15,8 @@
 
 .cus-sub {
   color: var(--color-ink-muted, #6b7280);
-  font-size: var(--text-badge, 0.875rem);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 
 .cus-list {

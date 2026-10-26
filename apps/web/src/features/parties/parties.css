@@ -73,7 +73,7 @@
   background: var(--color-primary-soft, #f0fdfa);
 }
 .pty-merge__role {
-  font-size: 12px;
+  font-size: var(--text-note);
   font-weight: 700;
   color: var(--color-text-muted, #475569);
   margin-block-end: 6px;
@@ -99,7 +99,8 @@
   padding: var(--space-3, 12px);
   background: var(--color-surface-muted, #f8fafc);
   line-height: 1.9;
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .pty-doc__shop {
   font-weight: 700;

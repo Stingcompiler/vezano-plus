@@ -3,8 +3,8 @@
   display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--text-badge);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
 .org-badge--active {
@@ -66,7 +66,8 @@
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
-  font-size: 12.5px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 @media (max-width: 833px) {
   .org-effects__row {
@@ -115,7 +116,7 @@
 }
 .org-receipt__legal {
   color: var(--color-ink-muted);
-  font-size: 13px;
+  font-size: 13px; /* ui-allow: معاينة الإيصال المطبوع بمقاسه الفيزيائي */
   margin-block-start: 4px;
 }
 .org-receipt__title h2 {
@@ -156,7 +157,7 @@
 .org-receipt__note {
   margin: 0;
   color: var(--color-ink-muted);
-  font-size: 13px;
+  font-size: 13px; /* ui-allow: معاينة الإيصال المطبوع بمقاسه الفيزيائي */
 }
 .org-receipt-link {
   color: var(--color-brand-primary);

@@ -82,7 +82,8 @@
 .pf__label {
   min-inline-size: 52px;
   color: rgb(255 255 255 / 0.5);
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .pf__contact a {
   /* لمس ≥ 44 (القاعدة) — البريد والهاتف روابط تُنقر على الهاتف */
@@ -134,7 +135,8 @@
   justify-content: space-between;
   gap: 8px 20px;
   border-block-start: 1px solid rgb(255 255 255 / 0.12);
-  font-size: 13px;
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: rgb(255 255 255 / 0.55);
 }
 /* الحقوق و«مدعوم من» (0005 §١٤٥): سطر واحد على العريضة، والثاني تحت الأول على الجوال */

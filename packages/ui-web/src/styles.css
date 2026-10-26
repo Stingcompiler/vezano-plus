@@ -179,6 +179,7 @@ h3 {
   padding: 8px var(--layout-pagePadding);
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   border-block-start: var(--border-default);
 }
 .c-frame {
@@ -385,6 +386,7 @@ h3 {
 }
 .c-nav__reason {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-nav__section {
@@ -392,7 +394,7 @@ h3 {
 }
 .c-nav__group {
   padding: 6px 12px 2px;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: var(--font-weight-bold);
   color: var(--color-ink-faint);
   letter-spacing: 0.02em;
@@ -569,6 +571,7 @@ h3 {
 .c-btn__reason {
   display: block;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   margin-block-start: 4px;
 }
@@ -602,7 +605,7 @@ h3 {
   background: var(--c-status-bg);
   color: var(--c-status-fg);
   font-size: var(--text-badge);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   line-height: 1.6;
   white-space: nowrap;
 }
@@ -658,6 +661,7 @@ h3 {
 .c-orgsw__branch {
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   margin-inline-start: 6px;
 }
 
@@ -1095,6 +1099,7 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
     content: attr(data-label);
     color: var(--color-ink-muted);
     font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
     flex: 0 0 auto;
     max-inline-size: 40%;
   }
@@ -1127,6 +1132,7 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
   content: attr(data-label);
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   flex: 0 0 auto;
   max-inline-size: 40%;
 }
@@ -1160,6 +1166,7 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
 .c-filter__chip {
   font: inherit;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1178,6 +1185,7 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
   margin: 0;
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .c-filter__pagination {
   display: flex;
@@ -1261,6 +1269,7 @@ div.c-timelist__open {
   flex: none;
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .c-timelist__title {
   margin: 0;
@@ -1270,6 +1279,7 @@ div.c-timelist__open {
   margin: 0;
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .c-timelist__detail {
   font-size: var(--text-body);
@@ -1378,6 +1388,7 @@ div.c-timelist__open {
 .c-money__currency,
 .c-money__side {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-money-input__row {
@@ -1462,6 +1473,7 @@ div.c-sync__button {
 .c-sync__coverage,
 .c-sync__pending {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-sync__conflicts {
@@ -1493,6 +1505,7 @@ div.c-sync__button {
 .c-sync__item-at {
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 
 /* ---------- C-LEDLINE ---------- */
@@ -1510,6 +1523,7 @@ div.c-sync__button {
 .c-ledline thead th {
   background: var(--color-surface-sunken);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-ledline tfoot th,
@@ -1544,6 +1558,7 @@ div.c-sync__button {
     content: attr(data-label);
     color: var(--color-ink-muted);
     font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
   }
 }
 
@@ -1586,6 +1601,7 @@ div.c-sync__button {
 }
 .c-cart__qty {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-cart__total {
@@ -1622,6 +1638,7 @@ div.c-sync__button {
 }
 .c-cart__undo {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 
@@ -1646,6 +1663,7 @@ div.c-sync__button {
 }
 .c-recv__cell dt {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-recv__cell dd {
@@ -1677,7 +1695,7 @@ div.c-sync__button {
   color: #000;
   padding: 12px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 13px; /* ui-allow: إيصال حراري مطبوع بمقاسه الفيزيائي (58مم) لا نص شاشة */
   line-height: 1.6;
   border: 1px dashed var(--color-border);
 }
@@ -1731,13 +1749,14 @@ div.c-sync__button {
 .c-print__foot {
   text-align: center;
   margin-block-start: 8px;
-  font-size: 12px;
+  font-size: 12px; /* ui-allow: تذييل الإيصال الحراري المطبوع بمقاسه الفيزيائي */
 }
 
 /* ---------- C-PHASE ---------- */
 .c-phase {
   font: inherit;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1808,7 +1827,7 @@ div.c-sync__button {
   gap: 4px;
 }
 .c-listing__sponsored {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: var(--font-weight-semibold);
   color: var(--color-warn);
 }
@@ -1829,6 +1848,7 @@ div.c-sync__button {
   margin-inline-start: 8px;
   color: var(--color-ok);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .c-listing__price .sting-mono {
   font-weight: var(--font-weight-semibold);
@@ -1841,6 +1861,7 @@ div.c-sync__button {
   flex-wrap: wrap;
   gap: 4px 12px;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-listing__fees {
@@ -1849,6 +1870,7 @@ div.c-sync__button {
 .c-listing__fresh {
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1876,11 +1898,13 @@ div.c-sync__button {
   margin: 4px 0 0;
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .c-quote__terms {
   margin: 0;
   padding-inline-start: 20px;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 
@@ -1965,7 +1989,8 @@ div.c-sync__button {
 }
 .c-ordtl__at,
 .c-ordtl__detail {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 
@@ -2038,6 +2063,7 @@ div.c-sync__button {
 }
 .c-camp__delivery dt {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .c-camp__delivery dd {

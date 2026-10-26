@@ -12,7 +12,8 @@
 }
 .shift-prev__k,
 .shift-facts__k {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .shift-prev__v {
@@ -57,6 +58,7 @@
 }
 .shift-head__sub {
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .shift-expected {
@@ -67,7 +69,8 @@
   min-inline-size: min(100%, 220px);
 }
 .shift-expected__k {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-state-stale-fg);
 }
 .shift-expected__v {
@@ -76,7 +79,8 @@
   color: var(--color-ink-strong);
 }
 .shift-expected__note {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .shift-totals {
@@ -95,7 +99,8 @@
   border-color: var(--color-state-success-border);
 }
 .shift-total__k {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .shift-total__v {
@@ -145,7 +150,8 @@
 .shift-denoms__total {
   display: flex;
   justify-content: space-between;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .shift-denoms__total {

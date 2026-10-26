@@ -27,7 +27,8 @@
   display: block;
 }
 .acc-card__sub {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--acc-head-fg, var(--color-brand-primary));
 }
 .acc-card__title {
@@ -108,7 +109,8 @@
   color: var(--acc-item-fg, var(--color-ink-strong));
 }
 .acc-item__note {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
   line-height: 1.65;
   margin-block-start: 3px;
@@ -227,7 +229,7 @@ button.acc-choice:focus-visible {
 }
 .acc-tag {
   font-size: var(--text-badgeMin);
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   border-radius: var(--radius-badge);
   padding: 3px 8px;
   white-space: nowrap;
@@ -308,12 +310,13 @@ button.acc-choice:focus-visible {
   border-block-end: 0;
 }
 .acc-facts dt {
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .acc-facts dd {
   margin: 0;
-  font-size: var(--text-badge);
+  font-size: var(--text-note);
   font-weight: 600;
 }
 .acc-item--ok {
@@ -469,7 +472,7 @@ a.c-btn {
   }
   .auth-aside__brand small {
     font-family: var(--font-ui);
-    font-weight: var(--font-weight-regular);
+    font-weight: var(--font-weight-medium);
     font-size: var(--text-note);
     opacity: 0.75;
   }
@@ -524,6 +527,7 @@ a.c-btn {
     flex-wrap: wrap;
     gap: 6px 18px;
     font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
   }
   .auth-aside__links a {
     position: relative;
@@ -540,7 +544,7 @@ a.c-btn {
   }
   .auth-aside__links a::after {
     content: "←";
-    font-size: 12px;
+    font-size: 12px; /* ui-allow: سهم زخرفي لا نص */
     opacity: 0.7;
   }
   .auth-aside__links a:hover,
@@ -586,6 +590,7 @@ a.c-btn {
   border: 1px solid var(--color-border);
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .auth-chips li > span {
   color: var(--color-brand-primary);
@@ -594,6 +599,7 @@ a.c-btn {
 .auth-extras__help {
   color: var(--color-ink-muted);
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   text-decoration: underline;
   text-underline-offset: 3px;
   min-block-size: var(--layout-touchTarget);
@@ -645,6 +651,7 @@ a.c-btn {
     border-radius: 999px;
     color: var(--color-ink-muted);
     font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
     min-block-size: 36px;
   }
   .auth-steps li[aria-current="step"] {
@@ -660,7 +667,8 @@ a.c-btn {
     place-items: center;
     background: var(--color-surface-sunken);
     border: 1px solid var(--color-border);
-    font-size: 12px;
+    font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
   }
   .auth-steps li[aria-current="step"] .auth-steps__num,
   .auth-steps li[data-done] .auth-steps__num {
@@ -694,11 +702,13 @@ a.c-btn {
   min-block-size: var(--layout-touchTarget);
   padding-inline: 4px;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
 }
 .acc-signup {
   margin: 0;
   text-align: center;
   font-size: var(--text-note);
+  font-weight: var(--font-weight-medium);
   color: var(--color-ink-muted);
 }
 .acc-signup a {
@@ -807,6 +817,7 @@ a.c-btn {
   .auth-topbar__cta {
     color: var(--color-ink-muted);
     font-size: var(--text-note);
+    font-weight: var(--font-weight-medium);
   }
   .auth-topbar__cta a {
     display: inline-flex;
