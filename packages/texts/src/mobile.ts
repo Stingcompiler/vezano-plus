@@ -1,0 +1,153 @@
+/**
+ * نصوص الجوال وحده — لا مقابل لها في الويب (تبويب «المزيد»، شاشة «لم تُبنَ بعد»، وشاشات NAT
+ * الأصلية لاحقاً). قليلة عمداً، وكل نص هنا قرار مكتوب في 0005 §١٦٦. ما له مقابل في الويب يُؤخذ
+ * من `tx` لا من هنا.
+ */
+export const MOBILE_TEXTS = {
+  more: "المزيد",
+  notBuiltTitle: "لم تُبنَ هذه الشاشة على الجوال بعد",
+  notBuiltBody: "افتحها على الويب — الحساب نفسه والبيانات نفسها.",
+  openWeb: "افتح على الويب",
+  // ضبط PIN بعد تجهيز الجهاز (0005 §١٧٣) — لا مقابل في الويب بعد: الويب لم يكن يضبط PIN إطلاقاً
+  pinSetTitle: "اختر رمز PIN",
+  pinSetBody:
+    "ستة أرقام تفتح التطبيق بعد الخمول وبلا شبكة. لا يُحفظ الرمز نصاً، ويصل إلى أجهزة فرعك.",
+  pinField: "الرمز",
+  pinConfirm: "تأكيد الرمز",
+  pinSave: "احفظ الرمز",
+  pinInvalid: "الرمز ستة أرقام.",
+  // نصّ إطار ACC-05 حُذف من الويب في مراجعة التصميم (#200) والجوال ما زال يحتاجه لحالة الرفض
+  deviceDenied: "صلاحية مرفوضة",
+  // صيغ عدّ الفروع كما في الويب (`lib/count.tsx`) — حُذف «فروع ·» من إطار HOME-01 (#201) فصارت للجوال
+  branchesOne: "فرع واحد",
+  branchesTwo: "فرعان",
+  branchesFew: "فروع",
+  branchesMany: "فرعاً",
+  // NAT-04 — التحديث والنسخة الاحتياطية والأسرار (شاشة أصلية بلا مقابل في الويب؛ 0005 §١٩٢)
+  deviceTitle: "الجهاز والنسخة",
+  deviceVersion: "إصدار التطبيق",
+  deviceBackupTitle: "نسخة احتياطية محلية",
+  deviceBackupBody: "تصدّر العمليات التي لم تُرفع بعد إلى ملف تحفظه أو ترسله. لا تحتاج اتصالاً.",
+  deviceBackupAction: "صدّر نسخة محلية",
+  deviceBackupDone: "عملية محفوظة محلياً",
+  deviceUpdateTitle: "التحديث",
+  deviceUpdateBlocked: "لا يُطبَّق تحديث قبل رفع العمليات المعلّقة — ارفعها أولاً.",
+  deviceUpdateOk: "لا شيء معلّق: التحديث آمن حين يصل.",
+  deviceSecretsTitle: "الأسرار على هذا الجهاز",
+  deviceSecretsBody:
+    "رمز تجديد الجهاز واعتماد التسجيل في المخزن الآمن للنظام لا في قاعدة البيانات.",
+  deviceSignOut: "اخرج وامحُ رمز الجهاز",
+  // NAT-01 — أذونات الكاميرا والباركود (شاشة أصلية؛ قرار المالك 2026-10-17)
+  scanTitle: "مسح باركود",
+  scanPermissionTitle: "الكاميرا مطلوبة لمسح الباركود",
+  scanPermissionBody:
+    "نستعمل الكاميرا لقراءة الباركود فقط، ولا نحفظ صوراً. البحث بالاسم يعمل بدونها.",
+  scanAllow: "اسمح بالكاميرا",
+  scanDeniedBody: "مُنع الإذن. فعّله من إعدادات الهاتف، أو ابحث بالاسم.",
+  scanOpenSettings: "افتح إعدادات الهاتف",
+  scanHint: "وجّه الكاميرا إلى الباركود",
+  scanClose: "إغلاق",
+  // NAT-02 — الطابعة (طباعة النظام الآن؛ طابعة البلوتوث الحرارية في مرحلة لاحقة)
+  printerTitle: "الطابعة",
+  printerSystem: "طباعة النظام",
+  printerSystemBody:
+    "الإيصال يُطبع عبر طابعات الهاتف (AirPrint أو خدمة الطباعة في أندرويد) أو يُحفظ PDF ويُشارك.",
+  printerTest: "اطبع إيصال تجربة",
+  printerBluetoothTitle: "طابعة بلوتوث حرارية",
+  printerBluetoothBody: "ربط الطابعات الحرارية بالبلوتوث لم يُفعَّل بعد في هذا الإصدار.",
+  discountClear: "إزالة الخصم",
+  pinMismatch: "الرمزان غير متطابقين.",
+  pinPasswordInvalid: "كلمة المرور غير صحيحة.",
+  pinLater: "لاحقاً — أدخل بكلمة المرور",
+  lockChecking: "جارٍ التحقق من الرمز",
+  // زرّ الرجوع في ترويسة العلامة — نصّ `Frame` في ui-web (`backLabel`) لا يمرّ بمستخرج النصوص
+  back: "عودة",
+  // نصوص شاشات M3–M6 الخاصة بالجوال (اختيار بورقة، مسح بالكاميرا، مشاركة أصلية، بلا اتصال) — نُقلت
+  // من ملفات الميزات إلى هنا ليشملها قرار «كل نص جوال مكتوب في مكان واحد» (0005 §١٩٩)
+  catShowMore: "عرض المزيد",
+  catPasteFirst: "الصق محتوى CSV أولاً",
+  catPasteLabel: "محتوى CSV",
+  catPasteHint: "الصق الأسطر هنا — سطر لكل صنف: الصنف، السعر.",
+  catGroupsOne: "مجموعة واحدة",
+  catGroupsTwo: "مجموعتان",
+  catGroupsFew: "مجموعات",
+  catGroupsMany: "مجموعة",
+  catItemsOne: "صنف واحد",
+  catItemsTwo: "صنفان",
+  catItemsFew: "أصناف",
+  catItemsMany: "صنفاً",
+  invPickItem: "اختر الصنف",
+  invSearchHint: "ابحث بالاسم أو الباركود",
+  invNoMatch: "لا صنف بهذا الباركود",
+  invScanItems: "امسح صنفاً بالكاميرا",
+  invNeedsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  mdShoot: "التقط صورة الدليل",
+  mdShootTitle: "صورة الدليل",
+  mdShutter: "التقاط",
+  mdRetake: "أزل الدليل",
+  mdAttached: "دليل مرفق",
+  mdCached: "القائمة من آخر جلب — التغيير يحتاج اتصالاً",
+  mdNeedsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  mdShare: "شارك الرابط من الهاتف",
+  mdRetry: "أعد المحاولة",
+  moCached: "من آخر جلب — التغيير يحتاج اتصالاً",
+  moNeedsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  moRetry: "أعد المحاولة",
+  moLoadFailed: "تعذّر الجلب الآن",
+  msCached: "من آخر جلب — التغيير يحتاج اتصالاً",
+  msNeedsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  msNoUpload:
+    "رفع الصور والمستندات من الهاتف غير متاح بعد — أرسل المستند من الويب ثم تابع التحقق من هنا",
+  msRetry: "أعد المحاولة",
+  msLoadFailed: "تعذّر الجلب",
+  msServerError: "تعذّر الجلب من الخادم",
+  msDenied: "هذه الشاشة ليست ضمن صلاحيتك",
+  msDateHint: "السنة-الشهر-اليوم، مثل 2026-12-31",
+  msPick: "اختر",
+  msChoose: "— اختر —",
+  msNoUnits: "اختر الصنف أولاً",
+  msOn: "مفعّل",
+  msOff: "غير مفعّل",
+  opsOfflineCached: "بلا اتصال — تُعرض آخر نسخة محفوظة على هذا الجهاز.",
+  opsOfflineNone: "بلا اتصال ولا نسخة محفوظة بعد — تُعرض عند عودة الشبكة.",
+  opsPasteFile: "الصق محتوى الملف",
+  opsPasteHint: "الجوال بلا مستعرض ملفات في هذه النسخة: افتح الملف وانسخ محتواه هنا.",
+  opsCryptoMissing: "تعذّر إنشاء النسخة المشفّرة على هذا الجهاز — لم يُكتب شيء.",
+  opsSharePrompt: "شارك الملف",
+  opsFileLabel: "اسم الملف",
+  opsPermTitle: "إشعارات الجهاز",
+  opsPermNotEnabled: "غير مفعّلة بعد",
+  opsPermBody:
+    "نطلب الإذن بعد أن نشرح السبب: تنبيهات الورديات والذمم والمزامنة وطلبات السوق تصلك على هذا الهاتف حتى والتطبيق مغلق.",
+  opsPermNote: "رفض الإذن لا يمنع شيئاً: الصندوق داخل التطبيق يعمل دائماً.",
+  opsPermBuild: "التسجيل مع الخادم يحتاج وحدة الإشعارات الأصلية — لم تُضمَّن في هذا الإصدار.",
+  opsPermOpenInbox: "صندوق الوارد",
+  opsPermSettings: "إعدادات الجهاز",
+  opsPermLinks: "الروابط العميقة تعمل الآن: vezanoplus://",
+  orgShareLink: "شارك الرابط",
+  orgPayTo: "حوّل إلى",
+  orgCopyAccount: "نسخ رقم الحساب",
+  orgCoversUntil: "يغطي حتى",
+  orgNoImagePicker:
+    "رفع الصورة من الجوال غير متاح بعد — يكفي رقم العملية للمراجعة، وأضف الصورة من الويب.",
+  orgExportFailed: "تعذّر التصدير",
+  ptyWhatsapp: "واتساب",
+  purNeedsServer: "هذا الإجراء يُسجَّل على الخادم مباشرة — جرّب عند عودة الاتصال",
+  purSearchHint: "ابحث بالاسم",
+  purStale: "آخر بيانات محفوظة على هذا الهاتف — تُحدَّث عند عودة الاتصال",
+  purOfflineEmpty: "لا اتصال ولا بيانات محفوظة بعد",
+  repDevicesOne: "جهاز واحد",
+  repDevicesTwo: "جهازان",
+  repDevicesFew: "أجهزة",
+  repDevicesMany: "جهازاً",
+  repMissingOperationsOne: "عملية واحدة",
+  repMissingOperationsTwo: "عمليتين",
+  repMissingOperationsFew: "عمليات",
+  repMissingOperationsMany: "عملية",
+} as const;
+
+export type MobileTextKey = keyof typeof MOBILE_TEXTS;
+
+export function mtx(key: MobileTextKey): string {
+  return MOBILE_TEXTS[key];
+}

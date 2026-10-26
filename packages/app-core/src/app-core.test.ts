@@ -98,6 +98,73 @@ describe("عميل الـAPI", () => {
     await api.GET("/api/org/audit", { params: { query: {} } });
     expect(paths).toEqual(["/api/org/audit"]);
   });
+
+  // Expo SDK 58 يستبدل fetch العام بـ expo/fetch، وردّه ليس من صنف Response العام؛ openapi-fetch يرمي
+  // «onResponse: must return new Response()» إن أعاد الوسيط ردّاً من صنف آخر (ظهر «بلا اتصال» في APK).
+  it("ردّ fetch من صنف آخر غير Response لا يرمي (expo/fetch)", async () => {
+    class ForeignResponse {
+      constructor(private readonly r: Response) {}
+      get ok() {
+        return this.r.ok;
+      }
+      get status() {
+        return this.r.status;
+      }
+      get statusText() {
+        return this.r.statusText;
+      }
+      get headers() {
+        return this.r.headers;
+      }
+      get body() {
+        return this.r.body;
+      }
+      get url() {
+        return this.r.url;
+      }
+      json() {
+        return this.r.json();
+      }
+      text() {
+        return this.r.text();
+      }
+      arrayBuffer() {
+        return this.r.arrayBuffer();
+      }
+      clone() {
+        return new ForeignResponse(this.r.clone());
+      }
+    }
+    let token = "old";
+    const foreignFetch = ((input: Request) => {
+      const ok = input.headers.get("Authorization") === "Bearer new";
+      return Promise.resolve(
+        new ForeignResponse(
+          new Response(JSON.stringify({ ok: true, name: "بحري — المزاد" }), {
+            status: input.url.endsWith("/api/health") || ok ? 200 : 401,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      );
+    }) as unknown as typeof fetch;
+    const api = createApiClient({
+      baseUrl: "http://x",
+      getAccessToken: () => token,
+      resume: () => {
+        token = "new";
+        return Promise.resolve({ access: "new" });
+      },
+      fetch: foreignFetch,
+    });
+    const health = await api.GET("/api/health");
+    expect(health.response.status).toBe(200);
+    expect(health.data).toEqual({ ok: true, name: "بحري — المزاد" });
+    // الاستئناف بعد 401 يعيد ردّاً من الصنف الآخر أيضاً
+    const r2 = await api.GET("/api/org/audit", { params: { query: {} } });
+    expect(r2.response.status).toBe(200);
+    // العربي يبقى سليماً في ردّ الإعادة (لا «Ø¨Ø­Ø±ÙŠ»)
+    expect(r2.data).toEqual({ ok: true, name: "بحري — المزاد" });
+  });
 });
 
 describe("رموز الأخطاء المولّدة", () => {

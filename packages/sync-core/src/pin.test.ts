@@ -1,7 +1,16 @@
 import { MemoryStorage } from "@sting/platform/memory";
 import { describe, expect, it } from "vitest";
 
-import { attemptUnlock, PIN_LOCK_POLICY, readPinLock, storeVerifiers, verifyPin } from "./pin";
+import { pbkdf2Sync } from "node:crypto";
+
+import {
+  attemptUnlock,
+  type Pbkdf2Sha256,
+  PIN_LOCK_POLICY,
+  readPinLock,
+  storeVerifiers,
+  verifyPin,
+} from "./pin";
 
 // مشتق بالخادم فعلاً (hashlib.pbkdf2_hmac، ملح أصفار، ١٠٠٠ دورة) — متجه عبر اللغتين
 const SERVER_ENCODED =
@@ -81,5 +90,38 @@ describe("PIN محلي (§٩.١، 28-D21 ACC-07)", () => {
   it("بلا متحققات منزَّلة: لا فتح محلي (المستخدم الجديد لا يدخل جهازاً لم يستقبل تخويله)", async () => {
     const s = new MemoryStorage();
     expect((await attemptUnlock(s, "123456")).kind).toBe("no_verifiers");
+  });
+});
+
+describe("اشتقاق قابل للحقن (0005 §١٧٣ — الجوال بلا crypto.subtle)", () => {
+  // تنفيذ بديل (كما يحقنه الجوال) — يجب أن يطابق متجه الخادم نفسه
+  const calls: string[] = [];
+  const nodeKdf: Pbkdf2Sha256 = (password, salt, iterations, length) => {
+    calls.push(new TextDecoder().decode(password));
+    return Promise.resolve(
+      new Uint8Array(
+        pbkdf2Sync(Buffer.from(password), Buffer.from(salt), iterations, length, "sha256"),
+      ),
+    );
+  };
+
+  it("المشتق المحقون يتحقق من متجه الخادم كـWebCrypto", async () => {
+    expect(await verifyPin("123456", SERVER_ENCODED, nodeKdf)).toBe(true);
+    expect(await verifyPin("123457", SERVER_ENCODED, nodeKdf)).toBe(false);
+  });
+
+  it("يُجرَّب متحقق المستخدم المفضَّل أولاً — اشتقاق واحد لا اثنان", async () => {
+    const storage = new MemoryStorage();
+    const d = await device();
+    const other = { ...d.verifiers[0]!, user_id: "u2", display_name: "آخر" };
+    await storeVerifiers(storage, { ...d, verifiers: [other, d.verifiers[0]!] });
+    calls.length = 0;
+    const r = await attemptUnlock(storage, "123456", undefined, {
+      kdf: nodeKdf,
+      preferUserId: "u1",
+    });
+    expect(r.kind).toBe("unlocked");
+    expect(r.kind === "unlocked" && r.user.user_id).toBe("u1");
+    expect(calls).toHaveLength(1);
   });
 });
