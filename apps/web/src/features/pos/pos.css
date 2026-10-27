@@ -474,13 +474,15 @@
 .pos-act--bad .pos-act__v {
   color: var(--color-state-server_error-fg);
 }
+/* في صفحات نقطة البيع وحدها (`.pos`): هذا الملف يُحمَّل في صفحات أخرى ويبقى بعد التنقّل، وكان يُخفي
+   الإشعارات ورأس الكتالوج من طباعتها. */
 @media print {
-  .c-nav,
-  .cat-form__actions,
-  .c-sync,
-  .pos-chips,
-  .cat-head,
-  .c-notice {
+  body:has(.pos) .c-nav,
+  body:has(.pos) .cat-form__actions,
+  body:has(.pos) .c-sync,
+  body:has(.pos) .pos-chips,
+  body:has(.pos) .cat-head,
+  body:has(.pos) .c-notice {
     display: none;
   }
 }

@@ -563,6 +563,21 @@ function movementsRoute(
 
 const MOV = "/inventory/items/i1?branch=b1&range=30";
 
+// الطباعة: قاعدة طباعة كشف الحساب في parties.css (تُخفي كل شيء إلا `.pty-doc`) كانت عامة، وparties.css
+// يُحمَّل في صفحات كثيرة ويبقى بعد التنقّل في App Router — فطباعة المخزون أو إقفال الوردية تخرج صفحة بيضاء.
+test("الطباعة: صفحة المخزون تُطبع بمحتواها لا صفحة فارغة", async ({ page }) => {
+  await seed(page);
+  await balancesRoute(page, { b1: {}, b2: { body: balances({ branch_id: "b2", rows: [] }) } });
+  await login(page, "/inventory");
+  await expect(page.getByText("شاي أسود 250غ").first()).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  const visibility = await page
+    .getByText("شاي أسود 250غ")
+    .first()
+    .evaluate((el) => getComputedStyle(el).visibility);
+  expect(visibility).toBe("visible");
+});
+
 test.describe("INV-02", () => {
   test("ready: كل حركة لها مصدر ومستند ورصيد بعدها؛ آخر تحديث خادمي بوقته", async ({
     page,

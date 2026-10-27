@@ -126,8 +126,10 @@
   padding-block-start: 7px;
   font-weight: 600;
 }
+/* الطباعة تخصّ كشف الحساب وحده: `:has(.pty-doc)` — هذا الملف يُحمَّل في صفحات كثيرة ويبقى بعد التنقّل،
+   وكانت القاعدة العامة تُخفي كل شيء فتخرج طباعة المخزون وإقفال الوردية صفحة بيضاء. */
 @media print {
-  body * {
+  body:has(.pty-doc) * {
     visibility: hidden;
   }
   .pty-doc,
