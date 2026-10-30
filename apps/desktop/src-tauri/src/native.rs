@@ -29,13 +29,19 @@ pub fn list_printers() -> Result<Vec<Printer>, String> {
             .lines()
             .filter_map(|l| {
                 let (name, def) = l.trim().rsplit_once('|')?;
-                Some(Printer { name: name.to_string(), default: def.eq_ignore_ascii_case("true") })
+                Some(Printer {
+                    name: name.to_string(),
+                    default: def.eq_ignore_ascii_case("true"),
+                })
             })
             .collect());
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let names = Command::new("lpstat").arg("-e").output().map_err(|e| e.to_string())?;
+        let names = Command::new("lpstat")
+            .arg("-e")
+            .output()
+            .map_err(|e| e.to_string())?;
         let default = Command::new("lpstat").arg("-d").output().ok();
         let default_name = default
             .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
@@ -45,7 +51,10 @@ pub fn list_printers() -> Result<Vec<Printer>, String> {
             .lines()
             .map(str::trim)
             .filter(|l| !l.is_empty())
-            .map(|n| Printer { name: n.to_string(), default: n == default_name })
+            .map(|n| Printer {
+                name: n.to_string(),
+                default: n == default_name,
+            })
             .collect())
     }
 }
@@ -65,11 +74,19 @@ pub fn save_bytes(path: String, bytes: Vec<u8>) -> SaveResult {
         Ok(()) => SaveResult::Saved { path },
         Err(e) => match e.kind() {
             ErrorKind::PermissionDenied | ErrorKind::ReadOnlyFilesystem => {
-                SaveResult::NotWritable { reason: "permission".into() }
+                SaveResult::NotWritable {
+                    reason: "permission".into(),
+                }
             }
-            ErrorKind::NotFound => SaveResult::NotWritable { reason: "missing".into() },
-            ErrorKind::StorageFull => SaveResult::Failed { reason: "full".into() },
-            _ => SaveResult::Failed { reason: e.to_string() },
+            ErrorKind::NotFound => SaveResult::NotWritable {
+                reason: "missing".into(),
+            },
+            ErrorKind::StorageFull => SaveResult::Failed {
+                reason: "full".into(),
+            },
+            _ => SaveResult::Failed {
+                reason: e.to_string(),
+            },
         },
     }
 }

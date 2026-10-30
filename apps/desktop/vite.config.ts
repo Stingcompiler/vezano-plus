@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
         { find: /^@\/lib\/session-store$/, replacement: platform("session-store.ts") },
         { find: /^@\/lib\/pwa$/, replacement: platform("pwa.ts") },
         { find: /^@\/lib\/nav-extras$/, replacement: platform("nav-extras.ts") },
+        { find: /^@\/lib\/print\/printers$/, replacement: platform("printers.ts") },
         { find: /^@\//, replacement: `${web}/src/` },
         { find: /^next\/navigation$/, replacement: shim("navigation.ts") },
         { find: /^next\/link$/, replacement: shim("link.tsx") },

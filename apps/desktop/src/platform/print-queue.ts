@@ -14,6 +14,9 @@ export interface PrintJob {
   readonly at: string;
   readonly state: "waiting" | "failed";
   readonly effect: string;
+  /** البتّات المرسلة (base64) والوجهة — لإعادة الطباعة نفسها بلا إعادة بناء */
+  readonly bytes?: string;
+  readonly target?: import("./native").PrintTarget;
 }
 
 const KEY = "desktop.print_queue";
@@ -33,6 +36,21 @@ export async function listQueue(): Promise<PrintJob[]> {
     return [];
   }
 }
+
+export async function saveQueue(jobs: PrintJob[]): Promise<void> {
+  if (window.__stingDeskQueue) {
+    window.__stingDeskQueue = jobs;
+    return;
+  }
+  await getStorage().transaction((tx) => tx.putMeta(KEY, JSON.stringify(jobs)));
+}
+
+export async function addJob(job: PrintJob): Promise<void> {
+  await saveQueue([...(await listQueue()), job]);
+}
+
+export const toBase64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
+export const fromBase64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
 export async function clearQueue(): Promise<void> {
   if (window.__stingDeskQueue) {

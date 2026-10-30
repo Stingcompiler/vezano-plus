@@ -41,7 +41,11 @@ export interface DesktopNative {
   requestNotify(): Promise<NotifyPermission>;
   notify(title: string, body: string): Promise<void>;
   checkUpdate(): Promise<UpdateCheck>;
+  /** ESC/POS خام إلى طابعة النظام باسمها، أو إلى عنوان شبكي (IP[:منفذ]) */
+  printRaw(target: PrintTarget, bytes: Uint8Array): Promise<void>;
 }
+
+export type PrintTarget = { readonly printer: string } | { readonly address: string };
 
 export const APP_VERSION: string = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 
@@ -63,6 +67,10 @@ const tauriNative: DesktopNative = {
   },
   // المحدِّث الموقَّع يصل في ط٦ (مفتاح التوقيع ومصدر الإصدارات) — حتى ذلك لا تحديث يُعلَن
   checkUpdate: () => Promise.resolve({ status: "none", current: APP_VERSION }),
+  printRaw: (target, bytes) =>
+    "printer" in target
+      ? invoke<void>("print_raw", { printer: target.printer, bytes: Array.from(bytes) })
+      : invoke<void>("print_network", { address: target.address, bytes: Array.from(bytes) }),
 };
 
 /** ما تضبطه المواصفة؛ القيم الافتراضية = جهاز سويّ. */
@@ -75,6 +83,9 @@ export interface DeskFake {
   updateDelayMs?: number;
   notified?: { title: string; body: string }[];
   revealed?: string[];
+  /** ما أُرسل للطابعة، ونتيجة الإرسال التالي (false = فشل) */
+  printed?: { target: PrintTarget; size: number }[];
+  printOk?: boolean[];
   /** يفعّل اعتراض التنزيل (DESK-04) في المتصفح */
   downloads?: boolean;
 }
@@ -107,6 +118,11 @@ const browserNative: DesktopNative = {
   notify(title, body) {
     (fake().notified ??= []).push({ title, body });
     return Promise.resolve();
+  },
+  printRaw(target, bytes) {
+    (fake().printed ??= []).push({ target, size: bytes.length });
+    const ok = fake().printOk?.shift() ?? true;
+    return ok ? Promise.resolve() : Promise.reject(new Error("printer_offline"));
   },
   checkUpdate: () =>
     new Promise((res) =>

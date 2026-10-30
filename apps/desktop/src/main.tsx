@@ -14,6 +14,8 @@ import * as NotFound from "@/app/not-found";
 import { PageHost } from "./page-host";
 import { DesktopRoot } from "./platform/desktop-root";
 import { FileSaveHost, installDownloads } from "./platform/file-save";
+import { MenuEvents } from "./platform/menu-events";
+import { ShortcutRunner } from "./platform/shortcut-runner";
 import { DeskNotifications, CloseGuard } from "./screens/desk-notifications";
 import { DeskPrinters } from "./screens/desk-printers";
 import { DeskSetup } from "./screens/desk-setup";
@@ -38,6 +40,8 @@ function Root() {
       <ScrollTop />
       <CloseGuard />
       <FileSaveHost />
+      <ShortcutRunner />
+      <MenuEvents />
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>

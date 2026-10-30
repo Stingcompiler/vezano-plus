@@ -15,11 +15,13 @@ import { AppNav } from "@/features/home/app-nav";
 import { native, type Printer } from "../platform/native";
 import {
   clearQueue,
+  fromBase64,
   listQueue,
   loadChoice,
   type PrintJob,
   type PrinterChoice,
   saveChoice,
+  saveQueue,
 } from "../platform/print-queue";
 import "./desk.css";
 
@@ -65,6 +67,25 @@ export function DeskPrinters() {
     const next = { ...choice, ...patch };
     setChoice(next);
     void saveChoice(next);
+  };
+
+  /** يعيد إرسال البتّات نفسها لكل مهمة — نسخة موسومة لا بيع جديد؛ ما نجح يخرج من الطابور */
+  const retryQueue = async () => {
+    const left: PrintJob[] = [];
+    for (const j of queue) {
+      if (!j.bytes || !j.target) {
+        left.push(j);
+        continue;
+      }
+      try {
+        await native.printRaw(j.target, fromBase64(j.bytes));
+      } catch {
+        left.push({ ...j, state: "failed" });
+      }
+    }
+    await saveQueue(left);
+    setQueue(left);
+    if (left.length === 0) setPrinted(true);
   };
 
   const testPrint = () => {
@@ -126,7 +147,7 @@ export function DeskPrinters() {
               ومعها ختم وقتها ومَن طلبها، حتى لا تُقدَّم ورقتان كبيعين لنفس الزبون.
             </Notice>
             <div className="desk__actions">
-              <Button variant="primary" onClick={testPrint}>
+              <Button variant="primary" onClick={() => void retryQueue()}>
                 إعادة طباعة المهام الثلاث
               </Button>
               <Button
