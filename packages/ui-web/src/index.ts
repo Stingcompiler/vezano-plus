@@ -46,11 +46,12 @@ export type { SyncIndicatorProps, SyncQueueProps, QueueItem, SyncState } from ".
 export { LedgerLines, type LedgerEntryRow, type LedgerLinesProps } from "./components/LedgerLine";
 export { Cart, type CartLine, type CartProps } from "./components/Cart";
 export { ReceiveLine, type ReceiveLineProps } from "./components/Receive";
-export { Receipt, PrintControls } from "./components/Print";
+export { Receipt, PrintControls, PrintDoc, printDocument } from "./components/Print";
 export type {
   ReceiptProps,
   ReceiptLine,
   PrintControlsProps,
+  PrintDocProps,
   PrintOutcome,
 } from "./components/Print";
 export {

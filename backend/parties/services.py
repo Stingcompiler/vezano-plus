@@ -1024,7 +1024,9 @@ th,td{{padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:start}}
 .total{{display:flex;justify-content:space-between;border-top:1px solid #cbd5e1;
   margin-top:10px;padding-top:8px;font-weight:600}}
 .note{{color:#475569;font-size:12px}}
-@page{{size:A4;margin:16mm}}
+/* هامش الصفحة صفر: لا مكان يكتب فيه المتصفح رابط الملف وعنوانه وتاريخه (0005 §٢٠٥) */
+@page{{size:A4;margin:0}}
+@media print{{body{{margin:16mm}}}}
 </style></head><body>
 <h1>{esc(str(snap.get("tenant_name", "")))}</h1>
 <p class=sub>كشف حساب: {esc(str(snap.get("party_name", "")))} · حتى {_day_month(as_of.date())}
