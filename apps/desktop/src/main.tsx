@@ -13,6 +13,11 @@ import * as NotFound from "@/app/not-found";
 
 import { PageHost } from "./page-host";
 import { DesktopRoot } from "./platform/desktop-root";
+import { FileSaveHost, installDownloads } from "./platform/file-save";
+import { DeskNotifications, CloseGuard } from "./screens/desk-notifications";
+import { DeskPrinters } from "./screens/desk-printers";
+import { DeskSetup } from "./screens/desk-setup";
+import { DeskShortcuts } from "./screens/desk-shortcuts";
 import { installExternalLinks } from "./platform/external-links";
 import { detectOs, inTauri } from "./platform/tauri";
 import { ROUTES } from "./generated/routes";
@@ -31,6 +36,8 @@ function Root() {
   return (
     <Providers>
       <ScrollTop />
+      <CloseGuard />
+      <FileSaveHost />
       <Suspense fallback={null}>
         <Outlet />
       </Suspense>
@@ -46,6 +53,11 @@ const router = createBrowserRouter([
         path: r.path,
         element: r.path === "/" && inTauri ? <DesktopRoot /> : <PageHost mod={r.mod} />,
       })),
+      // شاشات الحاسوب وحده (DESK-01…05) — لا مقابل لها في الويب
+      { path: "/desktop/setup", element: <DeskSetup /> },
+      { path: "/desktop/printers", element: <DeskPrinters /> },
+      { path: "/desktop/shortcuts", element: <DeskShortcuts /> },
+      { path: "/desktop/notifications", element: <DeskNotifications /> },
       { path: "*", element: <PageHost mod={NotFound} /> },
     ],
   },
@@ -55,9 +67,11 @@ if (inTauri) {
   document.documentElement.dataset.os = detectOs(navigator.userAgent);
   installExternalLinks();
 }
+// اعتراض التنزيل (DESK-04): داخل Tauri دائماً؛ وفي التطوير متاح للمواصفات بطلبها (`__stingDesk.downloads`)
+if (inTauri || process.env.NODE_ENV !== "production") installDownloads();
 
 // خطاف Next في التطوير (`window.next.router`) تستعمله مواصفات الويب للتنقّل بلا إعادة تحميل — نفسه هنا
-if (import.meta.env.DEV) {
+if (process.env.NODE_ENV !== "production") {
   (window as unknown as { next: unknown }).next = {
     router: { push: (href: string) => void router.navigate(href) },
   };

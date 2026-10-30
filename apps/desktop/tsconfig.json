@@ -9,6 +9,7 @@
     "paths": {
       "@/lib/session-store": ["./src/platform/session-store.ts"],
       "@/lib/pwa": ["./src/platform/pwa.ts"],
+      "@/lib/nav-extras": ["./src/platform/nav-extras.ts"],
       "@/*": ["../web/src/*"],
       "next/navigation": ["./src/shims/navigation.ts"],
       "next/link": ["./src/shims/link.tsx"]

@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { LogoutButton } from "@/features/home/logout-button";
 import { NAV_ICONS } from "@/features/home/nav-icons";
 import { ThemeToggle } from "@/features/home/theme-toggle";
+import { adaptNavItems } from "@/lib/nav-extras";
 import "./home.css";
 
 /**
@@ -23,7 +24,9 @@ const LOOSE_ICONS: Readonly<Record<string, (typeof NAV_ICONS)[keyof typeof NAV_I
   home: NAV_ICONS.home,
   search: NAV_ICONS.search,
 };
-const ITEMS = NAV_ITEMS.map((i) => (LOOSE_ICONS[i.id] ? { ...i, icon: LOOSE_ICONS[i.id] } : i));
+const ITEMS = adaptNavItems(NAV_ITEMS).map((i) =>
+  LOOSE_ICONS[i.id] ? { ...i, icon: LOOSE_ICONS[i.id] } : i,
+);
 const G = NAV_GROUPS;
 const GROUP_ICONS = {
   [G.sell]: NAV_ICONS.sell,
