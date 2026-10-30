@@ -11,6 +11,9 @@ import {
   Status,
   Table,
   TextField,
+  PrintDoc,
+  printDocument,
+  Receipt,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -23,10 +26,12 @@ import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import "@/features/inventory/inventory.css";
 import { PosNav } from "@/features/pos/pos-nav";
-import { parseAmount } from "@/features/pos/use-sale";
+import { readHomeCache } from "@/features/home/home-cache";
+import { parseAmount, today } from "@/features/pos/use-sale";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
+import { docTitle } from "@/lib/print/doc-title";
 import { getStorage } from "@/lib/storage";
 
 import { parseQtyInput, type UnitOption, unitOptions } from "./units";
@@ -105,6 +110,10 @@ export function OpeningsClient() {
   const router = useRouter();
   const app = useApp();
   const [ctx, setCtx] = useState<ShiftContext | null>(null);
+  const [shop, setShop] = useState("");
+  useEffect(() => {
+    void readHomeCache().then((c) => setShop(c?.summary.tenant_name ?? ""));
+  }, []);
   const [items, setItems] = useState<LocalItem[]>([]);
   const [data, setData] = useState<OpeningsData | null>(null);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
@@ -415,11 +424,37 @@ export function OpeningsClient() {
                     <span className="shift-facts__v">{doc.approved_by_name || "—"}</span>
                   </div>
                 </div>
+                {/* «مستند واحد يجمعها قابل للطباعة»: الأصناف بكمياتها وكلفتها، لا رسائل الشاشة */}
+                <PrintDoc title={docTitle("افتتاحيات المخزون", null, shop)} screen="hidden">
+                  <Receipt
+                    width="a4"
+                    shopName={shop || "—"}
+                    title={`افتتاحيات المخزون${ctx?.branchName ? ` — ${ctx.branchName}` : ""}`}
+                    dateLabel={today()}
+                    lines={[
+                      ...doc.lines.map((l) => ({
+                        label: l.item_name,
+                        // الوحدة عربية فلا خط mono؛ الكلفة الفارغة لا تُطبع صفراً
+                        value: `${formatQty(l.qty_milli, 3).replace(/\.?0+$/, "")} ${l.unit_name}${
+                          l.unit_cost_minor ? ` × ${formatMinor(l.unit_cost_minor)}` : ""
+                        }`,
+                      })),
+                      { label: "عدد الأصناف", value: String(doc.line_count), mono: true },
+                      {
+                        label: "القيمة",
+                        value: formatMinor(doc.value_minor),
+                        mono: true,
+                        strong: true,
+                      },
+                    ]}
+                    footer={<span>المعتمد: {doc.approved_by_name || "—"}</span>}
+                  />
+                </PrintDoc>
                 <div className="cat-form__actions">
                   <Button pos onClick={() => router.push("/inventory")}>
                     أرصدة المخزون
                   </Button>
-                  <Button variant="secondary" onClick={() => window.print()}>
+                  <Button variant="secondary" onClick={() => printDocument()}>
                     طباعة
                   </Button>
                 </div>

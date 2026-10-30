@@ -20,6 +20,9 @@ import {
   RadioGroupField,
   SyncIndicator,
   TextField,
+  PrintDoc,
+  printDocument,
+  Receipt,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -31,11 +34,13 @@ import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { hhmm } from "@/features/home/format";
+import { readHomeCache } from "@/features/home/home-cache";
 import { PosNav } from "@/features/pos/pos-nav";
 import { parseAmount, today } from "@/features/pos/use-sale";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { docTitle } from "@/lib/print/doc-title";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
 
@@ -70,6 +75,10 @@ export function PaymentClient({ partyId }: { partyId: string }) {
   const [phase, setPhase] = useState<"idle" | "saving" | "saved">("idle");
   const [push, setPush] = useState<"none" | "synced" | "pending" | "failed">("none");
   const [saved, setSaved] = useState<LocalReceipt | null>(null);
+  const [shop, setShop] = useState("");
+  useEffect(() => {
+    void readHomeCache().then((c) => setShop(c?.summary.tenant_name ?? ""));
+  }, []);
   const ids = useRef<{ operationId: string; receiptId: string } | null>(null);
   const appRef = useRef(app);
   appRef.current = app;
@@ -443,8 +452,53 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                         : `${n} عمليات معلقة من هذا الجهاز`
                     }
                   />
+                  {/* الورقة سند وحده: الطرف والمبلغ والوسيلة والرصيد بعده — لا رسائل الشاشة */}
+                  <PrintDoc
+                    title={docTitle(
+                      saved.kind === "receipt" ? "سند قبض" : "سند صرف",
+                      saved.receipt_number,
+                      shop,
+                    )}
+                    screen="hidden"
+                  >
+                    <Receipt
+                      shopName={shop || "—"}
+                      title={saved.kind === "receipt" ? "سند قبض" : "سند صرف"}
+                      number={saved.receipt_number}
+                      dateLabel={`${saved.business_date} ${hhmm(saved.occurred_at)}`}
+                      lines={[
+                        {
+                          label: saved.kind === "receipt" ? "من" : "إلى",
+                          value: saved.party_name,
+                        },
+                        {
+                          label: "الوسيلة",
+                          value:
+                            saved.method === "cash" ? "نقداً" : "تحويل بنكي · مسجَّل — غير مطابق",
+                        },
+                        ...(saved.reference
+                          ? [{ label: "المرجع", value: saved.reference, mono: true }]
+                          : []),
+                        ...(saved.reason ? [{ label: "السبب", value: saved.reason }] : []),
+                        { label: "رصيد الطرف", value: formatMinor(after.toString()), mono: true },
+                        {
+                          label: "المبلغ",
+                          value: formatMinor(saved.amount_minor),
+                          mono: true,
+                          strong: true,
+                        },
+                      ]}
+                      footer={
+                        push === "synced" ? (
+                          <span>{saved.user_name}</span>
+                        ) : (
+                          <span>محفوظ على الجهاز · {saved.user_name}</span>
+                        )
+                      }
+                    />
+                  </PrintDoc>
                   <div className="cat-form__actions">
-                    <Button onClick={() => window.print()} pos>
+                    <Button onClick={() => printDocument()} pos>
                       اطبع
                     </Button>
                     <Button

@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.27 — PTY-08 (5). معاينة الحقول والجمهور قبل المشاركة؛ الطباعة للحاضر من الشاشة؛ الملف والرابط
@@ -264,6 +265,11 @@ test.describe("PTY-08", () => {
     await login(page, SHARE);
     await expect(page.locator('[data-screen="PTY-08"]')).toHaveAttribute("data-state", "ready");
     await expect(page.getByRole("button", { name: "طباعة" })).toBeEnabled();
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "طباعة" }).click(),
+      title: /^كشف حساب /,
+      contains: ["كشف حساب:"],
+    });
     await expect(page.getByRole("button", { name: "مشاركة رابط" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "تصدير PDF" })).toBeDisabled();
     await expect(page.getByLabel("تذكير الدين — يدوي، تراجعه وترسله بنفسك")).toHaveCount(0);

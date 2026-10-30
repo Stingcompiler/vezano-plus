@@ -16,6 +16,8 @@ import {
   SyncIndicator,
   Table,
   TextField,
+  PrintDoc,
+  printDocument,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -33,6 +35,7 @@ import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { docTitle } from "@/lib/print/doc-title";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
 
@@ -459,7 +462,10 @@ export function TransferNewClient({ viewId }: { viewId: string }) {
                     ) : null}
                   </Notice>
                 )}
-                <TransferCard t={saved} pending={push !== "synced"} />
+                {/* «يُطبع مع الشحنة»: الورقة مستند الخروج وحده */}
+                <PrintDoc title={docTitle("تحويل", saved.transfer_number)}>
+                  <TransferCard t={saved} pending={push !== "synced"} />
+                </PrintDoc>
                 <SyncIndicator
                   state={!online ? "offline" : push === "synced" ? "synced" : "pending_sync"}
                   lastServerAt={push === "synced" ? hhmm(new Date().toISOString()) : null}
@@ -469,7 +475,7 @@ export function TransferNewClient({ viewId }: { viewId: string }) {
                   }
                 />
                 <div className="cat-form__actions">
-                  <Button onClick={() => window.print()} pos>
+                  <Button onClick={() => printDocument()} pos>
                     اطبع
                   </Button>
                   <Button variant="secondary" onClick={() => router.push("/inventory/transfers")}>

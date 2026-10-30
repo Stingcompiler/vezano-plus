@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.42 — WEB-03 ربط طابعة ويب وتجربة عربية (4). القدرة تُفحص قبل الزر (R-09)؛ BLE فقط عبر
@@ -266,7 +267,12 @@ test.describe("WEB-03", () => {
     await page.evaluate(() => {
       window.print = () => undefined;
     });
-    await page.getByRole("button", { name: "تجربة نمط صورة" }).click();
+    // الورقة صفحة التجربة وحدها — لا قائمة الطابعات ولا أسئلة التحقق
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "تجربة نمط صورة" }).click(),
+      title: /^صفحة تجربة الطابعة/,
+      contains: ["بقالة النيل — تجريبي", "شكراً لتعاملكم معنا"],
+    });
     await expect(root).toHaveAttribute("data-state", "success");
     await expect(page.locator("#web03-print-area")).toHaveAttribute("data-mode", "image");
     await page.getByRole("button", { name: "تجربتك: فشلت" }).click();

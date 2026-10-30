@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.25 — PTY-06 (6). سداد نقدي 40 على ذمّة 180: الرصيد المركّب 140 فوراً (لقطة + سداد محلي —
@@ -269,6 +270,12 @@ test.describe("PTY-06", () => {
     });
     await expect(root).toContainText("REC-KRT-A2-26-000001");
     await expect(root).toContainText("140.00");
+    // «اطبع» يطبع السند وحده باسمه
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "اطبع" }).click(),
+      title: /^سند قبض REC-KRT-A2-26-000001/,
+      contains: ["سند قبض", "أحمد الطيب", "نقداً", "40.00", "140.00"],
+    });
     const rec = pushed.find((o) => o.kind === "payment_receipt")!;
     expect(rec.members[0]!.payload).toMatchObject({
       kind: "receipt",

@@ -22,7 +22,8 @@ export interface ReceiptLine {
 export interface ReceiptProps {
   readonly shopName: string;
   readonly title: string;
-  readonly number: string;
+  /** رقم المستند — مستند بلا رقم (افتتاحيات) يُطبع بعنوانه وحده. */
+  readonly number?: string | undefined;
   readonly dateLabel: string;
   readonly lines: readonly ReceiptLine[];
   readonly footer?: ReactNode;
@@ -44,13 +45,19 @@ export function Receipt({
   return (
     <article
       className={`c-print__receipt c-print__receipt--${width}`}
-      aria-label={`${title} ${number}${copy ? " نسخة" : ""}`}
+      aria-label={`${title}${number ? ` ${number}` : ""}${copy ? " نسخة" : ""}`}
     >
       <header className="c-print__head">
         <p className="c-print__shop">{shopName}</p>
         {copy ? <p className="c-print__copy">نسخة</p> : null}
         <p>
-          {title} <span className="sting-mono">#{number}</span>
+          {title}
+          {number ? (
+            <>
+              {" "}
+              <span className="sting-mono">#{number}</span>
+            </>
+          ) : null}
         </p>
         <p className="sting-mono">{dateLabel}</p>
       </header>
@@ -65,6 +72,42 @@ export function Receipt({
       {footer ? <footer className="c-print__foot">{footer}</footer> : null}
     </article>
   );
+}
+
+export interface PrintDocProps {
+  /** اسم المستند في حوار الطباعة واسم ملف PDF (مثل «فاتورة 1042 — متجر النور») بدل عنوان الصفحة. */
+  readonly title: string;
+  /** «hidden»: لا يُرسم على الشاشة ويظهر في الورقة وحدها (شاشة نتيجة بلا معاينة). */
+  readonly screen?: "shown" | "hidden";
+  readonly children: ReactNode;
+}
+
+/**
+ * C-PRINT-DOC — ما يُطبع من الشاشة، ولا شيء سواه: الترويسة والقائمة والإشعارات والأزرار تسقط من
+ * الورقة، وهوامش الصفحة صفر فلا يكتب المتصفح فوقها عنوان الصفحة ورابطها (localhost…) وتاريخها.
+ * مستند واحد في الشاشة؛ يُطبع بـ`printDocument()` لا بـ`window.print()` مباشرة.
+ */
+export function PrintDoc({ title, screen = "shown", children }: PrintDocProps) {
+  return (
+    <div className="c-print-doc" data-print-title={title} data-screen-view={screen}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * يطبع مستند الشاشة (`PrintDoc`) باسمه: عنوان الصفحة يصير اسم المستند حتى ينغلق الحوار، فيحمل ملف
+ * PDF اسم الفاتورة لا «فيزانو بلص». يُستعاد العنوان عند `afterprint` وحده، لأن `print()` لا يحجب
+ * في كل المتصفحات.
+ */
+export function printDocument(): void {
+  const title = document.querySelector<HTMLElement>(".c-print-doc")?.dataset.printTitle;
+  if (title) {
+    const before = document.title;
+    document.title = title;
+    window.addEventListener("afterprint", () => (document.title = before), { once: true });
+  }
+  window.print();
 }
 
 export interface PrintControlsProps {

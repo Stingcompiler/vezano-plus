@@ -11,7 +11,17 @@ import {
   readReturnCashRows,
   readSaleCashRows,
 } from "@sting/sync-core";
-import { Button, formatMinor, Frame, Notice, SyncIndicator, TextField } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  Frame,
+  Notice,
+  SyncIndicator,
+  TextField,
+  PrintDoc,
+  printDocument,
+  Receipt,
+} from "@sting/ui-web";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,8 +32,10 @@ import "@/features/catalog/catalog.css";
 import "@/features/shifts/shifts.css";
 import { AppNav } from "@/features/home/app-nav";
 import { hhmm } from "@/features/home/format";
+import { readHomeCache } from "@/features/home/home-cache";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { docTitle } from "@/lib/print/doc-title";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
 
@@ -68,6 +80,10 @@ export function CloseShiftClient() {
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [emptyFaces, setEmptyFaces] = useState<readonly string[]>([]);
   const [closed, setClosed] = useState<ClosedShift | null>(null);
+  const [shop, setShop] = useState("");
+  useEffect(() => {
+    void readHomeCache().then((c) => setShop(c?.summary.tenant_name ?? ""));
+  }, []);
   const [synced, setSynced] = useState(false);
   const [pendingCard, setPendingCard] = useState<PendingCard | null>(null);
   const [busy, setBusy] = useState(false);
@@ -364,8 +380,51 @@ export function CloseShiftClient() {
                   pendingCount={synced ? 0 : 1}
                   pendingLabel={(n) => (n === 1 ? "عملية واحدة معلّقة" : `${n} عمليات معلّقة`)}
                 />
+                {/* الورقة شهادة العدّ وحدها (§٢٠٥) */}
+                <PrintDoc title={docTitle("شهادة العدّ", closed.number, shop)} screen="hidden">
+                  <Receipt
+                    shopName={shop || "—"}
+                    title="شهادة العدّ"
+                    number={closed.number}
+                    dateLabel={`${closed.business_date} ${hhmm(closed.closed_at)}`}
+                    lines={[
+                      { label: "الفرع", value: closed.branch_name },
+                      { label: "الجهاز", value: closed.device_name },
+                      {
+                        label: "عدَّ",
+                        value: `${closed.counted_by_name}${ctx?.roleName ? ` — ${ctx.roleName}` : ""}`,
+                      },
+                      {
+                        label: "المعدود",
+                        value:
+                          closed.count_status === "counted"
+                            ? formatMinor(closed.counted_cash_minor)
+                            : "—",
+                        mono: true,
+                      },
+                      {
+                        label: "المتوقَّع",
+                        value: formatMinor(closed.expected_cash_at_close_minor),
+                        mono: true,
+                      },
+                      {
+                        label: "الفارق",
+                        value: variance === null ? "—" : formatMinor(variance),
+                        mono: true,
+                        strong: true,
+                      },
+                    ]}
+                    footer={
+                      <span>
+                        {closed.count_status === "counted"
+                          ? "مقفلة بشهادة الكاشير"
+                          : "مقفلة بلا عدّ"}
+                      </span>
+                    }
+                  />
+                </PrintDoc>
                 <div className="cat-form__actions">
-                  <Button variant="secondary" onClick={() => window.print()}>
+                  <Button variant="secondary" onClick={() => printDocument()}>
                     اطبع الشهادة
                   </Button>
                   <Link href="/shifts/open" className="c-btn c-btn--primary">

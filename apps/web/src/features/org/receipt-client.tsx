@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, formatMinor, Frame, Notice } from "@sting/ui-web";
+import { Button, formatMinor, Frame, Notice, PrintDoc, printDocument } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -13,6 +13,7 @@ import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { MonoText } from "@/features/org/mono";
 import { api } from "@/lib/api";
+import { docTitle } from "@/lib/print/doc-title";
 import { useApp } from "@/lib/app-context";
 import { BrandMark, BrandName } from "@/features/public/brand-mark";
 
@@ -100,67 +101,69 @@ export function ReceiptClient({ id }: { id: string }) {
         {r ? (
           <>
             <div className="acc-actions org-receipt__tools">
-              <Button pos onClick={() => window.print()}>
+              <Button pos onClick={() => printDocument()}>
                 اطبع / احفظ PDF
               </Button>
               <Button variant="quiet" onClick={() => router.push("/org/subscription/renew")}>
                 سجل الاشتراك
               </Button>
             </div>
-            <article className="org-receipt" aria-label={`إيصال ${r.number}`}>
-              <header className="org-receipt__head">
-                <div>
-                  <div className="org-receipt__brand">
-                    <span className="acc-logo" aria-hidden="true">
-                      <BrandMark />
-                    </span>
-                    <strong>
-                      <BrandName />
-                    </strong>
+            <PrintDoc title={docTitle("إيصال", r.number, "فيزانو بلص")}>
+              <article className="org-receipt" aria-label={`إيصال ${r.number}`}>
+                <header className="org-receipt__head">
+                  <div>
+                    <div className="org-receipt__brand">
+                      <span className="acc-logo" aria-hidden="true">
+                        <BrandMark />
+                      </span>
+                      <strong>
+                        <BrandName />
+                      </strong>
+                    </div>
+                    <div className="org-receipt__legal">
+                      {r.issuer.legal} · <MonoText text={r.issuer.contact} />
+                    </div>
                   </div>
-                  <div className="org-receipt__legal">
-                    {r.issuer.legal} · <MonoText text={r.issuer.contact} />
+                  <div className="org-receipt__title">
+                    <h2>إيصال اشتراك</h2>
+                    <div className="sting-mono org-receipt__number">{r.number}</div>
+                    <div className="cus-sub">
+                      صدر <Day iso={r.issued_at} />{" "}
+                      <span className="sting-mono">{hhmm(r.issued_at)}</span>
+                    </div>
                   </div>
+                </header>
+                <dl className="org-receipt__grid">
+                  <dt>المنشأة</dt>
+                  <dd>{r.tenant_name}</dd>
+                  <dt>الباقة</dt>
+                  <dd>
+                    {r.plan_name} · {r.cycle_label}
+                    {r.description ? (
+                      <>
+                        {" "}
+                        — <MonoText text={r.description} />
+                      </>
+                    ) : null}
+                  </dd>
+                  <dt>الفترة</dt>
+                  <dd>
+                    من <Day iso={r.period_from} /> إلى <Day iso={r.period_to} />
+                  </dd>
+                  <dt>رقم التحويل</dt>
+                  <dd className="sting-mono">{r.reference}</dd>
+                  <dt>اعتمده</dt>
+                  <dd>{r.issued_by_name}</dd>
+                </dl>
+                <div className="org-receipt__total">
+                  <span>المبلغ المستلم</span>
+                  <strong className="sting-mono">
+                    {formatMinor(r.amount_minor)} {r.currency}
+                  </strong>
                 </div>
-                <div className="org-receipt__title">
-                  <h2>إيصال اشتراك</h2>
-                  <div className="sting-mono org-receipt__number">{r.number}</div>
-                  <div className="cus-sub">
-                    صدر <Day iso={r.issued_at} />{" "}
-                    <span className="sting-mono">{hhmm(r.issued_at)}</span>
-                  </div>
-                </div>
-              </header>
-              <dl className="org-receipt__grid">
-                <dt>المنشأة</dt>
-                <dd>{r.tenant_name}</dd>
-                <dt>الباقة</dt>
-                <dd>
-                  {r.plan_name} · {r.cycle_label}
-                  {r.description ? (
-                    <>
-                      {" "}
-                      — <MonoText text={r.description} />
-                    </>
-                  ) : null}
-                </dd>
-                <dt>الفترة</dt>
-                <dd>
-                  من <Day iso={r.period_from} /> إلى <Day iso={r.period_to} />
-                </dd>
-                <dt>رقم التحويل</dt>
-                <dd className="sting-mono">{r.reference}</dd>
-                <dt>اعتمده</dt>
-                <dd>{r.issued_by_name}</dd>
-              </dl>
-              <div className="org-receipt__total">
-                <span>المبلغ المستلم</span>
-                <strong className="sting-mono">
-                  {formatMinor(r.amount_minor)} {r.currency}
-                </strong>
-              </div>
-              <p className="org-receipt__note">{r.note}</p>
-            </article>
+                <p className="org-receipt__note">{r.note}</p>
+              </article>
+            </PrintDoc>
           </>
         ) : null}
       </div>

@@ -11,6 +11,8 @@ import {
   Receipt,
   type ReceiptLine,
   Status,
+  PrintDoc,
+  printDocument,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +26,7 @@ import { readHomeCache } from "@/features/home/home-cache";
 import { apiBaseUrl, getAccessToken } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { recordPrintFailure } from "@/lib/diagnostics";
+import { docTitle } from "@/lib/print/doc-title";
 import { printReceiptOnDevice } from "@/lib/print/printers";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
@@ -155,7 +158,7 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
       return;
     }
     setPrintFailed(false);
-    if (out === "system") window.print();
+    if (out === "system") printDocument();
     setPrints((p) => [...p, new Date().toISOString()]);
   };
 
@@ -274,15 +277,17 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
                 </Notice>
               ) : null}
 
-              <Receipt
-                shopName={shop || "—"}
-                title="فاتورة"
-                number={sale.invoice_number}
-                dateLabel={`${sale.business_date} ${hhmm(sale.occurred_at)}`}
-                lines={receiptLines(sale)}
-                copy={prints.length > 0}
-                footer={opState !== "synced" ? <span>محفوظ على الجهاز</span> : null}
-              />
+              <PrintDoc title={docTitle("فاتورة", sale.invoice_number, shop)}>
+                <Receipt
+                  shopName={shop || "—"}
+                  title="فاتورة"
+                  number={sale.invoice_number}
+                  dateLabel={`${sale.business_date} ${hhmm(sale.occurred_at)}`}
+                  lines={receiptLines(sale)}
+                  copy={prints.length > 0}
+                  footer={opState !== "synced" ? <span>محفوظ على الجهاز</span> : null}
+                />
+              </PrintDoc>
 
               <div className="cat-form__actions">
                 {printFailed ? (
