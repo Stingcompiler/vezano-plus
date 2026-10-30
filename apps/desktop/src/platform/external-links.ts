@@ -19,10 +19,10 @@ export function installExternalLinks(): void {
     },
     true,
   );
-  window.open = ((url?: string | URL) => {
+  window.open = (url?: string | URL) => {
     const href = url ? String(url) : "";
     const target = externalTarget(href, location.origin) ?? (href.startsWith("/") ? null : href);
     if (target) void openExternal(target);
     return null;
-  });
+  };
 }
