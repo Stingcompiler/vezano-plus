@@ -12,6 +12,9 @@ import { Providers } from "@/app/providers";
 import * as NotFound from "@/app/not-found";
 
 import { PageHost } from "./page-host";
+import { DesktopRoot } from "./platform/desktop-root";
+import { installExternalLinks } from "./platform/external-links";
+import { detectOs, inTauri } from "./platform/tauri";
 import { ROUTES } from "./generated/routes";
 
 /** Next يعيد التمرير إلى الأعلى عند كل انتقال — السلوك نفسه هنا. */
@@ -39,11 +42,19 @@ const router = createBrowserRouter([
   {
     element: <Root />,
     children: [
-      ...ROUTES.map((r) => ({ path: r.path, element: <PageHost mod={r.mod} /> })),
+      ...ROUTES.map((r) => ({
+        path: r.path,
+        element: r.path === "/" && inTauri ? <DesktopRoot /> : <PageHost mod={r.mod} />,
+      })),
       { path: "*", element: <PageHost mod={NotFound} /> },
     ],
   },
 ]);
+
+if (inTauri) {
+  document.documentElement.dataset.os = detectOs(navigator.userAgent);
+  installExternalLinks();
+}
 
 // خطاف Next في التطوير (`window.next.router`) تستعمله مواصفات الويب للتنقّل بلا إعادة تحميل — نفسه هنا
 if (import.meta.env.DEV) {

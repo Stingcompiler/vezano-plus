@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useLocation, useNavigate, useParams as useRouteParams } from "react-router";
 
+import { isPublicPath, openExternal, SITE, inTauri } from "../platform/tauri";
+
 /**
  * بديل `next/navigation` فوق React Router — الشاشات المستوردة من الويب تستدعي هذه الأسماء بالتوقيعات نفسها.
  * المغطّى ما تستعمله الشاشات فعلاً (useRouter وusePathname وuseSearchParams)؛ أي استيراد آخر من Next
@@ -15,12 +17,16 @@ export interface AppRouter {
   prefetch(href: string): void;
 }
 
+/** داخل Tauri: الصفحات العامة تفتح في المتصفح (الخطة §٣) */
+const leaves = (href: string) => inTauri && isPublicPath(href);
+
 export function useRouter(): AppRouter {
   const navigate = useNavigate();
   return useMemo(
     () => ({
-      push: (href) => void navigate(href),
-      replace: (href) => void navigate(href, { replace: true }),
+      push: (href) => (leaves(href) ? void openExternal(`${SITE}${href}`) : void navigate(href)),
+      replace: (href) =>
+        leaves(href) ? void openExternal(`${SITE}${href}`) : void navigate(href, { replace: true }),
       back: () => void navigate(-1),
       forward: () => void navigate(1),
       // البيانات من TanStack Query والتخزين المحلي — لا مكوّنات خادم تُعاد
