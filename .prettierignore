@@ -11,3 +11,5 @@ pnpm-lock.yaml
 playwright-report/
 test-results/
 **/next-env.d.ts
+**/src-tauri/target/
+**/src-tauri/gen/

@@ -1,0 +1,43 @@
+{
+  "name": "@sting/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "تطبيق الحاسوب (Tauri 2 · Vite 6 · React 19) — شاشات الويب نفسها مستوردة من apps/web؛ ما يختلف طبقة المنصة وحدها (docs/desktop-plan.md)",
+  "scripts": {
+    "prepare-app": "node ../web/scripts/prepare-fonts.mjs && node scripts/gen-routes.mjs",
+    "dev": "pnpm prepare-app && vite",
+    "build": "pnpm prepare-app && vite build",
+    "preview": "vite preview --port 1420 --strictPort",
+    "typecheck": "node scripts/gen-routes.mjs && tsc --noEmit -p tsconfig.json",
+    "tauri": "tauri",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@sting/app-core": "workspace:*",
+    "@sting/contracts": "workspace:*",
+    "@sting/design": "workspace:*",
+    "@sting/domain": "workspace:*",
+    "@sting/platform": "workspace:*",
+    "@sting/sync-core": "workspace:*",
+    "@sting/ui-web": "workspace:*",
+    "@sting/web": "workspace:*",
+    "@tanstack/react-query": "^5.90.0",
+    "dexie": "^4.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^7.9.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.56.0",
+    "@tauri-apps/cli": "^2.8.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/web-bluetooth": "^0.0.21",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.6.0",
+    "vite": "^7.1.0"
+  }
+}

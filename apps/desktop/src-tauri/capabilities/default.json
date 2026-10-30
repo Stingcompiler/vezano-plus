@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "صلاحيات النافذة الرئيسية — الحدّ الأدنى؛ تُضاف صلاحيات المنصة مع مراحلها",
+  "windows": ["main"],
+  "permissions": ["core:default", "opener:default"]
+}

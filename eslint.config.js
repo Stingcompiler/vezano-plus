@@ -31,6 +31,9 @@ export default tseslint.config(
       "**/.next-*/**",
       "**/playwright-report/**",
       "**/test-results/**",
+      // مخرجات ترجمة Tauri (Rust) — ليست شيفرة المشروع
+      "**/src-tauri/target/**",
+      "**/src-tauri/gen/**",
       "apps/web/next-env.d.ts",
       // عامل الخدمة ملف ثابت خارج مشروع TypeScript (WEB-01)
       "apps/web/public/sw.js",

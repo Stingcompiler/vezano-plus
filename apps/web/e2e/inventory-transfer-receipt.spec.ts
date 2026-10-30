@@ -334,6 +334,13 @@ test.describe("INV-10", () => {
       }),
     );
     await page.getByRole("button", { name: "أرصدة المخزون" }).click();
+    // إعادة التحميل تستأنف الجلسة من الـCookie كما في الواقع — بلا هذا كان النجاح يعتمد على بطء
+    // خادم التطوير في الإعادة إلى الدخول (تطبيق الحاسوب يتنقّل فوراً فكشفه)
+    await page.route("**/api/auth/resume", (route) =>
+      route.fulfill(
+        json(200, { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u2" }),
+      ),
+    );
     await page.goto("/inventory/transfers/t-71/receive");
     await expect(root).toContainText("إن وصل إشعار الاستلام نفسه مرتين");
     await expect(page.getByRole("button", { name: /تأكيد استلام/ })).toBeDisabled();
