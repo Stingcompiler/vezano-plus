@@ -11,7 +11,8 @@
     "preview": "vite preview --port 1420 --strictPort",
     "typecheck": "node scripts/gen-routes.mjs && tsc --noEmit -p tsconfig.json",
     "tauri": "tauri",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "tauri:local": "VITE_API_URL=http://localhost:8000 tauri build --debug --bundles app --config src-tauri/tauri.local.conf.json"
   },
   "dependencies": {
     "@sting/app-core": "workspace:*",
@@ -23,6 +24,8 @@
     "@sting/ui-web": "workspace:*",
     "@sting/web": "workspace:*",
     "@tanstack/react-query": "^5.90.0",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-opener": "^2.7.2",
     "dexie": "^4.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

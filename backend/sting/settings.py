@@ -46,12 +46,17 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # تطبيق الحاسوب (Tauri) يطلب /api من أصله المحلي — قبل غيره كي يجيب طلب الاستطلاع OPTIONS مباشرة
+    "sting.desktop_cors.DesktopCorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # PLT-09: قياس p95 حيّ لطلبات /api — عدّاد لا محتوى
     "stingops.metrics.LatencyMiddleware",
 ]
+
+# أصلا تطبيق الحاسوب (ماك ثم ويندوز) — sting/desktop_cors.py
+DESKTOP_ORIGINS = frozenset({"tauri://localhost", "http://tauri.localhost"})
 
 ROOT_URLCONF = "sting.urls"
 WSGI_APPLICATION = "sting.wsgi.application"

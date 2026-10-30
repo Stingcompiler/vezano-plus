@@ -6,6 +6,7 @@ import { defineConfig, loadEnv } from "vite";
 const web = fileURLToPath(new URL("../web", import.meta.url));
 const repo = fileURLToPath(new URL("../..", import.meta.url));
 const shim = (f: string) => fileURLToPath(new URL(`./src/shims/${f}`, import.meta.url));
+const platform = (f: string) => fileURLToPath(new URL(`./src/platform/${f}`, import.meta.url));
 
 /**
  * الشاشات من apps/web/src كما هي: `@/` يشير إليها، و`next/navigation`/`next/link` إلى بدائل React Router.
@@ -19,6 +20,9 @@ export default defineConfig(({ mode }) => {
     publicDir: `${web}/public`,
     resolve: {
       alias: [
+        // طبقة المنصة: وحدتان من الويب لهما بديل في الحاسوب (مخزن المفاتيح، ولا عامل خدمة) — قبل `@/` العام
+        { find: /^@\/lib\/session-store$/, replacement: platform("session-store.ts") },
+        { find: /^@\/lib\/pwa$/, replacement: platform("pwa.ts") },
         { find: /^@\//, replacement: `${web}/src/` },
         { find: /^next\/navigation$/, replacement: shim("navigation.ts") },
         { find: /^next\/link$/, replacement: shim("link.tsx") },

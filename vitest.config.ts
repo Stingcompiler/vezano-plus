@@ -7,7 +7,11 @@ export default defineConfig({
       {
         test: {
           name: "node",
-          include: ["packages/**/*.test.ts", "tools/**/*.test.ts"],
+          include: [
+            "packages/**/*.test.ts",
+            "tools/**/*.test.ts",
+            "apps/desktop/src/platform/**/*.test.ts",
+          ],
           exclude: ["**/node_modules/**", "**/dist/**", "**/fixtures/**", "packages/ui-web/**"],
           environment: "node",
         },
