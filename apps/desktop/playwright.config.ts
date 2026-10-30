@@ -10,7 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = process.env.DESKTOP_PORT ?? "1421";
 
 export default defineConfig({
-  testDir: "../web/e2e",
+  // مواصفات الويب نفسها + مواصفات شاشات الحاسوب وحده (e2e/)
+  testDir: "..",
+  testMatch: /(web\/e2e|desktop\/e2e)\/.*\.spec\.ts$/,
   testIgnore: [/platform-/, /probe\.spec/, /web-install/, /web-notify/, /pwa-icons/, /seo-headers/],
   timeout: 60_000,
   expect: { timeout: 15_000 },

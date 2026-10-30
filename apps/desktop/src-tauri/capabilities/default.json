@@ -3,5 +3,14 @@
   "identifier": "default",
   "description": "صلاحيات النافذة الرئيسية — الحدّ الأدنى؛ تُضاف صلاحيات المنصة مع مراحلها",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-destroy",
+    "opener:default",
+    "opener:allow-reveal-item-in-dir",
+    "dialog:allow-save",
+    "notification:default"
+  ]
 }

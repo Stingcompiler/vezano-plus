@@ -1,0 +1,110 @@
+/* شاشات DESK-01…05 — رموز فيزانو وحدها (لا قيم ست عشرية)، والبطاقة c-card بلا أشرطة (docs/ui-profile.md) */
+.desk {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-inline-size: 0;
+}
+.desk__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+}
+.desk__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink-strong);
+}
+.desk__sub {
+  margin: 4px 0 0;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.desk__faint {
+  color: var(--color-ink-faint);
+  font-size: 12px;
+}
+.desk__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.desk__actions > * {
+  flex: 1;
+  min-inline-size: 200px;
+}
+.desk__rows {
+  list-style: none;
+  margin: 0;
+  padding: 6px 20px;
+}
+.desk__rows > li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-block: 14px;
+}
+.desk__rows > li + li {
+  border-block-start: 1px solid var(--color-border);
+}
+.desk__rows p {
+  margin: 4px 0 0;
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.desk__kbd {
+  display: inline-block;
+  direction: ltr;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-strong);
+}
+.desk__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.desk__pad {
+  padding: 16px 20px;
+  line-height: 1.8;
+  color: var(--color-ink-strong);
+}
+.desk__field {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.desk__field > :first-child {
+  flex: 1;
+  min-inline-size: 220px;
+}
+.desk__facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+}
+.desk__facts > div + div {
+  border-block-start: 1px solid var(--color-border);
+}
+.desk__facts dt {
+  color: var(--color-ink-muted);
+}
+.desk__facts dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-ink-strong);
+}
+.desk__path {
+  overflow-wrap: anywhere;
+  color: var(--color-ink-strong);
+}
