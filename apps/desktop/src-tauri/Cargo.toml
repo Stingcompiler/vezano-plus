@@ -26,3 +26,6 @@ codegen-units = 1
 lto = true
 opt-level = "s"
 strip = true
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }

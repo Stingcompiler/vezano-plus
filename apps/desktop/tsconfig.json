@@ -10,6 +10,7 @@
       "@/lib/session-store": ["./src/platform/session-store.ts"],
       "@/lib/pwa": ["./src/platform/pwa.ts"],
       "@/lib/nav-extras": ["./src/platform/nav-extras.ts"],
+      "@/lib/print/printers": ["./src/platform/printers.ts"],
       "@/*": ["../web/src/*"],
       "next/navigation": ["./src/shims/navigation.ts"],
       "next/link": ["./src/shims/link.tsx"]
