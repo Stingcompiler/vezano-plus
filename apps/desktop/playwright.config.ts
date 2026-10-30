@@ -5,7 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
  * المقاسات: 1440 مقاس الويب المرسوم، و1366 و1920 مقاسا الحاسوب في states-matrix.csv (D).
  * المستثنى ما ليس في تطبيق الحاسوب: لوحة المشغّل وصفحات الفحص (scripts/gen-routes.mjs EXCLUDED)، وما يخصّ
  * المتصفح وحده — تثبيت PWA وإشعارات الويب وترويسات الخادم وSEO (بدائلها الأصلية DESK-01/05 في طبقة المنصة).
- * الخادم وضع التطوير كما في الويب (`next dev`): خطافات الاختبار (`__sting*`) لا تُبنى في الإنتاج.
+ * الخادم بناءٌ ثابت بوضع التطوير (`vite build --mode development`): خطافات الاختبار (`__sting*`) حاضرة كما في
+ * `next dev`، والصفحات لا تُترجم عند الطلب — خادم Vite للتطوير كان يترجم مئات الوحدات لكل اختبار فتسقط
+ * المواصفات الحسّاسة للتوقيت على مشغّل CI البطيء.
  */
 const PORT = process.env.DESKTOP_PORT ?? "1421";
 
@@ -40,7 +42,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm prepare-app && vite --port ${PORT} --strictPort`,
+    command: `pnpm prepare-app && vite build --mode development --outDir dist-e2e && vite preview --outDir dist-e2e --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
