@@ -167,15 +167,7 @@
   align-items: center;
 }
 @media print {
-  .c-frame__banner,
-  .c-frame__nav,
-  .c-frame__footer,
-  .org-receipt__tools {
-    display: none !important;
-  }
-  .c-frame__main {
-    padding: 0;
-  }
+  /* الورقة من `PrintDoc` (C-PRINT-DOC في ui-web)؛ هنا ما يخصّ الإيصال وحده */
   .org-receipt {
     box-shadow: none;
     border: 1px solid #999;

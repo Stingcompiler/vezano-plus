@@ -2,7 +2,16 @@
 
 import type { StoredOperation } from "@sting/platform";
 import { type LocalSale, readSale } from "@sting/sync-core";
-import { Button, formatMinor, Frame, Money, Status } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  Frame,
+  Money,
+  Status,
+  PrintDoc,
+  printDocument,
+  Receipt,
+} from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,12 +19,16 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
+import { hhmm } from "@/features/home/format";
+import { readHomeCache } from "@/features/home/home-cache";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
+import { docTitle } from "@/lib/print/doc-title";
 import { countPending, type LastPush, readLastPush } from "@/lib/sync";
 
 import { PosNav } from "./pos-nav";
+import { receiptLines } from "./receipt-client";
 
 type State = "offline" | "saved_local" | "validation_error" | "server_error";
 
@@ -44,6 +57,7 @@ export function ProblemClient({ saleId }: { saleId: string }) {
   const [op, setOp] = useState<StoredOperation | null>(null);
   const [lastPush, setLastPush] = useState<LastPush | null>(null);
   const [waiting, setWaiting] = useState(0);
+  const [shop, setShop] = useState("");
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -60,6 +74,7 @@ export function ProblemClient({ saleId }: { saleId: string }) {
       if (s) setOp(await storage.read((tx) => tx.getOperation(s.operation_id)));
       setLastPush(await readLastPush());
       setWaiting(await countPending());
+      setShop((await readHomeCache())?.summary.tenant_name ?? "");
     })();
   }, [router, saleId]);
 
@@ -80,7 +95,7 @@ export function ProblemClient({ saleId }: { saleId: string }) {
 
   const newSale = () => router.push("/pos");
   const printAndNew = () => {
-    window.print();
+    printDocument();
     router.push("/pos");
   };
 
@@ -189,6 +204,18 @@ export function ProblemClient({ saleId }: { saleId: string }) {
                 بنجاح الآخر. والبيع لا يُلغى لأن الطابعة صمتت.
               </p>
 
+              {/* «اطبع» يطبع إيصال البيع نفسه لا رسالة الشاشة */}
+              <PrintDoc title={docTitle("فاتورة", sale.invoice_number, shop)} screen="hidden">
+                <Receipt
+                  shopName={shop || "—"}
+                  title="فاتورة"
+                  number={sale.invoice_number}
+                  dateLabel={`${sale.business_date} ${hhmm(sale.occurred_at)}`}
+                  lines={receiptLines(sale)}
+                  // «الورقة تحمل المؤقّت ومعه وسم «مؤقت»» (إطار POS-11)
+                  footer={opState !== "synced" ? <span>مؤقت · محفوظ على الجهاز</span> : null}
+                />
+              </PrintDoc>
               <div className="cat-form__actions">
                 {state === "offline" ? (
                   <Button onClick={newSale} pos>

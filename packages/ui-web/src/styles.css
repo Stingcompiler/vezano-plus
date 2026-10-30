@@ -1734,6 +1734,60 @@ div.c-sync__button {
   font-size: 12px;
 }
 
+/* ---------- C-PRINT-DOC: الورقة تحمل المستند وحده ---------- */
+.c-print-doc[data-screen-view="hidden"] {
+  display: none;
+}
+@media print {
+  /* هامش صفر: لا مكان يكتب فيه المتصفح عنوان الصفحة ورابطها وتاريخها ورقم الصفحة */
+  @page {
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  body:not(:has(.c-print-doc)) {
+    padding: 10mm 12mm;
+  }
+  /* كل ما ليس المستند ولا أحد آبائه يسقط من الورقة (لا يُخفى فقط فيترك صفحات بيضاء) */
+  body:has(.c-print-doc) :not(:has(.c-print-doc), .c-print-doc, .c-print-doc *) {
+    display: none !important;
+  }
+  /* آباء المستند بلا أثر: لا شبكة ولا حشو ولا ظلّ ولا عرض محدود */
+  body:has(.c-print-doc) :has(.c-print-doc) {
+    display: block !important;
+    position: static !important;
+    inline-size: auto !important;
+    max-inline-size: none !important;
+    min-block-size: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+  .c-print-doc,
+  .c-print-doc[data-screen-view="hidden"] {
+    display: block !important;
+    padding: 10mm 12mm;
+    color: #000;
+    background: #fff;
+  }
+  /* الإيصال الحراري: الورقة نفسها بعرض 58/80mm فلا حشو كبير */
+  .c-print-doc:has(.c-print__receipt--58, .c-print__receipt--80) {
+    padding: 2mm 3mm;
+  }
+  .c-print-doc .c-print__receipt {
+    border: 0;
+    padding: 0;
+    margin-inline: auto;
+    max-inline-size: 100%;
+  }
+}
+
 /* ---------- C-PHASE ---------- */
 .c-phase {
   font: inherit;

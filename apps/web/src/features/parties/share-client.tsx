@@ -8,6 +8,8 @@ import {
   Status,
   SwitchField,
   TextAreaField,
+  PrintDoc,
+  printDocument,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +24,7 @@ import { dayMonth, hhmm } from "@/features/home/format";
 import { PosNav } from "@/features/pos/pos-nav";
 import { api, apiBaseUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
+import { docTitle } from "@/lib/print/doc-title";
 
 type State = "ready" | "loading" | "permission_denied" | "success" | "server_error";
 type Range = "30" | "all";
@@ -219,7 +222,7 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
     }
   };
 
-  const print = () => window.print();
+  const print = () => printDocument();
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
@@ -380,60 +383,62 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                 <div className="cat-head">
                   <h3 className="cat-head__title">معاينة المستند</h3>
                 </div>
-                <div className="pty-doc">
-                  <div className="pty-doc__shop">{stmt.tenant_name}</div>
-                  <div className="acc-choice__note">
-                    كشف حساب: {stmt.party.name} · حتى <span className="sting-mono">{asOf.day}</span>{" "}
-                    {asOf.month}
+                <PrintDoc title={docTitle("كشف حساب", stmt.party.name, stmt.tenant_name)}>
+                  <div className="pty-doc">
+                    <div className="pty-doc__shop">{stmt.tenant_name}</div>
+                    <div className="acc-choice__note">
+                      كشف حساب: {stmt.party.name} · حتى{" "}
+                      <span className="sting-mono">{asOf.day}</span> {asOf.month}
+                    </div>
+                    <div className="pty-doc__stamp acc-choice__note">
+                      وُلِّد <span className="sting-mono">{hhmm(new Date().toISOString())}</span> ·
+                      المدى {rng === "all" ? "كامل" : <span className="sting-mono">30</span>}
+                    </div>
+                    {shown.length ? (
+                      <table className="pty-doc__table">
+                        <thead>
+                          <tr>
+                            <th>التاريخ</th>
+                            <th>البيان</th>
+                            {invoices ? <th>المستند</th> : null}
+                            {branches ? <th>الفرع</th> : null}
+                            <th>عليه</th>
+                            <th>له</th>
+                            <th>الرصيد</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {shown.map((r) => {
+                            const d = dayMonth(r.business_date || r.occurred_at);
+                            return (
+                              <tr key={r.doc_id}>
+                                <td>
+                                  <span className="sting-mono">{d.day}</span> {d.month}
+                                </td>
+                                <td>{r.label}</td>
+                                {invoices ? <td className="sting-mono">{r.doc}</td> : null}
+                                {branches ? (
+                                  <td>{stmt.branch_names[r.branch_id] ?? "الرئيسي"}</td>
+                                ) : null}
+                                <td className="sting-mono">
+                                  {r.debit_minor ? formatMinor(r.debit_minor) : "—"}
+                                </td>
+                                <td className="sting-mono">
+                                  {r.credit_minor ? formatMinor(r.credit_minor) : "—"}
+                                </td>
+                                <td className="sting-mono">{formatMinor(r.balance_minor)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    ) : null}
+                    <div className="pty-doc__total">
+                      <span>الرصيد المستحق</span>
+                      <span className="sting-mono">{formatMinor(stmt.balance_minor)}</span>
+                    </div>
                   </div>
-                  <div className="pty-doc__stamp acc-choice__note">
-                    وُلِّد <span className="sting-mono">{hhmm(new Date().toISOString())}</span> ·
-                    المدى {rng === "all" ? "كامل" : <span className="sting-mono">30</span>}
-                  </div>
-                  {shown.length ? (
-                    <table className="pty-doc__table">
-                      <thead>
-                        <tr>
-                          <th>التاريخ</th>
-                          <th>البيان</th>
-                          {invoices ? <th>المستند</th> : null}
-                          {branches ? <th>الفرع</th> : null}
-                          <th>عليه</th>
-                          <th>له</th>
-                          <th>الرصيد</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {shown.map((r) => {
-                          const d = dayMonth(r.business_date || r.occurred_at);
-                          return (
-                            <tr key={r.doc_id}>
-                              <td>
-                                <span className="sting-mono">{d.day}</span> {d.month}
-                              </td>
-                              <td>{r.label}</td>
-                              {invoices ? <td className="sting-mono">{r.doc}</td> : null}
-                              {branches ? (
-                                <td>{stmt.branch_names[r.branch_id] ?? "الرئيسي"}</td>
-                              ) : null}
-                              <td className="sting-mono">
-                                {r.debit_minor ? formatMinor(r.debit_minor) : "—"}
-                              </td>
-                              <td className="sting-mono">
-                                {r.credit_minor ? formatMinor(r.credit_minor) : "—"}
-                              </td>
-                              <td className="sting-mono">{formatMinor(r.balance_minor)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  ) : null}
-                  <div className="pty-doc__total">
-                    <span>الرصيد المستحق</span>
-                    <span className="sting-mono">{formatMinor(stmt.balance_minor)}</span>
-                  </div>
-                </div>
+                </PrintDoc>
 
                 {state === "ready" ? (
                   <>

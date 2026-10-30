@@ -9,6 +9,8 @@ import {
   Status,
   Table,
   TextField,
+  PrintDoc,
+  printDocument,
 } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,6 +23,7 @@ import "@/features/shifts/shifts.css";
 import "@/features/sys/sys.css";
 import { AppNav } from "@/features/home/app-nav";
 import { useApp } from "@/lib/app-context";
+import { docTitle } from "@/lib/print/doc-title";
 import { bleAvailable, loadModels, type ModelsData, pairPrinter } from "@/lib/print/ble";
 import {
   type Conn,
@@ -168,7 +171,7 @@ export function PrintClient() {
   const printSystem = (mode: TestMode) => {
     const el = document.getElementById("web03-print-area");
     if (el) el.dataset.mode = mode;
-    window.print();
+    printDocument();
   };
 
   const verdict = async (ok: boolean) => {
@@ -521,29 +524,31 @@ export function PrintClient() {
             <h3 className="cat-head__title">الطابعة والتجربة العربية</h3>
             <p className="acc-choice__note">تجربةٌ بنصّ عربي متصل ورقم لاتيني وباركود معاً.</p>
             <h3 className="cat-head__title">صفحة التجربة — ما نطبعه ونسألك أن تتحققه</h3>
-            <div id="web03-print-area" className="web03-print" data-mode="text">
-              <div className="web03-print__text">
-                <Receipt
-                  shopName="بقالة النيل — تجريبي"
-                  title="تجربة"
-                  number="000123"
-                  dateLabel="2026-09-18"
-                  width={width}
-                  lines={[
-                    { label: "سكر أبيض · 2 كغ", value: "200.00", mono: true },
-                    { label: "الإجمالي", value: "200.00", mono: true, strong: true },
-                  ]}
-                  footer={<span>شكراً لتعاملكم معنا</span>}
-                />
+            <PrintDoc title={docTitle("صفحة تجربة الطابعة")}>
+              <div id="web03-print-area" className="web03-print" data-mode="text">
+                <div className="web03-print__text">
+                  <Receipt
+                    shopName="بقالة النيل — تجريبي"
+                    title="تجربة"
+                    number="000123"
+                    dateLabel="2026-09-18"
+                    width={width}
+                    lines={[
+                      { label: "سكر أبيض · 2 كغ", value: "200.00", mono: true },
+                      { label: "الإجمالي", value: "200.00", mono: true, strong: true },
+                    ]}
+                    footer={<span>شكراً لتعاملكم معنا</span>}
+                  />
+                </div>
+                {preview ? (
+                  <img
+                    className="web03-print__image"
+                    src={preview}
+                    alt="صفحة التجربة منقّطة: نص عربي متصل ومختلط وأرقام وباركود وكشف طويل"
+                  />
+                ) : null}
               </div>
-              {preview ? (
-                <img
-                  className="web03-print__image"
-                  src={preview}
-                  alt="صفحة التجربة منقّطة: نص عربي متصل ومختلط وأرقام وباركود وكشف طويل"
-                />
-              ) : null}
-            </div>
+            </PrintDoc>
             <ul className="acc-choice__note">
               {CHECKS.map((c) => (
                 <li key={c}>{c}</li>

@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import { View } from "react-native";
 
 import { KV, Lead, Mono, N, Note } from "@/components/org/ui";
+import { printPage } from "@/lib/print-page";
 import { useSession } from "@/lib/session";
 
 import { fetched, useReport } from "./use-report";
@@ -52,14 +53,16 @@ const esc = (s: string) =>
 export function receiptHtml(r: ReceiptData): string {
   const row = (k: string, v: string) =>
     `<tr><th style="text-align:right;padding:4px 8px">${esc(k)}</th><td style="padding:4px 8px">${esc(v)}</td></tr>`;
-  return `<html dir="rtl"><body style="font-family:sans-serif;padding:24px">
-<h2>${esc(tx(T, "إيصال اشتراك"))}</h2><p dir="ltr">${esc(r.number)}</p>
+  return printPage(
+    `${tx(T, "إيصال اشتراك")} ${r.number}`,
+    `<h2>${esc(tx(T, "إيصال اشتراك"))}</h2><p dir="ltr">${esc(r.number)}</p>
 <p>${esc(r.issuer.legal)} · ${esc(r.issuer.contact)}</p>
 <table>${row(tx(T, "المنشأة"), r.tenant_name)}${row(tx(T, "الباقة"), `${r.plan_name} · ${r.cycle_label}`)}
 ${row(tx(T, "الفترة"), `${r.period_from.slice(0, 10)} → ${r.period_to.slice(0, 10)}`)}
 ${row(tx(T, "رقم التحويل"), r.reference)}${row(tx(T, "اعتمده"), r.issued_by_name)}</table>
 <h3>${esc(tx(T, "المبلغ المستلم"))}: <span dir="ltr">${esc(formatMinor(r.amount_minor))} ${esc(r.currency)}</span></h3>
-<p>${esc(r.note)}</p></body></html>`;
+<p>${esc(r.note)}</p>`,
+  );
 }
 
 /**

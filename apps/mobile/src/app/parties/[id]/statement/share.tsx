@@ -21,6 +21,7 @@ import { Linking, Share, View } from "react-native";
 import { M, PRow, Segments, Stack, SwitchRow } from "@/components/parties/parts";
 import { absoluteUrl } from "@/features/parties/lib";
 import { PARTY_TEXTS } from "@/features/parties/texts";
+import { printPage } from "@/lib/print-page";
 import { useSession } from "@/lib/session";
 import { WEB_URL } from "@/lib/web";
 
@@ -225,13 +226,14 @@ export default function ShareScreen() {
         )}</td></tr>`;
       })
       .join("");
-    const html = `<html dir="rtl" lang="ar"><body style="font-family:-apple-system,Roboto,sans-serif;padding:16px">
-<h2>${esc(stmt.tenant_name)}</h2>
+    const html = printPage(
+      `${tx(T, "كشف حساب:")} ${stmt.party.name} — ${stmt.tenant_name}`,
+      `<h2>${esc(stmt.tenant_name)}</h2>
 <p>${esc(tx(T, "كشف حساب:"))} ${esc(stmt.party.name)} ${esc(tx(T, "· حتى"))} ${asOf?.day ?? ""} ${esc(asOf?.month ?? "")}</p>
 <p>${esc(tx(T, "وُلِّد"))} ${hhmm(new Date().toISOString())}</p>
 <table style="width:100%;border-collapse:collapse" border="1" cellpadding="4">${body}</table>
-<h3>${esc(tx(T, "الرصيد المستحق"))} <span dir="ltr">${formatMinor(stmt.balance_minor)}</span></h3>
-</body></html>`;
+<h3>${esc(tx(T, "الرصيد المستحق"))} <span dir="ltr">${formatMinor(stmt.balance_minor)}</span></h3>`,
+    );
     void Print.printAsync({ html }).catch(() => undefined);
   };
 

@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.12 — SHIFT-03 (4) + SHIFT-04 (5). حركة الصندوق والإقفال أحداث محلية (IndexedDB حقيقي) تُرفع
@@ -426,6 +427,12 @@ test.describe("SHIFT-04", () => {
     await expect(page.locator(".cat-counters")).toContainText("2,430.00");
     await expect(page.locator(".cat-counters")).toContainText("−45.00");
     await expect(page.locator(".cat-saving__note")).toContainText("فارق 45.00 نقصاً.");
+    // «اطبع الشهادة» يطبع شهادة العدّ وحدها (كانت الصفحة كلها)
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "اطبع الشهادة" }).click(),
+      title: /^شهادة العدّ/,
+      contains: ["شهادة العدّ", "2,430.00", "−45.00", "مقفلة بشهادة الكاشير"],
+    });
   });
 
   test("saved_local: العدّ محفوظ بلا اتصال — المتوقَّع محلي والفارق احتمال لا حكم", async ({

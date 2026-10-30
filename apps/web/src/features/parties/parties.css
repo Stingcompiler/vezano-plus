@@ -129,20 +129,9 @@
 /* الطباعة تخصّ كشف الحساب وحده: `:has(.pty-doc)` — هذا الملف يُحمَّل في صفحات كثيرة ويبقى بعد التنقّل،
    وكانت القاعدة العامة تُخفي كل شيء فتخرج طباعة المخزون وإقفال الوردية صفحة بيضاء. */
 @media print {
-  body:has(.pty-doc) * {
-    visibility: hidden;
-  }
-  .pty-doc,
-  .pty-doc * {
-    visibility: visible;
-  }
+  /* الورقة من `PrintDoc` (C-PRINT-DOC في ui-web)؛ هنا ما يخصّ الكشف وحده */
   .pty-doc {
-    position: absolute;
-    inset-inline-start: 0;
-    inset-block-start: 0;
-    width: 100%;
     border: 0;
-    background: var(--color-surface-card);
   }
   .pty-doc__stamp {
     display: block;

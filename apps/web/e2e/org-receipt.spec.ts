@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * إيصال الاشتراك (بأمر المالك 2026-09-22؛ 0005 §١١١) — الإثبات المعتمد يحمل رابط الإيصال في
@@ -112,6 +113,11 @@ test.describe("إيصال الاشتراك", () => {
         "ليس فاتورة ضريبية",
         "اطبع / احفظ PDF",
       ],
+    });
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "اطبع / احفظ PDF" }).click(),
+      title: /^إيصال SR-2026-000007/,
+      contains: ["SR-2026-000007", "بقالة النيل", "235,000.00 SDG"],
     });
   });
 

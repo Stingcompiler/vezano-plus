@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.18 — POS-08 (5) + POS-11 (4). الإيصال لا ينتظر المزامنة: محفوظ محلياً مقابل مؤكد خادمياً،
@@ -216,6 +217,19 @@ function faultsRoute(page: Page, active: string[]) {
 const RECEIPT = ["سكر — 1 كغ", "100.00", "الإجمالي", "نقداً", "40.00", "آجل — أحمد الطيب", "60.00"];
 
 test.describe("POS-08", () => {
+  test("الورقة: الإيصال وحده باسمه — لا ترويسة ولا رسائل ولا رابط", async ({ page }) => {
+    await seed(page, { opState: "local" });
+    await stubPrint(page);
+    await faultsRoute(page, []);
+    await login(page, "/pos/receipt/sale-1");
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "طباعة الإيصال" }).click(),
+      title: /^فاتورة INV-KRT-A2-26-001043/,
+      contains: [...RECEIPT, "محفوظ على الجهاز"],
+    });
+    await expect.poll(() => prints(page)).toBe(1);
+  });
+
   test("saved_local: محفوظ محلياً، الإيصال بوسم «محفوظ على الجهاز»، والطباعة لا تنتظر", async ({
     page,
   }, info) => {
@@ -446,7 +460,12 @@ test.describe("POS-11", () => {
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     await expect(page.locator('[data-screen="POS-11"]')).toContainText("INV-KRT-A2-26-001043");
-    await page.getByRole("button", { name: "اطبع وابدأ بيعاً جديداً" }).click();
+    // «اطبع» يطبع إيصال البيع بوسم «مؤقت» لا رسالة الشاشة
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "اطبع وابدأ بيعاً جديداً" }).click(),
+      title: /^فاتورة INV-KRT-A2-26-001043/,
+      contains: [...RECEIPT, "مؤقت"],
+    });
     await expect(page).toHaveURL(/\/pos$/);
   });
 

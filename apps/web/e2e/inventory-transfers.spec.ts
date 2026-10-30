@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.32 — INV-08 قائمة التحويلات (5) + INV-09 إنشاء وإرسال تحويل (6). خرج وصل، لا حركة واحدة: الإرسال
@@ -419,6 +420,12 @@ test.describe("INV-09", () => {
       ]),
     });
     await expect(root).toContainText("TRF-KRT-A2-26-000001");
+    // «يُطبع مع الشحنة»: الورقة مستند الخروج وحده
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "اطبع" }).click(),
+      title: /^تحويل TRF-KRT-A2-26-000001/,
+      contains: ["TRF-KRT-A2-26-000001", "«بضاعة في الطريق» — حساب وسيط"],
+    });
     expect(pushed).toHaveLength(1);
     const op = pushed[0] as {
       kind: string;

@@ -253,7 +253,9 @@ table{{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}}
 th,td{{padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:start}}
 .m{{font-family:ui-monospace,Menlo,monospace;direction:ltr;text-align:end;unicode-bidi:isolate}}
 .note{{color:#475569;font-size:12px;margin-top:10px}}
-@page{{size:A4;margin:16mm}}
+/* هامش الصفحة صفر: لا مكان يكتب فيه المتصفح رابط الملف وعنوانه وتاريخه (0005 §٢٠٥) */
+@page{{size:A4;margin:0}}
+@media print{{body{{margin:16mm}}}}
 </style></head><body><main>
 <h1>{esc(tenant_name)}</h1>
 <p class=sub>{esc(label)}{esc(scope)} · المدى <span class=m>{span}</span>

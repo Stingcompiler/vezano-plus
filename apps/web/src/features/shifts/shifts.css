@@ -191,14 +191,6 @@
     grid-template-columns: 48px minmax(0, 1fr) 96px;
   }
 }
-@media print {
-  .c-nav,
-  .cat-form__actions,
-  .c-sync {
-    display: none;
-  }
-}
-
 /* SHIFT-05 — مراجعة الفروق (06-D2 بطاقة اللقطة والمتأخر · 15-D10 سجل الورديات) */
 .shift-review {
   display: flex;

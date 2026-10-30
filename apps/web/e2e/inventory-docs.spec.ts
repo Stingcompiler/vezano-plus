@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { expectPrintDoc } from "./print-doc";
 
 /**
  * T1.29 — INV-03 افتتاحيات المخزون (4) + INV-04 استلام بضاعة (5). الافتتاحية مستند واحد يُراجَع
@@ -254,7 +255,36 @@ test.describe("INV-03", () => {
     const posted: Record<string, unknown>[] = [];
     await openingsRoute(page, LIST, (b) => {
       posted.push(b);
-      return { status: 201, body: { opening: openingBody({ value_minor: "9000" }) } };
+      return {
+        status: 201,
+        body: {
+          opening: openingBody({
+            value_minor: "9000",
+            lines: [
+              {
+                id: "l1",
+                item_id: "i1",
+                item_name: "سكر أبيض",
+                unit_name: "كيس",
+                factor_milli: "1000",
+                qty_milli: "1800000",
+                base_qty_milli: "1800000",
+                unit_cost_minor: "",
+              },
+              {
+                id: "l2",
+                item_id: "i2",
+                item_name: "شاي أسود",
+                unit_name: "كرتونة 24×250غ",
+                factor_milli: "24000",
+                qty_milli: "15000",
+                base_qty_milli: "360000",
+                unit_cost_minor: "600",
+              },
+            ],
+          }),
+        },
+      };
     });
     await login(page, "/inventory/openings");
     // السطر الأول: سكر بالكيس (وحدة الإدخال = وحدة المخزون)
@@ -313,6 +343,12 @@ test.describe("INV-03", () => {
     });
     await expect(root.locator(".shift-facts__v").first()).toHaveText("2");
     await expect(root.locator(".shift-facts__v").nth(1)).toHaveText("90.00");
+    // «مستندٌ واحد يجمعها قابل للطباعة»: الأصناف بكمياتها، لا رسائل الشاشة
+    await expectPrintDoc(page, {
+      print: () => page.getByRole("button", { name: "طباعة" }).click(),
+      title: /^افتتاحيات المخزون/,
+      contains: ["سكر أبيض", "1800 كيس", "15 كرتونة 24×250غ × 6.00", "90.00", "عثمان"],
+    });
     expect(posted).toEqual([
       {
         branch_id: "b1",
