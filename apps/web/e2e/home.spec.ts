@@ -332,6 +332,8 @@ test.describe("HOME-02", () => {
 
   test("offline: يعمل بلا اتصال — شريط واحد لا شاشة حجب", async ({ page, context }, info) => {
     await loginTo(page, EMPLOYEE);
+    // الانقطاع بعد أول جلب: قبله لا ذاكرة محلية فتبقى الشاشة «جارٍ الجمع» — حالة غير مرسومة تُتابَع وحدها
+    await expect(page.locator('[data-screen="HOME-02"][data-state="ready"]')).toBeVisible();
     await context.setOffline(true);
     await page.evaluate(() => window.dispatchEvent(new Event("offline")));
     await expectFrame(page, info, {

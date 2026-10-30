@@ -1,0 +1,29 @@
+/* خط الواجهة Tajawal من ملفات المستودع نفسها (جذر الويب يحمّلها عبر next/font) — يعمل بلا إنترنت */
+@font-face {
+  font-family: "Vezano UI";
+  src: url("@sting/design/fonts/Tajawal-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vezano UI";
+  src: url("@sting/design/fonts/Tajawal-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vezano UI";
+  src: url("@sting/design/fonts/Tajawal-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Vezano UI";
+  src: url("@sting/design/fonts/Tajawal-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}
+:root {
+  --font-ui: "Vezano UI", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-heading: "Vezano UI", Cairo, sans-serif;
+}
