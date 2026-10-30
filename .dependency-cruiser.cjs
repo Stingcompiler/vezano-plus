@@ -45,7 +45,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "(^|/)(dist|\\.next|storybook-static)/" },
+    exclude: { path: "(^|/)(dist|dist-e2e|\\.next|storybook-static)/" },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.base.json" },
     enhancedResolveOptions: {

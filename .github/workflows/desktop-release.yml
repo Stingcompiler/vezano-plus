@@ -1,0 +1,84 @@
+name: Desktop release
+
+# حزم تطبيق الحاسوب (docs/desktop-plan.md ط٦، 0005 §٢١٠): ماك (DMG عام لـApple Silicon وIntel) وويندوز
+# (MSI وNSIS) في إصدار GitHub مسوّدة يراجعه المالك وينشره.
+# - بلا أسرار: حزم غير موقّعة تعمل، وتظهر بتحذير النظام عند التثبيت (docs/desktop-install.md).
+# - TAURI_SIGNING_PRIVATE_KEY (سرّ) + VEZANO_UPDATER_PUBKEY (متغيّر): ملفات التحديث الموقَّعة وlatest.json،
+#   والتطبيق يتحقق بها قبل أي تحديث تلقائي (DESK-01).
+# - APPLE_* (أسرار): توقيع ماك وتوثيقه حين يتوفر حساب Apple Developer.
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: desktop · bundle (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - os: windows-latest
+            args: ""
+            rust_targets: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - run: pnpm install --frozen-lockfile
+
+      # ملفات التحديث تُبنى حين يتوفر مفتاح التوقيع وحده — وإلا يفشل البناء بطلبها
+      - name: updater artifacts only with a signing key
+        id: updater
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            # ملف لا JSON مضمَّن: tauri-action يقسم args ويُسقط علامات التنصيص
+            echo "config=--config src-tauri/tauri.updater.conf.json" >> "$GITHUB_OUTPUT"
+          else
+            echo "config=" >> "$GITHUB_OUTPUT"
+            echo "::notice::بلا TAURI_SIGNING_PRIVATE_KEY — حزم بلا تحديث تلقائي"
+          fi
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: https://plus.vezano.app
+          VITE_APP_VERSION: ${{ github.ref_name }}
+          VEZANO_UPDATER_PUBKEY: ${{ vars.VEZANO_UPDATER_PUBKEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'desktop-v__VERSION__' }}
+          releaseName: "فيزانو بلص للحاسوب ${{ github.ref_name }}"
+          releaseBody: "حزم ماك وويندوز. التثبيت: docs/desktop-install.md"
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }} ${{ steps.updater.outputs.config }}

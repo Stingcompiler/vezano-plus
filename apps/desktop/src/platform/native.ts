@@ -41,6 +41,8 @@ export interface DesktopNative {
   requestNotify(): Promise<NotifyPermission>;
   notify(title: string, body: string): Promise<void>;
   checkUpdate(): Promise<UpdateCheck>;
+  /** ينزّل التحديث الموقَّع ويثبّته ثم يعيد تشغيل التطبيق */
+  installUpdate(): Promise<void>;
   /** ESC/POS خام إلى طابعة النظام باسمها، أو إلى عنوان شبكي (IP[:منفذ]) */
   printRaw(target: PrintTarget, bytes: Uint8Array): Promise<void>;
 }
@@ -65,8 +67,27 @@ const tauriNative: DesktopNative = {
     sendNotification({ title, body });
     return Promise.resolve();
   },
-  // المحدِّث الموقَّع يصل في ط٦ (مفتاح التوقيع ومصدر الإصدارات) — حتى ذلك لا تحديث يُعلَن
-  checkUpdate: () => Promise.resolve({ status: "none", current: APP_VERSION }),
+  // المحدِّث الموقَّع (ط٦): latest.json من إصدارات GitHub، والتحقق بالمفتاح العام المبني في التطبيق.
+  // بلا محدِّث مسجَّل (بناء بلا مفتاح) أو بلا شبكة: لا تحديث يُعلَن
+  async checkUpdate() {
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater");
+      const u = await check({ timeout: 2000 });
+      return u
+        ? { status: "available", current: u.currentVersion, next: u.version }
+        : { status: "none", current: APP_VERSION };
+    } catch {
+      return { status: "none", current: APP_VERSION };
+    }
+  },
+  async installUpdate() {
+    const { check } = await import("@tauri-apps/plugin-updater");
+    const { relaunch } = await import("@tauri-apps/plugin-process");
+    const u = await check();
+    if (!u) return;
+    await u.downloadAndInstall();
+    await relaunch();
+  },
   printRaw: (target, bytes) =>
     "printer" in target
       ? invoke<void>("print_raw", { printer: target.printer, bytes: Array.from(bytes) })
@@ -86,6 +107,7 @@ export interface DeskFake {
   /** ما أُرسل للطابعة، ونتيجة الإرسال التالي (false = فشل) */
   printed?: { target: PrintTarget; size: number }[];
   printOk?: boolean[];
+  installed?: boolean;
   /** يفعّل اعتراض التنزيل (DESK-04) في المتصفح */
   downloads?: boolean;
 }
@@ -117,6 +139,10 @@ const browserNative: DesktopNative = {
   requestNotify: () => Promise.resolve(fake().permission ?? "granted"),
   notify(title, body) {
     (fake().notified ??= []).push({ title, body });
+    return Promise.resolve();
+  },
+  installUpdate() {
+    fake().installed = true;
     return Promise.resolve();
   },
   printRaw(target, bytes) {

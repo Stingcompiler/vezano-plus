@@ -16,6 +16,15 @@ pub fn run() {
         .on_menu_event(|app, event| menu::on_event(app, event.id().as_ref()));
     #[cfg(not(target_os = "macos"))]
     let builder = builder.enable_macos_default_menu(false);
+    // التحديث التلقائي (DESK-01، ط٦): يُفعَّل حين يُبنى التطبيق بمفتاح التحقق العام
+    // (VEZANO_UPDATER_PUBKEY من أسرار CI). بلا مفتاح لا يُسجَّل المحدِّث، فلا يُعلَن تحديث لا يمكن التحقق من توقيعه.
+    let builder = builder.plugin(tauri_plugin_process::init());
+    let builder = match option_env!("VEZANO_UPDATER_PUBKEY") {
+        Some(key) if !key.is_empty() => {
+            builder.plugin(tauri_plugin_updater::Builder::new().pubkey(key).build())
+        }
+        _ => builder,
+    };
     builder
         // الروابط الخارجية (الشروط، الباقات، صفحة الحالة) تفتح في المتصفح الافتراضي لا داخل التطبيق
         .plugin(tauri_plugin_opener::init())

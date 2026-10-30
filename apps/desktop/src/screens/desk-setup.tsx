@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { AppNav } from "@/features/home/app-nav";
+import { countLocalPending } from "@/features/home/home-cache";
 import { hasDeviceRegistration } from "@/lib/device-session";
 
 import { native, type UpdateCheck } from "../platform/native";
@@ -23,6 +24,8 @@ export function DeskSetup() {
   const [checking, setChecking] = useState(true);
   const [linked, setLinked] = useState(false);
   const [printer, setPrinter] = useState(false);
+  const [pending, setPending] = useState(0);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -34,6 +37,7 @@ export function DeskSetup() {
     });
     void hasDeviceRegistration().then((r) => alive && setLinked(r));
     void loadChoice().then((c) => alive && setPrinter(Boolean(c?.receipts)));
+    void countLocalPending().then((n) => alive && setPending(n));
     return () => {
       alive = false;
       clearTimeout(limit);
@@ -96,8 +100,26 @@ export function DeskSetup() {
           </>
         ) : null}
         {update?.status === "available" ? (
-          <Notice kind="info" title="التحديث التلقائي مُعلن">
-            يُعلَن هنا مع إمكان تأجيله. تطبيقٌ يُحدّث نفسه في منتصف يوم بيعٍ مزدحم عدوٌّ لا خادم.
+          <Notice
+            kind="info"
+            title="التحديث التلقائي مُعلن"
+            action={
+              // لا تحديث فوق معلّق لم يُرفع — كما في SYS-09 على الويب (الترحيل قد يحتاج تدخّلاً)
+              <Button
+                variant="primary"
+                loading={installing}
+                disabledReason={pending > 0 ? "حدّث بعد رفع المعلّق" : undefined}
+                onClick={() => {
+                  setInstalling(true);
+                  void native.installUpdate().finally(() => setInstalling(false));
+                }}
+              >
+                تحديث التطبيق
+              </Button>
+            }
+          >
+            يُعلَن هنا مع إمكان تأجيله. تطبيقٌ يُحدّث نفسه في منتصف يوم بيعٍ مزدحم عدوٌّ لا خادم.{" "}
+            <span className="sting-mono">{update.next}</span>
           </Notice>
         ) : null}
         {state === "success" ? (

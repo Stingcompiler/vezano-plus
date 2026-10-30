@@ -38,7 +38,21 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "macOS": { "minimumSystemVersion": "13.0" },
-    "windows": { "webviewInstallMode": { "type": "embedBootstrapper" } }
+    "macOS": {
+      "minimumSystemVersion": "13.0"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Stingcompiler/vezano-plus/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    }
   }
 }
