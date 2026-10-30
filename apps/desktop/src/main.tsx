@@ -68,7 +68,7 @@ if (inTauri) {
   installExternalLinks();
 }
 // اعتراض التنزيل (DESK-04): داخل Tauri دائماً؛ وفي التطوير متاح للمواصفات بطلبها (`__stingDesk.downloads`)
-if (inTauri || import.meta.env.DEV) installDownloads();
+if (inTauri || process.env.NODE_ENV !== "production") installDownloads();
 
 // خطاف Next في التطوير (`window.next.router`) تستعمله مواصفات الويب للتنقّل بلا إعادة تحميل — نفسه هنا
 if (process.env.NODE_ENV !== "production") {
