@@ -11,10 +11,13 @@ import { FONT, RADIUS, SPACE, TOUCH, useColors } from "./theme";
  */
 export function GroupedList({
   title,
+  icon,
   tone,
   children,
 }: {
   title?: string | undefined;
+  /** أيقونة قبل العنوان (كأيقونات مجموعات قائمة الويب) — لا تحلّ محلّه. */
+  icon?: ReactNode;
   tone?: StateCode | undefined;
   children: ReactNode;
 }) {
@@ -39,8 +42,12 @@ export function GroupedList({
             borderBottomWidth: 1,
             borderBottomColor: t ? t.border : c.border,
             backgroundColor: t ? "transparent" : c.surfaceSunken,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: SPACE["2"],
           }}
         >
+          {icon ? <View importantForAccessibility="no-hide-descendants">{icon}</View> : null}
           <AppText
             variant="note"
             accessibilityRole="header"
@@ -62,12 +69,15 @@ export function GroupedList({
 export function ListRow({
   title,
   subtitle,
+  leading,
   trailing,
   onPress,
   last = false,
 }: {
   title: string;
   subtitle?: string | undefined;
+  /** أيقونة على البداية قبل العنوان — زخرفة لا تُقرأ؛ التسمية تبقى هي المعنى. */
+  leading?: ReactNode;
   trailing?: ReactNode;
   onPress?: (() => void) | undefined;
   last?: boolean;
@@ -86,6 +96,11 @@ export function ListRow({
         borderBottomColor: c.border,
       }}
     >
+      {leading ? (
+        <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {leading}
+        </View>
+      ) : null}
       <View style={{ flex: 1 }}>
         <AppText>{title}</AppText>
         {subtitle ? (
