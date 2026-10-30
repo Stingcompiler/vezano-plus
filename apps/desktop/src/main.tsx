@@ -57,7 +57,7 @@ if (inTauri) {
 }
 
 // خطاف Next في التطوير (`window.next.router`) تستعمله مواصفات الويب للتنقّل بلا إعادة تحميل — نفسه هنا
-if (import.meta.env.DEV) {
+if (process.env.NODE_ENV !== "production") {
   (window as unknown as { next: unknown }).next = {
     router: { push: (href: string) => void router.navigate(href) },
   };
