@@ -34,6 +34,9 @@ export async function navTo(page: Page, name: string, opts: { exact?: boolean } 
       .locator("nav")
       .getByRole("link", { ...byName, includeHidden: true })
       .first();
+    // التطبيق المرسوم في المتصفح (تطبيق الحاسوب) يرسم الشريط بعد التحميل بلحظة، لا مع HTML كخادم Next —
+    // فالعدّ الفوري يجده صفراً فيسقط إلى بحث لا يفتح المجموعة المطويّة. ننتظر الرابط قليلاً أولاً
+    await inNav.waitFor({ state: "attached", timeout: 5000 }).catch(() => undefined);
     if (await inNav.count()) {
       if (!(await inNav.isVisible())) {
         const section = page
