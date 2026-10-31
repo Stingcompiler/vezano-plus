@@ -35,13 +35,17 @@ function tokenValue(name: string): string {
 export async function expectFrame(page: Page, info: TestInfo, f: FrameExpectation): Promise<void> {
   const root = page.locator(`[data-screen="${f.screenId}"][data-state="${f.state}"]`);
   await expect(root, `الشاشة ${f.screenId} بحالة ${f.state} غير معروضة`).toBeVisible();
-  const body = await page.locator("body").innerText();
-  const normalized = body.replace(/\s+/g, " ");
-  const missing = f.texts.filter((t) => !normalized.includes(t.replace(/\s+/g, " ")));
-  expect(
-    missing,
-    `نصوص حرفية ناقصة في ${f.screenId}/${f.state} @${page.viewportSize()?.width}`,
-  ).toEqual([]);
+  // النصوص تُفحص حتى المهلة لا مرة واحدة: شاشتان بالمعرّف والحالة نفسيهما (ORG-07 التجديد ثم الإيصال)
+  // تجعلان الجذر ظاهراً قبل أن تُرسم الشاشة الجديدة — والنصوص المطلوبة هي هي، لا تخفيف للفحص
+  const missing = async () => {
+    const normalized = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    return f.texts.filter((t) => !normalized.includes(t.replace(/\s+/g, " ")));
+  };
+  await expect
+    .poll(missing, {
+      message: `نصوص حرفية ناقصة في ${f.screenId}/${f.state} @${page.viewportSize()?.width}`,
+    })
+    .toEqual([]);
 
   const width = page.viewportSize()?.width ?? 0;
   if (width >= 1440 && f.styles) {
