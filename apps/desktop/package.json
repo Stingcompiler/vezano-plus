@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "تطبيق الحاسوب (Tauri 2 · Vite 6 · React 19) — شاشات الويب نفسها مستوردة من apps/web؛ ما يختلف طبقة المنصة وحدها (docs/desktop-plan.md)",
+  "description": "تطبيق الحاسوب (Tauri 2 · Vite 6 · React 19) — شاشات الويب نفسها مستوردة من apps/web؛ ما يختلف طبقة المنصة وحدها (docs/desktop/plan.md)",
   "scripts": {
     "prepare-app": "node ../web/scripts/prepare-fonts.mjs && node scripts/gen-routes.mjs",
     "dev": "pnpm prepare-app && vite",

@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 /**
- * طبقة المنصة (docs/desktop-plan.md §٤): تعمل داخل نافذة Tauri وحدها. في متصفح عادي — مواصفات
+ * طبقة المنصة (docs/desktop/plan.md §٤): تعمل داخل نافذة Tauri وحدها. في متصفح عادي — مواصفات
  * Playwright على بناء الحاسوب — يبقى سلوك الويب كما هو، فالاختبار يقيس الشاشات نفسها.
  */
 export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;

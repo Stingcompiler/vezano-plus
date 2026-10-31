@@ -24,7 +24,7 @@ module.exports = {
       name: "apps-no-cross-app",
       comment:
         "التطبيقات لا تستورد بعضها؛ المشترك يعيش في packages/. الاستثناء الوحيد: تطبيق الحاسوب يستورد شاشات الويب " +
-        "ومواصفاته كما هي — طبق الأصل بأمر المالك (docs/desktop-plan.md، 0005 §٢٠٦).",
+        "ومواصفاته كما هي — طبق الأصل بأمر المالك (docs/desktop/plan.md، 0005 §٢٠٦).",
       severity: "error",
       from: { path: "^apps/([^/]+)/", pathNot: "^apps/desktop/" },
       to: { path: "^apps/(?!$1/)[^/]+/" },

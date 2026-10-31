@@ -1,5 +1,5 @@
 // يولّد src/generated/routes.ts من شجرة صفحات الويب (apps/web/src/app/**/page.tsx) — جدول المسارات لا يُكتب يدوياً،
-// فكل شاشة تُضاف إلى الويب تظهر في تطبيق الحاسوب في البناء التالي (docs/desktop-plan.md §٢).
+// فكل شاشة تُضاف إلى الويب تظهر في تطبيق الحاسوب في البناء التالي (docs/desktop/plan.md §٢).
 // `--check` يفشل إن كان الملف المحفوظ لا يطابق الشجرة (CI).
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";

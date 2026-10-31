@@ -6,7 +6,7 @@ import { SITE_NAME } from "@/features/public/site";
 /**
  * يرسم صفحة ويب (`apps/web/src/app/**\/page.tsx`) كما يرسمها Next: يمرّر `params` و`searchParams` وعدين.
  * صفحات الويب أغلفة رقيقة (كثير منها `async` يقرأ `await params`) حول مكوّن `*-client` — فتُستدعى هنا
- * مباشرةً بلا تعديل عليها (docs/desktop-plan.md §٢).
+ * مباشرةً بلا تعديل عليها (docs/desktop/plan.md §٢).
  */
 export interface PageModule {
   /** كل صفحة تعلن شكل معاملاتها (`{ id: string }`…) — `never` يقبلها كلها، والاستدعاء بـ`PageProps` */

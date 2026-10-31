@@ -1,4 +1,4 @@
-"""CORS لتطبيق الحاسوب وحده (docs/desktop-plan.md ط٣، 0005 §٢٠٧).
+"""CORS لتطبيق الحاسوب وحده (docs/desktop/plan.md ط٣، 0005 §٢٠٧).
 
 الويب على نطاق الخادم نفسه فلا يحتاج CORS. تطبيق Tauri يرسم شاشاته من أصل محلي — `tauri://localhost`
 على ماك و`http://tauri.localhost` على ويندوز — ويطلب `/api` بـ`Authorization: Bearer`. يُسمح لهذين

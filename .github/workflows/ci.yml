@@ -116,7 +116,7 @@ jobs:
           retention-days: 7
 
   desktop:
-    # تطبيق الحاسوب (docs/desktop-plan.md): مواصفات الويب نفسها على بنائه — دليل «طبق الأصل» في كل PR،
+    # تطبيق الحاسوب (docs/desktop/plan.md): مواصفات الويب نفسها على بنائه — دليل «طبق الأصل» في كل PR،
     # فلا تنحرف النسختان. وفحص أن الشاشات لا تستورد من Next ما لا بديل له.
     name: desktop · playwright (${{ matrix.project }})
     runs-on: ubuntu-latest
