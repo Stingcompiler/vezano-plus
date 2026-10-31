@@ -301,6 +301,9 @@ test.describe("ORD-11", () => {
     });
     await page.getByRole("button", { name: "تفاصيل الطلب" }).click();
     await expect(page).toHaveURL(/\/market\/orders\/po7$/);
+    // الرجوع بعد أن تُرسم شاشة الطلب نفسها — العنوان وحده لا يعني أن الانتقال ثُبِّت
+    // (React Router في تطبيق الحاسوب يغيّر العنوان قبل الرسم؛ Next بعده)
+    await expect(page.locator('[data-screen="ORD-05"]')).toBeAttached();
     await page.goBack();
     await expectFrame(page, info, {
       screenId: "ORD-11",
