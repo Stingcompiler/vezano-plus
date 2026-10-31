@@ -1,0 +1,37 @@
+{{brand_name}} — YOUR NEXT CHAPTER
+
+ACCOUNT / WELCOME
+
+Good to have you here.
+
+Hi {{first_name}},
+
+Your account is ready. Set up your profile, take a look around, and make this space your own.
+
+Open your dashboard:
+{{dashboard_url}}
+
+A good place to begin.
+
+------------------------------------------------------------
+
+MAKE YOURSELF AT HOME
+
+01  Start with the essentials
+    Add your details and choose your preferences.
+
+02  Find your way around
+    Everything starts from your dashboard.
+
+03  We're here if you need us
+    Questions? Talk to our team: {{support_email}}
+
+------------------------------------------------------------
+
+Consider this your first hello.
+The {{brand_name}} team
+
+--
+You received this email because you signed up for {{brand_name}}.
+Visit website: {{website_url}}
+Get in touch: {{support_email}}
