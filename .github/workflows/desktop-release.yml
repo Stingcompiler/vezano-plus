@@ -51,6 +51,7 @@ jobs:
         env:
           KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          PUBKEY: ${{ vars.VEZANO_UPDATER_PUBKEY }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -60,8 +61,15 @@ jobs:
         run: |
           put() { { echo "$1<<__V__"; printf '%s\n' "$2"; echo "__V__"; } >> "$GITHUB_ENV"; }
           if [ -n "$KEY" ]; then
+            if [ -z "$PUBKEY" ]; then
+              echo "::error::TAURI_SIGNING_PRIVATE_KEY موجود بلا المتغيّر VEZANO_UPDATER_PUBKEY (docs/desktop-install.md)"
+              exit 1
+            fi
             put TAURI_SIGNING_PRIVATE_KEY "$KEY"
             put TAURI_SIGNING_PRIVATE_KEY_PASSWORD "$KEY_PASSWORD"
+            # الحزمة تقرأ المفتاح العام من إعداد المحدِّث نفسه لتوقيع ملفات التحديث — يُكتب هنا من المتغيّر
+            # (أول إصدار رسمي: «Missing comment in public key» لأن الحقل في tauri.conf.json فارغ عمداً)
+            node -e 'require("fs").writeFileSync("apps/desktop/src-tauri/tauri.updater.conf.json", JSON.stringify({bundle:{createUpdaterArtifacts:true},plugins:{updater:{pubkey:process.env.PUBKEY}}}))'
             # ملف لا JSON مضمَّن: tauri-action يقسم args ويُسقط علامات التنصيص
             echo "config=--config src-tauri/tauri.updater.conf.json" >> "$GITHUB_OUTPUT"
           else
