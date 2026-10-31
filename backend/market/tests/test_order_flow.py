@@ -657,3 +657,55 @@ def test_payments_probe_and_restore(
     d = c.get(f"/api/market/orders/{oid}", headers=h).json()
     assert d["events"][-1]["title"] == "أُعيد بناء الطلب"
     assert d["received_value_minor"] == str(8 * 118000)  # لا قيد صامت — القيم كما هي
+
+
+def test_accepting_a_version_needs_purchase_approval_on_its_total(
+    ctx: dict[str, Any],  # noqa: F811
+    two_tenants: TwoTenants,
+) -> None:
+    """مراجعة 2026-10-26 بند 8: قبول نسخة المورد توقيع على مبلغها كالإرسال (`purchase_approve`):
+    الكاشير يُرفض؛ المدير بسقفه (300000) على إجمالي النسخة — أرسل 2 ضمن سقفه، فعرض المورد 3
+    يتجاوزه فلا يقبله؛ المالك يقبل."""
+    c = Client()
+    sugar, _rice = _seed(two_tenants.b)
+    with platform_context():
+        MarketOffer.unscoped.filter(id=sugar.id).update(min_order_qty=1)
+    hb = _owner_headers(two_tenants.b, "ob8")
+    hm, hc, ho = (_h(ctx["tokens"][k]) for k in ("manager", "cashier", "owner"))
+    r = _post(
+        c,
+        hm,
+        "/api/market/orders",
+        {
+            "op_id": str(uuid.uuid4()),
+            "supplier_tenant_id": str(two_tenants.b.id),
+            "kind": "order",
+            "lines": [{"offer_id": str(sugar.id), "qty": 2, "price_minor": "118000"}],
+        },
+    )
+    assert r.status_code in (200, 201), r.content
+    oid = r.json()["order"]["id"]
+    in3 = (timezone.localdate() + timedelta(days=3)).isoformat()
+    line = {
+        "offer_id": str(sugar.id),
+        "qty_confirmed": 3,
+        "price_minor": "118000",
+        "increase_reason": "الكرتونة الثالثة متاحة",
+    }
+    r = _post(
+        c,
+        hb,
+        f"/api/market/orders/{oid}/quote",
+        {"lines": [line], "valid_until": in3, "send": True},
+    )
+    assert r.status_code == 200, r.content
+    r = _post(c, hc, f"/api/market/orders/{oid}/accept", {"version": 2})
+    assert r.status_code == 403 and r.json()["detail"] == "permission_denied"
+    r = _post(c, hm, f"/api/market/orders/{oid}/accept", {"version": 2})
+    assert r.status_code == 403 and r.json()["extra"] == {
+        "limit_minor": "300000",
+        "total_minor": "354000",
+    }
+    assert c.get(f"/api/market/orders/{oid}", headers=ho).json()["agreed_version"] is None
+    r = _post(c, ho, f"/api/market/orders/{oid}/accept", {"version": 2})
+    assert r.status_code == 200 and r.json()["agreed_version"] == 2

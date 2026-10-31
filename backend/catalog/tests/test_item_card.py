@@ -203,12 +203,23 @@ def test_patch_item_and_base_unit_lock() -> None:
     api = Api()
     units = api.units()
     sugar = api.item("سكر")
+    # الكاشير لا يغيّر السعر من البطاقة كما لا يغيّره من شاشة السعر (مراجعة 2026-10-26 بند 6)
     r = api.patch(
         f"/api/catalog/items/{sugar['id']}",
-        {"name": "سكر أبيض ناعم", "sale_price_minor": "12000", "barcode": "6291000000142"},
+        {"name": "سكر أبيض ناعم", "sale_price_minor": "1", "barcode": "6291000000142"},
+    )
+    assert r.status_code == 403 and r.json()["detail"] == "price_owner_only"
+    assert (
+        api.post(f"/api/catalog/items/{sugar['id']}/price", {"price_minor": "1"}).status_code == 403
+    )
+    assert api.item("سكر")["name"] == "سكر" and api.item("سكر")["sale_price_minor"] == "10000"
+    # السعر نفسه دون تغيير لا يحتاج الصلاحية، وبقية البطاقة تُعدَّل
+    r = api.patch(
+        f"/api/catalog/items/{sugar['id']}",
+        {"name": "سكر أبيض ناعم", "sale_price_minor": "10000", "barcode": "6291000000142"},
     )
     assert r.status_code == 200 and r.json()["name"] == "سكر أبيض ناعم"
-    assert r.json()["sale_price_minor"] == "12000"
+    assert r.json()["sale_price_minor"] == "10000"
     # باركود صنف آخر مرفوض باسم صاحبه
     r = api.patch(f"/api/catalog/items/{sugar['id']}", {"barcode": "6291000000338"})
     assert _codes(r) == {("barcode", "barcode_taken")}

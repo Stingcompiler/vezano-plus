@@ -252,6 +252,10 @@ def apply_sale_return(
     if sale is None:
         # مرتجع بلا أصل معروف لا يُقبل صامتاً ولا يُسقط: يُحجر بنسخته إلى المراجعة (0005 §١٣٠)
         raise BusinessConflict("return_sale_unknown", str(payload["sale_id"]))
+    # المستفيد من الردّ هو طرف البيع الأصلي — لا يُحوَّل رصيد مرتجع إلى ذمّة عميل آخر (بند 3)
+    party = str(payload["party_id"]) if payload.get("party_id") else None
+    if party != (str(sale.party_id) if sale.party_id else None):
+        raise BusinessConflict("return_party_mismatch", str(payload["sale_id"]))
     user = User.unscoped.filter(id=payload["user_id"]).first()
     total = int(payload["total_minor"])
     destination = str(payload["destination"])
@@ -295,6 +299,14 @@ def apply_sale_return_line(
     line = SaleLine.unscoped.filter(tenant_id=tenant_id, id=payload["sale_line_id"]).first()
     if ret is None or line is None or line.sale_id != ret.sale_id:
         raise BusinessConflict("return_line_not_in_sale", str(payload["sale_line_id"]))
+    # الصنف والمعامل والسعر من السطر الأصلي لا من الحمولة: صحة الضرب لا تثبت أن المبلغ مستحق
+    # (مراجعة 2026-10-26 بند 3). المخالف يُحجر للمراجعة بأصله ولا يُطبَّق.
+    if (
+        str(payload["item_id"]) != str(line.item_id)
+        or int(payload["factor_milli"]) != line.factor_milli
+        or int(payload["unit_price_minor"]) != line.unit_price_minor
+    ):
+        raise BusinessConflict("return_original_mismatch", str(payload["sale_line_id"]))
     qty = int(payload["qty_milli"])
     already = (
         SaleReturnLine.unscoped.filter(tenant_id=tenant_id, sale_line=line).aggregate(

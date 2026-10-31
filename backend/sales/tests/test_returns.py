@@ -316,3 +316,39 @@ def test_return_of_unknown_sale_is_quarantined_not_dropped(ctx: dict[str, Any]) 
         assert not SaleReturn.objects.exists()
         q = QuarantinedOperation.objects.get()
         assert q.reason == "conflicted" and q.code == "return_sale_unknown"
+
+
+def test_return_value_and_beneficiary_come_from_the_original(ctx: dict[str, Any]) -> None:
+    """مراجعة 2026-10-26 بند 3: سعر سطر المرتجع وصنفه ومعامله من السطر الأصلي — مرتجع 900000 لبيع
+    10000 (حساباته صحيحة داخلياً) لا يُطبَّق بل يُحجر؛ وطرف الردّ طرف البيع لا غيره. الأصل لا يُمسّ."""
+    assert do_push(ctx, sale_op(ctx, invoice="INV-9")) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        sale = Sale.objects.get(invoice_number="INV-9")
+
+    def inflated(field: str, value: str) -> dict[str, Any]:
+        op = return_op(ctx, sale, qty="1000", number=f"R-{field}")
+        ln = op["members"][1]["payload"]
+        ln[field] = value
+        if field == "unit_price_minor":
+            ln["line_total_minor"] = value
+            op["members"][0]["payload"]["total_minor"] = value
+        if field == "item_id":
+            op["members"][2]["payload"]["item_id"] = value
+        if field == "factor_milli":
+            op["members"][2]["payload"]["delta_base_qty_milli"] = str(int(value))
+        return op
+
+    for field, value in (
+        ("unit_price_minor", "900000"),
+        ("item_id", str(uuid.uuid4())),
+        ("factor_milli", "12000"),
+    ):
+        assert do_push(ctx, inflated(field, value)) == ["conflicted"], field
+    other_party = return_op(ctx, sale, qty="1000", number="R-party")
+    other_party["members"][0]["payload"]["party_id"] = str(uuid.uuid4())
+    assert do_push(ctx, other_party) == ["conflicted"]
+    with tenant_context(ctx["tenant"].id):
+        assert not SaleReturn.objects.exists()
+        assert Sale.objects.get(id=sale.id).total_minor == 10000
+    # المرتجع الصادق بالقيم الأصلية يمرّ كما كان
+    assert do_push(ctx, return_op(ctx, sale, qty="1000", number="R-ok")) == ["accepted"]
