@@ -78,6 +78,30 @@ test.describe("DESK-01", () => {
     });
   });
 
+  test("تحديث متاح: يُعلَن مع إمكان تأجيله، والتثبيت بطلب صريح (ط٦)", async ({ page }, info) => {
+    await open(page, "/desktop/setup", {
+      update: { status: "available", current: "0.1.0", next: "0.2.0" },
+    });
+    await expectFrame(page, info, {
+      screenId: "DESK-01",
+      state: "ready",
+      texts: fromFrame("DESK-01", "ready", [
+        "التحديث التلقائي مُعلن",
+        "يُعلَن هنا مع إمكان تأجيله. تطبيقٌ يُحدّث نفسه في منتصف يوم بيعٍ مزدحم عدوٌّ لا خادم.",
+      ]),
+    });
+    await expect(page.locator('[data-screen="DESK-01"]')).toContainText("0.2.0");
+    await page.getByRole("button", { name: "تحديث التطبيق" }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __stingDesk: { installed?: boolean } }).__stingDesk.installed,
+        ),
+      )
+      .toBe(true);
+  });
+
   test("success: الجهاز موصول والطابعة مختارة — الجهاز جاهز", async ({ page }, info) => {
     await open(page, "/desktop/setup");
     await seedMeta(page, {

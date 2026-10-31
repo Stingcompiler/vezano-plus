@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "فيزانو بلص",
+  "productName": "Vezano Plus",
   "mainBinaryName": "vezano-plus",
   "version": "0.1.0",
   "identifier": "app.vezano.plus",
@@ -30,7 +30,7 @@
     "active": true,
     "targets": ["dmg", "app", "msi", "nsis"],
     "category": "Business",
-    "shortDescription": "نقطة بيع ومخزون وذمم تعمل بلا اتصال",
+    "shortDescription": "Vezano Plus — offline POS, inventory and ledger",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -38,7 +38,22 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "macOS": { "minimumSystemVersion": "13.0" },
-    "windows": { "webviewInstallMode": { "type": "embedBootstrapper" } }
+    "macOS": {
+      "minimumSystemVersion": "13.0"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    },
+    "longDescription": "Vezano Plus: point of sale, inventory and customer ledger that keep working offline."
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Stingcompiler/vezano-plus/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    }
   }
 }

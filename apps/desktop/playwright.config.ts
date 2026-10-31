@@ -16,6 +16,9 @@ export default defineConfig({
   testDir: "..",
   testMatch: /(web\/e2e|desktop\/e2e)\/.*\.spec\.ts$/,
   testIgnore: [/platform-/, /probe\.spec/, /web-install/, /web-notify/, /pwa-icons/, /seo-headers/],
+  // صفحة الهبوط التسويقية لا تُعرض في تطبيق الحاسوب (يفتح على الدخول — platform/desktop-root.tsx)، ومقياس
+  // انزياح التخطيط فيها يقيس تحميل خط Next المسبق بمقاييسه المضبوطة، لا شيئاً في التطبيق
+  grepInvert: /الهبوط: العنوان كلمةً كلمة/,
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: true,
