@@ -413,6 +413,8 @@ test.describe("MP-14", () => {
     expired = false;
     await page.getByRole("button", { name: "تفاصيل العرض" }).click();
     await expect(page).toHaveURL(/\/market\/offers\/public\/o1$/);
+    // الرجوع بعد أن تُرسم شاشة العرض — العنوان وحده لا يعني أن الانتقال ثُبِّت (كـORD-11)
+    await expect(page.locator('[data-screen="MP-05"]')).toBeAttached();
     await page.goBack();
     await expect(page).toHaveURL(/\/market\/unavailable/);
     await expectFrame(page, info, {
