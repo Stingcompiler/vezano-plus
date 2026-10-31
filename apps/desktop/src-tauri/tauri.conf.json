@@ -28,12 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": [
-      "dmg",
-      "app",
-      "msi",
-      "nsis"
-    ],
+    "targets": ["dmg", "app", "msi", "nsis"],
     "category": "Business",
     "shortDescription": "Vezano Plus — offline POS, inventory and ledger",
     "icon": [
