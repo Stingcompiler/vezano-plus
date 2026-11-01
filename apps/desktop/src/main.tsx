@@ -2,6 +2,8 @@ import "@sting/design/fonts.css";
 import "@/app/fonts.generated.css";
 import "@sting/ui-web/styles.css";
 import "./fonts.css";
+// بعد أنماط الويب: فروق المساحة في نافذة الحاسوب وحدها
+import "./desktop.css";
 
 import { StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
