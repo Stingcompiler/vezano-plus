@@ -94,7 +94,8 @@ jobs:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'desktop-v__VERSION__' }}
-          releaseName: "فيزانو بلص للحاسوب ${{ github.ref_name }}"
+          # __VERSION__ من tauri.conf.json — لا اسم الفرع عند التشغيل اليدوي
+          releaseName: "فيزانو بلص للحاسوب __VERSION__"
           releaseBody: "حزم ماك وويندوز. التثبيت: docs/desktop/install.md"
           releaseDraft: true
           prerelease: false
