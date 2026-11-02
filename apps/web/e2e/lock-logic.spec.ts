@@ -157,6 +157,8 @@ test.describe("القفل — مراجعة المنطق", () => {
     await expect(page.locator(".acc-keypad")).toHaveCount(0);
     await page.getByRole("button", { name: "اضبط رمز PIN" }).click();
     await expect(page).toHaveURL(/\/login\?next=%2Faccount%2Fpin$/);
+    // الرجوع بعد أن تُرسم شاشة الدخول — العنوان وحده لا يعني أن الانتقال ثُبِّت (كـORD-11)
+    await expect(page.locator('[data-screen="ACC-02"]')).toBeAttached();
     await page.goBack();
     await page.getByRole("button", { name: "ادخل بكلمة المرور", exact: true }).click();
     await expect(page).toHaveURL(/\/login\?next=%2Forg%2Fsubscription$/);

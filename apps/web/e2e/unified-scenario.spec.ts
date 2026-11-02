@@ -292,6 +292,8 @@ test("١٠٠ = ٤٠ نقداً + ٦٠ آجلاً: الأرقام نفسها في
   // تسخين المسارات وهي متصلة (كما تفعل خدمة العامل في WEB-03): التنقّل بلا اتصال يعتمد على ما حُمِّل
   await nav(page, "الوردية والصندوق");
   await expect(page).toHaveURL(/\/shifts\/current$/);
+  // الرجوع بعد أن تُرسم شاشة الوردية — العنوان وحده لا يعني أن الانتقال ثُبِّت (كـORD-11)
+  await expect(page.locator('[data-screen="SHIFT-02"]')).toBeAttached();
   await page.goBack();
   await expect(page).toHaveURL(/\/pos\/pay\/mixed$/);
   await nav(page, "الفواتير");
