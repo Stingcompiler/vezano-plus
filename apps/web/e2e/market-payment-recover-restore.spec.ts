@@ -306,6 +306,8 @@ test.describe("ORD-13", () => {
     side = "supplier";
     await navTo(page, "طلبات العملاء");
     await expect(page).toHaveURL(/\/market\/orders\/incoming$/);
+    // الرجوع بعد أن تُرسم شاشة الطلبات الواردة — العنوان وحده لا يعني أن الانتقال ثُبِّت (كـORD-11)
+    await expect(page.locator('[data-screen="ORD-04"]')).toBeAttached();
     await page.goBack();
     await expect(page).toHaveURL(/\/market\/orders\/po1\/payment$/);
     await expect(page.getByRole("button", { name: "طابِق — وصل المبلغ" })).toBeVisible();
