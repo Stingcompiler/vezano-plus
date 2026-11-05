@@ -1803,7 +1803,9 @@ def seed_market(ctx: Ctx, start: date, today: date) -> None:
 
     def accept(o: Any, ver: Any) -> None:
         with tenant_context(ctx.shop.id):
-            order_flow.accept_version(actor=s_owner, order_id=o.id, number=ver.number)
+            order_flow.accept_version(
+                actor=s_owner, viewer=viewer_for(s_owner, None), order_id=o.id, number=ver.number
+            )
 
     def ship(o: Any, lines: list[tuple[int, int]]) -> Any:
         with tenant_context(ctx.dist.id):

@@ -1060,7 +1060,10 @@ class MarketOrderAcceptView(APIView):
         with tenant_context(tid):
             try:
                 o = flow_svc.accept_version(
-                    actor=auth.user, order_id=order_id, number=int(body.get("version") or 0)
+                    actor=auth.user,
+                    viewer=home.viewer_for(auth.user, auth.device),
+                    order_id=order_id,
+                    number=int(body.get("version") or 0),
                 )
             except services.MarketRejected as e:
                 if e.code == "not_found":
