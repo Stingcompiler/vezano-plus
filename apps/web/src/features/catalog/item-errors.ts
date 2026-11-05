@@ -112,6 +112,13 @@ export function describeError(e: ServerFieldError): ItemFieldError {
       return { ...base, msg: "ليس صورة", why: "", fix: "اختر ملف صورة." };
     case "unit_not_found":
       return { ...base, msg: "غير موجودة", why: "", fix: "اختر وحدة من القائمة." };
+    case "price_owner_only":
+      return {
+        ...base,
+        msg: "تغيير السعر للمالك",
+        why: "السعر قرار منشأة لا فرع.",
+        fix: "أعِد السعر كما كان واحفظ بقية البطاقة، واطلب تغيير السعر من شاشة السعر.",
+      };
     default:
       return { ...base, msg: e.code, why: "", fix: "" };
   }

@@ -665,7 +665,8 @@ def test_stock_transfer_in_transit_visibility_and_cancel(
     assert t["late"] is True  # أُرسل قبل أكثر من 72 ساعة (تاريخ ثابت)
     rows = {x["name"]: x for x in c.get("/api/inventory/balances", **h).json()["rows"]}  # type: ignore[arg-type]
     assert rows["سكر"]["qty_milli"] == "28000" and rows["سكر"]["in_transit_milli"] == "72000"
-    mvs = c.get(f"/api/inventory/items/{sugar}/movements", **h).json()["rows"]  # type: ignore[arg-type]
+    # «كامل التاريخ»: التحويل مؤرَّخ تاريخاً ثابتاً، والافتراضي آخر 30 يوماً من ساعة التشغيل
+    mvs = c.get(f"/api/inventory/items/{sugar}/movements?range=all", **h).json()["rows"]  # type: ignore[arg-type]
     mv = next(x for x in mvs if x["reason"] == "transfer_out")
     assert mv["label"] == "تحويل صادر" and mv["actor"] == f"إلى {to.name}"
     assert mv["doc"] == "TRF-KRT-A2-26-000001"
@@ -833,7 +834,7 @@ def test_transfer_receipt_partial_and_idempotent(
     assert t3["in_transit_milli"] == "3000"
     # INV-02 في الوجهة: «تحويل وارد» من المخزن الرئيسي
     cc, ch = _cashier(ctx, to)
-    rows = cc.get(f"/api/inventory/items/{sugar}/movements", **ch).json()["rows"]  # type: ignore[arg-type]
+    rows = cc.get(f"/api/inventory/items/{sugar}/movements?range=all", **ch).json()["rows"]  # type: ignore[arg-type]
     inbound = next(x for x in rows if x["reason"] == "transfer_in")
     assert inbound["label"] == "تحويل وارد" and inbound["actor"] == f"من {ctx['branch'].name}"
     # استلام من فرع ليس الوجهة: يُقبل في PUSH لكن بلا أثر (الرأس لا يُنشأ)
@@ -841,3 +842,94 @@ def test_transfer_receipt_partial_and_idempotent(
     assert do_push(ctx, wrong) == ["accepted"]
     with tenant_context(ctx["tenant"].id):
         assert TransferReceipt.objects.count() == 2
+
+
+def test_role_and_count_settle_follow_the_device_branch(
+    ctx: dict[str, Any], two_tenants: TwoTenants
+) -> None:
+    """مراجعة 2026-10-26 بند 5: مدير في الفرع أ وكاشير في ب يُعامَل كاشيراً على جهاز ب (لا بأقدم
+    عضوياته)؛ وبلا عضوية في فرع الجهاز لا دور. ومدير أ لا يسوّي جرد ب كما لا يقرؤه."""
+    from core import home
+    from inventory.models import CountSession, StockMovement
+
+    a, b = ctx["branch"], two_tenants.a_branches[1]
+    with platform_context():
+        u = User.objects.create_user(
+            tenant=ctx["tenant"], username="multi", display_name="متعدد", is_owner=False
+        )
+        roles = {
+            code: Role.unscoped.filter(tenant=ctx["tenant"], code=code).first()
+            or Role.unscoped.create(tenant=ctx["tenant"], code=code, name=code)
+            for code in ("manager", "cashier")
+        }
+        UserBranchAccess.unscoped.create(
+            tenant=ctx["tenant"], user=u, branch=a, role=roles["manager"]
+        )
+        UserBranchAccess.unscoped.create(
+            tenant=ctx["tenant"],
+            user=u,
+            branch=b,
+            role=roles["cashier"],
+            granted_at=timezone.now() + timedelta(minutes=1),
+        )
+    with tenant_context(ctx["tenant"].id):
+        on_a = register_device(user=u, branch=a, name="أ")
+        on_b = register_device(user=u, branch=b, name="ب")
+        assert home.viewer_for(u, on_a.device).role_code == "manager"
+        assert home.viewer_for(u, on_b.device).role_code == "cashier"
+        assert home.viewer_for(u, on_b.device).can_see_finance is False
+        from core.models import Branch
+
+        third = Branch.unscoped.create(tenant=ctx["tenant"], name="ثالث", code="THR")
+        from core.models import Device
+
+        stray = Device(tenant=ctx["tenant"], branch=third)  # جهاز فرع لا عضوية للمستخدم فيه
+        assert home.viewer_for(u, stray).role_code == ""  # لا عضوية في فرع الجهاز
+    # جلسة جرد في ب بفرق −1 (دفتري 1، معدود 0)
+    with tenant_context(ctx["tenant"].id):
+        StockMovement.objects.create(
+            tenant=ctx["tenant"],
+            branch=b,
+            item_id=ctx["sugar"].id,
+            delta_base_qty_milli=1000,
+            reason="receive",
+        )
+    op = _count_op(ctx, [(str(ctx["sugar"].id), "سكر", "0", "1000")])
+    op["members"][0]["payload"]["branch_id"] = str(b.id)
+    assert do_push(ctx, op) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        sid = str(CountSession.objects.get(branch_id=b.id).id)
+    url = f"/api/inventory/count-sessions/{sid}"
+    body = {"reasons": {str(ctx["sugar"].id): "تالف"}}
+    c = Client()
+    ha = {"HTTP_AUTHORIZATION": f"Bearer {on_a.access}"}
+    hb = {"HTTP_AUTHORIZATION": f"Bearer {on_b.access}"}
+    assert c.get(url, **ha).status_code == 403  # type: ignore[arg-type]
+    r = c.post(url, body, content_type="application/json", **ha)  # type: ignore[arg-type]
+    assert r.status_code == 403 and r.json()["detail"] == "branch_forbidden"
+    r = c.post(url, body, content_type="application/json", **hb)  # type: ignore[arg-type]
+    assert r.status_code == 403 and r.json()["detail"] == "finance_required"
+    with tenant_context(ctx["tenant"].id):
+        assert not StockMovement.objects.filter(branch=b, reason="count").exists()
+
+
+def test_movements_default_to_last_30_days(ctx: dict[str, Any]) -> None:
+    """بند 15: المرشّح الافتراضي آخر 30 يوماً من الساعة المثبَّتة يخفي الأقدم، و`range=all` يُظهره."""
+    from inventory.models import StockMovement
+
+    with tenant_context(ctx["tenant"].id):
+        for days in (40, 2):
+            StockMovement.objects.create(
+                tenant=ctx["tenant"],
+                branch=ctx["branch"],
+                item_id=ctx["sugar"].id,
+                delta_base_qty_milli=1000,
+                reason="receive",
+                occurred_at=timezone.now() - timedelta(days=days),
+            )
+    c, h = _api(ctx)
+    url = f"/api/inventory/items/{ctx['sugar'].id}/movements"
+    recent = c.get(url, **h).json()  # type: ignore[arg-type]
+    full = c.get(url + "?range=all", **h).json()  # type: ignore[arg-type]
+    assert recent["range"] == "30" and len(recent["rows"]) == 1
+    assert full["range"] == "all" and len(full["rows"]) == 2

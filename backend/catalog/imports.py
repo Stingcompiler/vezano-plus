@@ -423,6 +423,16 @@ def _apply_party_row(r: dict[str, Any], b: DataImportBatch, actor: User | None) 
             r["opening_error"] = str(e)[:120]
 
 
+def changes_existing_prices(b: DataImportBatch) -> bool:
+    """الدفعة تغيّر سعر صنف قائم (لا إنشاء جديد): يحتاج تطبيقها صلاحية تغيير السعر نفسها."""
+    return b.kind == "items" and any(
+        r["result"] == "update"
+        and not r.get("applied")
+        and r["price_minor"] != r["old_price_minor"]
+        for r in b.rows
+    )
+
+
 def apply(
     b: DataImportBatch, *, applied_by: User | None, stop_after: int | None = None
 ) -> DataImportBatch:

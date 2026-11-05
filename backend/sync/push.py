@@ -25,7 +25,7 @@ from core.tenancy import require_tenant
 from sync.appliers import BusinessConflict, apply_member
 from sync.canonical import HASH_VERSION, CanonicalError, content_hash, members_hash
 from sync.counter import EpochMismatch, lock_and_reserve
-from sync.kinds import KindError, KindSpec, get_kind
+from sync.kinds import HEAD_IDENTITY_FIELDS, KindError, KindSpec, get_kind
 from sync.models import Member, Operation, QuarantinedOperation
 from sync.models_log import SyncLog
 from sync.scopes import scope_for
@@ -157,6 +157,9 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
         except CanonicalError as e:
             raise KindError(f"{entity}: {e}") from e
         espec.validate(payload)
+        identity = HEAD_IDENTITY_FIELDS.get(entity)
+        if identity is not None and str(payload.get(identity)) != str(entity_id):
+            raise KindError(f"{entity}: member id differs from {identity} (identity_mismatch)")
         parsed.append(ParsedMember(entity, entity_id, espec.schema_version, payload, digest))
 
     counts: dict[str, int] = {}

@@ -52,6 +52,20 @@ class KindSpec:
 
 _REGISTRY: dict[tuple[str, int], KindSpec] = {}
 
+#: رؤوس المستندات: هوية العضو هي حقل الهوية في حمولته نفسها. بدونه يُنشأ الرأس بهوية ويبحث أبناؤه
+#: (السطور والدفعات) عن أخرى — فتُلحق عملية جديدة أثراً ببيع قديم معتمد (مراجعة 2026-10-26 بند 2).
+HEAD_IDENTITY_FIELDS: Mapping[str, str] = {
+    "sales.Sale": "sale_id",
+    "sales.SaleReturn": "return_id",
+    "parties.PartyCreated": "party_id",
+    "parties.PaymentReceipt": "receipt_id",
+    "inventory.GoodsReceipt": "receipt_id",
+    "inventory.CountSession": "session_id",
+    "inventory.StockTransfer": "transfer_id",
+    "inventory.TransferReceipt": "receipt_id",
+    "shifts.ShiftOpened": "shift_id",
+}
+
 
 def register(spec: KindSpec) -> KindSpec:
     _REGISTRY[(spec.kind, spec.op_version)] = spec

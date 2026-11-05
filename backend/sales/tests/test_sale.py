@@ -342,3 +342,35 @@ def test_mixed_sale_with_bank_and_credit_override_event(ctx: dict[str, Any]) -> 
         row = CreditOverride.objects.get(id=ov)
         assert row.status == "pending" and row.requested_by_name == "سالم"
         assert row.balance_after_minor == 6000 and row.credit_limit_minor == 5000
+
+
+def test_new_operation_cannot_append_to_an_existing_sale(ctx: dict[str, Any]) -> None:
+    """مراجعة 2026-10-26 بند 2: عملية جديدة بأعضاء جدد لكن `sale_id` في الحمولة يشير إلى بيع قديم
+    — كان الرأس يُنشأ بهوية العضو والسطور والدفعات تُلحق بالقديم. الآن تُرفض، والقديم كما هو."""
+    first = sale_op(ctx)
+    assert do_push(ctx, first) == ["accepted"]
+    old_sid = first["members"][0]["id"]
+    forged = sale_op(ctx, invoice="INV-KRT-A2-26-000002")
+    for m in forged["members"]:
+        p = m["payload"]
+        if "sale_id" in p:
+            p["sale_id"] = old_sid
+        if p.get("source_id"):
+            p["source_id"] = old_sid
+    assert do_push(ctx, forged) == ["rejected"]
+    # وبهوية العضو نفسها (الرأس القديم): العضو مملوك لعملية أخرى — لا إلحاق أيضاً
+    reuse = sale_op(ctx, invoice="INV-KRT-A2-26-000003")
+    for m in reuse["members"]:
+        if m["entity"] == "sales.Sale":
+            m["id"] = old_sid
+        p = m["payload"]
+        for k in ("sale_id", "source_id"):
+            if k in p:
+                p[k] = old_sid
+    assert do_push(ctx, reuse) == ["conflicted"]
+    with tenant_context(ctx["tenant"].id):
+        s = Sale.objects.get(id=old_sid)
+        assert s.total_minor == 10000 and s.cash_minor == 10000
+        assert SaleLine.objects.filter(sale=s).count() == 1
+        assert Payment.objects.filter(sale=s).count() == 1
+        assert StockMovement.objects.filter(source_id=s.id).count() == 1

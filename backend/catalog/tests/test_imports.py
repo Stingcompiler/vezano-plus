@@ -127,3 +127,45 @@ def test_parties_import_and_role_guard() -> None:
         "/api/imports/preview", {"kind": "items", "file_name": "x.csv", "content": ITEMS_CSV}
     )
     assert r.status_code == 403 and r.json()["detail"] == "import_owner_or_manager"
+
+
+def test_manager_import_cannot_change_existing_prices() -> None:
+    """مراجعة 2026-10-26 بند 6: المدير يستورد الأصناف، لكن تغيير سعر صنف قائم قرار المالك كشاشة
+    السعر — الدفعة التي تغيّره تُرفض للمدير ولا يُكتب شيء، والمالك يطبّقها."""
+    from django.test import Client
+
+    from core.auth.tokens import issue_session_tokens
+    from core.models import Branch, Role, Tenant, User, UserBranchAccess
+    from core.scenario.seed import FIXED
+
+    owner = Api(owner=True)
+    with platform_context():
+        tenant_id = FIXED["tenant_a"]
+        branch = Branch.unscoped.filter(tenant_id=tenant_id).first()
+        role = Role.unscoped.filter(tenant_id=tenant_id, code="manager").first() or (
+            Role.unscoped.create(tenant_id=tenant_id, code="manager", name="مدير فرع")
+        )
+        mgr = User.objects.create_user(
+            tenant=Tenant.unscoped.get(id=tenant_id),
+            username="import-mgr",
+            display_name="مدير",
+            is_owner=False,
+        )
+        UserBranchAccess.unscoped.create(tenant_id=tenant_id, user=mgr, branch=branch, role=role)
+        _s, rt = issue_session_tokens(mgr)
+    c, h = Client(), {"HTTP_AUTHORIZATION": f"Bearer {rt.access_token}"}
+    content = "الصنف,الوحدة,السعر,باركود\nسكر,,11.00,\n"  # سكر قائم بسعر 100.00
+    r = c.post(
+        "/api/imports/preview",
+        {"kind": "items", "file_name": "أسعار.csv", "content": content},
+        content_type="application/json",
+        **h,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 200, r.json()
+    bid = r.json()["id"]
+    r = c.post(f"/api/imports/{bid}/apply", {}, content_type="application/json", **h)  # type: ignore[arg-type]
+    assert r.status_code == 403 and r.json()["detail"] == "price_owner_only"
+    assert owner.item("سكر")["sale_price_minor"] == "10000"
+    r = owner.post(f"/api/imports/{bid}/apply", {})
+    assert r.json()["status"] == "applied"
+    assert owner.item("سكر")["sale_price_minor"] == "1100"

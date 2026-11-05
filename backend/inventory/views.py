@@ -342,6 +342,10 @@ class CountSessionReviewView(APIView):
             session = CountSession.objects.filter(id=session_id).select_related("branch").first()
             if session is None:
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            # نطاق الكتابة نطاق القراءة نفسه: لا تسوية لجرد فرع لا تُفتح مراجعته (بند 5)
+            own = viewer.branch.id if viewer.branch is not None else None
+            if not viewer.is_owner and session.branch_id != own:
+                return Response({"detail": "branch_forbidden"}, status=status.HTTP_403_FORBIDDEN)
             try:
                 adj = services.adjust_session(session, reasons=reasons, actor=viewer.user)
             except services.AdjustmentRejected as e:

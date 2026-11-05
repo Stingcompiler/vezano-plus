@@ -26,6 +26,7 @@ from django.utils import timezone
 from catalog.limits import PRICE_MAX_MINOR, FieldError, Rejected, check_integer
 from catalog.models import Item, ItemPrice, PriceChangeRequest, PriceImportBatch
 from catalog.services import _iso, _log_item, record_price
+from core import home
 from core.models import User
 from core.money import line_total_minor
 from core.search_normalize import normalize_search
@@ -44,6 +45,12 @@ APPLY_CHUNK = 50
 PRICE_ROLES = {"owner"}
 #: من يرى التكلفة حتى قرار G-03: المالك
 COST_ROLES = {"owner"}
+
+
+def can_change_price(viewer: home.Viewer) -> bool:
+    """قاعدة تغيير السعر الواحدة لكل مسار يكتبه — شاشة السعر وبطاقة الصنف والاستيراد (مراجعة
+    2026-10-26 بند 6: الكاشير مُنع من شاشة السعر ثم غيّره من PATCH البطاقة)."""
+    return viewer.is_owner or viewer.role_code in PRICE_ROLES
 
 
 def average_cost_minor(item: Item) -> int | None:

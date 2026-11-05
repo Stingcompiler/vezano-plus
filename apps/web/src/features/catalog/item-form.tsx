@@ -283,6 +283,15 @@ export function ItemForm({
           sale_price_minor: priceMinor ?? price,
         },
       });
+      if (
+        response.status === 403 &&
+        (error as { detail?: string } | undefined)?.detail === "price_owner_only"
+      ) {
+        // الخادم يرفض تغيير السعر من البطاقة لغير المالك (مراجعة 2026-10-26 بند 6)
+        setErrors([describeError({ field: "sale_price_minor", code: "price_owner_only" })]);
+        setState("validation_error");
+        return;
+      }
       if (response.status === 400 && error) {
         setErrors(((error as { errors?: ServerFieldError[] }).errors ?? []).map(describeError));
         setState("validation_error");

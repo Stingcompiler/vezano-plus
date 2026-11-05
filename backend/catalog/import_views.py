@@ -14,7 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from catalog import imports
+from catalog import imports, prices
 from catalog.limits import Rejected
 from catalog.models import DataImportBatch
 from catalog.price_views import _viewer
@@ -131,6 +131,13 @@ class DataImportApplyView(APIView):
             b = DataImportBatch.objects.filter(id=batch_id).first()
             if b is None:
                 return Response({"detail": "batch_not_found"}, status=status.HTTP_404_NOT_FOUND)
+            v = _viewer(request)
+            if imports.changes_existing_prices(b) and not prices.can_change_price(v):
+                # المدير يستورد الأصناف، لكن تغيير سعر صنف قائم قرار المالك كشاشة السعر (بند 6)
+                return Response(
+                    {"detail": "price_owner_only", "role_name": v.role_name},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             stop_after = s.validated_data.get("stop_after")
             # `stop_after` لمحاكاة الانقطاع في الاختبار فقط (خلف حارس السيناريو)
             stop = int(stop_after) if stop_after is not None and faults.enabled() else None
