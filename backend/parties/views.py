@@ -47,9 +47,19 @@ class PartiesView(APIView):
         tid = _tenant(request.auth)
         if tid is None:
             return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        auth = request.auth
         with tenant_context(tid):
             rows = services.search_parties(str(request.query_params.get("q", "")))
-            return Response({"parties": [services.party_payload(p) for p in rows]})
+            parties = [services.party_payload(p) for p in rows]
+            # البحث للاختيار لا للكشف: الرصيد لمن يرى المال، كما كشف الحساب وقائمة العملاء
+            # (مراجعة 2026-11-05 بند ٨)
+            if (
+                isinstance(auth, AuthContext)
+                and not home.viewer_for(auth.user, auth.device).can_see_finance
+            ):
+                for row in parties:
+                    row["balance_minor"] = ""
+            return Response({"parties": parties})
 
     @extend_schema(request=CreateSerializer, responses={201: None, 400: None, 403: None, 409: None})
     def post(self, request: Request) -> Response:

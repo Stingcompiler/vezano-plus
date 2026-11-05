@@ -203,12 +203,16 @@ def test_patch_item_and_base_unit_lock() -> None:
     api = Api()
     units = api.units()
     sugar = api.item("سكر")
+    # النموذج يرسل السعر مع كل حفظ: الكاشير يعدّل البطاقة والسعر كما هو، وتغييره للمالك (بند ٧)
+    price = sugar["sale_price_minor"]
     r = api.patch(
         f"/api/catalog/items/{sugar['id']}",
-        {"name": "سكر أبيض ناعم", "sale_price_minor": "12000", "barcode": "6291000000142"},
+        {"name": "سكر أبيض ناعم", "sale_price_minor": price, "barcode": "6291000000142"},
     )
     assert r.status_code == 200 and r.json()["name"] == "سكر أبيض ناعم"
-    assert r.json()["sale_price_minor"] == "12000"
+    assert r.json()["sale_price_minor"] == price
+    r = api.patch(f"/api/catalog/items/{sugar['id']}", {"sale_price_minor": "12000"})
+    assert r.status_code == 403 and r.json()["detail"] == "price_owner_only"
     # باركود صنف آخر مرفوض باسم صاحبه
     r = api.patch(f"/api/catalog/items/{sugar['id']}", {"barcode": "6291000000338"})
     assert _codes(r) == {("barcode", "barcode_taken")}

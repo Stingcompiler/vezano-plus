@@ -10,7 +10,7 @@ import "@/features/pos/pos.css";
 import "@/features/sys/sys.css";
 import "./portal.css";
 import type { ShopPage } from "@/features/portal/shop-client";
-import { saveToken } from "@/features/portal/portal-store";
+import { readToken, saveToken } from "@/features/portal/portal-store";
 import { api } from "@/lib/api";
 import { pushPermission, requestPushPermission, subscribePush } from "@/lib/pwa";
 
@@ -67,7 +67,13 @@ export function SubscribeClient({ slug }: { slug: string }) {
           : null;
       const { data, response } = await api().POST("/api/portal/{slug}/subscribe", {
         params: { path: { slug } },
-        body: { phone, push_permission: permission, push: keys ?? undefined } as never,
+        // رمز هذا المتصفح إن وُجد: إعادة الاشتراك برقم مشترك تُقبل لحامل رمزه وحده
+        body: {
+          phone,
+          push_permission: permission,
+          push: keys ?? undefined,
+          token: readToken(slug) || undefined,
+        } as never,
       });
       if (response.status === 400) {
         setInvalid(true);
@@ -75,7 +81,7 @@ export function SubscribeClient({ slug }: { slug: string }) {
       }
       const body = data as unknown as { subscriber: Subscriber } | undefined;
       if (response.ok && body) {
-        saveToken(slug, body.subscriber.token);
+        if (body.subscriber.token) saveToken(slug, body.subscriber.token);
         setSub(body.subscriber);
         setDenied(permission === "denied");
       }

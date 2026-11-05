@@ -263,3 +263,18 @@ def test_revert_refused_after_window_or_when_sold() -> None:
     )
     with platform_context():
         assert Item.unscoped.get(id=sugar["id"]).sale_price_minor == 13000
+
+
+def test_item_card_cannot_change_the_price_without_price_permission() -> None:
+    """مراجعة 2026-11-05 بند ٧: كل طريق لكتابة السعر بصلاحية مسار السعر نفسه."""
+    api = Api(owner=False)
+    sugar = api.item("سكر")
+    before = api.get(f"/api/catalog/items/{sugar['id']}/price").json()["history"]
+    r = api.client.patch(
+        f"/api/catalog/items/{sugar['id']}",
+        {"sale_price_minor": "1"},
+        content_type="application/json",
+        **api.h,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 403 and r.json()["detail"] == "price_owner_only"
+    assert api.get(f"/api/catalog/items/{sugar['id']}/price").json()["history"] == before
