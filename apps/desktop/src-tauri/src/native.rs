@@ -24,6 +24,7 @@ pub fn list_printers() -> Result<Vec<Printer>, String> {
             ])
             .output()
             .map_err(|e| e.to_string())?;
+        ensure_success(&out)?;
         let text = String::from_utf8_lossy(&out.stdout);
         return Ok(text
             .lines()
@@ -42,7 +43,13 @@ pub fn list_printers() -> Result<Vec<Printer>, String> {
             .arg("-e")
             .output()
             .map_err(|e| e.to_string())?;
-        let default = Command::new("lpstat").arg("-d").output().ok();
+        // بلا طابعات يخرج lpstat بنجاح وقائمة فارغة؛ الخروج بفشل (CUPS متوقّف مثلاً) خطأ يُعرض
+        ensure_success(&names)?;
+        let default = Command::new("lpstat")
+            .arg("-d")
+            .output()
+            .ok()
+            .filter(|o| o.status.success());
         let default_name = default
             .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
             .and_then(|s| s.rsplit_once(": ").map(|(_, n)| n.trim().to_string()))
@@ -57,6 +64,19 @@ pub fn list_printers() -> Result<Vec<Printer>, String> {
             })
             .collect())
     }
+}
+
+/// أمر تعداد خرج بفشل لا يُقرأ «لا طابعات»: رسالته (أو رمز خروجه) تصل الشاشة خطأً.
+fn ensure_success(out: &std::process::Output) -> Result<(), String> {
+    if out.status.success() {
+        return Ok(());
+    }
+    let reason = String::from_utf8_lossy(&out.stderr).trim().to_string();
+    Err(if reason.is_empty() {
+        format!("exit {}", out.status.code().unwrap_or(-1))
+    } else {
+        reason
+    })
 }
 
 #[derive(Serialize)]
