@@ -35,6 +35,9 @@ class EntitySpec:
     fields: tuple[str, ...]
     required: tuple[str, ...]
     validate: Callable[[Payload], None] = lambda payload: None
+    #: حقل الحمولة الذي يحمل هوية العضو نفسه؛ يجب أن يساويها، فلا يُعلَّق عضو جديد على أثر معتمد
+    #: بحمل هويته القديمة في الحمولة (مراجعة 2026-11-05 بند ٢)
+    id_field: str | None = None
 
 
 @dataclass(frozen=True)
@@ -56,6 +59,15 @@ _REGISTRY: dict[tuple[str, int], KindSpec] = {}
 def register(spec: KindSpec) -> KindSpec:
     _REGISTRY[(spec.kind, spec.op_version)] = spec
     return spec
+
+
+def member_id_field(entity: str) -> str | None:
+    """حقل هوية العضو في حمولته لكيان مسجَّل (أو None إن لم يُشترط)."""
+    for spec in _REGISTRY.values():
+        espec = spec.entities.get(entity)
+        if espec is not None:
+            return espec.id_field
+    return None
 
 
 def get_kind(kind: str, op_version: int) -> KindSpec:
@@ -371,6 +383,7 @@ DISCOUNT_OVERRIDE = EntitySpec(
     ),
     required=("request_id", "branch_id", "mode", "value", "reason", "occurred_at"),
     validate=_validate_discount_override,
+    id_field="request_id",
 )
 
 register(
@@ -442,6 +455,7 @@ SALE = EntitySpec(
         "occurred_at",
     ),
     validate=_validate_sale,
+    id_field="sale_id",
 )
 
 
@@ -489,6 +503,7 @@ SALE_LINE = EntitySpec(
         "line_total_minor",
     ),
     validate=_validate_sale_line,
+    id_field="line_id",
 )
 
 
@@ -516,6 +531,7 @@ PAYMENT = EntitySpec(
     ),
     required=("payment_id", "sale_id", "method", "amount_minor"),
     validate=_validate_payment,
+    id_field="payment_id",
 )
 
 
@@ -541,6 +557,7 @@ STOCK_MOVEMENT = EntitySpec(
     ),
     required=("movement_id", "branch_id", "item_id", "delta_base_qty_milli", "reason"),
     validate=_validate_stock_movement,
+    id_field="movement_id",
 )
 
 
@@ -658,6 +675,7 @@ SALE_RETURN = EntitySpec(
         "occurred_at",
     ),
     validate=_validate_sale_return,
+    id_field="return_id",
 )
 
 
@@ -700,6 +718,7 @@ SALE_RETURN_LINE = EntitySpec(
         "line_total_minor",
     ),
     validate=_validate_sale_return_line,
+    id_field="line_id",
 )
 
 
@@ -725,6 +744,7 @@ QUARANTINE_MOVEMENT = EntitySpec(
     ),
     required=("movement_id", "branch_id", "item_id", "base_qty_milli", "reason"),
     validate=_validate_quarantine_movement,
+    id_field="movement_id",
 )
 
 
@@ -1329,6 +1349,7 @@ CREDIT_OVERRIDE = EntitySpec(
         "occurred_at",
     ),
     validate=_validate_credit_override,
+    id_field="override_id",
 )
 
 register(

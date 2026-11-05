@@ -156,6 +156,8 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
             digest = content_hash(payload, espec.fields)
         except CanonicalError as e:
             raise KindError(f"{entity}: {e}") from e
+        if espec.id_field is not None and str(payload.get(espec.id_field)) != str(entity_id):
+            raise KindError(f"{entity}: {espec.id_field} must equal member id")
         espec.validate(payload)
         parsed.append(ParsedMember(entity, entity_id, espec.schema_version, payload, digest))
 

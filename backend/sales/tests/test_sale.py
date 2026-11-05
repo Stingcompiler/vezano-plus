@@ -125,10 +125,10 @@ def sale_op(
             {"entity": "sales.Sale", "id": sid, "schema_version": 1, "payload": head},
             {
                 "entity": "sales.SaleLine",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "line_id": "x",
+                    "line_id": mid,
                     "sale_id": sid,
                     "item_id": ITEM,
                     "item_name": "سكر",
@@ -143,10 +143,10 @@ def sale_op(
             *[
                 {
                     "entity": "sales.Payment",
-                    "id": str(uuid.uuid4()),
+                    "id": (mid := str(uuid.uuid4())),
                     "schema_version": 1,
                     "payload": {
-                        "payment_id": "y",
+                        "payment_id": mid,
                         "sale_id": sid,
                         "method": m,
                         "amount_minor": a,
@@ -161,10 +161,10 @@ def sale_op(
             ],
             {
                 "entity": "inventory.StockMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": "z",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": ITEM,
                     "delta_base_qty_milli": stock_delta or str(base),

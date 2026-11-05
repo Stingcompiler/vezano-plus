@@ -58,6 +58,8 @@ class Sale(TenantScoped):
     discount_value = models.CharField(max_length=32, blank=True, default="")
     discount_minor = models.BigIntegerField(default=0)
     discount_reason = models.CharField(max_length=300, blank=True, default="")
+    #: خصم فوق سقف دور البائع (ORG-02): يُقبل دون اتصال ويُنسب إليه (§٧.٤)، ويُوسم للمراجعة
+    exceeds_discount_cap = models.BooleanField(default=False)
     total_minor = models.BigIntegerField()
     cash_minor = models.BigIntegerField(default=0)
     bank_minor = models.BigIntegerField(default=0)

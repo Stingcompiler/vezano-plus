@@ -105,6 +105,7 @@ def sale_row(
         "party_name": party_name,
         "subtotal_minor": str(sale.subtotal_minor),
         "discount_minor": str(sale.discount_minor),
+        "exceeds_discount_cap": sale.exceeds_discount_cap,
         "total_minor": str(sale.total_minor),
         "cash_minor": str(sale.cash_minor),
         "bank_minor": str(sale.bank_minor),

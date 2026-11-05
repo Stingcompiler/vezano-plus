@@ -214,7 +214,14 @@ def _iso(d: date, h: int, m: int = 0) -> str:
 
 
 def _member(entity: str, payload: dict[str, Any], mid: str | None = None) -> dict[str, Any]:
-    return {"entity": entity, "id": mid or str(uuid7()), "schema_version": 1, "payload": payload}
+    from sync.kinds import member_id_field
+
+    # هوية العضو = حقل هويته في الحمولة كما يرسلها الجهاز (sync/kinds.py ‏id_field)
+    id_field = member_id_field(entity)
+    mid = mid or (str(payload[id_field]) if id_field and payload.get(id_field) else str(uuid7()))
+    if id_field:
+        payload[id_field] = mid
+    return {"entity": entity, "id": mid, "schema_version": 1, "payload": payload}
 
 
 def _op(kind: str, members: list[dict[str, Any]], deps: list[str] | None = None) -> dict[str, Any]:

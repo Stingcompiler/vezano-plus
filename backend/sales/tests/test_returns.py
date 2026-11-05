@@ -64,10 +64,10 @@ def return_op(
         {"entity": "sales.SaleReturn", "id": rid, "schema_version": 1, "payload": head},
         {
             "entity": "sales.SaleReturnLine",
-            "id": str(uuid.uuid4()),
+            "id": (mid := str(uuid.uuid4())),
             "schema_version": 1,
             "payload": {
-                "line_id": "x",
+                "line_id": mid,
                 "return_id": rid,
                 "sale_line_id": str(line.id),
                 "item_id": ITEM,
@@ -84,10 +84,10 @@ def return_op(
         members.append(
             {
                 "entity": "inventory.StockMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": "m",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": ITEM,
                     "delta_base_qty_milli": str(base),
@@ -102,10 +102,10 @@ def return_op(
         members.append(
             {
                 "entity": "inventory.QuarantineMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": "m",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": ITEM,
                     "base_qty_milli": str(base),
@@ -261,10 +261,10 @@ def _return_of(c: dict[str, Any], sale: dict[str, Any], *, op_id: str) -> dict[s
             },
             {
                 "entity": "sales.SaleReturnLine",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "line_id": "x",
+                    "line_id": mid,
                     "return_id": rid,
                     "sale_line_id": line["id"],
                     "item_id": ITEM,
@@ -276,10 +276,10 @@ def _return_of(c: dict[str, Any], sale: dict[str, Any], *, op_id: str) -> dict[s
             },
             {
                 "entity": "inventory.QuarantineMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": "m",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": ITEM,
                     "base_qty_milli": lp["qty_milli"],
