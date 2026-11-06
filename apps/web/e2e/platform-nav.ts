@@ -29,12 +29,20 @@ export const PLATFORM_SECTIONS = [
  * بزرّ «القائمة» أولاً (الروابط في DOM دائماً — الفتح للنقر لا للقراءة).
  */
 export async function goSection(page: Page, name: string) {
-  await clickInDrawer(page, () =>
-    page
-      .getByRole("navigation", { name: "أقسام المشغّل" })
-      .getByRole("link", { name, exact: true })
-      .click({ timeout: 10_000 }),
-  );
+  await clickInDrawer(page, async () => {
+    const nav = page.getByRole("navigation", { name: "أقسام المشغّل" });
+    const link = nav.getByRole("link", { name, exact: true, includeHidden: true });
+    await link.waitFor({ state: "attached", timeout: 10_000 });
+    // 0005 §٢١٢: المجموعات تُطوى — مجموعة القسم المطويّة تُفتح قبل النقر كما يفعل المشغّل
+    if (!(await link.isVisible())) {
+      const section = nav
+        .locator(".c-nav__section")
+        .filter({ has: page.getByRole("link", { name, exact: true, includeHidden: true }) });
+      if (await section.count())
+        await section.first().locator(".c-nav__group--toggle").click({ timeout: 10_000 });
+    }
+    await link.click({ timeout: 10_000 });
+  });
 }
 
 /**

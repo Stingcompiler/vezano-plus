@@ -1192,3 +1192,107 @@
   background: var(--color-surface-sunken);
   font-size: var(--text-note);
 }
+
+/* ---------- 0005 §٢١٢ — شريط المشغّل: أيقونات، مجموعات تُطوى، وطيّ إلى أيقونات على الحاسوب ---------- */
+.plt-nav__label {
+  min-inline-size: 0;
+}
+.plt-nav__item .plt-nav__badge {
+  margin-inline-start: auto;
+}
+.plt-nav .c-nav__sub .plt-nav__item {
+  min-block-size: 44px;
+}
+/* زرّ الطيّ: على الحاسوب وحده (على الهاتف القائمة درج) */
+.plt-nav__rail {
+  display: none;
+}
+@media (min-width: 834px) {
+  .plt-nav__rail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    inline-size: calc(100% - 16px);
+    min-block-size: 44px;
+    margin: 8px 8px 0;
+    padding: 8px 13px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-ink-muted);
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .plt-nav__rail:hover {
+    color: var(--color-brand-primary);
+    background: color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+  }
+  .plt-nav__rail:focus-visible,
+  .plt-nav__item:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 1px;
+  }
+  /* المطويّ: عمود أيقونات 72px والمحتوى يأخذ الباقي */
+  .c-frame--sidebar:has(.plt-nav[data-rail]) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .plt-nav[data-rail] .plt-nav__rail,
+  .plt-nav[data-rail] .plt-nav__item {
+    justify-content: center;
+    padding-inline: 0;
+    position: relative;
+  }
+  /* الاسم يبقى في الرابط اسماً ميسَّراً، ويُخفى بصرياً فقط */
+  .plt-nav[data-rail] .plt-nav__label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .plt-nav[data-rail] .c-nav {
+    padding-inline: 8px;
+  }
+  /* عناوين المجموعات تُستبدل بفاصل: الأيقونات كلها ظاهرة */
+  .plt-nav[data-rail] .c-nav__group--toggle {
+    display: none;
+  }
+  .plt-nav[data-rail] .c-nav__section {
+    margin-block-start: 8px;
+    padding-block-start: 8px;
+    border-block-start: 1px solid var(--color-border);
+  }
+  .plt-nav[data-rail] .c-nav__sub {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  /* العدّاد على زاوية الأيقونة لا فوقها */
+  .plt-nav[data-rail] .plt-nav__badge {
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 2px;
+    min-inline-size: 16px;
+    margin: 0;
+    padding: 0 4px;
+    font-size: 10px;
+    line-height: 16px;
+    box-shadow: 0 0 0 2px var(--color-sidebar);
+  }
+  .plt-nav__tip {
+    position: fixed;
+    z-index: 50;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border-radius: var(--radius-panelSm);
+    background: var(--color-ink-strong);
+    color: var(--color-surface-card);
+    font-size: 13px;
+    font-weight: var(--font-weight-medium, 500);
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--shadow-overlay);
+  }
+}
