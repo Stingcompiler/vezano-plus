@@ -23,6 +23,7 @@ import "@/features/public/public.css";
 import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { BRANCHES, Count, DEVICES } from "@/lib/count";
 
@@ -559,7 +560,7 @@ export function PlansCatalogClient() {
           <div className="cat-head">
             <div className="plt-head-row">
               <h2 className="cat-head__title">
-                الباقات والتسعير — ما تراه الصفحة العامة يُحرَّر هنا
+                <PageTitle text="الباقات والتسعير — ما تراه الصفحة العامة يُحرَّر هنا" />
               </h2>
               {/* §٢١٢: الإنشاء قرب عنوان القائمة لا بعد آخر باقة */}
               {data && editing !== "new" ? (

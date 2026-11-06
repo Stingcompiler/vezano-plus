@@ -1,0 +1,10 @@
+/* 0005 §٢١٢ — السياسة بعد الشرطة سطرٌ ثانوي داخل عنوان الصفحة */
+.plt-title__sub {
+  display: block;
+  margin-block-start: 4px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
