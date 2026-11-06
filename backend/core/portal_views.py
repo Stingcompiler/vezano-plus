@@ -65,14 +65,22 @@ class PortalSubscribeView(APIView):
         push = body.get("push") if isinstance(body.get("push"), dict) else None
         with tenant_context(ch.tenant_id):
             try:
-                sub = portal.subscribe(
+                sub, owned = portal.subscribe(
                     phone=str(body.get("phone", "")),
                     push_permission=str(body.get("push_permission", "")),
                     push={str(k): str(v) for k, v in (push or {}).items()},
+                    token=str(body.get("token", "")),
                 )
             except portal.PortalRejected as e:
                 return _reject(e)
-            return Response({"subscriber": portal.subscriber_payload(sub)}, status=201)
+            payload = (
+                portal.subscriber_payload(sub)
+                if owned
+                else portal.foreign_subscriber_payload(
+                    str(body.get("phone", "")), str(body.get("push_permission", ""))
+                )
+            )
+            return Response({"subscriber": payload}, status=201)
 
 
 class PortalChannelView(APIView):

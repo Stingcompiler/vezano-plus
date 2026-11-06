@@ -44,12 +44,12 @@ class Viewer:
 
 
 def viewer_for(user: User, device: Device | None) -> Viewer:
-    access = (
-        UserBranchAccess.objects.filter(user=user, revoked_at__isnull=True)
-        .select_related("role", "branch")
-        .order_by("granted_at")
-        .first()
-    )
+    # الدور من العضوية في فرع الجهاز: مدير في فرع وكاشير في آخر هو كاشير على جهاز الثاني، وبلا
+    # عضوية في فرع الجهاز لا دور له فيه (مراجعة 2026-11-05 بند ٩). بلا جهاز: أقدم عضوية كما كان.
+    memberships = UserBranchAccess.objects.filter(user=user, revoked_at__isnull=True)
+    if device is not None and device.branch_id is not None:
+        memberships = memberships.filter(branch_id=device.branch_id)
+    access = memberships.select_related("role", "branch").order_by("granted_at").first()
     role: Role | None = access.role if access else None
     branch = device.branch if device else (access.branch if access else None)
     return Viewer(

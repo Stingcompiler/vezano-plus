@@ -18,7 +18,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from catalog import services
+from catalog import prices, services
 from catalog.limits import IMAGE_MAX_BYTES, Rejected
 from catalog.models import Item, ItemGroup, ItemUnit
 from core import home
@@ -295,6 +295,17 @@ class ItemDetailView(APIView):
                             "errors": [{"field": "base_unit_id", "code": "unit_not_found"}],
                         },
                         status=status.HTTP_400_BAD_REQUEST,
+                    )
+            # كل طريق لكتابة السعر بصلاحية مسار السعر نفسه (مراجعة 2026-11-05 بند ٧). النموذج يرسل
+            # السعر مع كل حفظ، فالممنوع تغييره لا إرساله كما هو
+            price = d.get("sale_price_minor") or ""
+            changes_price = price.isdigit() and int(price) != item.sale_price_minor
+            if changes_price and isinstance(auth := request.auth, AuthContext):
+                v = home.viewer_for(auth.user, auth.device)
+                if not (v.is_owner or v.role_code in prices.PRICE_ROLES):
+                    return Response(
+                        {"detail": "price_owner_only", "role_name": v.role_name},
+                        status=status.HTTP_403_FORBIDDEN,
                     )
             try:
                 item = services.update_item(

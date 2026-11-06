@@ -154,9 +154,13 @@ def subscribe(
     phone: str,
     push_permission: str = "",
     push: dict[str, str] | None = None,
-) -> PortalSubscriber:
+    token: str = "",
+) -> tuple[PortalSubscriber, bool]:
     """اشتراك صريح: نتساهل في الصيغة (مسافات وشرطات ودولية أو محلية) ونطبّع نحن؛ رقم ناقص يُرفض
-    بنصّه. الاشتراك من جديد يعيد تفعيل مشترك ألغى (لا صفّ ثانٍ للرقم نفسه)."""
+    بنصّه. الاشتراك من جديد يعيد تفعيل مشترك ألغى (لا صفّ ثانٍ للرقم نفسه).
+
+    الاشتراك لا يثبت ملكية الرقم (0005 §٦٤)، فرقم مشترك من قبل لا يُسلَّم رمزه ولا يُغيَّر إلا لمن
+    يحمل رمزه في متصفحه (مراجعة 2026-11-05 بند ٦). يعيد (المشترك، هل هو لحامل الطلب)."""
     digits = normalize_phone(phone)
     if digits.startswith("00"):
         digits = digits[2:]
@@ -172,6 +176,8 @@ def subscribe(
             token=_token(),
             consent_at=now,
         )
+    elif not token or token != sub.token:
+        return sub, False
     else:
         sub.phone = phone.strip()
         sub.opt_out_at = None
@@ -182,7 +188,20 @@ def subscribe(
         sub.push_p256dh = push.get("p256dh", "")[:200]
         sub.push_auth = push.get("auth", "")[:100]
     sub.save()
-    return sub
+    return sub, True
+
+
+def foreign_subscriber_payload(phone: str, push_permission: str) -> dict[str, Any]:
+    """ردّ «اشتركتَ» لرقم مشترك من قبل من متصفح آخر: بشكل الردّ نفسه، بلا رمز ولا شيء من حالة
+    المشترك الحقيقي (رسائله، وإذنه، وتواريخه)."""
+    return subscriber_payload(
+        PortalSubscriber(
+            phone=phone.strip(),
+            token="",
+            consent_at=timezone.now(),
+            push_permission=(push_permission or "")[:12],
+        )
+    )
 
 
 def subscriber_payload(sub: PortalSubscriber) -> dict[str, Any]:
