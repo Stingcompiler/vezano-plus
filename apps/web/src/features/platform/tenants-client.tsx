@@ -15,6 +15,7 @@ import "@/features/market/market.css";
 import "./platform.css";
 import { agoParts } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "loading" | "ready" | "empty" | "permission_denied";
@@ -239,7 +240,9 @@ export function TenantsClient() {
       <div className="sys mp cus plt-frame" data-screen="PLT-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
-            <h2 className="cat-head__title">المستأجرون — وصول دعم مقيد ومدقَّق</h2>
+            <h2 className="cat-head__title">
+              <PageTitle text="المستأجرون — وصول دعم مقيد ومدقَّق" />
+            </h2>
             <span className="cat-head__hint">
               مشغّل الخدمة يرى الاستحقاق والحالة التشغيلية، ولا يرى دفتر مستأجر بلا مسار مخوَّل.
             </span>
