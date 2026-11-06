@@ -1192,3 +1192,157 @@
   background: var(--color-surface-sunken);
   font-size: var(--text-note);
 }
+
+/* ---------- 0005 §٢١٢ — الباقات: مجموعات حقول مسمّاة، أسعار بمواضع ثابتة، إجراءات لاصقة ---------- */
+.plt-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  inline-size: 100%;
+  flex-wrap: wrap;
+}
+.plt-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+}
+.plt-group + .plt-group,
+.plt-group + .plt-features {
+  margin-block-start: 8px;
+}
+.plt-group > legend {
+  padding: 0;
+  margin-block-end: 8px;
+  font-weight: var(--font-weight-bold);
+  font-size: 15px;
+  color: var(--color-ink-strong);
+}
+.plt-group__unit {
+  font-weight: var(--font-weight-medium, 500);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-group__note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+}
+.plt-plan-form__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+@media (min-width: 834px) {
+  .plt-ops__fields--2 {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+/* الحفظ والإلغاء في المرئي أثناء التمرير داخل النموذج */
+.plt-plan-form__actions {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 2;
+  margin-inline: -16px;
+  margin-block-end: -14px;
+  padding: 10px 16px;
+  background: var(--color-surface-page);
+  border-block-start: 1px solid var(--color-border);
+  border-end-start-radius: 14px;
+  border-end-end-radius: 14px;
+}
+.plt-plan {
+  scroll-margin-block-start: 80px;
+}
+.plt-plan__top {
+  justify-content: flex-start;
+}
+.plt-plan__cycles {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.plt-plan__cycle {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface-sunken);
+  min-inline-size: 0;
+}
+.plt-plan__cycle dt {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-plan__cycle dd {
+  margin: 0;
+  font-size: 15px;
+}
+.plt-plan__cycle dd .sting-mono {
+  font-weight: var(--font-weight-bold);
+}
+.plt-plan__cycle small,
+.plt-plan__off {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+.plt-plan__limits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-plan__limits li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+/* النموذج داخل بطاقة الباقة: سطح مسطّح لا حاوية ثالثة */
+.plt-plan > .plt-plan-form {
+  padding: 12px 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+.plt-plan > .plt-plan-form .plt-plan-form__actions {
+  margin-inline: -16px;
+  margin-block-end: -14px;
+  background: var(--color-surface-card);
+}
+@media (max-width: 833px) {
+  /* الهاتف: لا حشوات متراكبة — الصفحة ثم البطاقة فقط */
+  .plt-frame > .cat-table.pos-card > .acc-card__body {
+    padding-inline: 0;
+  }
+  .plt-plan {
+    padding-inline: 12px;
+  }
+  .plt-plan > .plt-plan-form .plt-plan-form__actions {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+  .plt-plan__cycles {
+    gap: 6px;
+  }
+  .plt-plan__cycle {
+    padding: 6px 8px;
+  }
+}
+/* `.cat-table` يقصّ ما يفيض فيُبطل اللصق — حاوية الباقات شفافة بلا حدود فلا حاجة للقصّ */
+[data-screen="PLT-16"] > .cat-table.pos-card {
+  overflow: visible;
+}
+@media (min-width: 834px) {
+  .plt-ops__fields--even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
