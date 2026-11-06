@@ -2,7 +2,7 @@
 
 import { Button, Notice, Status, Table, TextField } from "@sting/ui-web";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "@/features/home/home.css";
@@ -80,16 +80,26 @@ const agoWord = (iso: string) => {
 const tenantsWord = (n: number) =>
   n === 1 ? "مستأجر واحد" : n === 2 ? "مستأجران" : n <= 10 ? `${n} مستأجرين` : `${n} مستأجراً`;
 
-const FILTERS = [
+/**
+ * مرشّح واحد في كل مرة (الخادم يقبل `filter` واحداً). §٢١٢: مجموعتان مسمّاتان — حالة الاشتراك، وما
+ * يحتاج متابعة (موعد الانتهاء والمزامنة) — فلا تُقرأ الأزرار شروطاً تُجمع.
+ */
+const STATUS_FILTERS = [
   ["all", "كل الاستحقاقات"],
   ["pending_approval", "بانتظار الاعتماد"],
   ["active", "نشط"],
   ["trial", "تجريبي"],
-  ["due14", "الاستحقاق خلال 14 يوماً"],
   ["late", "متأخرو السداد"],
-  ["sync_stuck", "مزامنة متعثّرة"],
   ["suspended", "موقوفون"],
 ] as const;
+const WATCH_FILTERS = [
+  ["due14", "الاستحقاق خلال 14 يوماً"],
+  ["sync_stuck", "مزامنة متعثّرة"],
+] as const;
+const FILTERS = [...STATUS_FILTERS, ...WATCH_FILTERS] as const;
+
+/** عرض المحتوى الذي تضيق دونه أعمدة الجدول الستة إلى فقرات — فتُعرض الصفوف بطاقات (§٢١٢). */
+const CARDS_BELOW = 960;
 
 /** PLT-02 — المستأجرون (08-D4/18-D13 ready · 39-D31 loading/empty/permission_denied): القائمة لا تكشف دفاتر. */
 export function TenantsClient() {
@@ -111,6 +121,17 @@ export function TenantsClient() {
       ? initial
       : "all",
   );
+
+  // §٢١٢: الجدول يتحوّل بطاقات بعرض حاويته لا بعرض الشاشة — الشريط الموسّع أو المطويّ يغيّر المتاح
+  const tableBox = useRef<HTMLDivElement | null>(null);
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const el = tableBox.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setNarrow((e?.contentRect.width ?? 0) < CARDS_BELOW));
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   const load = useCallback(
     async (query: string, f: Filter) => {
@@ -157,6 +178,14 @@ export function TenantsClient() {
               ? `${t.devices} ${t.devices === 1 ? "جهاز" : t.devices === 2 ? "جهازان" : "أجهزة"}`
               : "بلا أجهزة"}
           </div>
+          {/* §٢١٢: الصف يفتح بنقرة، وهذه علامته الظاهرة ونقطة بدء لوحة المفاتيح */}
+          <button
+            type="button"
+            className="plt-row-open"
+            onClick={() => router.push(`/platform/tenants/${t.id}`)}
+          >
+            التفاصيل
+          </button>
         </>
       ),
     },
@@ -192,8 +221,17 @@ export function TenantsClient() {
         </>
       ),
     },
-    { key: "actions", header: "ما يمكنك فعله", render: (t: TenantRow) => t.actions },
-    { key: "support", header: "وصول الدعم", render: (t: TenantRow) => t.support_access },
+    // نصّان مرسومان (PLT-02) يبقيان، بوزن ثانوي فلا يزاحمان الاسم والحالة
+    {
+      key: "actions",
+      header: "ما يمكنك فعله",
+      render: (t: TenantRow) => <span className="plt-cell-minor">{t.actions}</span>,
+    },
+    {
+      key: "support",
+      header: "وصول الدعم",
+      render: (t: TenantRow) => <span className="plt-cell-minor">{t.support_access}</span>,
+    },
   ];
 
   return (
@@ -233,17 +271,47 @@ export function TenantsClient() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
-                <div className="pos-chips" role="group" aria-label="الاستحقاق">
-                  {FILTERS.map(([k, label]) => (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`pos-chip${filter === k ? " pos-chip--on" : ""}`}
-                      onClick={() => setFilter(k)}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                <div className="plt-filters">
+                  <div
+                    className="pos-chips plt-filters__row"
+                    role="group"
+                    aria-label="حالة الاشتراك"
+                  >
+                    <span className="plt-filters__label" aria-hidden="true">
+                      الحالة
+                    </span>
+                    {STATUS_FILTERS.map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        aria-pressed={filter === k}
+                        className={`pos-chip${filter === k ? " pos-chip--on" : ""}`}
+                        onClick={() => setFilter(k)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    className="pos-chips plt-filters__row"
+                    role="group"
+                    aria-label="يحتاج متابعة"
+                  >
+                    <span className="plt-filters__label" aria-hidden="true">
+                      متابعة
+                    </span>
+                    {WATCH_FILTERS.map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        aria-pressed={filter === k}
+                        className={`pos-chip${filter === k ? " pos-chip--on" : ""}`}
+                        onClick={() => setFilter(k)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             ) : null}
@@ -298,15 +366,23 @@ export function TenantsClient() {
                           ? "متاجر"
                           : "متجراً"}
                   </strong>{" "}
-                  <span className="acc-choice__note">{tenantsWord(data.shown)} في هذا المرشّح</span>
+                  {/* §٢١٢: العدد مرة واحدة — الجزئي يظهر فقط حين يضيّق مرشّح أو بحث */}
+                  {filter !== "all" || q.trim() ? (
+                    <span className="acc-choice__note">
+                      {tenantsWord(data.shown)} في هذا المرشّح
+                    </span>
+                  ) : null}
                 </div>
-                <Table
-                  caption="المستأجرون"
-                  columns={columns}
-                  rows={data.tenants}
-                  rowKey={(t) => t.id}
-                  onOpenRow={(t) => router.push(`/platform/tenants/${t.id}`)}
-                />
+                <div ref={tableBox} className="plt-tenants">
+                  <Table
+                    caption="المستأجرون"
+                    columns={columns}
+                    rows={data.tenants}
+                    rowKey={(t) => t.id}
+                    onOpenRow={(t) => router.push(`/platform/tenants/${t.id}`)}
+                    forceCards={narrow}
+                  />
+                </div>
                 <p className="acc-choice__note">{data.access_rule}</p>
                 <p className="acc-choice__note">
                   ما يلزم المشغّل لتشغيل الخدمة: الاشتراك، الأجهزة، صحة المزامنة، حجم التخزين. أرقام
