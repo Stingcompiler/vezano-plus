@@ -15,6 +15,7 @@ import "@/features/market/market.css";
 import "./platform.css";
 import { hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "ready" | "validation_error" | "permission_denied" | "success";
@@ -171,7 +172,7 @@ export function EntitlementsClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">
-              إدارة الاستحقاقات وإعدادات التشغيل — لا تجاوز عام يكسر عزل المستأجرين
+              <PageTitle text="إدارة الاستحقاقات وإعدادات التشغيل — لا تجاوز عام يكسر عزل المستأجرين" />
             </h2>
             <span className="cat-head__hint">
               يُدير المشغّل استحقاقات الباقات وأعلام التشغيل، لكن لا يوجد مفتاح «طبّق على الجميع»
