@@ -194,10 +194,10 @@ def _receipt_op(
             },
             {
                 "entity": "inventory.GoodsReceiptLine",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "line_id": "l1",
+                    "line_id": mid,
                     "receipt_id": rid,
                     "item_id": item_id,
                     "item_name": "سكر",
@@ -210,10 +210,10 @@ def _receipt_op(
             },
             {
                 "entity": "inventory.StockMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": "m",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": item_id,
                     "delta_base_qty_milli": base,
@@ -373,10 +373,10 @@ def _count_op(c: dict[str, Any], lines: list[tuple[str, str, str, str]]) -> dict
             *[
                 {
                     "entity": "inventory.CountLine",
-                    "id": str(uuid.uuid4()),
+                    "id": (mid := str(uuid.uuid4())),
                     "schema_version": 1,
                     "payload": {
-                        "line_id": f"l{i}",
+                        "line_id": mid,
                         "session_id": sid,
                         "item_id": item_id,
                         "item_name": name,
@@ -570,15 +570,15 @@ def _transfer_op(
     tid = str(uuid.uuid4())
     line_members = []
     move_members = []
-    for i, (item_id, name, qty, factor) in enumerate(lines):
+    for item_id, name, qty, factor in lines:
         base = str(int(qty) * int(factor) // 1000)
         line_members.append(
             {
                 "entity": "inventory.StockTransferLine",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "line_id": f"l{i}",
+                    "line_id": mid,
                     "transfer_id": tid,
                     "item_id": item_id,
                     "item_name": name,
@@ -593,10 +593,10 @@ def _transfer_op(
         move_members.append(
             {
                 "entity": "inventory.StockMovement",
-                "id": str(uuid.uuid4()),
+                "id": (mid := str(uuid.uuid4())),
                 "schema_version": 1,
                 "payload": {
-                    "movement_id": f"m{i}",
+                    "movement_id": mid,
                     "branch_id": str(c["branch"].id),
                     "item_id": item_id,
                     "delta_base_qty_milli": str(-int(base)),

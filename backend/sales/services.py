@@ -108,6 +108,29 @@ def _dt(value: Any) -> Any:
     return parsed if timezone.is_aware(parsed) else timezone.make_aware(parsed)
 
 
+def _exceeds_discount_cap(
+    user: User | None, branch_id: uuid.UUID, discount: int, subtotal: int
+) -> bool:
+    """يقيس الخصم بسقف دور البائع في فرع البيع (حدّ العملية والنسبة؛ صفر = بلا حدّ). الرفض ليس
+    المطلوب دون اتصال (0005 §٧.٤)، والمطلوب أن يكتشف الخادم التجاوز (مراجعة 2026-11-05 بند ٣)."""
+    if discount <= 0:
+        return False
+    from core.models import UserBranchAccess
+
+    is_owner = bool(user and user.is_owner)
+    access = (
+        UserBranchAccess.unscoped.filter(user=user, branch_id=branch_id, revoked_at__isnull=True)
+        .select_related("role")
+        .first()
+        if user
+        else None
+    )
+    caps = caps_for(access.role.code if access else "", is_owner)
+    if caps.per_op_minor and discount > caps.per_op_minor:
+        return True
+    return bool(caps.percent and discount * 100 > subtotal * caps.percent)
+
+
 def apply_sale(
     tenant_id: uuid.UUID,
     device_id: uuid.UUID,
@@ -121,10 +144,12 @@ def apply_sale(
     if Sale.unscoped.filter(tenant_id=tenant_id, id=entity_id).exists():
         return
     user = User.unscoped.filter(id=payload["user_id"]).first()
+    branch_id = uuid.UUID(str(payload["branch_id"]))
+    discount = int(payload.get("discount_minor", 0) or 0)
     Sale.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
-        branch_id=uuid.UUID(str(payload["branch_id"])),
+        branch_id=branch_id,
         device_id=device_id,
         shift_id=uuid.UUID(str(payload["shift_id"])) if payload.get("shift_id") else None,
         user_id=uuid.UUID(str(payload["user_id"])),
@@ -134,8 +159,11 @@ def apply_sale(
         subtotal_minor=int(payload["subtotal_minor"]),
         discount_mode=str(payload.get("discount_mode", "") or ""),
         discount_value=str(payload.get("discount_value", "") or ""),
-        discount_minor=int(payload.get("discount_minor", 0) or 0),
+        discount_minor=discount,
         discount_reason=str(payload.get("discount_reason", "") or ""),
+        exceeds_discount_cap=_exceeds_discount_cap(
+            user, branch_id, discount, int(payload["subtotal_minor"])
+        ),
         total_minor=int(payload["total_minor"]),
         business_date=parse_date(str(payload["business_date"])) or timezone.localdate(),
         occurred_at=_dt(payload.get("occurred_at")),
@@ -296,12 +324,16 @@ def apply_sale_return_line(
     if ret is None or line is None or line.sale_id != ret.sale_id:
         raise BusinessConflict("return_line_not_in_sale", str(payload["sale_line_id"]))
     qty = int(payload["qty_milli"])
-    already = (
-        SaleReturnLine.unscoped.filter(tenant_id=tenant_id, sale_line=line).aggregate(
-            q=Sum("qty_milli")
-        )["q"]
-        or 0
+    total = int(payload["line_total_minor"])
+    # الاستحقاق من سطر البيع الأصلي لا مما يرسله الجهاز: الجهاز يأخذ سعر الأصل، فسعر أعلى لا يأتي
+    # إلا من طلب مُعدّ — يُحجر قبل أن يمسّ الصندوق (مراجعة 2026-11-05 بند ١)
+    if int(payload["unit_price_minor"]) > line.unit_price_minor:
+        raise BusinessConflict("return_price_exceeds_sale", str(line.id))
+    sums = SaleReturnLine.unscoped.filter(tenant_id=tenant_id, sale_line=line).aggregate(
+        q=Sum("qty_milli"), v=Sum("line_total_minor")
     )
+    already = sums["q"] or 0
+    already_value = sums["v"] or 0
     SaleReturnLine.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
@@ -311,8 +343,10 @@ def apply_sale_return_line(
         factor_milli=int(payload["factor_milli"]),
         qty_milli=qty,
         unit_price_minor=int(payload["unit_price_minor"]),
-        line_total_minor=int(payload["line_total_minor"]),
+        line_total_minor=total,
     )
-    if int(already) + qty > line.qty_milli and not ret.exceeds_original:
+    over_qty = int(already) + qty > line.qty_milli
+    over_value = int(already_value) + total > line.line_total_minor
+    if (over_qty or over_value) and not ret.exceeds_original:
         ret.exceeds_original = True
         ret.save(update_fields=["exceeds_original"])

@@ -16021,6 +16021,7 @@ export interface components {
                 device_id: string;
                 device_name: string;
                 discount_minor: string;
+                exceeds_discount_cap: boolean;
                 id: string;
                 invoice_number: string;
                 occurred_at: string;
@@ -16051,6 +16052,7 @@ export interface components {
             device_id: string;
             device_name: string;
             discount_minor: string;
+            exceeds_discount_cap: boolean;
             id: string;
             invoice_number: string;
             kept_of: unknown[];
@@ -16120,6 +16122,7 @@ export interface components {
                     device_id: string;
                     device_name: string;
                     discount_minor: string;
+                    exceeds_discount_cap: boolean;
                     id: string;
                     invoice_number: string;
                     lines: {
@@ -16156,6 +16159,7 @@ export interface components {
                     device_id: string;
                     device_name: string;
                     discount_minor: string;
+                    exceeds_discount_cap: boolean;
                     id: string;
                     invoice_number: string;
                     lines: {
@@ -16201,6 +16205,7 @@ export interface components {
                 device_id: string;
                 device_name: string;
                 discount_minor: string;
+                exceeds_discount_cap: boolean;
                 id: string;
                 invoice_number: string;
                 kept_of: unknown[];

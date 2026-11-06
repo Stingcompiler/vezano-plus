@@ -55483,6 +55483,9 @@
                 "discount_minor": {
                   "type": "string"
                 },
+                "exceeds_discount_cap": {
+                  "type": "boolean"
+                },
                 "id": {
                   "type": "string"
                 },
@@ -55530,6 +55533,7 @@
                 "party_name",
                 "subtotal_minor",
                 "discount_minor",
+                "exceeds_discount_cap",
                 "total_minor",
                 "cash_minor",
                 "bank_minor",
@@ -55614,6 +55618,9 @@
           },
           "discount_minor": {
             "type": "string"
+          },
+          "exceeds_discount_cap": {
+            "type": "boolean"
           },
           "id": {
             "type": "string"
@@ -55822,6 +55829,7 @@
           "party_name",
           "subtotal_minor",
           "discount_minor",
+          "exceeds_discount_cap",
           "total_minor",
           "cash_minor",
           "bank_minor",
@@ -55892,6 +55900,9 @@
                     "discount_minor": {
                       "type": "string"
                     },
+                    "exceeds_discount_cap": {
+                      "type": "boolean"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -55986,6 +55997,7 @@
                     "party_name",
                     "subtotal_minor",
                     "discount_minor",
+                    "exceeds_discount_cap",
                     "total_minor",
                     "cash_minor",
                     "bank_minor",
@@ -56035,6 +56047,9 @@
                     "discount_minor": {
                       "type": "string"
                     },
+                    "exceeds_discount_cap": {
+                      "type": "boolean"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -56129,6 +56144,7 @@
                     "party_name",
                     "subtotal_minor",
                     "discount_minor",
+                    "exceeds_discount_cap",
                     "total_minor",
                     "cash_minor",
                     "bank_minor",
@@ -56213,6 +56229,9 @@
               },
               "discount_minor": {
                 "type": "string"
+              },
+              "exceeds_discount_cap": {
+                "type": "boolean"
               },
               "id": {
                 "type": "string"
@@ -56397,6 +56416,7 @@
               "party_name",
               "subtotal_minor",
               "discount_minor",
+              "exceeds_discount_cap",
               "total_minor",
               "cash_minor",
               "bank_minor",
