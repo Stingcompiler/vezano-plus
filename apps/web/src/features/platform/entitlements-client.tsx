@@ -2,7 +2,7 @@
 
 import { Button, Notice, Status, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "@/features/home/home.css";
@@ -240,105 +240,148 @@ export function EntitlementsClient() {
                     من «الباقات والتسعير».
                   </p>
                 ) : null}
-                <ul className="cus-list">
-                  {data.rows.map((r) => {
-                    const recent = data.plans
-                      .map((p) => ({ p, c: p.cells.find((c) => c.feature === r.feature) }))
-                      .filter((x) => x.c?.overridden)
-                      .sort((a, b) => (a.c!.changed_at < b.c!.changed_at ? 1 : -1))[0];
-                    return (
-                      <li key={r.feature}>
-                        <strong>{r.label}</strong>
-                        <div className="cus-sub">
-                          {recent && recent.c
-                            ? `${recent.c.enabled ? "فُعّلت" : "أُوقفت"} ${planWord(recent.p.name)} للتوّ`
-                            : r.note}
-                        </div>
-                        <Status state={KIND_STATE[r.kind]} label={r.kind_label} />
-                        {r.kind !== "limit" ? (
-                          <div className="pos-chips" role="group" aria-label={r.label}>
-                            {data.plans.map((p) => {
-                              const c = p.cells.find((x) => x.feature === r.feature)!;
-                              return (
-                                <button
-                                  key={p.code}
-                                  type="button"
-                                  className={`pos-chip${c.enabled ? " pos-chip--on" : ""}`}
-                                  aria-pressed={c.enabled}
-                                  onClick={() => void toggle(p, c)}
-                                >
-                                  {p.name}
-                                  {r.kind === "quota" && c.quota !== null ? ` · ${c.quota}` : ""}
-                                </button>
-                              );
-                            })}
+                {/* §٢١٢: مصفوفة — الخصائص صفوف والباقات أعمدة؛ كل خانة حالتها بكلمتها، والنقر يحفظ فوراً */}
+                <p className="acc-choice__note plt-ent__how">
+                  النقر على خانة يحفظ التغيير لتلك الباقة فوراً ويُسجَّل باسمك.
+                </p>
+                <div
+                  className="plt-ent"
+                  style={{ "--plt-ent-plans": data.plans.length } as CSSProperties}
+                >
+                  <div className="plt-ent__head" aria-hidden="true">
+                    <span>الخاصية</span>
+                    <span className="plt-ent__cells">
+                      {data.plans.map((p) => (
+                        <span key={p.code}>{p.name}</span>
+                      ))}
+                    </span>
+                  </div>
+                  <ul className="plt-ent__rows">
+                    {data.rows.map((r) => {
+                      const recent = data.plans
+                        .map((p) => ({ p, c: p.cells.find((c) => c.feature === r.feature) }))
+                        .filter((x) => x.c?.overridden)
+                        .sort((a, b) => (a.c!.changed_at < b.c!.changed_at ? 1 : -1))[0];
+                      return (
+                        <li key={r.feature} className="plt-ent__row">
+                          <div className="plt-ent__feature">
+                            <strong>{r.label}</strong>
+                            <div className="cus-sub">
+                              {recent && recent.c
+                                ? `${recent.c.enabled ? "فُعّلت" : "أُوقفت"} ${planWord(recent.p.name)} للتوّ`
+                                : r.note}
+                            </div>
+                            <Status state={KIND_STATE[r.kind]} label={r.kind_label} />
                           </div>
-                        ) : (
-                          <div className="cus-sub">
-                            {data.plans
-                              .map(
-                                (p) =>
-                                  `${p.name}: ${p.cells.find((x) => x.feature === r.feature)?.limit ?? "—"}`,
-                              )
-                              .join(" · ")}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                          {r.kind !== "limit" ? (
+                            <div className="plt-ent__cells" role="group" aria-label={r.label}>
+                              {data.plans.map((p) => {
+                                const c = p.cells.find((x) => x.feature === r.feature)!;
+                                const justSaved =
+                                  saved?.plan_code === p.code && saved.feature === r.feature;
+                                return (
+                                  <button
+                                    key={p.code}
+                                    type="button"
+                                    className="plt-ent__switch"
+                                    aria-pressed={c.enabled}
+                                    aria-busy={busy === `${p.code}:${c.feature}` || undefined}
+                                    onClick={() => void toggle(p, c)}
+                                  >
+                                    <span className="plt-ent__plan">{p.name}</span>
+                                    <span className="plt-ent__track" aria-hidden="true" />
+                                    <span className="plt-ent__state" aria-hidden="true">
+                                      {c.enabled ? "مفعّلة" : "موقوفة"}
+                                      {r.kind === "quota" && c.quota !== null ? (
+                                        <>
+                                          {" · "}
+                                          <span className="sting-mono">{c.quota}</span>
+                                        </>
+                                      ) : null}
+                                      {justSaved ? " · حُفظ" : ""}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="plt-ent__cells">
+                              {data.plans.map((p) => (
+                                <span key={p.code} className="plt-ent__limit">
+                                  <span className="plt-ent__plan">{p.name}</span>
+                                  <span className="sting-mono">
+                                    {p.cells.find((x) => x.feature === r.feature)?.limit ?? "—"}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
 
                 <h3 className="cat-head__title">أعلام التشغيل</h3>
                 <p className="acc-choice__note">
                   علمٌ بلا نطاق قد يتسرّب إلى الجميع — النطاق باقة أو بيئة صراحةً.
                 </p>
-                <TextField
-                  label="مفتاح العلم"
-                  mono
-                  value={flagKey}
-                  onChange={(e) => setFlagKey(e.target.value)}
-                />
-                <div className="pos-chips" role="group" aria-label="نطاق العلم">
-                  {(
-                    [
-                      ["plan", "باقة"],
-                      ["env", "بيئة"],
-                    ] as const
-                  ).map(([k, label]) => (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`pos-chip${flagScopeKind === k ? " pos-chip--on" : ""}`}
-                      onClick={() => setFlagScopeKind(k)}
+                {/* §٢١٢: نموذج محدود العرض — المفتاح ونوع النطاق وقيمته مجموعة واحدة */}
+                <fieldset className="plt-flag-form">
+                  <legend className="visually-hidden">علم تشغيل جديد</legend>
+                  <TextField
+                    label="مفتاح العلم"
+                    mono
+                    value={flagKey}
+                    onChange={(e) => setFlagKey(e.target.value)}
+                  />
+                  <div className="plt-flag-form__scope">
+                    <span className="plt-flag-form__label">نوع النطاق</span>
+                    <div className="pos-chips" role="group" aria-label="نطاق العلم">
+                      {(
+                        [
+                          ["plan", "باقة"],
+                          ["env", "بيئة"],
+                        ] as const
+                      ).map(([k, label]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          aria-pressed={flagScopeKind === k}
+                          className={`pos-chip${flagScopeKind === k ? " pos-chip--on" : ""}`}
+                          onClick={() => setFlagScopeKind(k)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <TextField
+                    label="النطاق (رمز الباقة أو اسم البيئة)"
+                    mono
+                    value={flagScope}
+                    onChange={(e) => setFlagScope(e.target.value)}
+                  />
+                  <div className="acc-actions plt-flag-form__save">
+                    <Button
+                      loading={busy === "flag"}
+                      onClick={() => void saveFlag()}
+                      disabledReason={flagKey.trim() ? undefined : "اكتب مفتاح العلم"}
                     >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <TextField
-                  label="النطاق (رمز الباقة أو اسم البيئة)"
-                  mono
-                  value={flagScope}
-                  onChange={(e) => setFlagScope(e.target.value)}
-                />
-                <div className="acc-actions">
-                  <Button
-                    loading={busy === "flag"}
-                    onClick={() => void saveFlag()}
-                    disabledReason={flagKey.trim() ? undefined : "اكتب مفتاح العلم"}
-                  >
-                    حفظ العلم
-                  </Button>
-                </div>
+                      حفظ العلم
+                    </Button>
+                  </div>
+                </fieldset>
                 {data.flags.length ? (
-                  <ul className="cus-list">
+                  <ul className="plt-flags">
                     {data.flags.map((f) => (
-                      <li key={`${f.key}:${f.scope_kind}:${f.scope}`}>
+                      <li key={`${f.key}:${f.scope_kind}:${f.scope}`} className="plt-flags__row">
                         <strong className="sting-mono">{f.key}</strong>
-                        <div className="cus-sub">
+                        <span className="plt-flags__scope">
                           {f.scope_kind === "plan" ? "باقة" : "بيئة"}{" "}
-                          <span className="sting-mono">{f.scope}</span> · {f.changed_by_name}
-                        </div>
+                          <span className="sting-mono">{f.scope}</span>
+                        </span>
+                        <span className="plt-flags__by">{f.changed_by_name}</span>
                         <Status
                           state={f.enabled ? "success" : "expired"}
                           label={f.enabled ? "مفعّل" : "موقوف"}
