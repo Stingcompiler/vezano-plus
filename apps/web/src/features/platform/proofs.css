@@ -1,0 +1,14 @@
+/* 0005 §٢١٢ — مراجعة الدفع: العنوان والعدّاد سطر واحد */
+.plt-proofs__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.plt-proofs__head .acc-choice__note {
+  margin: 0;
+}
+.plt-proofs__count {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-strong);
+}
