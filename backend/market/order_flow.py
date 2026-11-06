@@ -456,8 +456,13 @@ def decline(*, actor: User, viewer: home.Viewer, order_id: uuid.UUID, reason: st
     return o
 
 
-def accept_version(*, actor: User, order_id: uuid.UUID, number: int) -> MarketOrder:
-    """قبول المشتري إصداراً بعينه — يصير نسخة الاتفاق المثبَّتة."""
+def accept_version(
+    *, actor: User, viewer: home.Viewer, order_id: uuid.UUID, number: int
+) -> MarketOrder:
+    """قبول المشتري إصداراً بعينه — يصير نسخة الاتفاق المثبَّتة. القبول توقيع على مبلغ النسخة
+    كالإرسال (`purchase_approve`): بلا حدّ = لا قبول، وفوق الحدّ يُرفض (مراجعة 2026-11-05 بند ٥)."""
+    from market.orders import order_limit
+
     found = load_order(order_id)
     if found is None or found[1] != "buyer":
         raise MarketRejected("not_found")
@@ -478,6 +483,12 @@ def accept_version(*, actor: User, order_id: uuid.UUID, number: int) -> MarketOr
             raise MarketRejected("version_superseded", "version", {"latest": newer.number})
         if v.valid_until is not None and v.valid_until < timezone.localdate():
             raise MarketRejected("version_expired", "version")
+        limit = order_limit(viewer)
+        total = _version_total(v)
+        if limit is not None and (limit == 0 or total > limit):
+            raise MarketRejected(
+                "permission_denied", "", {"limit_minor": str(limit), "total_minor": str(total)}
+            )
         v.accepted_at = timezone.now()
         v.save(update_fields=["accepted_at", "updated_at"])
         o.agreed_version = v.number

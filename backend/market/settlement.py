@@ -12,7 +12,8 @@ import uuid
 from datetime import date
 from typing import Any
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from core import audit, home
@@ -216,22 +217,29 @@ def match_payment(
         raise MarketRejected("payment_unknown")
     if pay.status != MarketPayment.Status.RECORDED:
         raise MarketRejected("already_decided", "status")
-    with platform_context():
-        pay.status = MarketPayment.Status.MATCHED if accept else MarketPayment.Status.REJECTED
-        pay.matched_at = timezone.now()
-        pay.matched_by_name = actor.display_name
-        pay.decision_note = note[:300]
-        pay.save(update_fields=["status", "matched_at", "matched_by_name", "decision_note"])
+    status = MarketPayment.Status.MATCHED if accept else MarketPayment.Status.REJECTED
+    now = timezone.now()
+    with platform_context(), transaction.atomic():
+        # الانتقال مشروط بالحالة في القاعدة نفسها: طلبان متزامنان للدفعة نفسها يمرّ أحدهما وحده،
+        # فأثرها المالي مرة واحدة (مراجعة 2026-11-05 بند ٤)
+        won = MarketPayment.unscoped.filter(id=pay.id, status=MarketPayment.Status.RECORDED).update(
+            status=status,
+            matched_at=now,
+            matched_by_name=actor.display_name,
+            decision_note=note[:300],
+        )
+        if not won:
+            raise MarketRejected("already_decided", "status")
+        pay.refresh_from_db()
         if accept:
             targets = pay.allocations or [
                 {"order_id": str(o.id), "amount_minor": str(pay.amount_minor)}
             ]
             for t in targets:
-                tgt = MarketOrder.unscoped.filter(id=t["order_id"]).first()
-                if tgt is None:
-                    continue
-                tgt.paid_minor = int(tgt.paid_minor or 0) + int(t["amount_minor"])
-                tgt.save(update_fields=["paid_minor", "updated_at"])
+                # الجمع في القاعدة لا في الذاكرة: دفعتان مستقلتان على الطلب نفسه تُجمعان بدقة
+                MarketOrder.unscoped.filter(id=t["order_id"]).update(
+                    paid_minor=F("paid_minor") + int(t["amount_minor"]), updated_at=now
+                )
     record_event(
         o,
         kind="payment_matched" if accept else "payment_rejected",
