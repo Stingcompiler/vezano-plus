@@ -117,7 +117,8 @@ test("VP13: سجل التدقيق — رابط القسم وعنوانه، ال�
   await operatorLogin(page);
   const link = page
     .getByRole("navigation", { name: "أقسام المشغّل" })
-    .getByRole("link", { name: "سجل التدقيق", exact: true });
+    // المجموعة مطويّة حتى يُفتح قسمها (0005 §٢١٢) — الرابط في DOM بعنوانه
+    .getByRole("link", { name: "سجل التدقيق", exact: true, includeHidden: true });
   await expect(link).toHaveAttribute("href", "/platform/audit");
   await goSection(page, "سجل التدقيق");
   await expect(page).toHaveURL(/\/platform\/audit$/);
