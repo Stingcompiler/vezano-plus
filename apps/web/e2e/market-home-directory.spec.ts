@@ -280,6 +280,16 @@ test.describe("MP-01", () => {
     await expect(page.locator('[data-screen="MP-01"]')).toContainText("دفتر الموردين يعمل بلا سوق");
   });
 
+  // تقرير الموقع العام 2026-11-07: «أنشئ حساب سوق» كان يمرّ بـ/welcome فيحوّل جهازاً مهيّأً سابقاً إلى
+  // قفل PIN — الزرّ يذهب إلى التسجيل مباشرةً فيبقى مقصد الزائر
+  test("دعوة حساب السوق تفتح التسجيل لا شاشة الترحيب", async ({ page }) => {
+    await seedArea(page, "المدينة الصناعية");
+    await page.route(/\/api\/public\/market(\?.*)?$/, (route) => route.fulfill(json(200, HOME())));
+    await page.goto("/market");
+    await page.getByRole("button", { name: "أنشئ حساب سوق مجاناً" }).click();
+    await expect(page).toHaveURL(/\/register$/);
+  });
+
   test("stale → offline: عروض من آخر جلب بوقتها حين ينقطع الاتصال، ولا كاش = السوق يحتاج اتصالاً", async ({
     page,
     context,
