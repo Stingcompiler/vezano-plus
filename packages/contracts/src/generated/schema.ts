@@ -12176,6 +12176,24 @@ export interface components {
             };
             updated_at: string;
         };
+        GetOrgAppsResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
+        };
+        PostOrgAppsByReleaseIdLinkResponse: {
+            expires_in: number;
+            url: string;
+        };
         GetOrgAuditResponse: {
             branches: {
                 id: string;
@@ -12926,11 +12944,11 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
+                pay_to: {
                     account: string;
                     bank: string;
                     holder: string;
-                };
+                } | null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -12999,11 +13017,7 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
-                    account: string;
-                    bank: string;
-                    holder: string;
-                };
+                pay_to: null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -13873,6 +13887,48 @@ export interface components {
                 suspended_reason_code: string;
                 tenant_id: string;
             };
+        };
+        GetPlatformAppsResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
+        };
+        PostPlatformAppsResponse: {
+            release: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            };
+        };
+        PostPlatformAppsByReleaseIdRemoveResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
         };
         GetPlatformAuditResponse: {
             categories: {
@@ -15143,7 +15199,13 @@ export interface components {
                     name: string;
                     trial: boolean;
                 }[];
-                proofs: unknown[];
+                proofs: {
+                    amount_minor: string;
+                    id: string;
+                    reference: string;
+                    status: string;
+                    submitted_at: string;
+                }[];
                 status: string;
                 status_label: string;
                 storage: {
@@ -15424,6 +15486,16 @@ export interface components {
                 undo_until: string;
                 unread: number;
             };
+        };
+        GetPublicAppsResponse: {
+            releases: {
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                version: string;
+            }[];
         };
         PostPublicContactResponse: {
             id: string;
@@ -23556,7 +23628,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetOrgAppsResponse"];
+                };
             };
         };
     };
@@ -23576,7 +23650,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostOrgAppsByReleaseIdLinkResponse"];
+                };
             };
             /** @description No response body */
             404: {
@@ -25601,7 +25677,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetPlatformAppsResponse"];
+                };
             };
         };
     };
@@ -25619,7 +25697,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostPlatformAppsResponse"];
+                };
             };
             /** @description No response body */
             400: {
@@ -25653,7 +25733,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostPlatformAppsByReleaseIdRemoveResponse"];
+                };
             };
             /** @description No response body */
             404: {
@@ -27426,7 +27508,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetPublicAppsResponse"];
+                };
             };
         };
     };

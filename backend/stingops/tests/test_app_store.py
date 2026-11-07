@@ -50,6 +50,7 @@ def test_publish_browse_download_remove(
     assert c.post(API, {**form, "file": _apk()}, headers=admin).status_code == 409
     assert len(list(tmp_path.iterdir())) == 1
     assert OperatorAccessLog.objects.filter(action="app_release_published").count() == 1
+    assert c.get(API, headers=admin).json()["releases"][0]["id"] == rel["id"]
     # الفهرس العام بلا ملف ولا رابط، وفهرس التاجر يحتاج جلسته
     pub = c.get("/api/public/apps").json()["releases"]
     assert pub == [

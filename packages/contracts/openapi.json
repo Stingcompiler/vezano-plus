@@ -6267,7 +6267,14 @@
         "tags": ["org"],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOrgAppsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6290,7 +6297,14 @@
         "tags": ["org"],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOrgAppsByReleaseIdLinkResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "No response body"
@@ -8147,7 +8161,14 @@
         "tags": ["platform"],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformAppsResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -8157,7 +8178,14 @@
         "tags": ["platform"],
         "responses": {
           "201": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformAppsResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "No response body"
@@ -8186,7 +8214,14 @@
         "tags": ["platform"],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformAppsByReleaseIdRemoveResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "No response body"
@@ -9910,7 +9945,14 @@
         "security": [{}],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPublicAppsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -39885,6 +39927,77 @@
         ],
         "type": "object"
       },
+      "GetOrgAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
+        "type": "object"
+      },
+      "PostOrgAppsByReleaseIdLinkResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_in": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["url", "expires_in"],
+        "type": "object"
+      },
       "GetOrgAuditResponse": {
         "additionalProperties": false,
         "properties": {
@@ -42871,9 +42984,6 @@
               "pay_to": {
                 "anyOf": [
                   {
-                    "type": "null"
-                  },
-                  {
                     "additionalProperties": false,
                     "properties": {
                       "account": {
@@ -42888,6 +42998,9 @@
                     },
                     "required": ["bank", "account", "holder"],
                     "type": "object"
+                  },
+                  {
+                    "type": "null"
                   }
                 ]
               },
@@ -42920,9 +43033,9 @@
               "currency",
               "period_label",
               "review_sla",
-              "cycles",
               "covers_until",
-              "pay_to"
+              "pay_to",
+              "cycles"
             ],
             "type": "object"
           },
@@ -43151,27 +43264,7 @@
                 "type": "array"
               },
               "pay_to": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "additionalProperties": false,
-                    "properties": {
-                      "account": {
-                        "type": "string"
-                      },
-                      "bank": {
-                        "type": "string"
-                      },
-                      "holder": {
-                        "type": "string"
-                      }
-                    },
-                    "required": ["bank", "account", "holder"],
-                    "type": "object"
-                  }
-                ]
+                "type": "null"
               },
               "period_label": {
                 "type": "string"
@@ -43202,9 +43295,9 @@
               "currency",
               "period_label",
               "review_sla",
-              "cycles",
               "covers_until",
-              "pay_to"
+              "pay_to",
+              "cycles"
             ],
             "type": "object"
           },
@@ -46627,6 +46720,177 @@
           }
         },
         "required": ["appeal"],
+        "type": "object"
+      },
+      "GetPlatformAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
+        "type": "object"
+      },
+      "PostPlatformAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "release": {
+            "additionalProperties": false,
+            "properties": {
+              "apple_url": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "platform_label": {
+                "type": "string"
+              },
+              "published_at": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": "integer"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "platform",
+              "platform_label",
+              "version",
+              "published_at",
+              "filename",
+              "size_bytes",
+              "sha256",
+              "apple_url"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["release"],
+        "type": "object"
+      },
+      "PostPlatformAppsByReleaseIdRemoveResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
         "type": "object"
       },
       "GetPlatformAuditResponse": {
@@ -51708,7 +51972,28 @@
                 "type": "array"
               },
               "proofs": {
-                "items": {},
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount_minor": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "reference": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "submitted_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "status", "amount_minor", "reference", "submitted_at"],
+                  "type": "object"
+                },
                 "type": "array"
               },
               "status": {
@@ -52806,6 +53091,41 @@
           }
         },
         "required": ["subscriber"],
+        "type": "object"
+      },
+      "GetPublicAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "name", "platform", "platform_label", "version", "published_at"],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
         "type": "object"
       },
       "PostPublicContactResponse": {
