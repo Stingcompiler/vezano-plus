@@ -109,3 +109,98 @@ def test_start_line_survives_upgrade_by_proof(ctx: dict[str, Any]) -> None:  # n
     start = after["timeline"][-1]
     assert start["kind"] == "start"
     assert start["kind_label"] == "بدء التجريبية" and start["to_plan"] == "تجريبية"
+
+
+def test_concurrent_extensions_keep_both(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """فحص 2026-11-07: تمديدان متزامنان من 10 و20 يوماً يضيفان 30 يوماً، بحدث لكل منهما."""
+    import threading
+
+    from django.db import connections
+
+    from stingops.subscriptions import extend
+
+    tenant = ctx["tenant"]
+    with tenant_context(tenant.id):
+        sub = ensure_subscription()
+        sub.state = TenantSubscription.State.ACTIVE
+        sub.expires_at = timezone.now() + timedelta(days=5)
+        sub.save()
+        before = sub.expires_at
+    barrier = threading.Barrier(2)
+    errors: list[BaseException] = []
+
+    def worker(days: int) -> None:
+        barrier.wait()
+        try:
+            extend(tenant, days=days, reason="دفع نقدي", by_name="هدى")
+        except BaseException as e:  # pragma: no cover — يظهر في التأكيد أدناه
+            errors.append(e)
+        finally:
+            connections.close_all()
+
+    threads = [threading.Thread(target=worker, args=(d,)) for d in (10, 20)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    with tenant_context(tenant.id):
+        assert TenantSubscription.objects.get().expires_at == before + timedelta(days=30)
+    with platform_context():
+        days = sorted(
+            SubscriptionEvent.objects.filter(tenant_id=tenant.id, kind="extend").values_list(
+                "days", flat=True
+            )
+        )
+    assert days == [10, 20]
+
+
+def test_plan_change_prices_current_cycle_and_rejects_archived(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """فحص 2026-11-07: مبلغ التجديد بسعر دورة الاشتراك القائمة، والباقة المؤرشفة لا تُسنَد."""
+    from core.models import PlanCatalog
+    from core.subscription import PLANS
+
+    c = Client()
+    oh = _operator_headers("ops11", "هدى — تشغيل")
+    tid = ctx["tenant"].id
+    url = f"/api/platform/tenants/{tid}/subscription"
+    with tenant_context(tid):
+        sub = ensure_subscription()
+        sub.plan_code = "dual"
+        sub.state = TenantSubscription.State.ACTIVE
+        sub.cycle = "yearly"
+        sub.expires_at = timezone.now() + timedelta(days=200)
+        sub.save()
+        expires = sub.expires_at
+    with platform_context():
+        PlanCatalog.objects.filter(code="single").update(price_yearly_minor=48000000)
+    PLANS.refresh()
+    r = _post(c, oh, url, {"action": "plan", "plan_code": "single", "reason": "تخفيض باتفاق"})
+    assert r.status_code == 200
+    assert r.json()["tenant"]["entitlement"]["renewal_amount_minor"] == "48000000"
+    with tenant_context(tid):
+        sub = TenantSubscription.objects.get()
+        assert sub.renewal_amount_minor == 48000000
+        assert sub.expires_at == expires and sub.cycle == "yearly"
+    # دورة لا تعرضها الباقة الجديدة: رفض صريح، والاشتراك كما هو
+    with platform_context():
+        PlanCatalog.objects.filter(code="dual").update(price_yearly_minor=0)
+    PLANS.refresh()
+    r = _post(c, oh, url, {"action": "plan", "plan_code": "dual", "reason": "ترقية"})
+    assert r.status_code == 409 and r.json()["detail"] == "cycle_unavailable"
+    with tenant_context(tid):
+        assert TenantSubscription.objects.get().plan_code == "single"
+    # الباقة المؤرشفة: لا تُسنَد، ومن عليها يبقى مقروءاً
+    with platform_context():
+        PlanCatalog.objects.filter(code="dual").update(price_yearly_minor=90000000)
+    _post(c, oh, "/api/platform/plans/dual/update", {"is_active": False, "reason": "توقّف"})
+    PLANS.refresh()
+    r = _post(c, oh, url, {"action": "plan", "plan_code": "dual", "reason": "ترقية"})
+    assert r.status_code == 409 and r.json()["detail"] == "plan_archived"
+    with tenant_context(tid):
+        sub = TenantSubscription.objects.get()
+        sub.plan_code = "dual"
+        sub.save(update_fields=["plan_code"])
+    note = _post(c, oh, url, {"action": "note", "reason": "مستأجر على باقة مؤرشفة"})
+    assert note.status_code == 200
+    assert note.json()["tenant"]["entitlement"]["plan_code"] == "dual"

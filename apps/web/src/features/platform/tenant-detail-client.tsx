@@ -109,6 +109,9 @@ const OP_ERRORS: Record<string, string> = {
   nothing_to_change: "لا تغيير عن الزيادات الحالية.",
   days_out_of_range: "الأيام بين 1 و365.",
   unknown_plan: "باقة غير معروفة.",
+  plan_archived: "هذه الباقة مؤرشفة — لا تُسنَد لمستأجر جديد.",
+  cycle_unavailable:
+    "الباقة الجديدة لا تعرض دورة فوترة هذا المستأجر — فعّل سعر الدورة في الكتالوج أولاً.",
   same_plan: "المستأجر على هذه الباقة أصلاً.",
   trial_not_reassignable: "لا تُعاد التجريبية بعد باقة مدفوعة.",
   already_suspended: "الاشتراك موقوف أصلاً.",

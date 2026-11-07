@@ -169,6 +169,8 @@ test.describe("PLT-02", () => {
       const url = new URL(route.request().url());
       const f = url.searchParams.get("filter") ?? "all";
       if (f === "late") return route.fulfill(json(200, LIST([], { filter: "late", total: 312 })));
+      if (f === "active")
+        return route.fulfill(json(200, LIST(ROWS.slice(0, 1), { filter: "active" })));
       return route.fulfill(json(200, LIST(ROWS)));
     });
     await operatorLogin(page);
@@ -229,6 +231,11 @@ test.describe("PLT-02", () => {
     await expect(root).toContainText("المستأجرون — 128 متجراً");
     await expect(root).not.toContainText("المبيعات:");
     await expect(root).not.toContainText('دخول كالمالك"');
+    // فحص 2026-11-07: المرشّح يجعل العنوان «المعروض من الإجمالي»
+    await page.getByRole("button", { name: "نشط", exact: true }).click();
+    await expect(root).toContainText("المستأجرون — 1 من 128 متجراً");
+    await page.getByRole("button", { name: "كل الاستحقاقات" }).click();
+    await expect(root).toContainText("المستأجرون — 128 متجراً");
     await page.getByRole("button", { name: "متأخرو السداد" }).click();
     await expectFrame(page, info, {
       screenId: "PLT-02",
