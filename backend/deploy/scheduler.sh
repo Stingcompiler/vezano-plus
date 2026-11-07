@@ -3,11 +3,22 @@
 #   01:00 النسخة الليلية لقاعدة البيانات (backup.sh)
 #   04:00 GROW-01/02 (grow_compute) = 06:00 بتوقيت الخرطوم، فيصدق «الفحص التالي غداً 6 ص»
 #   كل ساعة: فحص ذاتي للنسخ والقرص مع تنبيه بالبريد (ops_selfcheck؛ 0005 §١٤٨)
+#   دائماً: موزّع الإشعارات الفورية (push_dispatch --loop؛ 0005 §٢١٦) — يُعاد تشغيله إن توقّف
 set -u
+push_pid=""
+start_push() {
+  uv run --no-sync python manage.py push_dispatch --loop &
+  push_pid=$!
+}
+start_push
 last_backup=""
 last_grow=""
 last_check=""
 while true; do
+  if ! kill -0 "$push_pid" 2>/dev/null; then
+    echo "push_dispatch stopped — restarting"
+    start_push
+  fi
   day=$(date -u +%F)
   hour=$(date -u +%H)
   if [ "$hour" = "01" ] && [ "$last_backup" != "$day" ]; then

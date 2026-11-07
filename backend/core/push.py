@@ -9,7 +9,7 @@ import hashlib
 import json
 import os
 import uuid
-from typing import Any
+from typing import Any, Protocol
 
 from django.utils import timezone
 
@@ -106,13 +106,26 @@ def status_payload(device: Device) -> dict[str, Any]:
     }
 
 
-def send(ep: DeviceEndpoint, kind: str) -> dict[str, Any]:
-    """يرسل تنبيهاً من القائمة المغلقة؛ 404/410 من المزوّد = انتهى الاشتراك (يوسم لا يُحذف)."""
-    if kind not in NOTIFICATION_KINDS:
-        raise ValueError("kind")
+class PushTarget(Protocol):
+    """ما يلزم للإرسال: نقطة النهاية ومفتاحاها وحقول الحالة — لجهاز تاجر أو متصفح مشغّل."""
+
+    endpoint: str
+    p256dh: str
+    auth: str
+    last_used_at: Any
+    expired_at: Any
+    last_error: str
+
+    def save(self, *, update_fields: list[str]) -> None: ...
+
+
+def deliver(ep: PushTarget, *, title: str, body: str, path: str, tag: str) -> dict[str, Any]:
+    """يرسل تنبيهاً واحداً؛ 404/410 من المزوّد = انتهى الاشتراك (يوسم لا يُحذف).
+
+    الحمولة `path` لا `url`: عامل الخدمة يفتح `data.path` عند النقر (0005 §٢١٦ — كان يفتح «/»)."""
     if not push_configured():
         return {"sent": False, "reason": "push_not_configured"}
-    payload = json.dumps({"kind": kind, **NOTIFICATION_KINDS[kind]})
+    payload = json.dumps({"kind": tag, "tag": tag, "title": title, "body": body, "path": path})
     try:
         from pywebpush import WebPushException, webpush
 
@@ -124,7 +137,7 @@ def send(ep: DeviceEndpoint, kind: str) -> dict[str, Any]:
             data=payload,
             vapid_private_key=os.environ.get("STING_VAPID_PRIVATE_KEY", ""),
             vapid_claims={"sub": os.environ.get("STING_VAPID_SUBJECT", "mailto:plus@vezano.app")},
-            ttl=60,
+            ttl=3600,
         )
     except WebPushException as e:  # pragma: no cover — يحتاج مزوّداً حقيقياً
         status = getattr(getattr(e, "response", None), "status_code", 0) or 0
@@ -136,11 +149,19 @@ def send(ep: DeviceEndpoint, kind: str) -> dict[str, Any]:
         ep.last_error = f"provider_{status or 'error'}"[:120]
         ep.save(update_fields=["last_error"])
         return {"sent": False, "reason": ep.last_error}
-    except Exception:  # noqa: BLE001 — مكتبة/شبكة: لا نُسقط الطلب
+    except Exception:  # noqa: BLE001 — مكتبة/شبكة: لا نُسقط الموزّع
         return {"sent": False, "reason": "provider_error"}
     ep.last_used_at = timezone.now()
     ep.save(update_fields=["last_used_at"])
     return {"sent": True, "reason": ""}
+
+
+def send(ep: DeviceEndpoint, kind: str) -> dict[str, Any]:
+    """تنبيه من القائمة المغلقة (التجربة ونحوها)."""
+    if kind not in NOTIFICATION_KINDS:
+        raise ValueError("kind")
+    k = NOTIFICATION_KINDS[kind]
+    return deliver(ep, title=k["title"], body=k["body"], path=k["url"], tag=kind)
 
 
 def notify_device(device_id: uuid.UUID, kind: str) -> dict[str, Any]:

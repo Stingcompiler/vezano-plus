@@ -15,7 +15,16 @@ export default defineConfig({
   // مواصفات الويب نفسها + مواصفات شاشات الحاسوب وحده (e2e/)
   testDir: "..",
   testMatch: /(web\/e2e|desktop\/e2e)\/.*\.spec\.ts$/,
-  testIgnore: [/platform-/, /probe\.spec/, /web-install/, /web-notify/, /pwa-icons/, /seo-headers/],
+  // live-push: اشتراك متصفح المشغّل (PLT-15) وWeb Push من المتصفح — لا شيء منهما في تطبيق الحاسوب
+  testIgnore: [
+    /platform-/,
+    /probe\.spec/,
+    /web-install/,
+    /web-notify/,
+    /pwa-icons/,
+    /seo-headers/,
+    /live-push\.spec/,
+  ],
   // صفحة الهبوط التسويقية لا تُعرض في تطبيق الحاسوب (يفتح على الدخول — platform/desktop-root.tsx)، ومقياس
   // انزياح التخطيط فيها يقيس تحميل خط Next المسبق بمقاييسه المضبوطة، لا شيئاً في التطبيق
   grepInvert: /الهبوط: العنوان كلمةً كلمة/,

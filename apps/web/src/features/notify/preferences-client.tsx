@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Frame, Notice, Status, SwitchField, TextField } from "@sting/ui-web";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -19,14 +20,17 @@ import { getStorage } from "@/lib/storage";
 
 type State = "ready" | "validation_error" | "offline" | "success";
 
+// 0005 §٢١٦: «push» = إشعار فوري على الأجهزة المشتركة — اختياري في النوع لأن تفضيلاً محفوظاً
+// محلياً قبل الإضافة قد لا يحمله
 interface Prefs {
-  operational: { in_app: boolean; sms: boolean };
-  account: { in_app: boolean; email: boolean };
-  marketing: { in_app: boolean; email: boolean };
+  operational: { in_app: boolean; sms: boolean; push?: boolean };
+  account: { in_app: boolean; email: boolean; push?: boolean };
+  marketing: { in_app: boolean; email: boolean; push?: boolean };
 }
 
 interface Payload {
   prefs: Prefs;
+  quiet_hours?: boolean;
   destination_email: string;
   sms_balance: { remaining: number; quota: number };
   counts: { in_app: number; sms: number; email: number };
@@ -59,6 +63,7 @@ export function PreferencesClient() {
   const [saved, setSaved] = useState<Payload["counts"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingLocal, setPendingLocal] = useState(false);
+  const [quiet, setQuiet] = useState(false);
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -69,6 +74,7 @@ export function PreferencesClient() {
     setServer(body);
     setPrefs(body.prefs);
     setEmail(body.destination_email);
+    setQuiet(Boolean(body.quiet_hours));
   }, []);
 
   const flushPending = useCallback(async () => {
@@ -140,7 +146,7 @@ export function PreferencesClient() {
         return;
       }
       const { data, error, response } = await api().PUT("/api/notifications/preferences", {
-        body: { prefs, email } as never,
+        body: { prefs, email, quiet_hours: quiet } as never,
       });
       if (response.status === 400) {
         setError((error as unknown as { detail: string }).detail);
@@ -156,6 +162,7 @@ export function PreferencesClient() {
       }
       setServer(body);
       setPrefs(body.prefs);
+      setQuiet(Boolean(body.quiet_hours));
       setSaved(body.counts);
     } catch {
       await getStorage().transaction((tx) => tx.putMeta(PENDING, JSON.stringify({ prefs, email })));
@@ -266,6 +273,47 @@ export function PreferencesClient() {
                     label="عروض المنصة بالبريد"
                     checked={prefs.marketing.email}
                     onChange={(on) => set("marketing", "email", on)}
+                  />
+                </section>
+                {/* 0005 §٢١٦ — الإشعار الفوري: يصل الجهاز ولو كان التطبيق مغلقاً */}
+                <section className="not-pref" aria-label="الإشعارات الفورية">
+                  <div className="not-pref__row">
+                    <div>
+                      <strong>الإشعارات الفورية</strong>
+                      <p className="acc-choice__note">
+                        تصل الأجهزة التي فُعّلت عليها ولو كان التطبيق مغلقاً، بعنوان عام بلا أسماء
+                        ولا مبالغ.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="acc-links">
+                    <Link href="/notify" className="c-btn c-btn--secondary">
+                      فعّلها على هذا الجهاز
+                    </Link>
+                  </div>
+                  <SwitchField
+                    label="فوري — التشغيل"
+                    checked={prefs.operational.push ?? true}
+                    onChange={(on) => set("operational", "push", on)}
+                  />
+                  <SwitchField
+                    label="فوري — الاشتراك والفواتير"
+                    checked={prefs.account.push ?? true}
+                    onChange={(on) => set("account", "push", on)}
+                  />
+                  <SwitchField
+                    label="فوري — عروض المنصة"
+                    checked={prefs.marketing.push ?? false}
+                    onChange={(on) => set("marketing", "push", on)}
+                  />
+                  <SwitchField
+                    label="ساعات الهدوء"
+                    hint="من 11 مساءً إلى 7 صباحاً لا يصل إلا ما يحتاج تصرّفاً منك."
+                    checked={quiet}
+                    onChange={(on) => {
+                      setSaved(null);
+                      setQuiet(on);
+                    }}
                   />
                 </section>
                 {prefs.account.email || prefs.marketing.email || error ? (

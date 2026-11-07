@@ -3650,6 +3650,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["platform_push_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_push_subscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/push/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["platform_push_unsubscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/reports": {
         parameters: {
             query?: never;
@@ -12020,6 +12068,7 @@ export interface components {
             counts: {
                 email: number;
                 in_app: number;
+                push: number;
                 sms: number;
             };
             destination_email: string;
@@ -12029,16 +12078,20 @@ export interface components {
                 account: {
                     email: boolean;
                     in_app: boolean;
+                    push: boolean;
                 };
                 marketing: {
                     email: boolean;
                     in_app: boolean;
+                    push: boolean;
                 };
                 operational: {
                     in_app: boolean;
+                    push: boolean;
                     sms: boolean;
                 };
             };
+            quiet_hours: boolean;
             sms_balance: {
                 quota: number;
                 remaining: number;
@@ -12049,6 +12102,7 @@ export interface components {
             counts: {
                 email: number;
                 in_app: number;
+                push: number;
                 sms: number;
             };
             destination_email: string;
@@ -12058,16 +12112,20 @@ export interface components {
                 account: {
                     email: boolean;
                     in_app: boolean;
+                    push: boolean;
                 };
                 marketing: {
                     email: boolean;
                     in_app: boolean;
+                    push: boolean;
                 };
                 operational: {
                     in_app: boolean;
+                    push: boolean;
                     sms: boolean;
                 };
             };
+            quiet_hours: boolean;
             sms_balance: {
                 quota: number;
                 remaining: number;
@@ -12824,11 +12882,11 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
+                pay_to: {
                     account: string;
                     bank: string;
                     holder: string;
-                };
+                } | null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -12897,11 +12955,7 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
-                    account: string;
-                    bank: string;
-                    holder: string;
-                };
+                pay_to: null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -14747,6 +14801,21 @@ export interface components {
                 tenant_name: string;
             };
         };
+        GetPlatformPushResponse: {
+            configured: boolean;
+            public_key: string;
+            subscribed: boolean;
+        };
+        PostPlatformPushSubscribeResponse: {
+            configured: boolean;
+            public_key: string;
+            subscribed: boolean;
+        };
+        PostPlatformPushUnsubscribeResponse: {
+            configured: boolean;
+            public_key: string;
+            subscribed: boolean;
+        };
         GetPlatformReportsResponse: {
             appeals: {
                 appeal_decision_note: string;
@@ -15041,7 +15110,13 @@ export interface components {
                     name: string;
                     trial: boolean;
                 }[];
-                proofs: unknown[];
+                proofs: {
+                    amount_minor: string;
+                    id: string;
+                    reference: string;
+                    status: string;
+                    submitted_at: string;
+                }[];
                 status: string;
                 status_label: string;
                 storage: {
@@ -26494,6 +26569,98 @@ export interface operations {
             };
             /** @description No response body */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_push_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformPushResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_push_subscribe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Subscribe"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformPushSubscribeResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_push_unsubscribe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformPushUnsubscribeResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

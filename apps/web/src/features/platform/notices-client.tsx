@@ -14,6 +14,7 @@ import "@/features/org/org.css";
 import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { pushPermission, pushSupported, subscribePush, unsubscribePush } from "@/lib/pwa";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 interface NoticeRow {
@@ -38,6 +39,90 @@ interface Payload {
  * PLT-15 — إشعارات فريق المنصة (0005 §١٩٠): ما وصل من التجار وينتظر نظراً — منشأة بانتظار الاعتماد،
  * إيصال دفع، رسالة دعم، طلب جولة، طلب تحقّق، بلاغ سوق. صندوق مشترك: أول من يقرأ يعلّمه باسمه.
  */
+interface PushState {
+  configured: boolean;
+  public_key: string;
+  subscribed: boolean;
+}
+
+/**
+ * 0005 §٢١٦ — تنبيهات هذا المتصفح: ما يصل صندوق الفريق يُدفع فوراً للمتصفح المشترك، ولو كانت
+ * الصفحة مغلقة. لكل مشغّل متصفحه؛ الإذن يطلبه المتصفح نفسه.
+ */
+function BrowserAlerts() {
+  const [st, setSt] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const load = useCallback(async () => {
+    const { data, response } = await platformApi().GET("/api/platform/push", {});
+    if (response.ok && data) setSt(data);
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  if (!st) return null;
+  const supported = pushSupported();
+  const denied = pushPermission() === "denied";
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNote("");
+    try {
+      if (st.subscribed) {
+        await unsubscribePush();
+        const { data } = await platformApi().POST("/api/platform/push/unsubscribe", {
+          body: {} as never,
+        });
+        setSt(data as unknown as PushState);
+        return;
+      }
+      const keys = await subscribePush(st.public_key);
+      if (!keys) {
+        setNote("لم يُمنح الإذن. اسمح بالإشعارات لهذا الموقع من إعدادات المتصفح.");
+        return;
+      }
+      const { data, response } = await platformApi().POST("/api/platform/push/subscribe", {
+        body: keys as never,
+      });
+      if (response.ok) setSt(data as unknown as PushState);
+      else setNote("تعذّر التفعيل. أعد المحاولة.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="plt-push">
+      <div className="plt-push__text">
+        <strong>تنبيهات هذا المتصفح</strong>
+        <span className="acc-choice__note">
+          {!st.configured
+            ? "مفاتيح الإشعارات غير مضبوطة على الخادم بعد."
+            : st.subscribed
+              ? "مفعّلة: يصل كل جديد هنا فوراً ولو كانت الصفحة مغلقة."
+              : "يصل كل جديد فوراً بدل انتظار تحديث القائمة."}
+          {note ? ` ${note}` : ""}
+        </span>
+      </div>
+      <Button
+        variant={st.subscribed ? "quiet" : "secondary"}
+        onClick={() => void toggle()}
+        loading={busy}
+        disabledReason={
+          !st.configured
+            ? "غير مضبوطة على الخادم"
+            : !supported
+              ? "المتصفح لا يدعم الإشعارات"
+              : denied && !st.subscribed
+                ? "الإذن مرفوض في إعدادات المتصفح"
+                : undefined
+        }
+      >
+        {st.subscribed ? "أوقف التنبيهات هنا" : "فعّل التنبيهات هنا"}
+      </Button>
+    </div>
+  );
+}
+
 export function NoticesClient() {
   const router = useRouter();
   const [data, setData] = useState<Payload | null>(null);
@@ -99,6 +184,7 @@ export function NoticesClient() {
             </span>
           </div>
           <div className="acc-card__body">
+            <BrowserAlerts />
             <div className="pos-inv__filters">
               <div className="pos-chips" role="group" aria-label="التصفية">
                 <button

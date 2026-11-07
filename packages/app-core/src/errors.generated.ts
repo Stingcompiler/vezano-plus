@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (199 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (201 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -51,6 +51,7 @@ export const API_ERROR_CODES = [
   "cost_policy_invalid",
   "currency_mismatch",
   "cycle_invalid",
+  "cycle_unavailable",
   "days_out_of_range",
   "decisions_pending",
   "default_branch",
@@ -141,6 +142,7 @@ export const API_ERROR_CODES = [
   "phase_locked",
   "phone_invalid",
   "pin_invalid",
+  "plan_archived",
   "plan_feature_required",
   "plan_invalid",
   "platform_staff_required",
@@ -452,7 +454,7 @@ export const API_ERRORS_BY_OPERATION: Readonly<
   "GET /api/platform/operators": [
     {
       status: 401,
-      code: "user_inactive",
+      code: "session_revoked",
     },
     {
       status: 403,
@@ -582,6 +584,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       status: 401,
       code: "session_revoked",
     },
+    {
+      status: 401,
+      code: "user_inactive",
+    },
   ],
   "GET /api/tenants/creation/{client_request_id}": [
     {
@@ -593,6 +599,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "price_owner_only",
     },
   ],
   "PATCH /api/catalog/items/{item_id}/units/{item_unit_id}": [
@@ -1137,6 +1147,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "version_superseded",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
     },
   ],
   "POST /api/market/orders/{order_id}/cancel-remaining": [
@@ -1822,7 +1836,15 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
     {
       status: 409,
+      code: "cycle_unavailable",
+    },
+    {
+      status: 409,
       code: "not_pending_approval",
+    },
+    {
+      status: 409,
+      code: "plan_archived",
     },
     {
       status: 409,

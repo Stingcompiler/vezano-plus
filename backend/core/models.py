@@ -776,6 +776,8 @@ class Notification(TenantScoped):
     #: زال سببه (أُقفلت الوردية، رُفع المعلّق) — يبقى في السجل موسوماً
     resolved_at = models.DateTimeField(null=True, blank=True)
     read_user_ids = models.JSONField(default=list)
+    #: الإشعار الفوري (0005 §٢١٦): متى عالجه موزّع Web Push — يُرسَل مرة واحدة لا عند كل إحياء
+    pushed_at = models.DateTimeField(null=True, blank=True)
     link_token = models.CharField(max_length=64)
     link_expires_at = models.DateTimeField()
 
@@ -801,6 +803,8 @@ class NotificationPreference(TenantScoped):
     #:  "marketing": {"in_app": bool, "email": bool}}
     prefs = models.JSONField(default=dict)
     destination_email = models.EmailField(blank=True, default="")
+    #: ساعات الهدوء (0005 §٢١٦): 11 مساءً – 7 صباحاً بتوقيت الخرطوم لا إشعار فوري إلا ما يحتاج تصرّفاً
+    quiet_hours = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

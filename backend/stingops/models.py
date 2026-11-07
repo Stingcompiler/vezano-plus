@@ -447,6 +447,8 @@ class OperatorNotice(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     read_at = models.DateTimeField(null=True, blank=True)
     read_by_name = models.CharField(max_length=200, blank=True, default="")
+    #: 0005 §٢١٦: متى أُرسل فورياً لمتصفحات الفريق المشتركة
+    pushed_at = models.DateTimeField(null=True, blank=True)
 
     objects: ClassVar[models.Manager[OperatorNotice]] = models.Manager()
 
@@ -471,3 +473,25 @@ class MessageTriage(models.Model):
 
     def __str__(self) -> str:
         return f"triage:{self.report_id}"
+
+
+class OperatorPushEndpoint(models.Model):
+    """0005 §٢١٦ — اشتراك Web Push لمتصفح مشغّل: إشعارات الفريق تصل فوراً بدل انتظار تحديث القائمة.
+    نقطة النهاية سرّ تشغيلي لا يُعاد في ردّ؛ الانتهاء عند المزوّد (404/410) يوسم ولا يُحذف."""
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    endpoint = models.TextField()
+    endpoint_sha256 = models.CharField(max_length=64, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    user_agent = models.CharField(max_length=300, blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    expired_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=120, blank=True, default="")
+
+    objects: ClassVar[models.Manager[OperatorPushEndpoint]] = models.Manager()
+
+    def __str__(self) -> str:
+        return f"push:{self.user_id}"

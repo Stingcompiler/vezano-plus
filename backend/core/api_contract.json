@@ -131,7 +131,7 @@
    "403:operator_required"
   ],
   "GET /api/platform/operators": [
-   "401:user_inactive",
+   "401:session_revoked",
    "403:operator_required",
    "403:password_change_required"
   ],
@@ -197,6 +197,7 @@
   ],
   "GET /api/sync/status": [
    "401:session_revoked",
+   "401:user_inactive",
    "401:لم يتم تزويد بيانات الدخول."
   ],
   "GET /api/tenants/creation/{client_request_id}": [
@@ -206,7 +207,8 @@
    "401:لم يتم تزويد بيانات الدخول."
   ],
   "PATCH /api/catalog/items/{item_id}": [
-   "400:validation_error"
+   "400:validation_error",
+   "403:price_owner_only"
   ],
   "PATCH /api/catalog/items/{item_id}/units/{item_unit_id}": [
    "400:validation_error",
@@ -434,7 +436,8 @@
    "409:price_changed"
   ],
   "POST /api/market/orders/{order_id}/accept": [
-   "400:version_superseded"
+   "400:version_superseded",
+   "403:permission_denied"
   ],
   "POST /api/market/orders/{order_id}/cancel-remaining": [
    "400:already_cancelled",
@@ -690,7 +693,9 @@
    "403:admin_required",
    "403:operator_required",
    "409:already_suspended",
+   "409:cycle_unavailable",
    "409:not_pending_approval",
+   "409:plan_archived",
    "409:same_plan",
    "409:trial_not_reassignable"
   ],
@@ -12541,6 +12546,9 @@
        "in_app": {
         "type": "integer"
        },
+       "push": {
+        "type": "integer"
+       },
        "sms": {
         "type": "integer"
        }
@@ -12548,7 +12556,8 @@
       "required": [
        "in_app",
        "sms",
-       "email"
+       "email",
+       "push"
       ],
       "type": "object"
      },
@@ -12572,11 +12581,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -12588,11 +12601,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -12602,13 +12619,17 @@
          "in_app": {
           "type": "boolean"
          },
+         "push": {
+          "type": "boolean"
+         },
          "sms": {
           "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "sms"
+         "sms",
+         "push"
         ],
         "type": "object"
        }
@@ -12619,6 +12640,9 @@
        "marketing"
       ],
       "type": "object"
+     },
+     "quiet_hours": {
+      "type": "boolean"
      },
      "sms_balance": {
       "additionalProperties": false,
@@ -12642,6 +12666,7 @@
     },
     "required": [
      "prefs",
+     "quiet_hours",
      "destination_email",
      "phone",
      "sms_balance",
@@ -14205,9 +14230,6 @@
        "pay_to": {
         "anyOf": [
          {
-          "type": "null"
-         },
-         {
           "additionalProperties": false,
           "properties": {
            "account": {
@@ -14226,6 +14248,9 @@
            "holder"
           ],
           "type": "object"
+         },
+         {
+          "type": "null"
          }
         ]
        },
@@ -14258,9 +14283,9 @@
        "currency",
        "period_label",
        "review_sla",
-       "cycles",
        "covers_until",
-       "pay_to"
+       "pay_to",
+       "cycles"
       ],
       "type": "object"
      },
@@ -18089,6 +18114,28 @@
      "proofs",
      "pending_count",
      "claim_minutes"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/push": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
     ],
     "type": "object"
    }
@@ -24560,6 +24607,38 @@
     "required": [
      "sectors",
      "currencies"
+    ],
+    "type": "object"
+   }
+  },
+  "OPTIONS /api/auth/refresh": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "description": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "parses": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "renders": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "name",
+     "description",
+     "renders",
+     "parses"
     ],
     "type": "object"
    }
@@ -42245,31 +42324,7 @@
         "type": "array"
        },
        "pay_to": {
-        "anyOf": [
-         {
-          "type": "null"
-         },
-         {
-          "additionalProperties": false,
-          "properties": {
-           "account": {
-            "type": "string"
-           },
-           "bank": {
-            "type": "string"
-           },
-           "holder": {
-            "type": "string"
-           }
-          },
-          "required": [
-           "bank",
-           "account",
-           "holder"
-          ],
-          "type": "object"
-         }
-        ]
+        "type": "null"
        },
        "period_label": {
         "type": "string"
@@ -42300,9 +42355,9 @@
        "currency",
        "period_label",
        "review_sla",
-       "cycles",
        "covers_until",
-       "pay_to"
+       "pay_to",
+       "cycles"
       ],
       "type": "object"
      },
@@ -46510,6 +46565,50 @@
     "type": "object"
    }
   },
+  "POST /api/platform/push/subscribe": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/push/unsubscribe": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
+    ],
+    "type": "object"
+   }
+  },
   "POST /api/platform/reports/{tenant_id}/{report_id}/decide": {
    "200": {
     "additionalProperties": false,
@@ -46930,7 +47029,34 @@
         "type": "array"
        },
        "proofs": {
-        "items": {},
+        "items": {
+         "additionalProperties": false,
+         "properties": {
+          "amount_minor": {
+           "type": "string"
+          },
+          "id": {
+           "type": "string"
+          },
+          "reference": {
+           "type": "string"
+          },
+          "status": {
+           "type": "string"
+          },
+          "submitted_at": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "id",
+          "status",
+          "amount_minor",
+          "reference",
+          "submitted_at"
+         ],
+         "type": "object"
+        },
         "type": "array"
        },
        "status": {
@@ -49794,6 +49920,9 @@
        "in_app": {
         "type": "integer"
        },
+       "push": {
+        "type": "integer"
+       },
        "sms": {
         "type": "integer"
        }
@@ -49801,7 +49930,8 @@
       "required": [
        "in_app",
        "sms",
-       "email"
+       "email",
+       "push"
       ],
       "type": "object"
      },
@@ -49825,11 +49955,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -49841,11 +49975,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -49855,13 +49993,17 @@
          "in_app": {
           "type": "boolean"
          },
+         "push": {
+          "type": "boolean"
+         },
          "sms": {
           "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "sms"
+         "sms",
+         "push"
         ],
         "type": "object"
        }
@@ -49872,6 +50014,9 @@
        "marketing"
       ],
       "type": "object"
+     },
+     "quiet_hours": {
+      "type": "boolean"
      },
      "sms_balance": {
       "additionalProperties": false,
@@ -49895,6 +50040,7 @@
     },
     "required": [
      "prefs",
+     "quiet_hours",
      "destination_email",
      "phone",
      "sms_balance",

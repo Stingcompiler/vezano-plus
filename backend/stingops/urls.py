@@ -1,5 +1,10 @@
 from django.urls import path
 
+from stingops.operator_push_views import (
+    OperatorPushStatusView,
+    OperatorPushSubscribeView,
+    OperatorPushUnsubscribeView,
+)
 from stingops.views import (
     OperatorAnnouncementActionView,
     OperatorAnnouncementsView,
@@ -45,6 +50,14 @@ from stingops.views import (
 )
 
 urlpatterns = [
+    # 0005 §٢١٦ — الإشعارات الفورية لمتصفح المشغّل
+    path("platform/push", OperatorPushStatusView.as_view(), name="platform-push"),
+    path("platform/push/subscribe", OperatorPushSubscribeView.as_view(), name="platform-push-sub"),
+    path(
+        "platform/push/unsubscribe",
+        OperatorPushUnsubscribeView.as_view(),
+        name="platform-push-unsub",
+    ),
     path("platform/login", OperatorLoginView.as_view(), name="platform-login"),
     path("platform/resume", OperatorResumeView.as_view(), name="platform-resume"),
     path("platform/logout", OperatorLogoutView.as_view(), name="platform-logout"),
