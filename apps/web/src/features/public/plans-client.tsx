@@ -2,7 +2,7 @@
 
 import { Button, Frame, Notice } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "@/features/catalog/catalog.css";
@@ -12,7 +12,7 @@ import "./public.css";
 import "./landing.css";
 import "@/features/market/market.css";
 import { pounds } from "@/features/public/money";
-import { PlanLine, planLines } from "@/features/public/plan-lines";
+import { PlanLine, planItems } from "@/features/public/plan-lines";
 import { PublicFooter } from "@/features/public/public-footer";
 import { PublicHeader } from "@/features/public/public-header";
 import { api } from "@/lib/api";
@@ -137,26 +137,35 @@ export function PlansClient() {
 
         {data ? (
           <>
-            {cycles.length > 1 ? (
-              <div className="pos-chips pl-cycles" role="group" aria-label="دورة الفوترة">
-                {cycles.map((c) => (
-                  <button
-                    key={c.cycle}
-                    type="button"
-                    className={`pos-chip${cycle === c.cycle ? " pos-chip--on" : ""}`}
-                    aria-pressed={cycle === c.cycle}
-                    onClick={() => setCycle(c.cycle)}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            <div className="pl-toolbar">
+              {cycles.length > 1 ? (
+                <div className="pos-chips pl-cycles" role="group" aria-label="دورة الفوترة">
+                  {cycles.map((c) => (
+                    <button
+                      key={c.cycle}
+                      type="button"
+                      className={`pos-chip${cycle === c.cycle ? " pos-chip--on" : ""}`}
+                      aria-pressed={cycle === c.cycle}
+                      onClick={() => setCycle(c.cycle)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {/* تقرير الموقع العام 2026-11-07: المقارنة تُبلغ من أعلى الصفحة لا بعد ثلاث بطاقات */}
+              <a href="#compare" className="pl-compare-link">
+                قارن الميزات بين الباقات
+              </a>
+            </div>
             <ul className="pl-plans">
               {plans.map((p, i) => (
                 <li key={p.code} className={`pl-plan${i === hot ? " pl-plan--hot" : ""}`}>
-                  {i === hot ? <span className="lp__tag">للمحل بفرعين</span> : null}
-                  <h2 className="pl-plan__name">{p.name}</h2>
+                  {/* الشارة بجانب الاسم فيبقى الاسم والسعر في صفّين ثابتين عبر البطاقات */}
+                  <div className="pl-plan__top">
+                    <h2 className="pl-plan__name">{p.name}</h2>
+                    {i === hot ? <span className="lp__tag">للمحل بفرعين</span> : null}
+                  </div>
                   {p.trial ? (
                     <div className="lp__price lp__price--free">مجاناً</div>
                   ) : priceOf(p, cycle) === "0" ? (
@@ -190,8 +199,8 @@ export function PlansClient() {
                     </p>
                   ) : null}
                   <ul className="pl-plan__limits">
-                    {planLines(p).map((l) => (
-                      <li key={l}>
+                    {planItems(p).map(({ line: l, excluded }) => (
+                      <li key={l} data-excluded={excluded || undefined}>
                         <PlanLine line={l} />
                       </li>
                     ))}
@@ -237,7 +246,7 @@ export function PlansClient() {
               ))}
             </ul>
 
-            <div className="pb-card">
+            <div className="pb-card" id="compare">
               <div className="pb-card__head">
                 <h2 className="pb-card__title">مقارنة الميزات</h2>
                 <p className="pb-card__hint">
@@ -245,7 +254,7 @@ export function PlansClient() {
                 </p>
               </div>
               <div className="pl-table-wrap">
-                <table className="pl-table">
+                <table className="pl-table" style={{ "--pl-plans": plans.length } as CSSProperties}>
                   <thead>
                     <tr>
                       <th scope="col">الميزة</th>

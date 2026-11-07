@@ -398,7 +398,9 @@ export function MarketHomeClient() {
               </p>
             </div>
             <div className="mk-cta__actions">
-              <Button pos onClick={() => router.push("/welcome")}>
+              {/* تقرير الموقع العام 2026-11-07: «/welcome» يحوّل الجهاز المهيّأ سابقاً إلى قفل PIN فيضيع مقصد
+                  الزائر — التسجيل مباشرةً (حساب واحد يدير المنشأة ويشتري من السوق) */}
+              <Button pos onClick={() => router.push("/register")}>
                 أنشئ حساب سوق مجاناً
               </Button>
               <Button variant="quiet" onClick={() => router.push("/")}>
