@@ -1450,3 +1450,85 @@
     box-shadow: var(--shadow-overlay);
   }
 }
+
+/* ---------- 0005 §٢١٢ — المستأجرون: مرشّحات بمجموعتين، تفاصيل ظاهرة، نصوص ثانوية بوزنها ---------- */
+.plt-filters {
+  display: grid;
+  gap: 6px;
+}
+.plt-filters__row {
+  align-items: center;
+}
+.plt-filters__label {
+  min-inline-size: 52px;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+/* الهاتف: كل مجموعة سطر واحد يتمرّر أفقياً — لا أربعة أسطر قبل أول سجل */
+@media (max-width: 833px) {
+  .plt-filters__row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block-end: 2px;
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .plt-filters__row::-webkit-scrollbar {
+    display: none;
+  }
+  .plt-filters__row .pos-chip {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+/* هدف لمس ≥ 44px كقاعدة المشروع */
+.plt-row-open {
+  display: inline-flex;
+  align-items: center;
+  margin-block-start: 2px;
+  padding: 0;
+  min-block-size: 44px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.plt-row-open::after {
+  content: " ‹";
+}
+.plt-row-open:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.plt-cell-minor {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+.plt-tenants .c-table--cards .c-table__table tr {
+  background: var(--color-surface-card);
+}
+/* بطاقات المستأجرين على العرض المتوسط: الحقول شبكة أعمدة (التسمية فوق القيمة) لا سطراً لكل حقل */
+.plt-tenants .c-table--cards .c-table__table tr {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 16px;
+  padding: 12px 14px;
+}
+.plt-tenants .c-table--cards .c-table__table td {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 4px 0;
+}
+.plt-tenants .c-table--cards .c-table__table td::before {
+  max-inline-size: none;
+}
