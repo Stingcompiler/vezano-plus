@@ -175,3 +175,69 @@ def test_push_reports_pending_and_scheduled_revoke_fires_when_queue_empties() ->
         if r["device_id"] == reg["device_id"]
     )
     assert dev2["revoked_at"] != "" and dev2["revoke_after_upload"] is False
+
+
+def test_disabled_after_upload_can_only_push_pending_then_session_ends() -> None:
+    """فحص 2026-11-07: «التعطيل بعد رفع المعلّق» كان يرفض المستخدم غير النشط في كل طلب، فيعلق
+    عمل الجهاز. الآن: جلسة الجهاز ذات المعلّق ترفع وتجدّد وصولها فقط، ثم تنتهي حين يفرغ الطابور،
+    ويبقى الدخول الجديد مرفوضاً."""
+    from core.auth import device_refresh
+    from core.models import User
+
+    reset_scenario()
+    client = Client()
+    _user, device, reg = cashier_with_device(client)
+    with platform_context():
+        session = Session.unscoped.get(device_id=reg["device_id"])
+        epoch = session.tenant.sync_state.sync_epoch  # type: ignore[union-attr]
+        cashier_id = str(session.user_id)
+
+    def push(pending_after: int) -> Any:
+        return device.post(
+            "/api/sync/push",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "sync_epoch": epoch,
+                "request_id": f"g{pending_after}",
+                "operations": [],
+                "pending_after": pending_after,
+            },
+        )
+
+    assert push(5).status_code == 200
+    owner = owner_in_a(Client())
+    with platform_context():
+        from shifts.models import Shift
+
+        Shift.unscoped.filter(user_id=cashier_id, state="open").update(state="closed")
+    r = owner.post(
+        f"/api/org/users/{cashier_id}/revocation",
+        {"action": "disable", "mode": "after_upload", "reason": "ترك العمل"},
+    )
+    assert r.status_code == 200, r.content
+    assert r.json()["sessions_deferred"] == 1
+    with platform_context():
+        assert User.unscoped.get(id=cashier_id).is_active is False
+    # غير الدفع مرفوض للمعطَّل، حتى بجلسة المهلة
+    assert device.get("/api/sync/status").status_code == 401
+    # الدفع وتجديد الوصول يعملان ما دام المعلّق قائماً
+    assert push(2).status_code == 200
+    with platform_context():
+        device_refresh._check_live(Session.unscoped.get(id=session.id))
+    # فرغ الطابور: تنتهي الجلسة، فلا دفع ولا تجديد
+    assert push(0).status_code == 200
+    assert push(0).status_code == 401
+    with platform_context():
+        ended = Session.unscoped.get(id=session.id)
+        assert ended.revoked_at is not None and ended.revoke_after_upload is False
+        with pytest.raises(device_refresh.RefreshRejected):
+            device_refresh._check_live(ended)
+    # والدخول الجديد مرفوض
+    r = client.post(
+        "/api/auth/account/login",
+        {"identifier": DEMO_CASHIER_IDENTIFIER, "password": DEMO_PASSWORD},
+        content_type="application/json",
+    )
+    assert r.status_code != 200 or not any(
+        m.get("tenant_id") == str(session.tenant_id) for m in r.json().get("memberships", [])
+    )

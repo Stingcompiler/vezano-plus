@@ -32,7 +32,13 @@ from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from core.auth.tokens import CLAIM_DEVICE, CLAIM_SESSION, CLAIM_TENANT, revoke_session
+from core.auth.tokens import (
+    CLAIM_DEVICE,
+    CLAIM_SESSION,
+    CLAIM_TENANT,
+    in_upload_grace,
+    revoke_session,
+)
 from core.models import Device, DeviceRefreshToken, Session, User
 from core.tenancy import platform_context
 
@@ -91,7 +97,9 @@ def _check_live(session: Session) -> tuple[Device, User]:
         raise RefreshRejected(Reason.DEVICE_REVOKED)
     user = User.unscoped.get(id=session.user_id)
     if not user.is_active:
-        raise RefreshRejected(Reason.USER_INACTIVE)
+        # مهلة الرفع: يُجدَّد الوصول ليُرفع المعلّق، والوصول المجدَّد لا يفتح إلا مسار الدفع
+        if not in_upload_grace(user, session):
+            raise RefreshRejected(Reason.USER_INACTIVE)
     return device, user
 
 
