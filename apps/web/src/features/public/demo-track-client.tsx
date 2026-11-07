@@ -7,6 +7,7 @@
  * 3. `ready`: الحالة وما تعنيه، وتعليقات الفريق، وتحديث برمز متابعة موقَّع (30 دقيقة) بلا رمز جديد.
  */
 import { Button, Frame, Notice, Status, TextField } from "@sting/ui-web";
+import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import "@/features/acc/acc.css";
@@ -156,11 +157,16 @@ export function DemoTrackClient() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 readOnly={busy}
+                hint="يصل الرمز دائماً إلى البريد المسجَّل في الطلب، أيّاً كان ما تبحث به."
               />
+              {/* تقرير الموقع العام 2026-11-07: الزرّ يسمّي الرمز ووجهته — ولا يلتبس بدخول حساب المتجر */}
               <div className="acc-actions">
                 <Button type="submit" pos loading={busy}>
-                  أرسل رمز الدخول
+                  أرسل رمز المتابعة إلى بريدي
                 </Button>
+                <Link href="/#lp-contact" className="c-btn c-btn--quiet">
+                  طلب جولة جديدة
+                </Link>
               </div>
             </>
           ) : null}

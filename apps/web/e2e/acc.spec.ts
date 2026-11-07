@@ -122,6 +122,21 @@ test.describe("ACC-02 — الدخول", () => {
     }
   });
 
+  // تقرير الموقع العام 2026-11-07: «نسيت» بلا معرّف يفتح وضع استعادة صريحاً لا خطأً بجانب كلمة المرور
+  test("نسيت كلمة المرور بحقل فارغ: وضع استعادة بعنوانه وإجرائه ورجوع", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: "نسيت كلمة المرور", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "استعادة كلمة المرور" })).toBeVisible();
+    await expect(page.locator('input[autocomplete="current-password"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "دخول", exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("رقم الهاتف أو البريد")).toBeFocused();
+    await page.getByRole("button", { name: "أرسل رمز الاستعادة" }).click();
+    await expect(page.getByText("اكتب بريدك أولاً — إليه يصل رمز الاستعادة.")).toBeVisible();
+    await page.getByRole("button", { name: "رجوع إلى الدخول" }).click();
+    await expect(page.getByRole("heading", { name: "الدخول إلى فيزانو بلص" })).toBeVisible();
+    await expect(page.locator('input[autocomplete="current-password"]')).toBeVisible();
+  });
+
   test("validation_error: رسالة واحدة لحالتين ومخرجان جنباً إلى جنب", async ({ page }, info) => {
     await page.route("**/api/auth/account/login", (route) =>
       route.fulfill(json(401, { detail: "invalid_credentials" })),
