@@ -781,3 +781,44 @@
     border-block-end: 0;
   }
 }
+
+/* تقرير الموقع العام 2026-11-07 — كلمة الحالة ملاصقة لاسم الخدمة لا في أقصى الصف */
+.pb-service__top {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  column-gap: 10px;
+}
+.pb-service__top > .pb-service__name {
+  flex: 0 1 auto;
+}
+
+/* تقرير الموقع العام 2026-11-07 — فهرس الشروط على الهاتف سطر يتمرّر أفقياً لا بطاقة كاملة قبل النصّ
+   (يبقى ظاهراً كاملاً لقارئ الشاشة والمواصفات، فلا طيّ يخفي عناوينه) */
+@media (max-width: 833px) {
+  .pb-index-card.pb-card--pad {
+    padding: 10px 12px;
+  }
+  .pb-index-card .pb-kicker {
+    margin: 0 0 6px;
+    font-size: 13px;
+  }
+  .pb-index-card .pub-index {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+  .pb-index-card .pub-index::-webkit-scrollbar {
+    display: none;
+  }
+  .pb-index-card .pub-index .c-btn {
+    flex: none;
+    inline-size: auto;
+    white-space: nowrap;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+  }
+}

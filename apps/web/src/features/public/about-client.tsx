@@ -129,6 +129,10 @@ export function AboutClient() {
             <Button variant="secondary" onClick={scrollTo("lp-flow")}>
               شاهد طريقة الاستخدام
             </Button>
+            {/* تقرير الموقع العام 2026-11-07: طلب الجولة من مقدمة المنتج لا بعد الصفحة كلها */}
+            <Button variant="quiet" onClick={scrollTo("lp-contact")}>
+              اطلب جولة مجانية
+            </Button>
           </div>
           <p className="lp__note">
             {trialPlan?.trial_days ? (

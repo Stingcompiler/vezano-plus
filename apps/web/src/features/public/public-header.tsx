@@ -14,14 +14,16 @@ import { BrandMark, BrandName } from "@/features/public/brand-mark";
  * روابط الأقسام، زرّ الدعوة، وعلى الهاتف زرّ قائمة يفتح لوحة الروابط واللغة ومبدّل المظهر.
  * روابط الأقسام تنزلق داخل صفحة الهبوط وتنتقل إليها من غيرها.
  */
-const LINKS: readonly { href: string; label: string }[] = [
-  { href: "/#lp-features", label: "المزايا" },
-  { href: "/plans", label: "الباقات" },
-  { href: "/#lp-faq", label: "أسئلة شائعة" },
-  { href: "/market", label: "السوق" },
-  { href: "/legal", label: "الشروط" },
-  { href: "/status", label: "حالة الخدمة" },
-  { href: "/#lp-contact", label: "تواصل" },
+// تقرير الموقع العام 2026-11-07: مجموعتان — المنتج (أقسام الرئيسية والباقات والتواصل)، ثم السوق
+// والثقة (صفحات مستقلة). على الهاتف فاصل بينهما بدل سبعة صفوف متساوية.
+const LINKS: readonly { href: string; label: string; group: "product" | "more" }[] = [
+  { href: "/#lp-features", label: "المزايا", group: "product" },
+  { href: "/plans", label: "الباقات", group: "product" },
+  { href: "/#lp-faq", label: "أسئلة شائعة", group: "product" },
+  { href: "/#lp-contact", label: "تواصل", group: "product" },
+  { href: "/market", label: "السوق", group: "more" },
+  { href: "/status", label: "حالة الخدمة", group: "more" },
+  { href: "/legal", label: "الشروط", group: "more" },
 ];
 
 /**
@@ -111,6 +113,7 @@ export function PublicHeader({
                 href={l.href}
                 onClick={go(l.href)}
                 aria-current={pathname === l.href ? "page" : undefined}
+                data-group-start={i > 0 && LINKS[i - 1]?.group !== l.group ? true : undefined}
                 style={{ "--i": i } as CSSProperties}
               >
                 {l.label}
