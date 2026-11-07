@@ -48,6 +48,8 @@ class PushEnvelopeSerializer(serializers.Serializer[dict[str, Any]]):
 
 class PushView(APIView):
     permission_classes = (IsAuthenticated,)
+    # المستخدم المعطَّل «بعد الرفع» يرفع معلّقه هنا وحده (core.auth.tokens.in_upload_grace)
+    allows_upload_grace = True
 
     @extend_schema(request=PushEnvelopeSerializer, responses={200: None})
     def post(self, request: Request) -> Response:

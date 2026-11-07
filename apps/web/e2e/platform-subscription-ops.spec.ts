@@ -282,7 +282,7 @@ test.describe("PLT-13", () => {
         "إدارة الاشتراك — كل تصرّف بسبب يراه المالك",
         "تمديد",
         "تغيير الباقة",
-        "إيقاف",
+        "إيقاف الاشتراك",
         "ملاحظة",
         "أيام التمديد",
         "السبب",
@@ -324,7 +324,7 @@ test.describe("PLT-13", () => {
     await expect(select.locator("option", { hasText: "فرع واحد" })).toHaveCount(0);
     await expect(select.locator("option", { hasText: "فرعان" })).toHaveCount(1);
     // إيقاف بسبب → الحالة موقوف بالسبب، والتبويب يصير «استئناف»
-    await page.getByRole("tab", { name: "إيقاف" }).click();
+    await page.getByRole("tab", { name: "إيقاف الاشتراك" }).click();
     await expect(root).toContainText("الإيقاف يوقف الميزات المدفوعة فقط");
     await page.getByLabel("السبب").fill("بلاغ احتيال قيد التحقق");
     await page.getByRole("button", { name: "أوقف الاشتراك" }).click();
@@ -332,7 +332,7 @@ test.describe("PLT-13", () => {
     await expect(root).toContainText("موقوف");
     await expect(root).toContainText("بلاغ احتيال قيد التحقق — الميزات المدفوعة متوقفة");
     await expect(page.getByRole("tab", { name: "استئناف" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "إيقاف" })).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "إيقاف الاشتراك" })).toHaveCount(0);
     // استئناف
     await page.getByRole("tab", { name: "استئناف" }).click();
     await page.getByLabel("السبب").fill("انتهى التحقق — لا مخالفة");

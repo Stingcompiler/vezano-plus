@@ -96,8 +96,24 @@ def revoke_device_sessions(device: Device) -> int:
         )
 
 
+def in_upload_grace(user: User, session: Session | None) -> bool:
+    """مستخدم عُطِّل «بعد رفع المعلّق» (ACC-09): جلسة جهازه التي أبلغت عن معلّق تبقى صالحة لرفع
+    ذلك المعلّق وحده حتى يفرغ الطابور (`report_pending` يُنهيها). فحص 2026-11-07: كان التعطيل يرفض
+    المستخدم غير النشط في كل طلب، فيعلق العمل على الجهاز ولا يُرفع."""
+    return (
+        not user.is_active
+        and session is not None
+        and session.revoked_at is None
+        and session.revoke_after_upload
+        and session.device_id is not None
+    )
+
+
 class SessionAuthentication(JWTAuthentication):
-    """يفحص الجلسة والمستخدم والجهاز مع كل طلب؛ يعرّض `request.auth` كـ`AuthContext`."""
+    """يفحص الجلسة والمستخدم والجهاز مع كل طلب؛ يعرّض `request.auth` كـ`AuthContext`.
+
+    المستخدم غير النشط مرفوض، إلا في مهلة الرفع (`in_upload_grace`) على عرض يعلن
+    `allows_upload_grace = True` — مسار الدفع وحده."""
 
     def authenticate(self, request: Request) -> tuple[User, AuthContext] | None:  # type: ignore[override]
         result = super().authenticate(request)
@@ -105,13 +121,22 @@ class SessionAuthentication(JWTAuthentication):
             return None
         user, token = result
         assert isinstance(user, User)
-        return user, self.build_context(user, token)
+        context = self.build_context(user, token)
+        if not user.is_active:
+            view = (getattr(request, "parser_context", None) or {}).get("view")
+            if not (
+                getattr(view, "allows_upload_grace", False)
+                and in_upload_grace(user, context.session)
+            ):
+                raise exceptions.AuthenticationFailed("user_inactive", code="user_inactive")
+        return user, context
 
     def get_user(self, validated_token: Token) -> User:  # type: ignore[override]
+        # النشاط يُفحص في `authenticate` بعد معرفة الجلسة (مهلة الرفع)
         user_id = validated_token.get("user_id")
         with platform_context():
             user = User.unscoped.filter(id=user_id).first()
-        if user is None or not user.is_active:
+        if user is None:
             raise exceptions.AuthenticationFailed("user_inactive", code="user_inactive")
         return user
 

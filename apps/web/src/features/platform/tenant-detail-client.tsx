@@ -230,7 +230,7 @@ export function TenantDetailClient({ id }: { id: string }) {
     approve_trial: "اعتماد التجربة",
     extend: "تمديد",
     plan: "تغيير الباقة",
-    suspend: "إيقاف",
+    suspend: "إيقاف الاشتراك",
     resume: "استئناف",
     note: "ملاحظة",
     limits: "زيادة الحدود",
