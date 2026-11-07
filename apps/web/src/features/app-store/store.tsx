@@ -66,6 +66,7 @@ const ERRORS: Record<string, string> = {
   file_too_large: "الحد الأقصى للملف 512 ميبيبايت.",
   apple_url_invalid: "أدخل رابطاً من apps.apple.com أو testflight.apple.com.",
   release_exists: "هذا الإصدار منشور بالفعل لهذا التطبيق والنظام.",
+  storage_full: "مساحة المتجر ممتلئة. اسحب إصدارات قديمة ثم أعد النشر.",
   admin_required: "النشر لمدير المنصة وحده.",
 };
 

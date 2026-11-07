@@ -86,3 +86,28 @@ def test_publish_browse_download_remove(
     assert list(tmp_path.iterdir()) == []
     assert c.get(link["url"]).status_code == 404
     assert OperatorAccessLog.objects.filter(action="app_release_removed").count() == 1
+
+
+def test_storage_cap_refuses_upload(
+    ctx: dict[str, Any],  # noqa: F811
+    settings: Any,
+    tmp_path: Path,
+) -> None:
+    """مراجعة 2026-11-08: القرص مشترك مع قواعد البيانات — تجاوز سقف المتجر يُرفض قبل الحفظ."""
+    settings.APP_STORE_ROOT = tmp_path
+    settings.APP_STORE_TOTAL_MAX_BYTES = 20
+    c = Client()
+    admin = _operator_headers("store-cap", "هدى — تشغيل")
+    form: dict[str, Any] = {"name": "Vezano", "platform": "android"}
+    assert (
+        c.post(API, {**form, "version": "1", "file": _apk(b"x" * 15)}, headers=admin).status_code
+        == 201
+    )
+    r = c.post(API, {**form, "version": "2", "file": _apk(b"y" * 15)}, headers=admin)
+    assert r.status_code == 400 and r.json()["detail"] == "storage_full"
+    assert len(list(tmp_path.iterdir())) == 1
+    # الرابط يحتاج جلسة تاجر قبل أي بحث عن الإصدار
+    assert (
+        c.post("/api/org/apps/00000000-0000-0000-0000-000000000000/link", headers=admin).status_code
+        == 403
+    )

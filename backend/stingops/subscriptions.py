@@ -139,7 +139,8 @@ def change_plan(tenant: Tenant, *, plan_code: str, reason: str, by_name: str) ->
             cycle = sub.cycle if sub.cycle in CYCLES else "monthly"
             if not plan.trial:
                 price = plan.price_for(cycle)
-                if price <= 0:
+                # الشهري معروض دائماً ولو كان مجانياً؛ صفر الربعي أو السنوي يعني «غير معروضة» (§١١٠)
+                if cycle != "monthly" and price <= 0:
                     raise SubscriptionOpRejected("cycle_unavailable", 409)
                 sub.renewal_amount_minor = (
                     price + addons_monthly_minor(sub, plan) * CYCLE_MONTHS[cycle]

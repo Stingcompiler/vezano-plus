@@ -80,7 +80,8 @@ export function PreferencesClient() {
   const flushPending = useCallback(async () => {
     const raw = await getStorage().read((tx) => tx.getMeta(PENDING));
     if (!raw) return;
-    const body = JSON.parse(raw) as { prefs: Prefs; email: string };
+    // مراجعة 2026-11-08: ساعات الهدوء تُرفع مع التفضيل المحفوظ محلياً، لا تضيع
+    const body = JSON.parse(raw) as { prefs: Prefs; email: string; quiet_hours?: boolean };
     const { response } = await api().PUT("/api/notifications/preferences", {
       body: body as never,
     });
@@ -100,9 +101,10 @@ export function PreferencesClient() {
       try {
         const raw = await getStorage().read((tx) => tx.getMeta(PENDING));
         if (raw) {
-          const local = JSON.parse(raw) as { prefs: Prefs; email: string };
+          const local = JSON.parse(raw) as { prefs: Prefs; email: string; quiet_hours?: boolean };
           setPrefs(local.prefs);
           setEmail(local.email);
+          if (local.quiet_hours !== undefined) setQuiet(local.quiet_hours);
           setPendingLocal(true);
         }
       } catch {
@@ -140,7 +142,7 @@ export function PreferencesClient() {
       if (!online) {
         // بلا اتصال: تُحفظ على الجهاز وتُرفع لاحقاً؛ تسري محلياً فوراً
         await getStorage().transaction((tx) =>
-          tx.putMeta(PENDING, JSON.stringify({ prefs, email })),
+          tx.putMeta(PENDING, JSON.stringify({ prefs, email, quiet_hours: quiet })),
         );
         setPendingLocal(true);
         return;
@@ -155,7 +157,7 @@ export function PreferencesClient() {
       const body = data as unknown as Payload | undefined;
       if (!response.ok || !body) {
         await getStorage().transaction((tx) =>
-          tx.putMeta(PENDING, JSON.stringify({ prefs, email })),
+          tx.putMeta(PENDING, JSON.stringify({ prefs, email, quiet_hours: quiet })),
         );
         setPendingLocal(true);
         return;
@@ -165,7 +167,9 @@ export function PreferencesClient() {
       setQuiet(Boolean(body.quiet_hours));
       setSaved(body.counts);
     } catch {
-      await getStorage().transaction((tx) => tx.putMeta(PENDING, JSON.stringify({ prefs, email })));
+      await getStorage().transaction((tx) =>
+        tx.putMeta(PENDING, JSON.stringify({ prefs, email, quiet_hours: quiet })),
+      );
       setPendingLocal(true);
     } finally {
       setBusy(false);
