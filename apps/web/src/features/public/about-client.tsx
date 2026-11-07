@@ -11,7 +11,7 @@ import "@/features/sys/sys.css";
 import "./public.css";
 import "./landing.css";
 import { pounds } from "@/features/public/money";
-import { PlanLine, planLines } from "@/features/public/plan-lines";
+import { PlanLine, planItems } from "@/features/public/plan-lines";
 import { DemoRequestForm } from "@/features/public/demo-request-form";
 import { PublicFooter } from "@/features/public/public-footer";
 import { PublicHeader } from "@/features/public/public-header";
@@ -375,8 +375,8 @@ export function AboutClient() {
                         </div>
                       )}
                       <ul className="lp__plan-limits">
-                        {planLines(p).map((l) => (
-                          <li key={l}>
+                        {planItems(p).map(({ line: l, excluded }) => (
+                          <li key={l} data-excluded={excluded || undefined}>
                             <PlanLine line={l} />
                           </li>
                         ))}
