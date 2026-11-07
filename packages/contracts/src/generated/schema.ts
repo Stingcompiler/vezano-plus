@@ -111,6 +111,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/apps/download/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description يخدم الملف لرابط موقَّع ساري؛ بلا جلسة لأن المتصفح يفتحه مباشرة. */
+        get: operations["apps_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/account/login": {
         parameters: {
             query?: never;
@@ -2477,6 +2494,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/org/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["org_apps_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/org/apps/{release_id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description رابط تنزيل موقَّع لخمس دقائق: يُطلب بجلسة التاجر، ويفتحه المتصفح تنزيلاً عادياً. */
+        post: operations["org_apps_link_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/org/audit": {
         parameters: {
             query?: never;
@@ -3165,6 +3215,41 @@ export interface paths {
         put?: never;
         /** @description PLT-07: حسم الاعتراض (`{decision: uphold|reverse, note}`) — بمراجِع غير من علّق. */
         post: operations["platform_appeals_decide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description PLT · متجر التطبيقات: القراءة لكل مشغّل، والنشر لمدير المنصة. */
+        get: operations["platform_apps_retrieve"];
+        put?: never;
+        /** @description PLT · متجر التطبيقات: القراءة لكل مشغّل، والنشر لمدير المنصة. */
+        post: operations["platform_apps_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/apps/{release_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description سحب إصدار: يختفي من الفهرس ويُحذف ملفه. لمدير المنصة وحده. */
+        post: operations["platform_apps_remove_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3936,6 +4021,23 @@ export interface paths {
          *     `{phone, push_permission?, push?{endpoint,p256dh,auth}}`.
          */
         post: operations["portal_subscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description فهرس عام: الاسم والنظام والإصدار فقط — لا ملف ولا رابط تنزيل بلا جلسة تاجر. */
+        get: operations["public_apps_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12074,6 +12176,24 @@ export interface components {
             };
             updated_at: string;
         };
+        GetOrgAppsResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
+        };
+        PostOrgAppsByReleaseIdLinkResponse: {
+            expires_in: number;
+            url: string;
+        };
         GetOrgAuditResponse: {
             branches: {
                 id: string;
@@ -12824,11 +12944,11 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
+                pay_to: {
                     account: string;
                     bank: string;
                     holder: string;
-                };
+                } | null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -12897,11 +13017,7 @@ export interface components {
                     days: number;
                     label: string;
                 }[];
-                pay_to: null | {
-                    account: string;
-                    bank: string;
-                    holder: string;
-                };
+                pay_to: null;
                 period_label: string;
                 plan_amount_minor: string;
                 plan_code: string;
@@ -13771,6 +13887,48 @@ export interface components {
                 suspended_reason_code: string;
                 tenant_id: string;
             };
+        };
+        GetPlatformAppsResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
+        };
+        PostPlatformAppsResponse: {
+            release: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            };
+        };
+        PostPlatformAppsByReleaseIdRemoveResponse: {
+            releases: {
+                apple_url: string;
+                filename: string;
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                sha256: string;
+                size_bytes: number;
+                version: string;
+            }[];
         };
         GetPlatformAuditResponse: {
             categories: {
@@ -15041,7 +15199,13 @@ export interface components {
                     name: string;
                     trial: boolean;
                 }[];
-                proofs: unknown[];
+                proofs: {
+                    amount_minor: string;
+                    id: string;
+                    reference: string;
+                    status: string;
+                    submitted_at: string;
+                }[];
                 status: string;
                 status_label: string;
                 storage: {
@@ -15322,6 +15486,16 @@ export interface components {
                 undo_until: string;
                 unread: number;
             };
+        };
+        GetPublicAppsResponse: {
+            releases: {
+                id: string;
+                name: string;
+                platform: string;
+                platform_label: string;
+                published_at: string;
+                version: string;
+            }[];
         };
         PostPublicContactResponse: {
             id: string;
@@ -17039,6 +17213,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AppUpdate"];
                 };
+            };
+        };
+    };
+    apps_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -23413,6 +23614,55 @@ export interface operations {
             };
         };
     };
+    org_apps_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetOrgAppsResponse"];
+                };
+            };
+        };
+    };
+    org_apps_link_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOrgAppsByReleaseIdLinkResponse"];
+                };
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     org_audit_retrieve: {
         parameters: {
             query?: {
@@ -25413,6 +25663,89 @@ export interface operations {
             };
         };
     };
+    platform_apps_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformAppsResponse"];
+                };
+            };
+        };
+    };
+    platform_apps_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformAppsResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_apps_remove_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformAppsByReleaseIdRemoveResponse"];
+                };
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     platform_audit_retrieve: {
         parameters: {
             query?: never;
@@ -27158,6 +27491,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    public_apps_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPublicAppsResponse"];
+                };
             };
         };
     };

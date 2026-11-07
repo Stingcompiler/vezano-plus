@@ -36,6 +36,7 @@ export type PlatformSection =
   | "demo"
   | "operators"
   | "audit"
+  | "apps"
   | "plans"
   | "password";
 
@@ -66,6 +67,8 @@ const GROUPS: readonly { readonly title: string; readonly items: readonly NavIte
       { id: "tenants", label: "المستأجرون" },
       { id: "entitlements", label: "الاستحقاقات" },
       { id: "plans", label: "الباقات والتسعير" },
+      // 0005 §٢١٥: ما يُوزَّع على التجار من نسخ التطبيق
+      { id: "apps", label: "متجر التطبيقات" },
     ],
   },
   {
@@ -120,6 +123,7 @@ const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
   operators: "/platform/operators",
   audit: "/platform/audit",
   plans: "/platform/plans",
+  apps: "/platform/apps",
 };
 
 /** مفتاح الشريط المطويّ — تفضيل عرض على هذا الجهاز لا بيانات (الجلسة نفسها لا تُحفظ هنا). */

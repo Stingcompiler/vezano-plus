@@ -149,3 +149,10 @@ SPECTACULAR_SETTINGS = {
 # تعليمات الدفع التي يراها التاجر في ORG-07 (مراجعة 2026-10-19، بند 10): JSON من
 # {"bank": "...", "account": "...", "holder": "..."}. غير مضبوط = لا بطاقة تحويل (لا حساب مخترع).
 PAYMENT_INSTRUCTIONS = os.environ.get("STING_PAYMENT_INSTRUCTIONS", "")
+
+# متجر التطبيقات (0005 §٢١٥): ملفات التثبيت في تخزين خاص لا يخدمه الويب مباشرة؛ على OVH مجلد
+# دائم (`app_releases` في docker-compose) فلا تضيع الملفات بإعادة إنشاء الحاوية.
+APP_STORE_ROOT = Path(
+    os.environ.get("STING_APP_STORE_ROOT", str(BASE_DIR / "private-app-releases"))
+)
+APP_STORE_MAX_BYTES = 512 * 1024 * 1024

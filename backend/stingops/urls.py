@@ -1,5 +1,13 @@
 from django.urls import path
 
+from stingops.app_store import (
+    MerchantAppsView,
+    MerchantDownloadLinkView,
+    OperatorAppDeleteView,
+    OperatorAppsView,
+    PublicAppsView,
+    SignedDownloadView,
+)
 from stingops.views import (
     OperatorAnnouncementActionView,
     OperatorAnnouncementsView,
@@ -45,6 +53,19 @@ from stingops.views import (
 )
 
 urlpatterns = [
+    # متجر التطبيقات (0005 §٢١٥)
+    path("public/apps", PublicAppsView.as_view(), name="public-apps"),
+    path("org/apps", MerchantAppsView.as_view(), name="org-apps"),
+    path(
+        "org/apps/<uuid:release_id>/link", MerchantDownloadLinkView.as_view(), name="org-app-link"
+    ),
+    path("apps/download/<str:token>", SignedDownloadView.as_view(), name="app-download"),
+    path("platform/apps", OperatorAppsView.as_view(), name="platform-apps"),
+    path(
+        "platform/apps/<uuid:release_id>/remove",
+        OperatorAppDeleteView.as_view(),
+        name="platform-app-remove",
+    ),
     path("platform/login", OperatorLoginView.as_view(), name="platform-login"),
     path("platform/resume", OperatorResumeView.as_view(), name="platform-resume"),
     path("platform/logout", OperatorLogoutView.as_view(), name="platform-logout"),
