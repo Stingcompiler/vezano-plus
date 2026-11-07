@@ -13,10 +13,12 @@ import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "@/features/market/market.css";
 import "./platform.css";
+import "./proofs.css";
 import { agoParts, dayMonth } from "@/features/home/format";
 import { MonoText } from "@/features/org/mono";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { imageSrc } from "@/features/platform/image-src";
+import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "ready" | "validation_error" | "conflict" | "success";
@@ -182,7 +184,7 @@ export function ProofsClient() {
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">
-              مراجعة دفع اشتراك — الازدواج يُمنع قبل الاعتماد لا بعده
+              <PageTitle text="مراجعة دفع اشتراك — الازدواج يُمنع قبل الاعتماد لا بعده" />
             </h2>
             <span className="cat-head__hint">
               التحويل اليدوي يصل بإيصال مصوّر. الخطر الحقيقي: اعتماد الإيصال نفسه مرتين من مراجعَين
@@ -281,17 +283,26 @@ export function ProofsClient() {
 
             {!current && data ? (
               <>
-                <p className="acc-choice__note">
-                  <strong>لا قبول آلي</strong> · مطابقة المبلغ وحدها لا تكفي — قد يكون تحويلاً لغرض
-                  آخر أو مستهلكاً سابقاً.
-                </p>
-                <h3 className="cat-head__title">مراجعة دفع الاشتراك</h3>
-                <p className="acc-choice__note">
-                  إيصالات بانتظار المراجعة —{" "}
-                  <span className="sting-mono">{data.pending_count}</span>
-                </p>
+                {/* §٢١٢: التنبيه التشغيلي مجمّع، والعنوان والعدّاد سطر واحد، والفراغ مكوّن الحالة الفارغة */}
+                <Notice kind="info" title="لا قبول آلي">
+                  <p className="acc-lead">
+                    مطابقة المبلغ وحدها لا تكفي — قد يكون تحويلاً لغرض آخر أو مستهلكاً سابقاً.
+                  </p>
+                </Notice>
+                <div className="plt-proofs__head">
+                  <h3 className="cat-head__title">مراجعة دفع الاشتراك</h3>
+                  <p className="acc-choice__note">
+                    إيصالات بانتظار المراجعة —{" "}
+                    <span className="sting-mono plt-proofs__count">{data.pending_count}</span>
+                  </p>
+                </div>
                 {data.proofs.length === 0 ? (
-                  <p className="acc-choice__note">لا إيصالات بانتظار المراجعة.</p>
+                  <Notice kind="empty" title="القائمة محدّثة">
+                    <p className="acc-lead">لا إيصالات بانتظار المراجعة.</p>
+                    <p className="acc-choice__note">
+                      يصل كل إيصال جديد إشعاراً في «الوارد»، ويظهر هنا للمراجعة.
+                    </p>
+                  </Notice>
                 ) : null}
                 <ul className="cus-list">
                   {data.proofs.map((p) => (
