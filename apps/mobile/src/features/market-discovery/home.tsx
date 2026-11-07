@@ -130,7 +130,7 @@ export default function MarketHome() {
       </AppText>
       <View style={{ marginBottom: SPACE["3"] }}>
         <AppText variant="secondary" muted>
-          {tx(T, "المنطقة:")} {areaLabel} {tx(T, "· بحثٌ بالاسم أو الصنف")}
+          {tx(T, "المنطقة")} {areaLabel} · {tx(T, "بحثٌ بالاسم أو الصنف")}
         </AppText>
         <Button
           label={tx(T, "بدِّلها")}
