@@ -98,6 +98,7 @@ class PreferencesView(APIView):
                     v.user,
                     prefs=dict(body.get("prefs") or {}),
                     email=body.get("email") if "email" in body else None,
+                    quiet_hours=bool(body["quiet_hours"]) if "quiet_hours" in body else None,
                 )
             except notifications.PrefsRejected as e:
                 return Response({"detail": e.code, "field": e.field, "extra": e.extra}, status=400)

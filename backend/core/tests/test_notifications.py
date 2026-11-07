@@ -161,7 +161,7 @@ def test_preferences_locked_operational_and_channel_destination(ctx: dict[str, A
     p = r.json()
     assert p["prefs"]["operational"]["in_app"] is True  # دائم لا يُطفأ
     assert p["prefs"]["account"]["email"] is True and p["destination_email"] == "owner@x.sd"
-    assert p["counts"] == {"in_app": 2, "sms": 1, "email": 1}
+    assert p["counts"] == {"in_app": 2, "sms": 1, "email": 1, "push": 2}
     # إيقاف التسويقي يُخفيه من الوارد
     r = c.put(
         "/api/notifications/preferences",

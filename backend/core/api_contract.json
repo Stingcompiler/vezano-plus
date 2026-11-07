@@ -12566,6 +12566,9 @@
        "in_app": {
         "type": "integer"
        },
+       "push": {
+        "type": "integer"
+       },
        "sms": {
         "type": "integer"
        }
@@ -12573,7 +12576,8 @@
       "required": [
        "in_app",
        "sms",
-       "email"
+       "email",
+       "push"
       ],
       "type": "object"
      },
@@ -12597,11 +12601,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -12613,11 +12621,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -12627,13 +12639,17 @@
          "in_app": {
           "type": "boolean"
          },
+         "push": {
+          "type": "boolean"
+         },
          "sms": {
           "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "sms"
+         "sms",
+         "push"
         ],
         "type": "object"
        }
@@ -12644,6 +12660,9 @@
        "marketing"
       ],
       "type": "object"
+     },
+     "quiet_hours": {
+      "type": "boolean"
      },
      "sms_balance": {
       "additionalProperties": false,
@@ -12667,6 +12686,7 @@
     },
     "required": [
      "prefs",
+     "quiet_hours",
      "destination_email",
      "phone",
      "sms_balance",
@@ -18238,6 +18258,28 @@
      "proofs",
      "pending_count",
      "claim_minutes"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/push": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
     ],
     "type": "object"
    }
@@ -46852,6 +46894,50 @@
     "type": "object"
    }
   },
+  "POST /api/platform/push/subscribe": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/push/unsubscribe": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "configured": {
+      "type": "boolean"
+     },
+     "public_key": {
+      "type": "string"
+     },
+     "subscribed": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "configured",
+     "public_key",
+     "subscribed"
+    ],
+    "type": "object"
+   }
+  },
   "POST /api/platform/reports/{tenant_id}/{report_id}/decide": {
    "200": {
     "additionalProperties": false,
@@ -50163,6 +50249,9 @@
        "in_app": {
         "type": "integer"
        },
+       "push": {
+        "type": "integer"
+       },
        "sms": {
         "type": "integer"
        }
@@ -50170,7 +50259,8 @@
       "required": [
        "in_app",
        "sms",
-       "email"
+       "email",
+       "push"
       ],
       "type": "object"
      },
@@ -50194,11 +50284,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -50210,11 +50304,15 @@
          },
          "in_app": {
           "type": "boolean"
+         },
+         "push": {
+          "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "email"
+         "email",
+         "push"
         ],
         "type": "object"
        },
@@ -50224,13 +50322,17 @@
          "in_app": {
           "type": "boolean"
          },
+         "push": {
+          "type": "boolean"
+         },
          "sms": {
           "type": "boolean"
          }
         },
         "required": [
          "in_app",
-         "sms"
+         "sms",
+         "push"
         ],
         "type": "object"
        }
@@ -50241,6 +50343,9 @@
        "marketing"
       ],
       "type": "object"
+     },
+     "quiet_hours": {
+      "type": "boolean"
      },
      "sms_balance": {
       "additionalProperties": false,
@@ -50264,6 +50369,7 @@
     },
     "required": [
      "prefs",
+     "quiet_hours",
      "destination_email",
      "phone",
      "sms_balance",

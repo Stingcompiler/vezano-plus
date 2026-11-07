@@ -32,9 +32,10 @@ CATEGORY_LABELS = dict(Notification.CATEGORIES)
 CATEGORY_ORDER = {"operational": 0, "account": 1, "marketing": 2}
 
 DEFAULT_PREFS: dict[str, dict[str, bool]] = {
-    "operational": {"in_app": True, "sms": True},
-    "account": {"in_app": True, "email": False},
-    "marketing": {"in_app": False, "email": False},
+    # «push» = إشعار فوري على الأجهزة المشتركة (0005 §٢١٦)؛ التسويقي لا يُدفع افتراضياً
+    "operational": {"in_app": True, "sms": True, "push": True},
+    "account": {"in_app": True, "email": False, "push": True},
+    "marketing": {"in_app": False, "email": False, "push": False},
 }
 
 
@@ -423,9 +424,11 @@ def prefs_payload(user: User) -> dict[str, Any]:
         "in_app": sum(1 for c in eff.values() if c.get("in_app")),
         "sms": sum(1 for c in eff.values() if c.get("sms")),
         "email": sum(1 for c in eff.values() if c.get("email")),
+        "push": sum(1 for c in eff.values() if c.get("push")),
     }
     return {
         "prefs": eff,
+        "quiet_hours": p.quiet_hours,
         "destination_email": p.destination_email,
         "phone": "",
         "sms_balance": sms_balance(),
@@ -435,7 +438,9 @@ def prefs_payload(user: User) -> dict[str, Any]:
     }
 
 
-def save_prefs(user: User, *, prefs: dict[str, Any], email: str | None) -> dict[str, Any]:
+def save_prefs(
+    user: User, *, prefs: dict[str, Any], email: str | None, quiet_hours: bool | None = None
+) -> dict[str, Any]:
     p = prefs_for(user)
     merged = effective_prefs(p)
     for cat, chans in (prefs or {}).items():
@@ -454,6 +459,8 @@ def save_prefs(user: User, *, prefs: dict[str, Any], email: str | None) -> dict[
         raise PrefsRejected("email_invalid", "email")
     p.prefs = merged
     p.destination_email = dest
+    if quiet_hours is not None:
+        p.quiet_hours = bool(quiet_hours)
     p.save()
     return prefs_payload(user)
 

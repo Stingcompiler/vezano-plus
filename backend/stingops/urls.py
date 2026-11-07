@@ -8,6 +8,11 @@ from stingops.app_store import (
     PublicAppsView,
     SignedDownloadView,
 )
+from stingops.operator_push_views import (
+    OperatorPushStatusView,
+    OperatorPushSubscribeView,
+    OperatorPushUnsubscribeView,
+)
 from stingops.views import (
     OperatorAnnouncementActionView,
     OperatorAnnouncementsView,
@@ -65,6 +70,14 @@ urlpatterns = [
         "platform/apps/<uuid:release_id>/remove",
         OperatorAppDeleteView.as_view(),
         name="platform-app-remove",
+    ),
+    # 0005 §٢١٦ — الإشعارات الفورية لمتصفح المشغّل
+    path("platform/push", OperatorPushStatusView.as_view(), name="platform-push"),
+    path("platform/push/subscribe", OperatorPushSubscribeView.as_view(), name="platform-push-sub"),
+    path(
+        "platform/push/unsubscribe",
+        OperatorPushUnsubscribeView.as_view(),
+        name="platform-push-unsub",
     ),
     path("platform/login", OperatorLoginView.as_view(), name="platform-login"),
     path("platform/resume", OperatorResumeView.as_view(), name="platform-resume"),

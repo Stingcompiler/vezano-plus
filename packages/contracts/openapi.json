@@ -9214,6 +9214,82 @@
         }
       }
     },
+    "/api/platform/push": {
+      "get": {
+        "operationId": "platform_push_retrieve",
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformPushResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/push/subscribe": {
+      "post": {
+        "operationId": "platform_push_subscribe_create",
+        "tags": ["platform"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subscribe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformPushSubscribeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/push/unsubscribe": {
+      "post": {
+        "operationId": "platform_push_unsubscribe_create",
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformPushUnsubscribeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/reports": {
       "get": {
         "operationId": "platform_reports_retrieve",
@@ -39735,11 +39811,14 @@
               "in_app": {
                 "type": "integer"
               },
+              "push": {
+                "type": "integer"
+              },
               "sms": {
                 "type": "integer"
               }
             },
-            "required": ["in_app", "sms", "email"],
+            "required": ["in_app", "sms", "email", "push"],
             "type": "object"
           },
           "destination_email": {
@@ -39762,9 +39841,12 @@
                   },
                   "in_app": {
                     "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
                   }
                 },
-                "required": ["in_app", "email"],
+                "required": ["in_app", "email", "push"],
                 "type": "object"
               },
               "marketing": {
@@ -39775,9 +39857,12 @@
                   },
                   "in_app": {
                     "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
                   }
                 },
-                "required": ["in_app", "email"],
+                "required": ["in_app", "email", "push"],
                 "type": "object"
               },
               "operational": {
@@ -39786,16 +39871,22 @@
                   "in_app": {
                     "type": "boolean"
                   },
+                  "push": {
+                    "type": "boolean"
+                  },
                   "sms": {
                     "type": "boolean"
                   }
                 },
-                "required": ["in_app", "sms"],
+                "required": ["in_app", "sms", "push"],
                 "type": "object"
               }
             },
             "required": ["operational", "account", "marketing"],
             "type": "object"
+          },
+          "quiet_hours": {
+            "type": "boolean"
           },
           "sms_balance": {
             "additionalProperties": false,
@@ -39816,6 +39907,7 @@
         },
         "required": [
           "prefs",
+          "quiet_hours",
           "destination_email",
           "phone",
           "sms_balance",
@@ -39837,11 +39929,14 @@
               "in_app": {
                 "type": "integer"
               },
+              "push": {
+                "type": "integer"
+              },
               "sms": {
                 "type": "integer"
               }
             },
-            "required": ["in_app", "sms", "email"],
+            "required": ["in_app", "sms", "email", "push"],
             "type": "object"
           },
           "destination_email": {
@@ -39864,9 +39959,12 @@
                   },
                   "in_app": {
                     "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
                   }
                 },
-                "required": ["in_app", "email"],
+                "required": ["in_app", "email", "push"],
                 "type": "object"
               },
               "marketing": {
@@ -39877,9 +39975,12 @@
                   },
                   "in_app": {
                     "type": "boolean"
+                  },
+                  "push": {
+                    "type": "boolean"
                   }
                 },
-                "required": ["in_app", "email"],
+                "required": ["in_app", "email", "push"],
                 "type": "object"
               },
               "operational": {
@@ -39888,16 +39989,22 @@
                   "in_app": {
                     "type": "boolean"
                   },
+                  "push": {
+                    "type": "boolean"
+                  },
                   "sms": {
                     "type": "boolean"
                   }
                 },
-                "required": ["in_app", "sms"],
+                "required": ["in_app", "sms", "push"],
                 "type": "object"
               }
             },
             "required": ["operational", "account", "marketing"],
             "type": "object"
+          },
+          "quiet_hours": {
+            "type": "boolean"
           },
           "sms_balance": {
             "additionalProperties": false,
@@ -39918,6 +40025,7 @@
         },
         "required": [
           "prefs",
+          "quiet_hours",
           "destination_email",
           "phone",
           "sms_balance",
@@ -50825,6 +50933,54 @@
           }
         },
         "required": ["proof"],
+        "type": "object"
+      },
+      "GetPlatformPushResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["configured", "public_key", "subscribed"],
+        "type": "object"
+      },
+      "PostPlatformPushSubscribeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["configured", "public_key", "subscribed"],
+        "type": "object"
+      },
+      "PostPlatformPushUnsubscribeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "subscribed": {
+            "type": "boolean"
+          }
+        },
+        "required": ["configured", "public_key", "subscribed"],
         "type": "object"
       },
       "GetPlatformReportsResponse": {

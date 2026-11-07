@@ -28,6 +28,8 @@ SUPPORT_WRITE_PREFIXES = (
     # 0005 §١٩٠: الدعم يقرأ الرسائل ويعالجها ويعلّم الإشعارات مقروءة
     "/api/platform/messages",
     "/api/platform/notices",
+    # 0005 §٢١٦: كل مشغّل يشترك بمتصفحه في الإشعارات الفورية
+    "/api/platform/push",
 )
 
 
