@@ -22,7 +22,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
 RUN uv sync --frozen --no-dev && chmod +x deploy/*.sh
 
-RUN useradd --system --create-home --uid 10001 app && mkdir -p /backups && chown -R app /app /backups
+RUN useradd --system --create-home --uid 10001 app && mkdir -p /app/private-app-releases /backups && chown -R app /app /backups
 USER app
 # `uv run --no-sync` وقت التشغيل بلا ذاكرة مؤقتة (المستخدم بلا صلاحية كتابة خارج بيته)
 ENV UV_NO_CACHE=1

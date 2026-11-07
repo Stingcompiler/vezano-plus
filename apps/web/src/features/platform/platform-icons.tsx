@@ -44,6 +44,15 @@ export const PLATFORM_ICONS = {
       <path d="m11 12 9-9M17 6l2.5 2.5M14.5 8.5 16.5 10.5" />
     </I>
   ),
+  // نافذة تطبيقات بأربعة مربعات
+  apps: (
+    <I>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <path d="M16.5 13v7M13 16.5h7" />
+    </I>
+  ),
   // طبقات الباقات
   plans: (
     <I>

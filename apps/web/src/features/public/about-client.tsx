@@ -14,6 +14,7 @@ import { pounds } from "@/features/public/money";
 import { PlanLine, planItems } from "@/features/public/plan-lines";
 import { DemoRequestForm } from "@/features/public/demo-request-form";
 import { PublicFooter } from "@/features/public/public-footer";
+import { PublicAppsSection } from "@/features/app-store/store";
 import { PublicHeader } from "@/features/public/public-header";
 import { api } from "@/lib/api";
 import { hasLocalSetup } from "@/lib/device-setup";
@@ -526,6 +527,8 @@ export function AboutClient() {
             </div>
           </div>
         </section>
+
+        <PublicAppsSection />
 
         <section id="lp-faq" className="lp__section lp__section--alt">
           <div className="lp__wrap">
