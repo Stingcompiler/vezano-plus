@@ -15,6 +15,8 @@ import "./market.css";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth } from "@/features/home/format";
 import type { OfferCard, SupplierCard } from "@/features/market/home-client";
+import { PublicFooter } from "@/features/public/public-footer";
+import { PublicHeader } from "@/features/public/public-header";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 
@@ -99,8 +101,11 @@ export function SupplierClient({ id }: { id: string }) {
   return (
     <Frame
       title={s?.public_name ?? "السوق"}
-      footer={null}
+      footer={signedIn ? null : <PublicFooter inFrame />}
       nav={app.tokens ? <AppNav currentId="market" /> : undefined}
+      // الزائر يبقى في إطار الموقع العام (التنقل العام ظاهر) كصفحة السوق نفسها
+      chrome={signedIn ? undefined : <PublicHeader cta="login" />}
+      back={signedIn ? "auto" : false}
     >
       <div className="sys mp cus" data-screen="MP-03" data-state={state}>
         {state === "loading" ? (
@@ -115,6 +120,11 @@ export function SupplierClient({ id }: { id: string }) {
 
         {s ? (
           <>
+            <div className="mk-back">
+              <Button variant="quiet" onClick={() => router.push("/market")}>
+                ‹ العودة إلى السوق
+              </Button>
+            </div>
             <div className="cat-table pos-card">
               <div className="acc-card__body cus-head">
                 <h1>{s.public_name}</h1>
@@ -132,6 +142,45 @@ export function SupplierClient({ id }: { id: string }) {
                     }
                     label={s.badge === "verified" ? "هوية متحققة" : s.badge_label}
                   />
+                </div>
+              </div>
+            </div>
+            <div className="cat-table pos-card">
+              <div className="cat-head">
+                <h2 className="cat-head__title">العروض المنشورة</h2>
+              </div>
+              <div className="acc-card__body">
+                {s.offers.length ? (
+                  <ul className="cus-list">
+                    {s.offers.map((o) => (
+                      <li key={o.id}>
+                        <strong>{o.public_name}</strong>
+                        <div className="cus-sub">{o.pack_label}</div>
+                        <div>
+                          {o.price_minor ? (
+                            <>
+                              <span className="sting-mono">{formatMinor(o.price_minor)}</span>
+                              {o.confirmed_until
+                                ? ` · مؤكَّد حتى ${untilWord(o.confirmed_until)}`
+                                : ""}
+                            </>
+                          ) : (
+                            `${o.price_line} · ${o.availability} — بسعرٍ عند الطلب`
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="acc-choice__note">لا عروض عامة منشورة الآن.</p>
+                )}
+              </div>
+            </div>
+
+            {/* تقرير الموقع العام 2026-11-07: العروض قبل المتابعة — فيصدق «والعروض أعلاه تُرى بلا حساب» */}
+            <div className="cat-table pos-card">
+              <div className="acc-card__body">
+                <div className="acc-actions">
                   <Button
                     pos
                     onClick={() =>
@@ -190,6 +239,30 @@ export function SupplierClient({ id }: { id: string }) {
               </Notice>
             ) : null}
 
+            <div className="cat-table pos-card">
+              <div className="cat-head">
+                <h2 className="cat-head__title">حقائق قابلة للتحقق — لا تقييم نجوم</h2>
+              </div>
+              <div className="acc-card__body mk-facts">
+                {(
+                  [
+                    ["طلبات مؤكدة من طرفين", s.facts.confirmed_orders],
+                    ["نُفِّذت كاملة", s.facts.fulfilled],
+                    ["نُفِّذت جزئياً", s.facts.partial],
+                    ["خلافات مفتوحة الآن", s.facts.open_disputes],
+                  ] as const
+                ).map(([label, n]) => (
+                  <div className="mk-facts__item" key={label}>
+                    <span className="mk-facts__value sting-mono">{n}</span>
+                    <span className="mk-facts__label">{label}</span>
+                  </div>
+                ))}
+                <p className="acc-choice__note mk-facts__note">
+                  الحقائق أعلاه تُحتسب من طلبات فعلية مؤكدة من طرفين.
+                </p>
+              </div>
+            </div>
+
             {s.badge === "verified" || s.badge === "expired" ? (
               <div className="cat-table pos-card">
                 <div className="cat-head">
@@ -221,62 +294,6 @@ export function SupplierClient({ id }: { id: string }) {
                 </div>
               </div>
             ) : null}
-
-            <div className="cat-table pos-card">
-              <div className="cat-head">
-                <h2 className="cat-head__title">حقائق قابلة للتحقق — لا تقييم نجوم</h2>
-                <span className="cat-head__hint">
-                  الحقائق أعلاه تُحتسب من طلبات فعلية مؤكدة من طرفين.
-                </span>
-              </div>
-              <div className="acc-card__body home-kpis">
-                {(
-                  [
-                    ["طلبات مؤكدة من طرفين", s.facts.confirmed_orders],
-                    ["نُفِّذت كاملة", s.facts.fulfilled],
-                    ["نُفِّذت جزئياً", s.facts.partial],
-                    ["خلافات مفتوحة الآن", s.facts.open_disputes],
-                  ] as const
-                ).map(([label, n]) => (
-                  <div className="home-kpi" key={label}>
-                    <div className="home-kpi__label">{label}</div>
-                    <div className="home-kpi__value sting-mono">{n}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="cat-table pos-card">
-              <div className="cat-head">
-                <h2 className="cat-head__title">العروض المنشورة</h2>
-              </div>
-              <div className="acc-card__body">
-                {s.offers.length ? (
-                  <ul className="cus-list">
-                    {s.offers.map((o) => (
-                      <li key={o.id}>
-                        <strong>{o.public_name}</strong>
-                        <div className="cus-sub">{o.pack_label}</div>
-                        <div>
-                          {o.price_minor ? (
-                            <>
-                              <span className="sting-mono">{formatMinor(o.price_minor)}</span>
-                              {o.confirmed_until
-                                ? ` · مؤكَّد حتى ${untilWord(o.confirmed_until)}`
-                                : ""}
-                            </>
-                          ) : (
-                            `${o.price_line} · ${o.availability} — بسعرٍ عند الطلب`
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="acc-choice__note">لا عروض عامة منشورة الآن.</p>
-                )}
-              </div>
-            </div>
 
             {signedIn ? (
               <div className="cat-table pos-card">

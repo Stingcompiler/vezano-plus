@@ -154,13 +154,15 @@ export function MarketHomeClient() {
               موردو منطقتك بعروض منشورة ومؤكَّدة — تطلب بالكمية والسعر المعلَنين، وما تستلمه يدخل
               دفترك بلا إدخال مكرَّر.
             </p>
-            <p className="mk-hero__hint">
-              المنطقة: {areaLabel} —{" "}
-              <Button variant="quiet" onClick={() => setPickArea((v) => !v)}>
+            {/* تقرير الموقع العام 2026-11-07: المنطقة عنصر تصفية باسمه وقيمته لا كلمة داخل جملة */}
+            <div className="mk-hero__hint mk-area">
+              <span className="mk-area__label">المنطقة</span>
+              <strong className="mk-area__value">{areaLabel}</strong>
+              <Button variant="secondary" onClick={() => setPickArea((v) => !v)}>
                 بدِّلها
-              </Button>{" "}
-              · بحثٌ بالاسم أو الصنف
-            </p>
+              </Button>
+              <span className="mk-area__how">بحثٌ بالاسم أو الصنف</span>
+            </div>
           </div>
           {signedIn ? (
             <div className="pub-nav mk-tabs" aria-label="أقسام السوق">
@@ -313,10 +315,17 @@ export function MarketHomeClient() {
 
           {shown && shown.suppliers.length ? (
             <>
-              <p className="mk-meta">
-                {offersWord(shown.offers_count)} · {suppliersWord(shown.suppliers_count)} · الترتيب
-                داخل كل وحدة على حدة — لا «الأرخص» عبر وحدات مختلفة.
-              </p>
+              {/* العدّان منفصلان، وقاعدة الترتيب تظهر حين توجد عروض تُرتَّب؛ الصفر جملة ظاهرة */}
+              {shown.offers_count === 0 ? (
+                <p className="mk-meta mk-meta--empty">
+                  لا توجد عروض منشورة حالياً · {suppliersWord(shown.suppliers_count)} في المنطقة
+                </p>
+              ) : (
+                <p className="mk-meta">
+                  {offersWord(shown.offers_count)} · {suppliersWord(shown.suppliers_count)} ·
+                  الترتيب داخل كل وحدة على حدة — لا «الأرخص» عبر وحدات مختلفة.
+                </p>
+              )}
               <h3 className="mk-section">الموردون</h3>
               <ul className="mk-grid">
                 {shown.suppliers.map((s) => (
