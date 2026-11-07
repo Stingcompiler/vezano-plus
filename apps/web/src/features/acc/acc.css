@@ -885,3 +885,21 @@ a.c-btn {
     border-block-start: 1px solid rgb(255 255 255 / 0.12);
   }
 }
+
+/* تقرير الموقع العام 2026-11-07 — موضع التسجيل على الهاتف (الشريط للحاسوب وحده) */
+.auth-steps-phone {
+  margin: 0;
+  padding: 0 var(--layout-pagePadding);
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-strong);
+}
+.auth-steps-phone__next {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-ink-muted);
+}
+@media (min-width: 834px) {
+  .auth-steps-phone {
+    display: none;
+  }
+}

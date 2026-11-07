@@ -54,6 +54,9 @@ export function LoginClient() {
   const [identifier, setIdentifier] = useState("");
   // فحص 2026-10-17 F04: «نسيت كلمة المرور» لا يُعطَّل بلا معرّف — يقول ما ينقص ويضع المؤشر في الحقل
   const [needIdentifier, setNeedIdentifier] = useState(false);
+  // تقرير الموقع العام 2026-11-07: «نسيت» بلا معرّف يفتح وضع استعادة صريحاً — عنوانه وحقله وإجراؤه —
+  // بدل رسالة خطأ بجانب حقل كلمة المرور وزرّ الدخول
+  const [recoverMode, setRecoverMode] = useState(false);
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -299,15 +302,37 @@ export function LoginClient() {
         ) : null}
 
         {state !== "offline" && step === "login" ? (
-          <form className="acc-card" onSubmit={(e) => void submitLogin(e)} noValidate>
+          <form
+            className="acc-card"
+            onSubmit={(e) => {
+              if (recoverMode) {
+                e.preventDefault();
+                if (identifier.trim()) void requestCode("recover");
+                return;
+              }
+              void submitLogin(e);
+            }}
+            noValidate
+          >
             <div className="acc-card__head">
               <span className="acc-logo" aria-hidden="true">
                 <BrandMark />
               </span>
-              <h1 className="acc-card__title">الدخول إلى فيزانو بلص</h1>
-              <p className="acc-card__sub">
-                حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
-              </p>
+              {recoverMode ? (
+                <>
+                  <h1 className="acc-card__title">استعادة كلمة المرور</h1>
+                  <p className="acc-card__sub">
+                    اكتب رقم الهاتف أو البريد المسجَّل في حسابك؛ يصل رمز الاستعادة إلى بريد الحساب.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="acc-card__title">الدخول إلى فيزانو بلص</h1>
+                  <p className="acc-card__sub">
+                    حساب إدارة المتجر. زبون المحل يدخل من رابط المحل ولا يحتاج حساباً هنا.
+                  </p>
+                </>
+              )}
             </div>
             <div className="acc-card__body">
               {/* 0005 §١٢٠ — القادم من القفل: الرمز فتح الجهاز، وجلسة الخادم انتهت بإعادة التحميل */}
@@ -349,43 +374,74 @@ export function LoginClient() {
                 required
                 error={needIdentifier ? "اكتب بريدك أولاً — إليه يصل رمز الاستعادة." : undefined}
               />
-              <TextField
-                label="كلمة المرور"
-                kind="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                readOnly={busy}
-                required
-              />
-              {/* مراجعة 2026-10-18: «نسيت» رابطٌ تحت حقلها لا زرّ بعرض الدخول ينافسه */}
-              <div className="acc-forgot">
-                <Button
-                  variant="quiet"
-                  onClick={() => {
-                    if (!identifier.trim()) {
-                      setNeedIdentifier(true);
-                      document.getElementById("login-identifier")?.focus();
-                      return;
+              {recoverMode ? (
+                <div className="acc-actions">
+                  <Button
+                    loading={busy}
+                    onClick={() => {
+                      if (!identifier.trim()) {
+                        setNeedIdentifier(true);
+                        document.getElementById("login-identifier")?.focus();
+                        return;
+                      }
+                      void requestCode("recover");
+                    }}
+                  >
+                    أرسل رمز الاستعادة
+                  </Button>
+                  <Button
+                    variant="quiet"
+                    onClick={() => {
+                      setRecoverMode(false);
+                      setNeedIdentifier(false);
+                    }}
+                  >
+                    رجوع إلى الدخول
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <TextField
+                    label="كلمة المرور"
+                    kind="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    readOnly={busy}
+                    required
+                  />
+                  {/* مراجعة 2026-10-18: «نسيت» رابطٌ تحت حقلها لا زرّ بعرض الدخول ينافسه */}
+                  <div className="acc-forgot">
+                    <Button
+                      variant="quiet"
+                      onClick={() => {
+                        if (!identifier.trim()) {
+                          setRecoverMode(true);
+                          document.getElementById("login-identifier")?.focus();
+                          return;
+                        }
+                        void requestCode("recover");
+                      }}
+                    >
+                      نسيت كلمة المرور
+                    </Button>
+                  </div>
+                </>
+              )}
+              {recoverMode ? null : (
+                <div className="acc-actions">
+                  <Button
+                    type="submit"
+                    financial
+                    loading={busy}
+                    disabledReason={
+                      lock.remaining > 0 ? `${String(lock.remaining)} ثانية` : undefined
                     }
-                    void requestCode("recover");
-                  }}
-                >
-                  نسيت كلمة المرور
-                </Button>
-              </div>
-              <div className="acc-actions">
-                <Button
-                  type="submit"
-                  financial
-                  loading={busy}
-                  disabledReason={
-                    lock.remaining > 0 ? `${String(lock.remaining)} ثانية` : undefined
-                  }
-                >
-                  دخول
-                </Button>
-              </div>
+                  >
+                    دخول
+                  </Button>
+                </div>
+              )}
               {sendFailures > 0 && !manualSuggested ? (
                 <Status state="server_error" label="تعذّر إرسال الرمز" />
               ) : null}

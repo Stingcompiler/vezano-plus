@@ -85,24 +85,37 @@ export function AuthExtras() {
   );
 }
 
-/** مؤشّر خطوات التسجيل الثلاث فوق البطاقة (سطح المكتب). */
+/**
+ * مؤشّر خطوات التسجيل الثلاث: شريط فوق البطاقة على الحاسوب، وسطر «الخطوة 1 من 3» على الهاتف.
+ * تقرير الموقع العام 2026-11-07: الخطوة الأولى تطلب الاسم والبريد وواتساب فاسمها «بيانات التواصل»
+ * لا «المعرّف»، وعلى الهاتف كان المؤشّر يختفي فيُكتشف ما بعده من اسم زرّ الإرسال.
+ */
 export function AuthSteps({ current }: { current: 1 | 2 | 3 }) {
-  const steps = ["المعرّف", "رمز التحقق", "كلمة المرور"] as const;
+  const steps: readonly string[] = ["بيانات التواصل", "رمز التحقق", "كلمة المرور"];
   return (
-    <ol className="auth-steps" aria-label="خطوات التسجيل">
-      {steps.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
-        return (
-          <li
-            key={label}
-            aria-current={n === current ? "step" : undefined}
-            data-done={n < current || undefined}
-          >
-            <span className="auth-steps__num sting-mono">{n}</span>
-            <span>{label}</span>
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      <p className="auth-steps-phone">
+        الخطوة <span className="sting-mono">{current}</span> من{" "}
+        <span className="sting-mono">3</span> · {steps[current - 1]}
+        {current < 3 ? (
+          <span className="auth-steps-phone__next"> — التالية: {steps[current] ?? ""}</span>
+        ) : null}
+      </p>
+      <ol className="auth-steps" aria-label="خطوات التسجيل">
+        {steps.map((label, i) => {
+          const n = (i + 1) as 1 | 2 | 3;
+          return (
+            <li
+              key={label}
+              aria-current={n === current ? "step" : undefined}
+              data-done={n < current || undefined}
+            >
+              <span className="auth-steps__num sting-mono">{n}</span>
+              <span>{label}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
