@@ -1192,3 +1192,568 @@
   background: var(--color-surface-sunken);
   font-size: var(--text-note);
 }
+
+/* ---------- 0005 §٢١٢ — الباقات: مجموعات حقول مسمّاة، أسعار بمواضع ثابتة، إجراءات لاصقة ---------- */
+.plt-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  inline-size: 100%;
+  flex-wrap: wrap;
+}
+.plt-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+}
+.plt-group + .plt-group,
+.plt-group + .plt-features {
+  margin-block-start: 8px;
+}
+.plt-group > legend {
+  padding: 0;
+  margin-block-end: 8px;
+  font-weight: var(--font-weight-bold);
+  font-size: 15px;
+  color: var(--color-ink-strong);
+}
+.plt-group__unit {
+  font-weight: var(--font-weight-medium, 500);
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-group__note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+}
+.plt-plan-form__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+@media (min-width: 834px) {
+  .plt-ops__fields--2 {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+/* الحفظ والإلغاء في المرئي أثناء التمرير داخل النموذج */
+.plt-plan-form__actions {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 2;
+  margin-inline: -16px;
+  margin-block-end: -14px;
+  padding: 10px 16px;
+  background: var(--color-surface-page);
+  border-block-start: 1px solid var(--color-border);
+  border-end-start-radius: 14px;
+  border-end-end-radius: 14px;
+}
+.plt-plan {
+  scroll-margin-block-start: 80px;
+}
+.plt-plan__top {
+  justify-content: flex-start;
+}
+.plt-plan__cycles {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.plt-plan__cycle {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface-sunken);
+  min-inline-size: 0;
+}
+.plt-plan__cycle dt {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-plan__cycle dd {
+  margin: 0;
+  font-size: 15px;
+}
+.plt-plan__cycle dd .sting-mono {
+  font-weight: var(--font-weight-bold);
+}
+.plt-plan__cycle small,
+.plt-plan__off {
+  color: var(--color-ink-muted);
+  font-size: 13px;
+}
+.plt-plan__limits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+.plt-plan__limits li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+/* النموذج داخل بطاقة الباقة: سطح مسطّح لا حاوية ثالثة */
+.plt-plan > .plt-plan-form {
+  padding: 12px 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+}
+.plt-plan > .plt-plan-form .plt-plan-form__actions {
+  margin-inline: -16px;
+  margin-block-end: -14px;
+  background: var(--color-surface-card);
+}
+@media (max-width: 833px) {
+  /* الهاتف: لا حشوات متراكبة — الصفحة ثم البطاقة فقط */
+  .plt-frame > .cat-table.pos-card > .acc-card__body {
+    padding-inline: 0;
+  }
+  .plt-plan {
+    padding-inline: 12px;
+  }
+  .plt-plan > .plt-plan-form .plt-plan-form__actions {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+  .plt-plan__cycles {
+    gap: 6px;
+  }
+  .plt-plan__cycle {
+    padding: 6px 8px;
+  }
+}
+/* `.cat-table` يقصّ ما يفيض فيُبطل اللصق — حاوية الباقات شفافة بلا حدود فلا حاجة للقصّ */
+[data-screen="PLT-16"] > .cat-table.pos-card {
+  overflow: visible;
+}
+@media (min-width: 834px) {
+  .plt-ops__fields--even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- 0005 §٢١٢ — شريط المشغّل: أيقونات، مجموعات تُطوى، وطيّ إلى أيقونات على الحاسوب ---------- */
+.plt-nav__label {
+  min-inline-size: 0;
+}
+.plt-nav__item .plt-nav__badge {
+  margin-inline-start: auto;
+}
+.plt-nav .c-nav__sub .plt-nav__item {
+  min-block-size: 44px;
+}
+/* زرّ الطيّ: على الحاسوب وحده (على الهاتف القائمة درج) */
+.plt-nav__rail {
+  display: none;
+}
+@media (min-width: 834px) {
+  .plt-nav__rail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    inline-size: calc(100% - 16px);
+    min-block-size: 44px;
+    margin: 8px 8px 0;
+    padding: 8px 13px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-ink-muted);
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .plt-nav__rail:hover {
+    color: var(--color-brand-primary);
+    background: color-mix(in srgb, var(--color-brand-primary) 6%, transparent);
+  }
+  .plt-nav__rail:focus-visible,
+  .plt-nav__item:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 1px;
+  }
+  /* المطويّ: عمود أيقونات 72px والمحتوى يأخذ الباقي */
+  .c-frame--sidebar:has(.plt-nav[data-rail]) {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .plt-nav[data-rail] .plt-nav__rail,
+  .plt-nav[data-rail] .plt-nav__item {
+    justify-content: center;
+    padding-inline: 0;
+    position: relative;
+  }
+  /* الاسم يبقى في الرابط اسماً ميسَّراً، ويُخفى بصرياً فقط */
+  .plt-nav[data-rail] .plt-nav__label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .plt-nav[data-rail] .c-nav {
+    padding-inline: 8px;
+  }
+  /* عناوين المجموعات تُستبدل بفاصل: الأيقونات كلها ظاهرة */
+  .plt-nav[data-rail] .c-nav__group--toggle {
+    display: none;
+  }
+  .plt-nav[data-rail] .c-nav__section {
+    margin-block-start: 8px;
+    padding-block-start: 8px;
+    border-block-start: 1px solid var(--color-border);
+  }
+  .plt-nav[data-rail] .c-nav__sub {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  /* العدّاد على زاوية الأيقونة لا فوقها */
+  .plt-nav[data-rail] .plt-nav__badge {
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 2px;
+    min-inline-size: 16px;
+    margin: 0;
+    padding: 0 4px;
+    font-size: 10px;
+    line-height: 16px;
+    box-shadow: 0 0 0 2px var(--color-sidebar);
+  }
+  .plt-nav__tip {
+    position: fixed;
+    z-index: 50;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border-radius: var(--radius-panelSm);
+    background: var(--color-ink-strong);
+    color: var(--color-surface-card);
+    font-size: 13px;
+    font-weight: var(--font-weight-medium, 500);
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+/* ---------- 0005 §٢١٢ — المستأجرون: مرشّحات بمجموعتين، تفاصيل ظاهرة، نصوص ثانوية بوزنها ---------- */
+.plt-filters {
+  display: grid;
+  gap: 6px;
+}
+.plt-filters__row {
+  align-items: center;
+}
+.plt-filters__label {
+  min-inline-size: 52px;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+}
+/* الهاتف: كل مجموعة سطر واحد يتمرّر أفقياً — لا أربعة أسطر قبل أول سجل */
+@media (max-width: 833px) {
+  .plt-filters__row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block-end: 2px;
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .plt-filters__row::-webkit-scrollbar {
+    display: none;
+  }
+  .plt-filters__row .pos-chip {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+/* هدف لمس ≥ 44px كقاعدة المشروع */
+.plt-row-open {
+  display: inline-flex;
+  align-items: center;
+  margin-block-start: 2px;
+  padding: 0;
+  min-block-size: 44px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.plt-row-open::after {
+  content: " ‹";
+}
+.plt-row-open:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.plt-cell-minor {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+.plt-tenants .c-table--cards .c-table__table tr {
+  background: var(--color-surface-card);
+}
+/* بطاقات المستأجرين على العرض المتوسط: الحقول شبكة أعمدة (التسمية فوق القيمة) لا سطراً لكل حقل */
+.plt-tenants .c-table--cards .c-table__table tr {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 16px;
+  padding: 12px 14px;
+}
+.plt-tenants .c-table--cards .c-table__table td {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 4px 0;
+}
+.plt-tenants .c-table--cards .c-table__table td::before {
+  max-inline-size: none;
+}
+
+/* ---------- 0005 §٢١٢ — الاستحقاقات: مصفوفة خصائص × باقات، وأعلام التشغيل صفوفاً ---------- */
+.plt-ent {
+  --plt-ent-cols: repeat(var(--plt-ent-plans, 2), minmax(0, 1fr));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  background: var(--color-surface-card);
+}
+.plt-ent__head,
+.plt-ent__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, var(--plt-ent-span, 2fr));
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+}
+.plt-ent__head {
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-muted);
+  border-block-end: 1px solid var(--color-border);
+}
+.plt-ent__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.plt-ent__row + .plt-ent__row {
+  border-block-start: 1px solid var(--color-border);
+}
+.plt-ent__feature {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  min-inline-size: 0;
+}
+.plt-ent__cells {
+  display: grid;
+  grid-template-columns: var(--plt-ent-cols);
+  gap: 8px;
+  min-inline-size: 0;
+}
+.plt-ent__how {
+  margin: 0;
+}
+/* خانة قابلة للتبديل: مفتاح بحالته المكتوبة — لا تشبه مرشّح قائمة */
+.plt-ent__switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+  text-align: start;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.plt-ent__switch:hover {
+  border-color: var(--color-brand-primary);
+}
+.plt-ent__switch:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+.plt-ent__switch[aria-busy="true"] {
+  opacity: 0.6;
+}
+.plt-ent__track {
+  position: relative;
+  flex: none;
+  inline-size: 34px;
+  block-size: 20px;
+  border-radius: 999px;
+  background: var(--color-border);
+  transition: background-color 0.15s ease;
+}
+.plt-ent__track::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  inline-size: 16px;
+  block-size: 16px;
+  border-radius: 50%;
+  background: var(--color-surface-card);
+  transition: transform 0.15s ease;
+}
+.plt-ent__switch[aria-pressed="true"] {
+  color: var(--color-ink-strong);
+}
+.plt-ent__switch[aria-pressed="true"] .plt-ent__track {
+  background: var(--color-brand-primary);
+}
+/* RTL: البداية يمين — التفعيل يزيح الدائرة إلى النهاية (يسار) */
+.plt-ent__switch[aria-pressed="true"] .plt-ent__track::after {
+  transform: translateX(-14px);
+}
+.plt-ent__limit {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-block-size: 44px;
+  padding-inline: 10px;
+  align-items: center;
+}
+.plt-ent__limit .sting-mono {
+  font-weight: var(--font-weight-bold);
+}
+/* الحاسوب: اسم الباقة في رأس العمود، فيُخفى بصرياً داخل الخانة ويبقى اسماً ميسَّراً للزرّ */
+@media (min-width: 834px) {
+  .plt-ent__cells .plt-ent__plan {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .plt-ent__switch,
+  .plt-ent__limit {
+    position: relative;
+  }
+}
+@media (max-width: 833px) {
+  .plt-ent__head {
+    display: none;
+  }
+  .plt-ent__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+  .plt-ent__cells {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .plt-ent__plan {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-ink-strong);
+  }
+  .plt-ent__switch {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plt-ent__track,
+  .plt-ent__track::after {
+    transition: none;
+  }
+}
+.plt-flag-form {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 12px;
+  max-inline-size: 760px;
+}
+@media (min-width: 834px) {
+  .plt-flag-form {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+  }
+  .plt-flag-form__save {
+    grid-column: 1 / -1;
+  }
+}
+.plt-flag-form__scope {
+  display: grid;
+  gap: 6px;
+}
+.plt-flag-form__label {
+  font-weight: var(--font-weight-bold);
+  font-size: 14px;
+}
+.plt-flags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  background: var(--color-surface-card);
+}
+.plt-flags__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.plt-flags__row + .plt-flags__row {
+  border-block-start: 1px solid var(--color-border);
+}
+.plt-flags__scope,
+.plt-flags__by {
+  color: var(--color-ink-muted);
+}
+@media (max-width: 833px) {
+  .plt-flags__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+/* PLT-12: فراغات العنوان والوصف والملاحظة متقاربة — المصفوفة أول ما يُرى */
+[data-screen="PLT-12"] .acc-card__body > .cat-head__title {
+  margin-block-start: 12px;
+}
+[data-screen="PLT-12"] .acc-card__body > .acc-choice__note {
+  margin-block: -6px 0;
+}
+.plt-flag-form__save {
+  justify-content: flex-start;
+}
+.plt-flag-form__save .c-btn {
+  inline-size: auto;
+  min-inline-size: 160px;
+}
+@media (min-width: 834px) {
+  .plt-ent__switch {
+    max-inline-size: 220px;
+  }
+}

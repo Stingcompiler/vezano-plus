@@ -23,6 +23,7 @@ import "@/features/public/public.css";
 import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
+import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { BRANCHES, Count, DEVICES } from "@/lib/count";
 
@@ -205,6 +206,10 @@ export function PlansCatalogClient() {
         .toISOString()
         .slice(0, 10)
     : "";
+  // §٢١٢: التاريخ بصيغة الحقل نفسه (يوم/شهر/سنة) معزولاً اتجاهياً — ISO داخل نص عربي يُقرأ معكوساً
+  const minEffectiveShown = minEffective
+    ? `\u2066${minEffective.split("-").reverse().join("/")}\u2069`
+    : "";
   const [priceReason, setPriceReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -227,6 +232,13 @@ export function PlansCatalogClient() {
   useEffect(() => {
     void load().catch(() => undefined);
   }, [load]);
+
+  // §٢١٢: فتح نموذج يأتي به إلى المرئي — لا يبقى تحت باقات أخرى بعيداً عن نقرة «عدّل»
+  useEffect(() => {
+    if (!editing && !priceFor) return;
+    const f = document.querySelector<HTMLElement>(".plt-plan-form");
+    (f?.closest<HTMLElement>(".plt-plan") ?? f)?.scrollIntoView({ block: "start" });
+  }, [editing, priceFor]);
 
   const fail = (code: string, status: number) =>
     setError(ERRORS[code] ?? `تعذّر التنفيذ (${code || status})`);
@@ -352,7 +364,7 @@ export function PlansCatalogClient() {
         value={draft.reason}
         onChange={(e) => set("reason", e.target.value)}
       />
-      <div className="acc-actions plt-ops-row">
+      <div className="acc-actions plt-ops-row plt-plan-form__actions">
         <Button type="submit" loading={busy}>
           احفظ
         </Button>
@@ -366,114 +378,135 @@ export function PlansCatalogClient() {
 
   const form = (
     <form className="plt-ops plt-plan-form" onSubmit={(e) => void save(e)} noValidate>
-      <div className="plt-ops__fields plt-ops__fields--3">
-        {editing === "new" ? (
+      {editing === "new" ? <h3 className="plt-plan-form__title">باقة جديدة</h3> : null}
+      <fieldset className="plt-group">
+        <legend>معلومات الباقة</legend>
+        <div className={`plt-ops__fields plt-ops__fields--${editing === "new" ? "3" : "2"}`}>
+          {editing === "new" ? (
+            <TextField
+              label="الرمز"
+              mono
+              hint="لاتيني صغير — لا يتغيّر بعد الإنشاء"
+              value={draft.code}
+              onChange={(e) => set("code", e.target.value)}
+            />
+          ) : null}
           <TextField
-            label="الرمز"
-            mono
-            hint="لاتيني صغير — لا يتغيّر بعد الإنشاء"
-            value={draft.code}
-            onChange={(e) => set("code", e.target.value)}
+            label="الاسم"
+            value={draft.name}
+            onChange={(e) => set("name", e.target.value)}
           />
-        ) : null}
-        <TextField label="الاسم" value={draft.name} onChange={(e) => set("name", e.target.value)} />
-        <TextField
-          label="الترتيب"
-          mono
-          inputMode="numeric"
-          value={draft.order}
-          onChange={(e) => set("order", e.target.value)}
+          <TextField
+            label="الترتيب"
+            mono
+            inputMode="numeric"
+            value={draft.order}
+            onChange={(e) => set("order", e.target.value)}
+          />
+        </div>
+        <TextAreaField
+          label="الوصف"
+          rows={2}
+          value={draft.blurb}
+          onChange={(e) => set("blurb", e.target.value)}
         />
-      </div>
-      <TextAreaField
-        label="الوصف"
-        rows={2}
-        value={draft.blurb}
-        onChange={(e) => set("blurb", e.target.value)}
-      />
-      <div className="plt-ops__fields plt-ops__fields--3">
-        <TextField
-          label="السعر الشهري"
-          mono
-          inputMode="decimal"
-          value={draft.monthly}
-          onChange={(e) => set("monthly", e.target.value)}
-        />
-        <TextField
-          label="السعر الربعي"
-          mono
-          inputMode="decimal"
-          hint="0 = الدورة غير معروضة"
-          value={draft.quarterly}
-          onChange={(e) => set("quarterly", e.target.value)}
-        />
-        <TextField
-          label="السعر السنوي"
-          mono
-          inputMode="decimal"
-          hint="0 = الدورة غير معروضة"
-          value={draft.yearly}
-          onChange={(e) => set("yearly", e.target.value)}
-        />
-      </div>
-      {/* 0005 §١١٦ — أسعار الإضافات الشهرية للوحدة */}
-      <div className="plt-ops__fields">
-        <TextField
-          label="جهاز إضافي / شهر"
-          mono
-          inputMode="decimal"
-          hint="0 = غير معروضة"
-          value={draft.addon_device}
-          onChange={(e) => set("addon_device", e.target.value)}
-        />
-        <TextField
-          label="مستخدم إضافي / شهر"
-          mono
-          inputMode="decimal"
-          hint="0 = غير معروضة"
-          value={draft.addon_user}
-          onChange={(e) => set("addon_user", e.target.value)}
-        />
-        <TextField
-          label="فرع إضافي / شهر"
-          mono
-          inputMode="decimal"
-          hint="0 = غير معروضة"
-          value={draft.addon_branch}
-          onChange={(e) => set("addon_branch", e.target.value)}
-        />
-      </div>
-      <div className="plt-ops__fields plt-ops__fields--4">
-        <TextField
-          label="الفروع"
-          mono
-          inputMode="numeric"
-          value={draft.max_branches}
-          onChange={(e) => set("max_branches", e.target.value)}
-        />
-        <TextField
-          label="الأجهزة"
-          mono
-          inputMode="numeric"
-          value={draft.max_devices}
-          onChange={(e) => set("max_devices", e.target.value)}
-        />
-        <TextField
-          label="المستخدمون"
-          mono
-          inputMode="numeric"
-          hint="فارغ = بلا حدّ"
-          value={draft.max_users}
-          onChange={(e) => set("max_users", e.target.value)}
-        />
-        <TextField
-          label="رسائل الحملات شهرياً"
-          mono
-          inputMode="numeric"
-          value={draft.campaign_quota}
-          onChange={(e) => set("campaign_quota", e.target.value)}
-        />
-      </div>
+      </fieldset>
+      <fieldset className="plt-group">
+        <legend>
+          أسعار الدورات <span className="plt-group__unit">ج.س</span>
+        </legend>
+        <div className="plt-ops__fields plt-ops__fields--3">
+          <TextField
+            label="السعر الشهري"
+            mono
+            inputMode="decimal"
+            value={draft.monthly}
+            onChange={(e) => set("monthly", e.target.value)}
+          />
+          <TextField
+            label="السعر الربعي"
+            mono
+            inputMode="decimal"
+            hint="0 = الدورة غير معروضة"
+            value={draft.quarterly}
+            onChange={(e) => set("quarterly", e.target.value)}
+          />
+          <TextField
+            label="السعر السنوي"
+            mono
+            inputMode="decimal"
+            hint="0 = الدورة غير معروضة"
+            value={draft.yearly}
+            onChange={(e) => set("yearly", e.target.value)}
+          />
+        </div>
+      </fieldset>
+      {/* 0005 §١١٦ — أسعار الإضافات الشهرية للوحدة؛ §٢١٢: ثلاثة أعمدة متساوية */}
+      <fieldset className="plt-group">
+        <legend>
+          أسعار الإضافات شهرياً <span className="plt-group__unit">ج.س للوحدة</span>
+        </legend>
+        <div className="plt-ops__fields plt-ops__fields--3">
+          <TextField
+            label="جهاز إضافي / شهر"
+            mono
+            inputMode="decimal"
+            hint="0 = غير معروضة"
+            value={draft.addon_device}
+            onChange={(e) => set("addon_device", e.target.value)}
+          />
+          <TextField
+            label="مستخدم إضافي / شهر"
+            mono
+            inputMode="decimal"
+            hint="0 = غير معروضة"
+            value={draft.addon_user}
+            onChange={(e) => set("addon_user", e.target.value)}
+          />
+          <TextField
+            label="فرع إضافي / شهر"
+            mono
+            inputMode="decimal"
+            hint="0 = غير معروضة"
+            value={draft.addon_branch}
+            onChange={(e) => set("addon_branch", e.target.value)}
+          />
+        </div>
+      </fieldset>
+      <fieldset className="plt-group">
+        <legend>الحدود</legend>
+        <div className="plt-ops__fields plt-ops__fields--4">
+          <TextField
+            label="الفروع"
+            mono
+            inputMode="numeric"
+            value={draft.max_branches}
+            onChange={(e) => set("max_branches", e.target.value)}
+          />
+          <TextField
+            label="الأجهزة"
+            mono
+            inputMode="numeric"
+            value={draft.max_devices}
+            onChange={(e) => set("max_devices", e.target.value)}
+          />
+          <TextField
+            label="المستخدمون"
+            mono
+            inputMode="numeric"
+            hint="فارغ = بلا حدّ"
+            value={draft.max_users}
+            onChange={(e) => set("max_users", e.target.value)}
+          />
+          <TextField
+            label="رسائل الحملات شهرياً"
+            mono
+            inputMode="numeric"
+            value={draft.campaign_quota}
+            onChange={(e) => set("campaign_quota", e.target.value)}
+          />
+        </div>
+      </fieldset>
       <fieldset className="plt-features">
         <legend>الخصائص</legend>
         {(data?.features ?? []).map((f) => (
@@ -508,7 +541,7 @@ export function PlansCatalogClient() {
         value={draft.reason}
         onChange={(e) => set("reason", e.target.value)}
       />
-      <div className="acc-actions plt-ops-row">
+      <div className="acc-actions plt-ops-row plt-plan-form__actions">
         <Button type="submit" loading={busy}>
           {editing === "new" ? "أنشئ الباقة" : "احفظ"}
         </Button>
@@ -525,9 +558,24 @@ export function PlansCatalogClient() {
       <div className="sys plt-frame" data-screen="PLT-16" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
-            <h2 className="cat-head__title">
-              الباقات والتسعير — ما تراه الصفحة العامة يُحرَّر هنا
-            </h2>
+            <div className="plt-head-row">
+              <h2 className="cat-head__title">
+                <PageTitle text="الباقات والتسعير — ما تراه الصفحة العامة يُحرَّر هنا" />
+              </h2>
+              {/* §٢١٢: الإنشاء قرب عنوان القائمة لا بعد آخر باقة */}
+              {data && editing !== "new" ? (
+                <Button
+                  onClick={() => {
+                    setEditing("new");
+                    setPriceFor("");
+                    setDraft(EMPTY);
+                    setError("");
+                  }}
+                >
+                  باقة جديدة
+                </Button>
+              ) : null}
+            </div>
             <span className="cat-head__hint">
               الاسم والسعر لكل دورة والحدود والخصائص لكل باقة، بسبب مسجَّل. تغيير السعر يمسّ
               التجديدات القادمة فقط، والسعر المعلن يُجدول بتاريخ سريان.
@@ -547,59 +595,75 @@ export function PlansCatalogClient() {
             {done ? <Status state="success" label={done} /> : null}
             {data ? (
               <>
+                {editing === "new" ? form : null}
                 <ul className="plt-plans">
                   {data.plans.map((p) => (
                     <li key={p.code} className="plt-plan c-card" data-active={p.is_active}>
                       <div className="plt-plan__top">
-                        <div>
-                          <strong className="plt-plan__name">{p.name}</strong>{" "}
-                          <span className="plt-badge">{p.code}</span>
-                        </div>
+                        {/* §٢١٢: حالة النشر مع اسم الباقة لا في الطرف الآخر */}
+                        <strong className="plt-plan__name">{p.name}</strong>
+                        <span className="plt-badge">{p.code}</span>
                         <Status
                           state={p.is_active ? "success" : "expired"}
                           label={p.is_active ? "معروضة" : "مؤرشفة"}
                         />
                       </div>
-                      <div className="plt-plan__prices">
-                        {p.trial ? (
+                      {p.trial ? (
+                        <div className="plt-plan__prices">
                           <span>
                             مجاناً · <span className="sting-mono">{p.trial_days}</span> يوماً ·
                             بميزات «{p.trial_base_name || "—"}»
                           </span>
-                        ) : (
-                          <>
-                            <span>
-                              شهري{" "}
-                              <span className="sting-mono">{money(p.price_monthly_minor)}</span>
-                            </span>
-                            {p.price_quarterly_minor !== "0" ? (
-                              <span>
-                                ربعي{" "}
-                                <span className="sting-mono">{money(p.price_quarterly_minor)}</span>
-                              </span>
-                            ) : null}
-                            {p.price_yearly_minor !== "0" ? (
-                              <span>
-                                سنوي{" "}
-                                <span className="sting-mono">{money(p.price_yearly_minor)}</span>
-                              </span>
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-                      <div className="cus-sub">
-                        <Count n={p.max_branches} {...BRANCHES} /> ·{" "}
-                        <Count n={p.max_devices} {...DEVICES} /> ·{" "}
-                        {p.max_users === null ? (
-                          "مستخدمون بلا حدّ"
-                        ) : (
-                          <>
-                            <span className="sting-mono">{p.max_users}</span> مستخدمين
-                          </>
-                        )}{" "}
-                        · <span className="sting-mono">{p.features.length}</span> خصائص ·{" "}
-                        <span className="sting-mono">{p.subscribers}</span> مشترك
-                      </div>
+                        </div>
+                      ) : (
+                        // §٢١٢: ثلاثة مواضع ثابتة بالعملة — الدورة غير المعروضة تُعلن لا تختفي
+                        <dl className="plt-plan__cycles">
+                          {(
+                            [
+                              ["شهري", p.price_monthly_minor],
+                              ["ربعي", p.price_quarterly_minor],
+                              ["سنوي", p.price_yearly_minor],
+                            ] as const
+                          ).map(([label, v]) => (
+                            <div key={label} className="plt-plan__cycle">
+                              <dt>{label}</dt>
+                              <dd>
+                                {v === "0" && label !== "شهري" ? (
+                                  <span className="plt-plan__off">غير معروضة</span>
+                                ) : (
+                                  <>
+                                    <span className="sting-mono">{money(v)}</span>{" "}
+                                    <small>ج.س</small>
+                                  </>
+                                )}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                      <ul className="plt-plan__limits">
+                        <li>
+                          <Count n={p.max_branches} {...BRANCHES} />
+                        </li>
+                        <li>
+                          <Count n={p.max_devices} {...DEVICES} />
+                        </li>
+                        <li>
+                          {p.max_users === null ? (
+                            "مستخدمون بلا حدّ"
+                          ) : (
+                            <>
+                              <span className="sting-mono">{p.max_users}</span> مستخدمين
+                            </>
+                          )}
+                        </li>
+                        <li>
+                          <span className="sting-mono">{p.features.length}</span> خصائص
+                        </li>
+                        <li>
+                          <span className="sting-mono">{p.subscribers}</span> مشترك
+                        </li>
+                      </ul>
                       {p.next_price ? (
                         <p className="plt-plan__next">
                           <strong>سعر مقبل</strong> · من <When iso={p.next_price.effective_at} />
@@ -638,49 +702,63 @@ export function PlansCatalogClient() {
                         )
                       ) : priceFor === p.code ? (
                         <div className="plt-ops plt-plan-form">
-                          <div className="plt-ops__fields plt-ops__fields--3">
-                            <TextField
-                              label="الشهري الجديد"
-                              mono
-                              inputMode="decimal"
-                              value={nextMonthly}
-                              onChange={(e) => setNextMonthly(e.target.value)}
-                            />
-                            <TextField
-                              label="الربعي الجديد"
-                              mono
-                              inputMode="decimal"
-                              value={nextQuarterly}
-                              onChange={(e) => setNextQuarterly(e.target.value)}
-                            />
-                            <TextField
-                              label="السنوي الجديد"
-                              mono
-                              inputMode="decimal"
-                              value={nextYearly}
-                              onChange={(e) => setNextYearly(e.target.value)}
-                            />
+                          {/* §٢١٢: الإرشاد فوق مجموعة الأسعار، والسعر الحالي بجانب كل حقل للمقارنة */}
+                          <fieldset className="plt-group">
+                            <legend>
+                              الأسعار الجديدة <span className="plt-group__unit">ج.س</span>
+                            </legend>
+                            <p className="plt-group__note">
+                              اكتب سعراً جديداً لدورة واحدة على الأقل؛ الفارغ يبقى على سعره.
+                            </p>
+                            <div className="plt-ops__fields plt-ops__fields--3">
+                              <TextField
+                                label="الشهري الجديد"
+                                mono
+                                inputMode="decimal"
+                                hint={`الحالي ${money(p.price_monthly_minor)}`}
+                                value={nextMonthly}
+                                onChange={(e) => setNextMonthly(e.target.value)}
+                              />
+                              <TextField
+                                label="الربعي الجديد"
+                                mono
+                                inputMode="decimal"
+                                hint={`الحالي ${money(p.price_quarterly_minor)}`}
+                                value={nextQuarterly}
+                                onChange={(e) => setNextQuarterly(e.target.value)}
+                              />
+                              <TextField
+                                label="السنوي الجديد"
+                                mono
+                                inputMode="decimal"
+                                hint={`الحالي ${money(p.price_yearly_minor)}`}
+                                value={nextYearly}
+                                onChange={(e) => setNextYearly(e.target.value)}
+                              />
+                            </div>
+                          </fieldset>
+                          <div className="plt-ops__fields plt-ops__fields--even">
                             <TextField
                               label="تاريخ السريان"
                               type="date"
                               mono
-                              hint={`بعد ${data.min_price_notice_days} يوماً على الأقل — إشعار الشروط`}
+                              hint={`بعد ${data.min_price_notice_days} يوماً على الأقل — إشعار الشروط · أقربه ${minEffectiveShown}`}
                               min={minEffective}
                               error={
                                 effective && effective < minEffective
-                                  ? `أقرب تاريخ مسموح ${minEffective} — إشعار ${data.min_price_notice_days} يوماً`
+                                  ? `أقرب تاريخ مسموح ${minEffectiveShown} — إشعار ${data.min_price_notice_days} يوماً`
                                   : undefined
                               }
                               value={effective}
                               onChange={(e) => setEffective(e.target.value)}
                             />
+                            <TextAreaField
+                              label="السبب"
+                              rows={2}
+                              value={priceReason}
+                              onChange={(e) => setPriceReason(e.target.value)}
+                            />
                           </div>
-                          <TextAreaField
-                            label="السبب"
-                            rows={2}
-                            value={priceReason}
-                            onChange={(e) => setPriceReason(e.target.value)}
-                          />
                           <div className="acc-actions plt-ops-row">
                             <Button
                               loading={busy}
@@ -727,7 +805,7 @@ export function PlansCatalogClient() {
                           </Button>
                           {!p.trial ? (
                             <Button
-                              variant="quiet"
+                              variant="secondary"
                               onClick={() => {
                                 setPriceFor(p.code);
                                 setEditing("");
@@ -742,22 +820,6 @@ export function PlansCatalogClient() {
                     </li>
                   ))}
                 </ul>
-                {editing === "new" ? (
-                  form
-                ) : (
-                  <div className="acc-actions plt-ops-row">
-                    <Button
-                      onClick={() => {
-                        setEditing("new");
-                        setPriceFor("");
-                        setDraft(EMPTY);
-                        setError("");
-                      }}
-                    >
-                      باقة جديدة
-                    </Button>
-                  </div>
-                )}
 
                 <h3 className="cat-head__title">سجل التغييرات</h3>
                 {data.changes.length ? (
