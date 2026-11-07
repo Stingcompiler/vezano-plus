@@ -1310,3 +1310,51 @@
 .lp__header--minimal .lp__theme--bar.vz-theme {
   display: inline-flex;
 }
+
+/* تقرير الموقع العام 2026-11-07 — علامة فتح ظاهرة للأسئلة: سهم يدور مع الفتح */
+.lp__faq summary {
+  list-style: none;
+  gap: 12px;
+  justify-content: space-between;
+}
+.lp__faq summary::-webkit-details-marker {
+  display: none;
+}
+.lp__faq summary::after {
+  content: "";
+  flex: none;
+  inline-size: 8px;
+  block-size: 8px;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  color: var(--color-ink-muted);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+.lp__faq details[open] > summary::after {
+  transform: rotate(-135deg);
+}
+.lp__faq summary:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp__faq summary::after {
+    transition: none;
+  }
+}
+
+/* تقرير الموقع العام 2026-11-07 — القائمة المنسدلة (دون 1100px كقائمة الترويسة): صفوف 48px ومجموعتان بفاصل */
+@media (max-width: 1099px) {
+  .lp__links a {
+    min-block-size: 48px;
+  }
+  .lp__links a[data-group-start] {
+    margin-block-start: 8px;
+    padding-block-start: 8px;
+    border-block-start: 1px solid var(--color-border);
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+  }
+}
