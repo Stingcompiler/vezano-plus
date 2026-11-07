@@ -78,9 +78,6 @@ const agoWord = (iso: string) => {
           : `قبل ${n} ساعة`;
   return n === 1 ? "قبل يوم" : n === 2 ? "قبل يومين" : `قبل ${n} أيام`;
 };
-const tenantsWord = (n: number) =>
-  n === 1 ? "مستأجر واحد" : n === 2 ? "مستأجران" : n <= 10 ? `${n} مستأجرين` : `${n} مستأجراً`;
-
 /**
  * مرشّح واحد في كل مرة (الخادم يقبل `filter` واحداً). §٢١٢: مجموعتان مسمّاتان — حالة الاشتراك، وما
  * يحتاج متابعة (موعد الانتهاء والمزامنة) — فلا تُقرأ الأزرار شروطاً تُجمع.
@@ -360,7 +357,14 @@ export function TenantsClient() {
               <>
                 <div className="acc-choice__head">
                   <strong>
-                    المستأجرون — <span className="sting-mono">{data.total}</span>{" "}
+                    {/* فحص 2026-11-07: المرشّح أو البحث يجعل العدّاد «المعروض من الإجمالي» في العنوان نفسه */}
+                    المستأجرون —{" "}
+                    {filter !== "all" || q.trim() ? (
+                      <>
+                        <span className="sting-mono">{data.shown}</span> من{" "}
+                      </>
+                    ) : null}
+                    <span className="sting-mono">{data.total}</span>{" "}
                     {data.total === 1
                       ? "متجر"
                       : data.total === 2
@@ -368,13 +372,7 @@ export function TenantsClient() {
                         : data.total <= 10
                           ? "متاجر"
                           : "متجراً"}
-                  </strong>{" "}
-                  {/* §٢١٢: العدد مرة واحدة — الجزئي يظهر فقط حين يضيّق مرشّح أو بحث */}
-                  {filter !== "all" || q.trim() ? (
-                    <span className="acc-choice__note">
-                      {tenantsWord(data.shown)} في هذا المرشّح
-                    </span>
-                  ) : null}
+                  </strong>
                 </div>
                 <div ref={tableBox} className="plt-tenants">
                   <Table

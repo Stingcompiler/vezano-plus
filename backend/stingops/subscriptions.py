@@ -11,10 +11,19 @@ import uuid
 from datetime import timedelta
 from typing import Any
 
+from django.db import transaction
 from django.utils import timezone
 
 from core.models import SubscriptionProof, Tenant, TenantSubscription
-from core.subscription import PLANS, TRIAL_DAYS, ensure_subscription, trial_days
+from core.subscription import (
+    CYCLE_MONTHS,
+    CYCLES,
+    PLANS,
+    TRIAL_DAYS,
+    addons_monthly_minor,
+    ensure_subscription,
+    trial_days,
+)
 from core.tenancy import platform_context, tenant_context
 from stingops.models import SubscriptionEvent
 
@@ -55,6 +64,13 @@ def _plan_name(code: str) -> str:
     return PLANS[code].name if code in PLANS else code
 
 
+def _locked_subscription() -> TenantSubscription:
+    """صف الاشتراك مقفولاً حتى نهاية المعاملة: تصرّفان متزامنان لا يقرآن القيمة نفسها فيضيع أحدهما."""
+    ensure_subscription()
+    sub: TenantSubscription = TenantSubscription.objects.select_for_update().get()
+    return sub
+
+
 def _require_reason(reason: str) -> str:
     r = reason.strip()
     if not r:
@@ -63,71 +79,93 @@ def _require_reason(reason: str) -> str:
 
 
 def extend(tenant: Tenant, *, days: int, reason: str, by_name: str) -> dict[str, Any]:
-    """تمديد يدوي (دفع نقدي أو استثناء): من تاريخ الانتهاء إن لم يمضِ، وإلا من الآن."""
+    """تمديد يدوي (دفع نقدي أو استثناء): من تاريخ الانتهاء إن لم يمضِ، وإلا من الآن.
+
+    القراءة والحفظ والحدث والتدقيق في معاملة واحدة على صف مقفول: تمديدان متزامنان من 10 و20 يوماً
+    يضيفان 30 يوماً بحدثين، لا 20 يوماً بحدثين."""
     reason = _require_reason(reason)
     if not 1 <= days <= MAX_EXTEND_DAYS:
         raise SubscriptionOpRejected("days_out_of_range")
-    now = timezone.now()
-    with tenant_context(tenant.id):
-        sub = ensure_subscription()
-        before = sub.expires_at
-        base = sub.expires_at if sub.expires_at > now else now
-        sub.expires_at = base + timedelta(days=days)
-        if sub.state == TenantSubscription.State.EXPIRED:
-            sub.state = TenantSubscription.State.ACTIVE
-        sub.save(update_fields=["expires_at", "state", "updated_at"])
-    _event(
-        tenant,
-        kind=SubscriptionEvent.Kind.EXTEND,
-        days=days,
-        expires_before=before,
-        expires_after=sub.expires_at,
-        reason=reason,
-        by_name=by_name,
-    )
-    _audit(
-        tenant.id,
-        kind="subscription.extended",
-        title=f"مُدِّد الاشتراك {days} يوماً من مشغّل المنصة",
-        detail=f"حتى {sub.expires_at:%Y-%m-%d} · بواسطة {by_name}",
-        reason=reason,
-    )
+    with transaction.atomic():
+        now = timezone.now()
+        with tenant_context(tenant.id):
+            sub = _locked_subscription()
+            before = sub.expires_at
+            base = sub.expires_at if sub.expires_at > now else now
+            sub.expires_at = base + timedelta(days=days)
+            if sub.state == TenantSubscription.State.EXPIRED:
+                sub.state = TenantSubscription.State.ACTIVE
+            sub.save(update_fields=["expires_at", "state", "updated_at"])
+        _event(
+            tenant,
+            kind=SubscriptionEvent.Kind.EXTEND,
+            days=days,
+            expires_before=before,
+            expires_after=sub.expires_at,
+            reason=reason,
+            by_name=by_name,
+        )
+        _audit(
+            tenant.id,
+            kind="subscription.extended",
+            title=f"مُدِّد الاشتراك {days} يوماً من مشغّل المنصة",
+            detail=f"حتى {sub.expires_at:%Y-%m-%d} · بواسطة {by_name}",
+            reason=reason,
+        )
     return {"expires_at": _iso(sub.expires_at)}
 
 
 def change_plan(tenant: Tenant, *, plan_code: str, reason: str, by_name: str) -> dict[str, Any]:
-    """تغيير الباقة بأثر فوري على `has_feature`؛ التجريبية لا تُعاد بعد باقة مدفوعة."""
+    """تغيير الباقة بأثر فوري على `has_feature`؛ التجريبية لا تُعاد بعد باقة مدفوعة.
+
+    - الباقة المؤرشفة تبقى في الكتالوج لخدمة من عليها، لكنها لا تُسنَد من جديد (`plan_archived`).
+    - الدورة وتاريخ الانتهاء كما هما؛ مبلغ التجديد سعر الباقة الجديدة لتلك الدورة مع الإضافات
+      المدفوعة (كما يكتبه اعتماد الإثبات). دورة لا تعرضها الباقة الجديدة تُرفض
+      (`cycle_unavailable`)."""
     reason = _require_reason(reason)
     if plan_code not in PLANS:
         raise SubscriptionOpRejected("unknown_plan")
-    with tenant_context(tenant.id):
-        sub = ensure_subscription()
-        if sub.plan_code == plan_code:
-            raise SubscriptionOpRejected("same_plan", 409)
-        if PLANS[plan_code].trial and sub.state != TenantSubscription.State.TRIAL:
-            raise SubscriptionOpRejected("trial_not_reassignable", 409)
-        from_plan = sub.plan_code
-        sub.plan_code = plan_code
-        if not PLANS[plan_code].trial and sub.state == TenantSubscription.State.TRIAL:
-            # من تجريبية إلى مدفوعة: تصير سارية حتى تاريخ الانتهاء القائم (التمديد تصرّف منفصل)
-            sub.state = TenantSubscription.State.ACTIVE
-        sub.renewal_amount_minor = PLANS[plan_code].price_minor
-        sub.save(update_fields=["plan_code", "state", "renewal_amount_minor", "updated_at"])
-    _event(
-        tenant,
-        kind=SubscriptionEvent.Kind.PLAN_CHANGE,
-        from_plan=from_plan,
-        to_plan=plan_code,
-        reason=reason,
-        by_name=by_name,
-    )
-    _audit(
-        tenant.id,
-        kind="subscription.plan_changed",
-        title=f"غُيِّرت الباقة إلى «{PLANS[plan_code].name}» من مشغّل المنصة",
-        detail=f"كانت «{_plan_name(from_plan)}» · بواسطة {by_name}",
-        reason=reason,
-    )
+    plan = PLANS[plan_code]
+    if not plan.is_active:
+        raise SubscriptionOpRejected("plan_archived", 409)
+    with transaction.atomic():
+        with tenant_context(tenant.id):
+            sub = _locked_subscription()
+            if sub.plan_code == plan_code:
+                raise SubscriptionOpRejected("same_plan", 409)
+            if plan.trial and sub.state != TenantSubscription.State.TRIAL:
+                raise SubscriptionOpRejected("trial_not_reassignable", 409)
+            from_plan = sub.plan_code
+            cycle = sub.cycle if sub.cycle in CYCLES else "monthly"
+            if not plan.trial:
+                price = plan.price_for(cycle)
+                if price <= 0:
+                    raise SubscriptionOpRejected("cycle_unavailable", 409)
+                sub.renewal_amount_minor = (
+                    price + addons_monthly_minor(sub, plan) * CYCLE_MONTHS[cycle]
+                )
+            else:
+                sub.renewal_amount_minor = 0
+            sub.plan_code = plan_code
+            if not plan.trial and sub.state == TenantSubscription.State.TRIAL:
+                # من تجريبية إلى مدفوعة: تصير سارية حتى تاريخ الانتهاء القائم (التمديد تصرّف منفصل)
+                sub.state = TenantSubscription.State.ACTIVE
+            sub.save(update_fields=["plan_code", "state", "renewal_amount_minor", "updated_at"])
+        _event(
+            tenant,
+            kind=SubscriptionEvent.Kind.PLAN_CHANGE,
+            from_plan=from_plan,
+            to_plan=plan_code,
+            reason=reason,
+            by_name=by_name,
+        )
+        _audit(
+            tenant.id,
+            kind="subscription.plan_changed",
+            title=f"غُيِّرت الباقة إلى «{plan.name}» من مشغّل المنصة",
+            detail=f"كانت «{_plan_name(from_plan)}» · بواسطة {by_name}",
+            reason=reason,
+        )
     return {"plan_code": plan_code}
 
 
