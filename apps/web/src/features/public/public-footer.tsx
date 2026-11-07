@@ -24,6 +24,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/#lp-features", label: "المزايا" },
       { href: "/#lp-flow", label: "كيف يعمل بلا شبكة" },
       { href: "/plans", label: "الباقات والأسعار" },
+      { href: "/#lp-apps", label: "متجر التطبيقات" },
       { href: "/market", label: "السوق" },
       { href: "/#lp-faq", label: "الأسئلة الشائعة" },
     ],

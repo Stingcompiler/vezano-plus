@@ -24,6 +24,7 @@ UNTYPED_ALLOWED = {
     "GET /api/catalog/prices/import/{batch_id}/rejected.csv",
     "GET /api/imports/{batch_id}/rejected.csv",
     "GET /api/reports/exports/{token}",
+    "GET /api/apps/download/{token}",
     # لم تغطّها الاختبارات بعد — تُرصد عند تغطيتها
     "PUT /api/campaigns/{campaign_id}",
     "DELETE /api/catalog/items/{item_id}/aliases",

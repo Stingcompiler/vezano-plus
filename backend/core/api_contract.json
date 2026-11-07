@@ -6,6 +6,9 @@
   "GET /api/account/memberships": [
    "401:unauthenticated"
   ],
+  "GET /api/apps/download/{token}": [
+   "404:غير موجود."
+  ],
   "GET /api/auth/me": [
    "401:session_revoked"
   ],
@@ -74,6 +77,9 @@
   ],
   "GET /api/market/reports/{report_id}": [
    "404:not_found"
+  ],
+  "GET /api/org/apps": [
+   "401:لم يتم تزويد بيانات الدخول."
   ],
   "GET /api/org/audit": [
    "403:owner_required"
@@ -499,6 +505,10 @@
   "POST /api/notifications/{notification_id}/{action}": [
    "403:permission_denied"
   ],
+  "POST /api/org/apps/{release_id}/link": [
+   "401:لم يتم تزويد بيانات الدخول.",
+   "404:not_found"
+  ],
   "POST /api/org/branches": [
    "400:branch_limit",
    "400:code_invalid",
@@ -589,6 +599,16 @@
   ],
   "POST /api/platform/appeals/{tenant_id}/{offer_id}/decide": [
    "409:same_reviewer"
+  ],
+  "POST /api/platform/apps": [
+   "400:apple_url_invalid",
+   "400:file_required",
+   "400:file_type_invalid",
+   "403:operator_required",
+   "409:release_exists"
+  ],
+  "POST /api/platform/apps/{release_id}/remove": [
+   "403:operator_required"
   ],
   "POST /api/platform/backups/{backup_id}/{action}": [
    "400:backup_unusable",
@@ -12677,6 +12697,68 @@
     "type": "object"
    }
   },
+  "GET /api/org/apps": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "releases": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "apple_url": {
+         "type": "string"
+        },
+        "filename": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "platform": {
+         "type": "string"
+        },
+        "platform_label": {
+         "type": "string"
+        },
+        "published_at": {
+         "type": "string"
+        },
+        "sha256": {
+         "type": "string"
+        },
+        "size_bytes": {
+         "type": "integer"
+        },
+        "version": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "name",
+        "platform",
+        "platform_label",
+        "version",
+        "published_at",
+        "filename",
+        "size_bytes",
+        "sha256",
+        "apple_url"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "releases"
+    ],
+    "type": "object"
+   }
+  },
   "GET /api/org/audit": {
    "200": {
     "additionalProperties": false,
@@ -16165,6 +16247,68 @@
     "type": "object"
    }
   },
+  "GET /api/platform/apps": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "releases": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "apple_url": {
+         "type": "string"
+        },
+        "filename": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "platform": {
+         "type": "string"
+        },
+        "platform_label": {
+         "type": "string"
+        },
+        "published_at": {
+         "type": "string"
+        },
+        "sha256": {
+         "type": "string"
+        },
+        "size_bytes": {
+         "type": "integer"
+        },
+        "version": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "name",
+        "platform",
+        "platform_label",
+        "version",
+        "published_at",
+        "filename",
+        "size_bytes",
+        "sha256",
+        "apple_url"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "releases"
+    ],
+    "type": "object"
+   }
+  },
   "GET /api/platform/audit": {
    "200": {
     "additionalProperties": false,
@@ -19382,6 +19526,52 @@
     "required": [
      "subscriber",
      "messages"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/public/apps": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "releases": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "platform": {
+         "type": "string"
+        },
+        "platform_label": {
+         "type": "string"
+        },
+        "published_at": {
+         "type": "string"
+        },
+        "version": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "name",
+        "platform",
+        "platform_label",
+        "version",
+        "published_at"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "releases"
     ],
     "type": "object"
    }
@@ -40661,6 +40851,24 @@
     "type": "object"
    }
   },
+  "POST /api/org/apps/{release_id}/link": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "expires_in": {
+      "type": "integer"
+     },
+     "url": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "url",
+     "expires_in"
+    ],
+    "type": "object"
+   }
+  },
   "POST /api/org/branches": {
    "201": {
     "additionalProperties": false,
@@ -44193,6 +44401,127 @@
     },
     "required": [
      "appeal"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/apps": {
+   "201": {
+    "additionalProperties": false,
+    "properties": {
+     "release": {
+      "additionalProperties": false,
+      "properties": {
+       "apple_url": {
+        "type": "string"
+       },
+       "filename": {
+        "type": "string"
+       },
+       "id": {
+        "type": "string"
+       },
+       "name": {
+        "type": "string"
+       },
+       "platform": {
+        "type": "string"
+       },
+       "platform_label": {
+        "type": "string"
+       },
+       "published_at": {
+        "type": "string"
+       },
+       "sha256": {
+        "type": "string"
+       },
+       "size_bytes": {
+        "type": "integer"
+       },
+       "version": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "name",
+       "platform",
+       "platform_label",
+       "version",
+       "published_at",
+       "filename",
+       "size_bytes",
+       "sha256",
+       "apple_url"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "release"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/apps/{release_id}/remove": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "releases": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "apple_url": {
+         "type": "string"
+        },
+        "filename": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "platform": {
+         "type": "string"
+        },
+        "platform_label": {
+         "type": "string"
+        },
+        "published_at": {
+         "type": "string"
+        },
+        "sha256": {
+         "type": "string"
+        },
+        "size_bytes": {
+         "type": "integer"
+        },
+        "version": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "name",
+        "platform",
+        "platform_label",
+        "version",
+        "published_at",
+        "filename",
+        "size_bytes",
+        "sha256",
+        "apple_url"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "releases"
     ],
     "type": "object"
    }

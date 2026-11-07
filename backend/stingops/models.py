@@ -475,6 +475,43 @@ class MessageTriage(models.Model):
         return f"triage:{self.report_id}"
 
 
+class AppRelease(models.Model):
+    """متجر التطبيقات (0005 §٢١٥): إصدار ينشره مدير المنصة لأندرويد أو ويندوز أو ماك (ملف تثبيت في
+    تخزين خاص) أو لآيفون (رابط App Store/TestFlight). يتصفّحه الزائر، وينزّله التاجر بجلسته."""
+
+    class Platform(models.TextChoices):
+        ANDROID = "android", "أندرويد"
+        IOS = "ios", "آيفون"
+        WINDOWS = "windows", "ويندوز"
+        MACOS = "macos", "ماك"
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    name = models.CharField(max_length=100)
+    platform = models.CharField(max_length=12, choices=Platform.choices)
+    version = models.CharField(max_length=40)
+    filename = models.CharField(max_length=255, blank=True, default="")
+    storage_key = models.CharField(max_length=80, blank=True, default="")
+    size_bytes = models.BigIntegerField(default=0)
+    # بصمة SHA-256 للملف: يقارنها التاجر قبل التثبيت (ملف تنفيذي من الإنترنت)
+    sha256 = models.CharField(max_length=64, blank=True, default="")
+    apple_url = models.URLField(blank=True, default="", max_length=500)
+    published_by_name = models.CharField(max_length=120, blank=True, default="")
+    published_at = models.DateTimeField(default=timezone.now)
+
+    objects: ClassVar[models.Manager[AppRelease]] = models.Manager()
+
+    class Meta:
+        ordering = ["name", "platform", "-published_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "platform", "version"], name="unique_app_platform_version"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} {self.platform} {self.version}"
+
+
 class OperatorPushEndpoint(models.Model):
     """0005 §٢١٦ — اشتراك Web Push لمتصفح مشغّل: إشعارات الفريق تصل فوراً بدل انتظار تحديث القائمة.
     نقطة النهاية سرّ تشغيلي لا يُعاد في ردّ؛ الانتهاء عند المزوّد (404/410) يوسم ولا يُحذف."""

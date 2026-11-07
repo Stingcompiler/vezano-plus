@@ -10,7 +10,7 @@ import core.ids
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("stingops", "0015_operator_inbox"),
+        ("stingops", "0016_app_release"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

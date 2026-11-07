@@ -206,6 +206,32 @@
         }
       }
     },
+    "/api/apps/download/{token}": {
+      "get": {
+        "operationId": "apps_download_retrieve",
+        "description": "يخدم الملف لرابط موقَّع ساري؛ بلا جلسة لأن المتصفح يفتحه مباشرة.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["apps"],
+        "security": [{}],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/auth/account/login": {
       "post": {
         "operationId": "auth_account_login_create",
@@ -6235,6 +6261,57 @@
         }
       }
     },
+    "/api/org/apps": {
+      "get": {
+        "operationId": "org_apps_retrieve",
+        "tags": ["org"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOrgAppsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/org/apps/{release_id}/link": {
+      "post": {
+        "operationId": "org_apps_link_create",
+        "description": "رابط تنزيل موقَّع لخمس دقائق: يُطلب بجلسة التاجر، ويفتحه المتصفح تنزيلاً عادياً.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["org"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOrgAppsByReleaseIdLinkResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/org/audit": {
       "get": {
         "operationId": "org_audit_retrieve",
@@ -8077,6 +8154,81 @@
         }
       }
     },
+    "/api/platform/apps": {
+      "get": {
+        "operationId": "platform_apps_retrieve",
+        "description": "PLT · متجر التطبيقات: القراءة لكل مشغّل، والنشر لمدير المنصة.",
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformAppsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "platform_apps_create",
+        "description": "PLT · متجر التطبيقات: القراءة لكل مشغّل، والنشر لمدير المنصة.",
+        "tags": ["platform"],
+        "responses": {
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformAppsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/apps/{release_id}/remove": {
+      "post": {
+        "operationId": "platform_apps_remove_create",
+        "description": "سحب إصدار: يختفي من الفهرس ويُحذف ملفه. لمدير المنصة وحده.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformAppsByReleaseIdRemoveResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/audit": {
       "get": {
         "operationId": "platform_audit_retrieve",
@@ -9857,6 +10009,26 @@
           },
           "404": {
             "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/public/apps": {
+      "get": {
+        "operationId": "public_apps_retrieve",
+        "description": "فهرس عام: الاسم والنظام والإصدار فقط — لا ملف ولا رابط تنزيل بلا جلسة تاجر.",
+        "tags": ["public"],
+        "security": [{}],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPublicAppsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -39863,6 +40035,77 @@
         ],
         "type": "object"
       },
+      "GetOrgAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
+        "type": "object"
+      },
+      "PostOrgAppsByReleaseIdLinkResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_in": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["url", "expires_in"],
+        "type": "object"
+      },
       "GetOrgAuditResponse": {
         "additionalProperties": false,
         "properties": {
@@ -46587,6 +46830,177 @@
         "required": ["appeal"],
         "type": "object"
       },
+      "GetPlatformAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
+        "type": "object"
+      },
+      "PostPlatformAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "release": {
+            "additionalProperties": false,
+            "properties": {
+              "apple_url": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "platform_label": {
+                "type": "string"
+              },
+              "published_at": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": "integer"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "platform",
+              "platform_label",
+              "version",
+              "published_at",
+              "filename",
+              "size_bytes",
+              "sha256",
+              "apple_url"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["release"],
+        "type": "object"
+      },
+      "PostPlatformAppsByReleaseIdRemoveResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "apple_url": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "filename",
+                "size_bytes",
+                "sha256",
+                "apple_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
+        "type": "object"
+      },
       "GetPlatformAuditResponse": {
         "additionalProperties": false,
         "properties": {
@@ -52833,6 +53247,41 @@
           }
         },
         "required": ["subscriber"],
+        "type": "object"
+      },
+      "GetPublicAppsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "releases": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "platform_label": {
+                  "type": "string"
+                },
+                "published_at": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "name", "platform", "platform_label", "version", "published_at"],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["releases"],
         "type": "object"
       },
       "PostPublicContactResponse": {

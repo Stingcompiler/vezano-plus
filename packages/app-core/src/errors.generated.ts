@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (201 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (205 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -22,6 +22,7 @@ export const API_ERROR_CODES = [
   "already_suspended",
   "ambiguous_name",
   "amount_mismatch",
+  "apple_url_invalid",
   "approval_pending",
   "audience_or_duration_required",
   "audience_out_of_tenant",
@@ -75,6 +76,8 @@ export const API_ERROR_CODES = [
   "factor_required",
   "feature_invalid",
   "fields_missing",
+  "file_required",
+  "file_type_invalid",
   "finance_required",
   "freeze_reconciliation",
   "group_exists",
@@ -160,6 +163,7 @@ export const API_ERROR_CODES = [
   "reference_required",
   "reference_used",
   "reject_reason_required",
+  "release_exists",
   "resend_limit",
   "resend_too_soon",
   "retry_after",
@@ -1303,6 +1307,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "permission_denied",
     },
   ],
+  "POST /api/org/apps/{release_id}/link": [
+    {
+      status: 404,
+      code: "not_found",
+    },
+  ],
   "POST /api/org/branches": [
     {
       status: 400,
@@ -1539,6 +1549,34 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 409,
       code: "same_reviewer",
+    },
+  ],
+  "POST /api/platform/apps": [
+    {
+      status: 400,
+      code: "apple_url_invalid",
+    },
+    {
+      status: 400,
+      code: "file_required",
+    },
+    {
+      status: 400,
+      code: "file_type_invalid",
+    },
+    {
+      status: 403,
+      code: "operator_required",
+    },
+    {
+      status: 409,
+      code: "release_exists",
+    },
+  ],
+  "POST /api/platform/apps/{release_id}/remove": [
+    {
+      status: 403,
+      code: "operator_required",
     },
   ],
   "POST /api/platform/backups/{backup_id}/{action}": [

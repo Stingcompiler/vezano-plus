@@ -15,6 +15,7 @@ export default defineConfig({
   // مواصفات الويب نفسها + مواصفات شاشات الحاسوب وحده (e2e/)
   testDir: "..",
   testMatch: /(web\/e2e|desktop\/e2e)\/.*\.spec\.ts$/,
+  // متجر التطبيقات (0005 §٢١٥) للويب وحده: تطبيق الحاسوب يتحدّث ذاتياً ولا رابط متجر في قائمته
   // live-push: اشتراك متصفح المشغّل (PLT-15) وWeb Push من المتصفح — لا شيء منهما في تطبيق الحاسوب
   testIgnore: [
     /platform-/,
@@ -23,6 +24,7 @@ export default defineConfig({
     /web-notify/,
     /pwa-icons/,
     /seo-headers/,
+    /app-store\.spec/,
     /live-push\.spec/,
   ],
   // صفحة الهبوط التسويقية لا تُعرض في تطبيق الحاسوب (يفتح على الدخول — platform/desktop-root.tsx)، ومقياس

@@ -31,3 +31,6 @@ deploy/status-page/dist/
 apps/web/.next-status/
 deploy/status-page/.wrangler/
 apps/web/shots/
+
+# متجر التطبيقات (0005 §٢١٥): ملفات التثبيت المرفوعة محلياً
+backend/private-app-releases/
