@@ -694,6 +694,93 @@
   font-size: 14px;
   color: var(--color-ink-muted);
 }
+/* سطر نفي في بطاقة الباقة: علامة «—» كخانة «لا» في جدول المقارنة، لا ✓ المشمول */
+.pl-plan__limits li[data-excluded] {
+  color: var(--color-ink-muted);
+}
+.pl-plan__limits li[data-excluded]::before {
+  content: "—";
+  color: var(--color-ink-muted);
+}
+
+/* ---------- تقرير الموقع العام 2026-11-07 — الباقات ---------- */
+.pl-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+}
+.pl-compare-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  text-underline-offset: 4px;
+}
+.pl-plan__top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-block-size: 32px;
+}
+#compare {
+  scroll-margin-block-start: 80px;
+}
+/* الهاتف: جدول حقيقي مضغوط — أسماء الباقات مرة واحدة في رأس لاصق، والقيم صفّ بعدد الباقات تحت كل
+   ميزة، بدل تكرار الأسماء الثلاثة تحت كل ميزة */
+@media (max-width: 833px) {
+  .pl-table-wrap {
+    overflow: visible;
+  }
+  .pl-table thead {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip: auto;
+    background: var(--color-surface-card);
+  }
+  .pl-table thead tr,
+  .pl-table tbody tr:not(.pl-table__group) {
+    display: grid;
+    grid-template-columns: repeat(var(--pl-plans, 3), minmax(0, 1fr));
+  }
+  .pl-table thead th:first-child {
+    display: none;
+  }
+  .pl-table thead th {
+    padding: 8px 4px;
+    font-size: 13px;
+    text-align: center;
+    border-block-end: 1px solid var(--color-border);
+  }
+  .pl-table tbody th[scope="row"] {
+    grid-column: 1 / -1;
+    padding-block: 10px 2px;
+  }
+  .pl-table td {
+    justify-content: center;
+    text-align: center;
+    padding-block: 4px 10px;
+  }
+  .pl-table td::before {
+    content: none;
+  }
+  .pl-table tr:not(.pl-table__group) td:last-child {
+    padding-block-end: 10px;
+  }
+  .pl-table tbody tr:not(.pl-table__group) {
+    border-block-end: 1px solid var(--color-border);
+  }
+  .pl-table tr:not(.pl-table__group) td {
+    border-block-end: 0;
+  }
+}
 
 /* تقرير الموقع العام 2026-11-07 — كلمة الحالة ملاصقة لاسم الخدمة لا في أقصى الصف */
 .pb-service__top {

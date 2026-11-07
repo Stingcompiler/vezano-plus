@@ -144,14 +144,14 @@ test.describe("متابعة طلب الجولة (PUB-06)", () => {
         "تابع طلبك",
         "ابحث بالبريد أو رقم الهاتف أو الاسم الذي سجّلت به. نرسل رمز الدخول إلى البريد المسجَّل في الطلب — فلا يرى الطلب غير صاحبه.",
         "البريد أو رقم الهاتف أو الاسم",
-        "أرسل رمز الدخول",
+        "أرسل رمز المتابعة إلى بريدي",
       ],
     });
     await root.getByLabel("البريد أو رقم الهاتف أو الاسم").fill("0900000000");
-    await root.getByRole("button", { name: "أرسل رمز الدخول" }).click();
+    await root.getByRole("button", { name: "أرسل رمز المتابعة إلى بريدي" }).click();
     await expect(root).toContainText("لا طلب جولة بهذه البيانات");
     await root.getByLabel("البريد أو رقم الهاتف أو الاسم").fill("0912345678");
-    await root.getByRole("button", { name: "أرسل رمز الدخول" }).click();
+    await root.getByRole("button", { name: "أرسل رمز المتابعة إلى بريدي" }).click();
     await expect(root).toHaveAttribute("data-step", "code");
     await expect(root).toContainText(
       "أرسلنا رمزاً إلى ah•••@example.com — البريد المسجَّل في الطلب.",

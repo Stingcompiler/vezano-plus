@@ -306,3 +306,71 @@
 .mk .c-notice {
   border-radius: 16px;
 }
+
+/* ---------- تقرير الموقع العام 2026-11-07 — ملف المورد ---------- */
+.mk-back {
+  display: flex;
+}
+.mk-back .c-btn {
+  padding-inline: 4px;
+}
+/* الحقائق صفّ مختصر لا أربع بطاقات كبيرة */
+.mk-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: baseline;
+}
+.mk-facts__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-ink-muted);
+}
+.mk-facts__value {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-strong);
+}
+.mk-facts__note {
+  flex-basis: 100%;
+  margin: 0;
+}
+/* المنطقة عنصر تصفية: التسمية والقيمة والزرّ في صف */
+.mk-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.mk-area__label {
+  color: var(--color-ink-muted);
+}
+.mk-area__value {
+  color: var(--color-ink-strong);
+}
+.mk-area__how {
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+.mk-meta--empty {
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ink-strong);
+}
+[data-screen="MP-03"] .acc-card__body.mk-facts {
+  flex-direction: row;
+}
+/* الشارة بحجمها بجانب الهوية لا شريطاً بعرض البطاقة */
+[data-screen="MP-03"] .cus-head .acc-actions {
+  justify-content: flex-start;
+}
+[data-screen="MP-03"] .cus-head .acc-actions > * {
+  flex: none;
+  inline-size: auto;
+}
+[data-screen="MP-03"] .cus-head .c-status {
+  align-self: flex-start;
+  inline-size: fit-content;
+}

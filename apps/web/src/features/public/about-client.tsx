@@ -11,7 +11,7 @@ import "@/features/sys/sys.css";
 import "./public.css";
 import "./landing.css";
 import { pounds } from "@/features/public/money";
-import { PlanLine, planLines } from "@/features/public/plan-lines";
+import { PlanLine, planItems } from "@/features/public/plan-lines";
 import { DemoRequestForm } from "@/features/public/demo-request-form";
 import { PublicFooter } from "@/features/public/public-footer";
 import { PublicHeader } from "@/features/public/public-header";
@@ -379,8 +379,8 @@ export function AboutClient() {
                         </div>
                       )}
                       <ul className="lp__plan-limits">
-                        {planLines(p).map((l) => (
-                          <li key={l}>
+                        {planItems(p).map(({ line: l, excluded }) => (
+                          <li key={l} data-excluded={excluded || undefined}>
                             <PlanLine line={l} />
                           </li>
                         ))}
@@ -580,11 +580,11 @@ export function AboutClient() {
                 <>
                   {/* 16 — جسيمات تتجمّع في الشعار مرة واحدة (0005 §١٣٧) */}
                   <ParticleMark />
-                  <h2>جاهز لرؤيته على بياناتك؟</h2>
+                  {/* تقرير الموقع العام 2026-11-07: عنوان يسمّي الطلب وسطر بمدته؛ شرح رمز التأكيد عند حقل البريد */}
+                  <h2>اطلب جولة مجانية</h2>
                   <p className="lp__lead">
-                    اترك اسمك ورقم واتساب وبريدك — نؤكّد البريد برمز قبل الإرسال — وسنرتّب معك جولة
-                    قصيرة، <span className="sting-mono">20</span> دقيقة على واتساب أو مكالمة، نعرض
-                    فيها فيزانو بلص على أصناف محلك وطريقة بيعك الفعلية.
+                    <span className="sting-mono">20</span> دقيقة على واتساب أو مكالمة، نعرض فيها
+                    فيزانو بلص على أصناف محلك وطريقة بيعك الفعلية.
                   </p>
                 </>
               }

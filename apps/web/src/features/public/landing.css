@@ -1310,6 +1310,14 @@
 .lp__header--minimal .lp__theme--bar.vz-theme {
   display: inline-flex;
 }
+/* سطر نفي في بطاقة الباقة: علامة «—» لا ✓ المشمول (تقرير الموقع العام 2026-11-07) */
+.lp__plan-limits li[data-excluded] {
+  color: var(--color-ink-muted);
+}
+.lp__plan-limits li[data-excluded]::before {
+  content: "—";
+  color: var(--color-ink-muted);
+}
 
 /* تقرير الموقع العام 2026-11-07 — علامة فتح ظاهرة للأسئلة: سهم يدور مع الفتح */
 .lp__faq summary {
