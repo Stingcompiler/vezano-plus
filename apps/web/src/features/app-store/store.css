@@ -5,22 +5,48 @@
   padding: 0;
 }
 .vz-app {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px 16px;
-  flex-wrap: wrap;
   padding: 14px 0;
   border-block-end: 1px solid var(--color-border);
 }
 .vz-app:last-child {
   border-block-end: 0;
 }
+/* شعار النظام بلا مربّع مصبوغ (دليل البطاقات §١٥٨): الشعار وحده بلون النص يُعرف الصف بالنظر */
+.vz-app__icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  color: var(--color-ink-strong);
+}
+/* الهاتف: الشعار بجانب الاسم دائماً، والزرّ تحتهما بعرض العمود */
+@media (max-width: 833px) {
+  .vz-app {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .vz-app__icon {
+    align-self: start;
+  }
+  .vz-app__action {
+    grid-column: 2;
+  }
+}
+.vz-apps__chips .pos-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vz-apps__chips .pos-chip svg {
+  flex: 0 0 auto;
+}
 .vz-app__main {
   display: grid;
   gap: 4px;
   min-inline-size: 0;
-  flex: 1 1 260px;
 }
 .vz-app__name {
   font-weight: 700;

@@ -49,9 +49,21 @@ test.describe("متجر التطبيقات", () => {
     );
     await page.goto("/");
     const section = page.locator("#lp-apps");
+    // رابط الشريط العام يقود إلى القسم (§٢٢٣)
+    await expect(
+      page.locator("#lp-links").getByRole("link", { name: "متجر التطبيقات", includeHidden: true }),
+    ).toHaveAttribute("href", "/#lp-apps");
     await section.scrollIntoViewIfNeeded();
     await expect(section.getByRole("heading", { name: "متجر التطبيقات" })).toBeVisible();
     await expect(section.getByText("Vezano Plus")).toHaveCount(2);
+    // شعار النظام في كل صف وفي مرشّحه، زخرفيّ لا يُقرأ (§٢٢٢)
+    await expect(section.locator('.vz-app__icon [data-platform-icon="android"]')).toHaveCount(1);
+    await expect(section.locator('.vz-app__icon [data-platform-icon="ios"]')).toHaveCount(1);
+    await expect(section.locator(".pos-chip [data-platform-icon]")).toHaveCount(4);
+    await expect(section.locator("svg[data-platform-icon]").first()).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
     await section.getByRole("button", { name: /آيفون/ }).click();
     await expect(section.getByText("Vezano Plus")).toHaveCount(1);
     await expect(section.locator(".sting-mono", { hasText: "1.4.0" })).toBeVisible();

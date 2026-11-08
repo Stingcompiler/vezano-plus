@@ -54,10 +54,12 @@
 .lp__bar {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   min-block-size: 72px;
 }
 .lp__bar > .c-btn {
+  flex: none;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: var(--font-weight-semibold);
   padding-inline: 18px;
@@ -86,13 +88,15 @@
 }
 .lp__links {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-inline-start: auto;
 }
+/* اسم الرابط سطر واحد دائماً (ثمانية روابط في 1100px — §٢٢٣) */
 .lp__links a {
+  white-space: nowrap;
   color: var(--color-ink-muted);
   text-decoration: none;
-  padding: 8px 14px;
+  padding: 8px 10px;
   border-radius: var(--radius-panelSm);
   min-block-size: var(--layout-touchTarget);
   display: inline-flex;

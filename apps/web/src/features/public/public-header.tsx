@@ -20,6 +20,7 @@ import { sendVisitBeacon } from "@/lib/visit-beacon";
 const LINKS: readonly { href: string; label: string; group: "product" | "more" }[] = [
   { href: "/#lp-features", label: "المزايا", group: "product" },
   { href: "/plans", label: "الباقات", group: "product" },
+  { href: "/#lp-apps", label: "متجر التطبيقات", group: "product" },
   { href: "/#lp-faq", label: "أسئلة شائعة", group: "product" },
   { href: "/#lp-contact", label: "تواصل", group: "product" },
   { href: "/market", label: "السوق", group: "more" },
