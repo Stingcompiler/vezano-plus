@@ -146,6 +146,18 @@ test.describe("متجر التطبيقات", () => {
     const root = page.locator('[data-screen="PLT-18"]');
     await expect(root).toHaveAttribute("data-state", "empty");
     await root.getByLabel("رقم الإصدار").fill("1.4.2");
+    // اسم ملف طويل بلا مسافات (كما يأتي من التنزيل على الهاتف) لا يُعصر إلى حرف في كل سطر
+    await root
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({
+        name: "application-496e086c-e501-4376-bafe-a006d45fc34e (1).apk",
+        mimeType: "application/vnd.android.package-archive",
+        buffer: Buffer.from("apk"),
+      });
+    const nameBox = await root.locator(".c-upload__name").boundingBox();
+    expect(nameBox?.width ?? 0).toBeGreaterThan(150);
+    expect(nameBox?.height ?? 999).toBeLessThan(60);
     await root
       .locator('input[type="file"]')
       .first()
