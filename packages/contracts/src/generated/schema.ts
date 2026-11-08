@@ -3152,6 +3152,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description PLT-19: التقرير لكل مشغّل (قراءة فقط). */
+        get: operations["platform_analytics_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/announcements": {
         parameters: {
             query?: never;
@@ -4086,6 +4103,23 @@ export interface paths {
         get: operations["public_apps_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/beacon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description زيارة صفحة عامة. 204 دائماً — الرفض (آلي، سقف) لا يُعلَن لمن يرسل. */
+        post: operations["public_beacon_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13869,6 +13903,51 @@ export interface components {
                 party_id: string;
                 range: string;
                 url: string;
+            };
+        };
+        GetPlatformAnalyticsResponse: {
+            countries: {
+                key: string;
+                views: number;
+                visitors: number;
+            }[];
+            daily: {
+                day: string;
+                views: number;
+                visitors: number;
+            }[];
+            devices: {
+                key: string;
+                views: number;
+                visitors: number;
+            }[];
+            funnel: {
+                key: string;
+                label: string;
+                value: number;
+            }[];
+            geo_ready: boolean;
+            pages: {
+                key: string;
+                views: number;
+                visitors: number;
+            }[];
+            range: {
+                days: number;
+                from: string;
+                to: string;
+            };
+            retention_days: number;
+            sources: {
+                key: string;
+                views: number;
+                visitors: number;
+            }[];
+            totals: {
+                prev_views: number;
+                prev_visitors: number;
+                views: number;
+                visitors: number;
             };
         };
         PostPlatformAnnouncementsResponse: {
@@ -25548,6 +25627,35 @@ export interface operations {
             };
         };
     };
+    platform_analytics_retrieve: {
+        parameters: {
+            query?: {
+                days?: 30 | 7 | 90;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformAnalyticsResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     platform_announcements_retrieve: {
         parameters: {
             query?: never;
@@ -27676,6 +27784,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GetPublicAppsResponse"];
                 };
+            };
+        };
+    };
+    public_beacon_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

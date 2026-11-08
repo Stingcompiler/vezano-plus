@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (205 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (207 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -181,10 +181,12 @@ export const API_ERROR_CODES = [
   "session_revoked",
   "shift_open",
   "similar_party",
+  "storage_full",
   "tenant_account",
   "tenant_account_email",
   "tenant_not_found",
   "tenant_only_when_converted",
+  "tenant_session_required",
   "tier_gap",
   "token_invalid",
   "too_wide",
@@ -423,6 +425,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "finance_required",
+    },
+  ],
+  "GET /api/platform/analytics": [
+    {
+      status: 403,
+      code: "operator_required",
     },
   ],
   "GET /api/platform/audit": [
@@ -1309,6 +1317,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
   ],
   "POST /api/org/apps/{release_id}/link": [
     {
+      status: 403,
+      code: "tenant_session_required",
+    },
+    {
       status: 404,
       code: "not_found",
     },
@@ -1563,6 +1575,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "file_type_invalid",
+    },
+    {
+      status: 400,
+      code: "storage_full",
     },
     {
       status: 403,
@@ -2045,6 +2061,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 401,
       code: "session_revoked",
+    },
+    {
+      status: 401,
+      code: "user_inactive",
     },
     {
       status: 403,

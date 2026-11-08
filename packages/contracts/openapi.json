@@ -7993,6 +7993,38 @@
         }
       }
     },
+    "/api/platform/analytics": {
+      "get": {
+        "operationId": "platform_analytics_retrieve",
+        "description": "PLT-19: التقرير لكل مشغّل (قراءة فقط).",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "enum": [30, 7, 90]
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/announcements": {
       "get": {
         "operationId": "platform_announcements_retrieve",
@@ -10029,6 +10061,19 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/public/beacon": {
+      "post": {
+        "operationId": "public_beacon_create",
+        "description": "زيارة صفحة عامة. 204 دائماً — الرفض (آلي، سقف) لا يُعلَن لمن يرسل.",
+        "tags": ["public"],
+        "security": [{}],
+        "responses": {
+          "204": {
+            "description": "No response body"
           }
         }
       }
@@ -46540,6 +46585,179 @@
           }
         },
         "required": ["export"],
+        "type": "object"
+      },
+      "GetPlatformAnalyticsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "countries": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer"
+                },
+                "visitors": {
+                  "type": "integer"
+                }
+              },
+              "required": ["key", "visitors", "views"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "daily": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "day": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer"
+                },
+                "visitors": {
+                  "type": "integer"
+                }
+              },
+              "required": ["day", "views", "visitors"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "devices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer"
+                },
+                "visitors": {
+                  "type": "integer"
+                }
+              },
+              "required": ["key", "visitors", "views"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "funnel": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              },
+              "required": ["key", "label", "value"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "geo_ready": {
+            "type": "boolean"
+          },
+          "pages": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer"
+                },
+                "visitors": {
+                  "type": "integer"
+                }
+              },
+              "required": ["key", "visitors", "views"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "range": {
+            "additionalProperties": false,
+            "properties": {
+              "days": {
+                "type": "integer"
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            },
+            "required": ["days", "from", "to"],
+            "type": "object"
+          },
+          "retention_days": {
+            "type": "integer"
+          },
+          "sources": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "views": {
+                  "type": "integer"
+                },
+                "visitors": {
+                  "type": "integer"
+                }
+              },
+              "required": ["key", "visitors", "views"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "totals": {
+            "additionalProperties": false,
+            "properties": {
+              "prev_views": {
+                "type": "integer"
+              },
+              "prev_visitors": {
+                "type": "integer"
+              },
+              "views": {
+                "type": "integer"
+              },
+              "visitors": {
+                "type": "integer"
+              }
+            },
+            "required": ["views", "visitors", "prev_views", "prev_visitors"],
+            "type": "object"
+          }
+        },
+        "required": [
+          "range",
+          "totals",
+          "daily",
+          "countries",
+          "pages",
+          "sources",
+          "devices",
+          "funnel",
+          "geo_ready",
+          "retention_days"
+        ],
         "type": "object"
       },
       "PostPlatformAnnouncementsResponse": {

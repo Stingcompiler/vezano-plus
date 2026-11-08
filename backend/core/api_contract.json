@@ -120,6 +120,10 @@
   "GET /api/parties/{party_id}/statement": [
    "403:finance_required"
   ],
+  "GET /api/platform/analytics": [
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:operator_required"
+  ],
   "GET /api/platform/audit": [
    "403:operator_required"
   ],
@@ -507,6 +511,7 @@
   ],
   "POST /api/org/apps/{release_id}/link": [
    "401:لم يتم تزويد بيانات الدخول.",
+   "403:tenant_session_required",
    "404:not_found"
   ],
   "POST /api/org/branches": [
@@ -604,6 +609,7 @@
    "400:apple_url_invalid",
    "400:file_required",
    "400:file_type_invalid",
+   "400:storage_full",
    "403:operator_required",
    "409:release_exists"
   ],
@@ -780,6 +786,7 @@
   ],
   "POST /api/sync/push": [
    "401:session_revoked",
+   "401:user_inactive",
    "403:device_session_required",
    "409:epoch_mismatch",
    "502:ack_dropped",
@@ -16243,6 +16250,214 @@
      "scope",
      "branch_names",
      "range"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/analytics": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "countries": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "views": {
+         "type": "integer"
+        },
+        "visitors": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "visitors",
+        "views"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "daily": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "day": {
+         "type": "string"
+        },
+        "views": {
+         "type": "integer"
+        },
+        "visitors": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "day",
+        "views",
+        "visitors"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "devices": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "views": {
+         "type": "integer"
+        },
+        "visitors": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "visitors",
+        "views"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "funnel": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "value": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "label",
+        "value"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "geo_ready": {
+      "type": "boolean"
+     },
+     "pages": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "views": {
+         "type": "integer"
+        },
+        "visitors": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "visitors",
+        "views"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "range": {
+      "additionalProperties": false,
+      "properties": {
+       "days": {
+        "type": "integer"
+       },
+       "from": {
+        "type": "string"
+       },
+       "to": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "days",
+       "from",
+       "to"
+      ],
+      "type": "object"
+     },
+     "retention_days": {
+      "type": "integer"
+     },
+     "sources": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "key": {
+         "type": "string"
+        },
+        "views": {
+         "type": "integer"
+        },
+        "visitors": {
+         "type": "integer"
+        }
+       },
+       "required": [
+        "key",
+        "visitors",
+        "views"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "totals": {
+      "additionalProperties": false,
+      "properties": {
+       "prev_views": {
+        "type": "integer"
+       },
+       "prev_visitors": {
+        "type": "integer"
+       },
+       "views": {
+        "type": "integer"
+       },
+       "visitors": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "views",
+       "visitors",
+       "prev_views",
+       "prev_visitors"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "range",
+     "totals",
+     "daily",
+     "countries",
+     "pages",
+     "sources",
+     "devices",
+     "funnel",
+     "geo_ready",
+     "retention_days"
     ],
     "type": "object"
    }
