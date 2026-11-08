@@ -96,7 +96,8 @@ test.describe("متجر التطبيقات", () => {
         body: "apk",
       }),
     );
-    await login(page, "/org/devices");
+    // من الرئيسية عبر القائمة نفسها: كان المتجر بلا بند في قائمة التاجر فلا يُرى بعد الدخول
+    await login(page, "/");
     await navTo(page, "متجر التطبيقات");
     await expect(page).toHaveURL(/\/org\/apps$/);
     await expectFrame(page, info, {
