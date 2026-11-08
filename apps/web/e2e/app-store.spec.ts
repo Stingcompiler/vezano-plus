@@ -99,9 +99,11 @@ test.describe("متجر التطبيقات", () => {
     await page.goto("/");
     const bar = page.locator(".lp__bar").first();
     await expect(bar.getByRole("link", { name: "متجر التطبيقات" })).toBeVisible();
+    // «حالة الخدمة» و«الشروط» في القائمة والتذييل لا في الشريط الكامل (§٢٢٦)
+    await expect(bar.locator("#lp-links").getByRole("link", { name: "الشروط" })).toBeHidden();
     const { sw, cw } = await bar.evaluate((b) => ({ sw: b.scrollWidth, cw: b.clientWidth }));
-    // شريط تمرير ويندوز التقليدي 17px: يجب أن يبقى هامش أكبر منه
-    expect(cw - sw).toBe(0);
+    expect(sw).toBeLessThanOrEqual(cw);
+    // شريط تمرير ويندوز التقليدي 17px، وخطوط لينكس أعرض قليلاً: يجب أن يبقى هامش أكبر منهما
     const slack = await bar.evaluate((b) =>
       [...b.children].reduce((w, c) => w - c.getBoundingClientRect().width, b.clientWidth),
     );

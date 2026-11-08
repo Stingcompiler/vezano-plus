@@ -290,6 +290,12 @@
     gap: 4px;
   }
 }
+/* الشريط الكامل: «حالة الخدمة» و«الشروط» في التذييل وحده — بها كان الشريط يفيض 3px بخطوط لينكس (§٢٢٦) */
+@media (min-width: 1200px) {
+  .lp__links a[data-menu-only] {
+    display: none;
+  }
+}
 @media (min-width: 1200px) {
   .lp__bar > .c-btn:last-child {
     margin-inline-start: 0;
