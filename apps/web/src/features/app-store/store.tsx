@@ -143,7 +143,7 @@ function ReleaseRow({
 }) {
   return (
     <li className="vz-app">
-      <span className="vz-app__icon" data-platform={r.platform}>
+      <span className="vz-app__icon">
         <PlatformIcon platform={r.platform} size={30} />
       </span>
       <div className="vz-app__main">
@@ -191,12 +191,14 @@ function List({
   );
 }
 
-/** قسم الصفحة الرئيسية: تصفّح بلا جلسة، والتنزيل بعد الدخول. */
+/**
+ * قسم الصفحة الرئيسية: تصفّح بلا جلسة، والتنزيل بعد الدخول. يبقى القسم حاضراً دائماً لأن رابط الشريط
+ * العام يقود إليه (§٢٢٤): بلا إصدارات أو مع تعذّر التحميل يقول ذلك بدل أن يختفي.
+ */
 export function PublicAppsSection() {
   const token = useCallback(() => null, []);
   const { rows, failed } = useCatalog("/api/public/apps", token);
   const [filter, setFilter] = useState<Platform | "">("");
-  if (failed || (rows && rows.length === 0)) return null;
   return (
     <section id="lp-apps" className="lp__section" aria-labelledby="lp-apps-title">
       <div className="lp__wrap">
@@ -206,7 +208,19 @@ export function PublicAppsSection() {
             نسخ فيزانو لأندرويد وآيفون وويندوز وماك. تصفّحها هنا، وتنزّلها من حسابك بعد الدخول.
           </p>
         </div>
-        {rows ? (
+        {failed ? (
+          <div className="vz-apps__box">
+            <Notice kind="warning" title="تعذّر تحميل الإصدارات الآن">
+              <p className="acc-lead">أعد تحميل الصفحة بعد قليل.</p>
+            </Notice>
+          </div>
+        ) : rows && rows.length === 0 ? (
+          <div className="vz-apps__box">
+            <Notice kind="empty" title="لا إصدارات منشورة بعد">
+              <p className="acc-lead">تظهر هنا فور نشرها.</p>
+            </Notice>
+          </div>
+        ) : rows ? (
           <div className="vz-apps__box">
             <PlatformChips value={filter} onChange={setFilter} rows={rows} />
             <List

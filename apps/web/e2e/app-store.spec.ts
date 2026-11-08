@@ -78,13 +78,34 @@ test.describe("متجر التطبيقات", () => {
     );
   });
 
-  test("الصفحة العامة: بلا إصدارات لا يظهر القسم", async ({ page }) => {
+  test("الصفحة العامة: بلا إصدارات أو مع عطل يبقى القسم ويقول ذلك (رابط الشريط يقود إليه)", async ({
+    page,
+  }) => {
     await page.route("**/api/public/apps", (route) => route.fulfill(json(200, { releases: [] })));
     await page.goto("/");
-    await expect(
-      page.getByRole("heading", { name: "الأسئلة الشائعة" }).or(page.locator("#lp-faq")),
-    ).toBeAttached();
-    await expect(page.locator("#lp-apps")).toHaveCount(0);
+    const section = page.locator("#lp-apps");
+    await expect(section.getByText("لا إصدارات منشورة بعد")).toBeVisible();
+    await expect(section.locator(".vz-app")).toHaveCount(0);
+    await page.unroute("**/api/public/apps");
+    await page.route("**/api/public/apps", (route) => route.fulfill(json(500, { detail: "boom" })));
+    await page.reload();
+    await expect(section.getByText("تعذّر تحميل الإصدارات الآن")).toBeVisible();
+  });
+
+  test("الشريط العام يتّسع بلا تمرير أفقي من 1200px حتى مع شريط تمرير تقليدي (§٢٢٤)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.goto("/");
+    const bar = page.locator(".lp__bar").first();
+    await expect(bar.getByRole("link", { name: "متجر التطبيقات" })).toBeVisible();
+    const { sw, cw } = await bar.evaluate((b) => ({ sw: b.scrollWidth, cw: b.clientWidth }));
+    // شريط تمرير ويندوز التقليدي 17px: يجب أن يبقى هامش أكبر منه
+    expect(cw - sw).toBe(0);
+    const slack = await bar.evaluate((b) =>
+      [...b.children].reduce((w, c) => w - c.getBoundingClientRect().width, b.clientWidth),
+    );
+    expect(slack).toBeGreaterThan(17 + 3 * 12);
   });
 
   test("ORG-11: التنزيل برابط موقَّع، والحجم والبصمة، وآيفون إلى TestFlight", async ({
