@@ -1316,9 +1316,16 @@ div.c-timelist__open {
   border-radius: var(--radius-panelSm);
 }
 .c-upload__name {
-  flex: 1;
+  /* أساس 14rem: على الهاتف ينزل الحجم والتقدّم والحذف إلى سطر تالٍ بدل أن يُعصر الاسم إلى حرف في
+     كل سطر؛ والاسم الطويل سطران بنقاط ويُقرأ كاملاً من التلميح (مراجعة 2026-11-08) */
+  flex: 1 1 14rem;
   min-inline-size: 0;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .c-upload__progress {
   inline-size: 120px;
