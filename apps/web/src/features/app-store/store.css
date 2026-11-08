@@ -5,22 +5,51 @@
   padding: 0;
 }
 .vz-app {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px 16px;
-  flex-wrap: wrap;
   padding: 14px 0;
   border-block-end: 1px solid var(--color-border);
 }
 .vz-app:last-child {
   border-block-end: 0;
 }
+/* شعار النظام في مربّع محايد (لا لون حالة): يُعرف الصف بالنظر قبل القراءة */
+.vz-app__icon {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: 14px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand-strong);
+}
+/* الهاتف: الشعار بجانب الاسم دائماً، والزرّ تحتهما بعرض العمود */
+@media (max-width: 833px) {
+  .vz-app {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .vz-app__icon {
+    align-self: start;
+  }
+  .vz-app__action {
+    grid-column: 2;
+  }
+}
+.vz-apps__chips .pos-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vz-apps__chips .pos-chip svg {
+  flex: 0 0 auto;
+}
 .vz-app__main {
   display: grid;
   gap: 4px;
   min-inline-size: 0;
-  flex: 1 1 260px;
 }
 .vz-app__name {
   font-weight: 700;

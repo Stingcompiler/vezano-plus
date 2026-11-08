@@ -25,6 +25,8 @@ import { operatorRole, operatorToken } from "@/features/platform/operator-sessio
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { apiBaseUrl, getAccessToken } from "@/lib/api";
 
+import { PlatformIcon, type Platform } from "./platform-icon";
+
 /**
  * متجر التطبيقات (0005 §٢١٥): الإصدارات صفوف لا بطاقات، والنظام مرشّح واحد. ثلاثة مداخل:
  * - الصفحة العامة: الاسم والنظام والإصدار فقط، و«سجّل الدخول للتنزيل».
@@ -32,7 +34,6 @@ import { apiBaseUrl, getAccessToken } from "@/lib/api";
  * - مدير المنصة (PLT-18): ينشر بملف (مع تقدّم الرفع) أو برابط آيفون، ويسحب الإصدار.
  */
 
-type Platform = "android" | "ios" | "windows" | "macos";
 const PLATFORMS: readonly { value: Platform; label: string }[] = [
   { value: "android", label: "أندرويد" },
   { value: "ios", label: "آيفون" },
@@ -123,6 +124,7 @@ function PlatformChips({
           aria-pressed={value === p.value}
           onClick={() => onChange(p.value)}
         >
+          {p.value ? <PlatformIcon platform={p.value} size={16} /> : null}
           {p.label} · <span className="sting-mono">{count(p.value)}</span>
         </button>
       ))}
@@ -141,6 +143,9 @@ function ReleaseRow({
 }) {
   return (
     <li className="vz-app">
+      <span className="vz-app__icon" data-platform={r.platform}>
+        <PlatformIcon platform={r.platform} size={26} />
+      </span>
       <div className="vz-app__main">
         <strong className="vz-app__name">{r.name}</strong>
         <span className="acc-choice__note">
