@@ -87,7 +87,7 @@ test.describe("متجر التطبيقات", () => {
     await expect(page.locator("#lp-apps")).toHaveCount(0);
   });
 
-  test("ORG-11: التنزيل برابط موقَّع، والحجم والبصمة، وآيفون إلى TestFlight", async ({
+  test("ORG-11: التنزيل برابط موقَّع، والحجم بلا بصمة، وآيفون إلى TestFlight", async ({
     page,
   }, info) => {
     await page.route("**/api/org/apps", (route) =>
@@ -115,11 +115,16 @@ test.describe("متجر التطبيقات", () => {
     await expectFrame(page, info, {
       screenId: "ORG-11",
       state: "ready",
-      texts: ["متجر التطبيقات", "تنزيل ملف التثبيت", "فتح في TestFlight", "بصمة SHA-256"],
+      texts: ["متجر التطبيقات", "تنزيل ملف التثبيت", "فتح في TestFlight"],
     });
     const root = page.locator('[data-screen="ORG-11"]');
     await expect(root.locator(".sting-mono", { hasText: "48" })).toBeVisible();
-    await expect(root.locator("code.sting-mono")).toHaveText(SHA);
+    // البصمة لا تُعرض للتاجر (§٢٢٥)، وفي القائمة بند واحد للمتجر
+    await expect(root).not.toContainText("SHA-256");
+    await expect(root).not.toContainText(SHA);
+    await expect(
+      page.locator("nav").getByRole("link", { name: "متجر التطبيقات", includeHidden: true }),
+    ).toHaveCount(1);
     const download = page.waitForEvent("download");
     await root.getByRole("button", { name: "تنزيل ملف التثبيت" }).click();
     expect((await download).suggestedFilename()).toBe("vezano-1.4.2.apk");

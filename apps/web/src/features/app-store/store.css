@@ -53,22 +53,6 @@
   color: var(--color-ink-strong);
   overflow-wrap: anywhere;
 }
-.vz-app__sha {
-  font-size: 0.8125rem;
-  color: var(--color-ink-muted);
-}
-.vz-app__sha {
-  display: grid;
-  gap: 2px;
-  justify-items: start;
-}
-.vz-app__sha code {
-  max-inline-size: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-all;
-  font-size: 0.75rem;
-  color: var(--color-ink-faint);
-}
 .vz-app__action {
   flex: 0 0 auto;
 }

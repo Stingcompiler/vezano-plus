@@ -30,7 +30,7 @@ import { PlatformIcon, type Platform } from "./platform-icon";
 /**
  * متجر التطبيقات (0005 §٢١٥): الإصدارات صفوف لا بطاقات، والنظام مرشّح واحد. ثلاثة مداخل:
  * - الصفحة العامة: الاسم والنظام والإصدار فقط، و«سجّل الدخول للتنزيل».
- * - التاجر (ORG-11): ينزّل الملف برابط موقَّع قصير العمر بمدير تنزيلات المتصفح، ويرى الحجم والبصمة.
+ * - التاجر (ORG-11): ينزّل الملف برابط موقَّع قصير العمر بمدير تنزيلات المتصفح، ويرى الحجم (البصمة لا تُعرض — §٢٢٥).
  * - مدير المنصة (PLT-18): ينشر بملف (مع تقدّم الرفع) أو برابط آيفون، ويسحب الإصدار.
  */
 
@@ -157,11 +157,6 @@ function ReleaseRow({
             </>
           ) : null}
         </span>
-        {details && r.sha256 ? (
-          <span className="vz-app__sha">
-            بصمة SHA-256 <code className="sting-mono">{r.sha256}</code>
-          </span>
-        ) : null}
       </div>
       <div className="vz-app__action">{action}</div>
     </li>
@@ -253,7 +248,7 @@ export function MerchantAppsClient() {
       const { url } = (await res.json()) as { url: string };
       // مدير تنزيلات المتصفح يتولّى الملف: لا يُحمَّل في ذاكرة الصفحة
       window.location.assign(apiBaseUrl() + url);
-      setMessage(`بدأ تنزيل ${r.filename ?? r.name}. قارن البصمة قبل التثبيت.`);
+      setMessage(`بدأ تنزيل ${r.filename ?? r.name}.`);
     } catch {
       setMessage("تعذّر بدء التنزيل. أعد المحاولة.");
     } finally {

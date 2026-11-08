@@ -123,7 +123,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { id: "org-devices", label: "الأجهزة", href: "/org/devices", group: NAV_GROUPS.device },
   { id: "print", label: "الطابعة", href: "/print", group: NAV_GROUPS.device },
   { id: "install", label: "التثبيت", href: "/install", group: NAV_GROUPS.device },
-  { id: "apps", label: "متجر التطبيقات", href: "/org/apps", group: NAV_GROUPS.device },
   { id: "update", label: "تحديث التطبيق", href: "/sync/update", group: NAV_GROUPS.device },
   { id: "storage", label: "مساحة الجهاز", href: "/sync/storage", group: NAV_GROUPS.device },
   { id: "sessions", label: "الجلسات", href: "/account/sessions", group: NAV_GROUPS.device },
