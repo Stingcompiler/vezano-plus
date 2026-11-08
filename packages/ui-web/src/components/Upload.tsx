@@ -123,7 +123,9 @@ export function Upload({
         <ul className="c-upload__list" aria-label="الملفات">
           {items.map((it) => (
             <li key={it.id} className="c-upload__item">
-              <span className="c-upload__name">{it.name}</span>
+              <span className="c-upload__name" title={it.name}>
+                {it.name}
+              </span>
               <span className="c-upload__size sting-mono">{it.sizeLabel}</span>
               {it.progress !== undefined && it.progress < 100 ? (
                 <progress
