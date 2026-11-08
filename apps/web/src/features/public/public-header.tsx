@@ -17,15 +17,21 @@ import { sendVisitBeacon } from "@/lib/visit-beacon";
  */
 // تقرير الموقع العام 2026-11-07: مجموعتان — المنتج (أقسام الرئيسية والباقات والتواصل)، ثم السوق
 // والثقة (صفحات مستقلة). على الهاتف فاصل بينهما بدل سبعة صفوف متساوية.
-const LINKS: readonly { href: string; label: string; group: "product" | "more" }[] = [
+/** `menuOnly`: في لوحة القائمة وحدها، لا في الشريط الكامل — الحالة والشروط في التذييل أصلاً (§٢٢٦). */
+const LINKS: readonly {
+  href: string;
+  label: string;
+  group: "product" | "more";
+  menuOnly?: true;
+}[] = [
   { href: "/#lp-features", label: "المزايا", group: "product" },
   { href: "/plans", label: "الباقات", group: "product" },
   { href: "/#lp-apps", label: "متجر التطبيقات", group: "product" },
   { href: "/#lp-faq", label: "أسئلة شائعة", group: "product" },
   { href: "/#lp-contact", label: "تواصل", group: "product" },
   { href: "/market", label: "السوق", group: "more" },
-  { href: "/status", label: "حالة الخدمة", group: "more" },
-  { href: "/legal", label: "الشروط", group: "more" },
+  { href: "/status", label: "حالة الخدمة", group: "more", menuOnly: true },
+  { href: "/legal", label: "الشروط", group: "more", menuOnly: true },
 ];
 
 /**
@@ -120,6 +126,7 @@ export function PublicHeader({
                 onClick={go(l.href)}
                 aria-current={pathname === l.href ? "page" : undefined}
                 data-group-start={i > 0 && LINKS[i - 1]?.group !== l.group ? true : undefined}
+                data-menu-only={l.menuOnly}
                 style={{ "--i": i } as CSSProperties}
               >
                 {l.label}

@@ -1,6 +1,5 @@
 import { NAV_GROUPS } from "@sting/app-core";
 import {
-  AppWindow,
   ArchiveRestore,
   ArrowDownUp,
   Banknote,
@@ -105,7 +104,6 @@ export const NAV_ITEM_ICONS: Readonly<Record<string, LucideIcon>> = {
   "org-devices": MonitorSmartphone,
   print: Printer,
   install: Download,
-  apps: AppWindow,
   update: CircleArrowUp,
   storage: HardDrive,
   sessions: Smartphone,

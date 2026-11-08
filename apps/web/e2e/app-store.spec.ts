@@ -78,16 +78,39 @@ test.describe("متجر التطبيقات", () => {
     );
   });
 
-  test("الصفحة العامة: بلا إصدارات لا يظهر القسم", async ({ page }) => {
+  test("الصفحة العامة: بلا إصدارات أو مع عطل يبقى القسم ويقول ذلك (رابط الشريط يقود إليه)", async ({
+    page,
+  }) => {
     await page.route("**/api/public/apps", (route) => route.fulfill(json(200, { releases: [] })));
     await page.goto("/");
-    await expect(
-      page.getByRole("heading", { name: "الأسئلة الشائعة" }).or(page.locator("#lp-faq")),
-    ).toBeAttached();
-    await expect(page.locator("#lp-apps")).toHaveCount(0);
+    const section = page.locator("#lp-apps");
+    await expect(section.getByText("لا إصدارات منشورة بعد")).toBeVisible();
+    await expect(section.locator(".vz-app")).toHaveCount(0);
+    await page.unroute("**/api/public/apps");
+    await page.route("**/api/public/apps", (route) => route.fulfill(json(500, { detail: "boom" })));
+    await page.reload();
+    await expect(section.getByText("تعذّر تحميل الإصدارات الآن")).toBeVisible();
   });
 
-  test("ORG-11: التنزيل برابط موقَّع، والحجم والبصمة، وآيفون إلى TestFlight", async ({
+  test("الشريط العام يتّسع بلا تمرير أفقي من 1200px حتى مع شريط تمرير تقليدي (§٢٢٤)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.goto("/");
+    const bar = page.locator(".lp__bar").first();
+    await expect(bar.getByRole("link", { name: "متجر التطبيقات" })).toBeVisible();
+    // «حالة الخدمة» و«الشروط» في القائمة والتذييل لا في الشريط الكامل (§٢٢٦)
+    await expect(bar.locator("#lp-links").getByRole("link", { name: "الشروط" })).toBeHidden();
+    const { sw, cw } = await bar.evaluate((b) => ({ sw: b.scrollWidth, cw: b.clientWidth }));
+    expect(sw).toBeLessThanOrEqual(cw);
+    // شريط تمرير ويندوز التقليدي 17px، وخطوط لينكس أعرض قليلاً: يجب أن يبقى هامش أكبر منهما
+    const slack = await bar.evaluate((b) =>
+      [...b.children].reduce((w, c) => w - c.getBoundingClientRect().width, b.clientWidth),
+    );
+    expect(slack).toBeGreaterThan(17 + 3 * 12);
+  });
+
+  test("ORG-11: التنزيل برابط موقَّع، والحجم بلا بصمة، وآيفون إلى TestFlight", async ({
     page,
   }, info) => {
     await page.route("**/api/org/apps", (route) =>
@@ -115,11 +138,16 @@ test.describe("متجر التطبيقات", () => {
     await expectFrame(page, info, {
       screenId: "ORG-11",
       state: "ready",
-      texts: ["متجر التطبيقات", "تنزيل ملف التثبيت", "فتح في TestFlight", "بصمة SHA-256"],
+      texts: ["متجر التطبيقات", "تنزيل ملف التثبيت", "فتح في TestFlight"],
     });
     const root = page.locator('[data-screen="ORG-11"]');
     await expect(root.locator(".sting-mono", { hasText: "48" })).toBeVisible();
-    await expect(root.locator("code.sting-mono")).toHaveText(SHA);
+    // البصمة لا تُعرض للتاجر (§٢٢٥)، وفي القائمة بند واحد للمتجر
+    await expect(root).not.toContainText("SHA-256");
+    await expect(root).not.toContainText(SHA);
+    await expect(
+      page.locator("nav").getByRole("link", { name: "متجر التطبيقات", includeHidden: true }),
+    ).toHaveCount(1);
     const download = page.waitForEvent("download");
     await root.getByRole("button", { name: "تنزيل ملف التثبيت" }).click();
     expect((await download).suggestedFilename()).toBe("vezano-1.4.2.apk");

@@ -20,6 +20,9 @@ const PATHS: Record<Platform, string> = {
 };
 
 export function PlatformIcon({ platform, size = 20 }: { platform: Platform; size?: number }) {
+  // نظام يضيفه الخادم قبل تحديث الواجهة: لا مربّع فارغ، والاسم المكتوب يكفي
+  const d = PATHS[platform] as string | undefined;
+  if (!d) return null;
   return (
     <svg
       viewBox="0 0 24 24"
@@ -30,7 +33,7 @@ export function PlatformIcon({ platform, size = 20 }: { platform: Platform; size
       focusable="false"
       data-platform-icon={platform}
     >
-      <path d={PATHS[platform]} />
+      <path d={d} />
     </svg>
   );
 }
