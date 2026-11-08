@@ -532,3 +532,29 @@ class OperatorPushEndpoint(models.Model):
 
     def __str__(self) -> str:
         return f"push:{self.user_id}"
+
+
+class SiteVisit(models.Model):
+    """0005 §٢١٩ — زيارة لصفحة عامة: عدّ بلا كوكيز ولا هوية. لا يُحفظ عنوان الشبكة؛ الدولة تُستخرج منه
+    عند الوصول ثم يُرمى، و`visitor` بصمة يومية (HMAC بمفتاح يتغيّر كل يوم) تعدّ الزائر مرة في اليوم
+    ولا تربط زيارات يومين. تُحذف بعد `ANALYTICS_RETENTION_DAYS` (الجدولة الليلية)."""
+
+    id = models.BigAutoField(primary_key=True)
+    day = models.DateField()
+    occurred_at = models.DateTimeField(default=timezone.now)
+    path = models.CharField(max_length=200)
+    country = models.CharField(max_length=2, blank=True, default="")
+    source = models.CharField(max_length=80, blank=True, default="")
+    device = models.CharField(max_length=10, default="desktop")
+    visitor = models.CharField(max_length=16)
+
+    objects: ClassVar[models.Manager[SiteVisit]] = models.Manager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["day"], name="sitevisit_day"),
+            models.Index(fields=["day", "visitor"], name="sitevisit_day_visitor"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.day} {self.path}"

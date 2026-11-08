@@ -37,6 +37,7 @@ export type PlatformSection =
   | "operators"
   | "audit"
   | "apps"
+  | "analytics"
   | "plans"
   | "password";
 
@@ -91,6 +92,8 @@ const GROUPS: readonly { readonly title: string; readonly items: readonly NavIte
     items: [
       { id: "demo", label: "طلبات الجولة" },
       { id: "m0", label: "لوحة الاكتساب" },
+      // 0005 §٢١٩: زوار الموقع العام ودولهم ومسار التحويل
+      { id: "analytics", label: "تحليلات الزوار" },
     ],
   },
   {
@@ -124,6 +127,7 @@ const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
   audit: "/platform/audit",
   plans: "/platform/plans",
   apps: "/platform/apps",
+  analytics: "/platform/analytics",
 };
 
 /** مفتاح الشريط المطويّ — تفضيل عرض على هذا الجهاز لا بيانات (الجلسة نفسها لا تُحفظ هنا). */

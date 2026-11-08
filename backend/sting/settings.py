@@ -161,3 +161,7 @@ APP_STORE_TOTAL_MAX_BYTES = int(os.environ.get("STING_APP_STORE_TOTAL_MAX_BYTES"
 APP_STORE_DISK_RESERVE_BYTES = int(
     os.environ.get("STING_APP_STORE_DISK_RESERVE_BYTES", 5 * 1024**3)
 )
+# تحليلات الزوار (0005 §٢١٩): قاعدة DB-IP Lite للدولة (CC BY 4.0) تُنزَّل في صورة الخادم؛ غيابها يجعل
+# الدولة «غير معروفة» ولا يوقف العدّ
+GEOIP_DB = Path(os.environ.get("STING_GEOIP_DB") or BASE_DIR / "geo" / "dbip-country-lite.mmdb")
+ANALYTICS_RETENTION_DAYS = int(os.environ.get("STING_ANALYTICS_RETENTION_DAYS", 400))

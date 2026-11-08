@@ -1,0 +1,188 @@
+/* PLT-19 — تحليلات الزوار (0005 §٢١٩): سلسلة واحدة بلون العلامة، أشرطة رفيعة بحافة مدوّرة 4px على خط
+   الأساس وفجوة 2px، وتلميح عند المرور أو التركيز، والأرقام جدولاً للقارئ الآلي. القوائم صفوف لا بطاقات. */
+.plt-ana__ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.plt-ana__sub {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-ink-strong);
+}
+.plt-ana__chart,
+.plt-ana__list {
+  min-inline-size: 0;
+}
+.plt-ana__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  block-size: 180px;
+  margin: 0;
+  padding: 0 0 0;
+  list-style: none;
+  border-block-end: 1px solid var(--color-border);
+}
+.plt-ana__bar {
+  position: relative;
+  flex: 1 1 0;
+  min-inline-size: 0;
+  block-size: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  outline-offset: 2px;
+}
+/* علامة رفيعة: لا تتّسع إلى كتلة في المدّة القصيرة على الحاسوب */
+.plt-ana__col {
+  display: block;
+  inline-size: min(100%, 40px);
+  min-block-size: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--color-brand-primary);
+  transition: background-color 120ms ease;
+}
+.plt-ana__bar:hover .plt-ana__col,
+.plt-ana__bar:focus-visible .plt-ana__col {
+  background: var(--color-brand-strong);
+}
+.plt-ana__tip {
+  position: absolute;
+  inset-block-end: calc(100% + 6px);
+  inset-inline-start: 50%;
+  translate: 50% 0;
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-ink-strong);
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+}
+.plt-ana__bar:hover .plt-ana__tip,
+.plt-ana__bar:focus-visible .plt-ana__tip {
+  display: flex;
+}
+/* على حافتي المخطط يبقى التلميح داخل الإطار */
+.plt-ana__bar:first-child .plt-ana__tip {
+  inset-inline-start: 0;
+  translate: 0 0;
+}
+.plt-ana__bar:last-child .plt-ana__tip {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  translate: 0 0;
+}
+.plt-ana__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block-start: 6px;
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.plt-ana__table {
+  margin-block-start: 10px;
+  font-size: 14px;
+}
+.plt-ana__table summary {
+  min-block-size: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-brand-strong);
+}
+.plt-ana__table table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.plt-ana__table th,
+.plt-ana__table td {
+  padding: 6px 8px;
+  text-align: start;
+  border-block-end: 1px solid var(--color-border);
+}
+.plt-ana__table th {
+  color: var(--color-ink-muted);
+  font-weight: 500;
+}
+.plt-ana__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.plt-ana__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name value"
+    "track track";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 6px;
+  padding-block: 10px;
+  border-block-end: 1px solid var(--color-border);
+}
+.plt-ana__row:last-child {
+  border-block-end: 0;
+}
+.plt-ana__name {
+  grid-area: name;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-ink-strong);
+}
+.plt-ana__value {
+  grid-area: value;
+  display: inline-flex;
+  gap: 10px;
+  align-items: baseline;
+  color: var(--color-ink-strong);
+}
+.plt-ana__rate {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.plt-ana__track {
+  grid-area: track;
+  display: block;
+  block-size: 6px;
+  border-radius: 4px;
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+.plt-ana__fill {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 2px;
+  border-radius: 4px;
+  background: var(--color-brand-primary);
+}
+.plt-ana__grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.plt-ana__foot a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--color-brand-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .plt-ana__col {
+    transition: none;
+  }
+}

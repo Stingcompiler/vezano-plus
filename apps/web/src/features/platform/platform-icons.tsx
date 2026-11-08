@@ -53,6 +53,13 @@ export const PLATFORM_ICONS = {
       <path d="M16.5 13v7M13 16.5h7" />
     </I>
   ),
+  // أعمدة تحليلات الزوار
+  analytics: (
+    <I>
+      <path d="M4 20h16" />
+      <path d="M7 16v-4M12 16V7M17 16v-7" />
+    </I>
+  ),
   // طبقات الباقات
   plans: (
     <I>

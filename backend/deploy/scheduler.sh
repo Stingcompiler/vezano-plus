@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # المهام المجدولة على الخادم الخاص (0005 §١٤٠) — حلقة بسيطة بتوقيت UTC بلا cron داخل الحاوية:
-#   01:00 النسخة الليلية لقاعدة البيانات (backup.sh)
+#   01:00 النسخة الليلية لقاعدة البيانات (backup.sh)، ثم حذف الزيارات الأقدم من 13 شهراً (0005 §٢١٩)
 #   04:00 GROW-01/02 (grow_compute) = 06:00 بتوقيت الخرطوم، فيصدق «الفحص التالي غداً 6 ص»
 #   كل ساعة: فحص ذاتي للنسخ والقرص مع تنبيه بالبريد (ops_selfcheck؛ 0005 §١٤٨)
 #   دائماً: موزّع الإشعارات الفورية (push_dispatch --loop؛ 0005 §٢١٦) — يُعاد تشغيله إن توقّف
@@ -23,6 +23,7 @@ while true; do
   hour=$(date -u +%H)
   if [ "$hour" = "01" ] && [ "$last_backup" != "$day" ]; then
     /app/deploy/backup.sh || echo "backup failed"
+    uv run --no-sync python manage.py analytics_prune || echo "analytics_prune failed"
     last_backup=$day
   fi
   if [ "$hour" = "04" ] && [ "$last_grow" != "$day" ]; then

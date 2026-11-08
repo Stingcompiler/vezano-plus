@@ -25,6 +25,8 @@ UNTYPED_ALLOWED = {
     "GET /api/imports/{batch_id}/rejected.csv",
     "GET /api/reports/exports/{token}",
     "GET /api/apps/download/{token}",
+    # 0005 §٢١٩: إشارة زيارة بلا جسم ردّ (204)
+    "POST /api/public/beacon",
     # لم تغطّها الاختبارات بعد — تُرصد عند تغطيتها
     "PUT /api/campaigns/{campaign_id}",
     "DELETE /api/catalog/items/{item_id}/aliases",

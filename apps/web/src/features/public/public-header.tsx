@@ -8,6 +8,7 @@ import { type CSSProperties, type MouseEvent, useEffect, useState } from "react"
 
 import "./landing.css";
 import { BrandMark, BrandName } from "@/features/public/brand-mark";
+import { sendVisitBeacon } from "@/lib/visit-beacon";
 
 /**
  * الترويسة العامة الموحَّدة (الهبوط، الترحيب، الدخول، التسجيل، الشروط، الحالة): شعار فيزانو (علامة الأعمدة)،
@@ -40,6 +41,10 @@ export function PublicHeader({
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  // تحليلات الزوار (0005 §٢١٩): إشارة لكل صفحة عامة تُفتح — الترويسة حاضرة في كلها
+  useEffect(() => {
+    sendVisitBeacon();
+  }, [pathname]);
   // على الهاتف فقط: يختفي بعد تمرير متّصل للأسفل ويعود بعد تمرير متّصل للأعلى — بتراكم ≥ 24px
   // كي لا يرتجف مع الاهتزازات الصغيرة؛ على الحاسوب يبقى ثابتاً دائماً
   const [hidden, setHidden] = useState(false);

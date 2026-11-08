@@ -1,5 +1,6 @@
 from django.urls import path
 
+from stingops.analytics_views import OperatorAnalyticsView, PublicBeaconView
 from stingops.app_store import (
     MerchantAppsView,
     MerchantDownloadLinkView,
@@ -60,6 +61,8 @@ from stingops.views import (
 urlpatterns = [
     # متجر التطبيقات (0005 §٢١٥)
     path("public/apps", PublicAppsView.as_view(), name="public-apps"),
+    path("public/beacon", PublicBeaconView.as_view(), name="public-beacon"),
+    path("platform/analytics", OperatorAnalyticsView.as_view(), name="platform-analytics"),
     path("org/apps", MerchantAppsView.as_view(), name="org-apps"),
     path(
         "org/apps/<uuid:release_id>/link", MerchantDownloadLinkView.as_view(), name="org-app-link"

@@ -22,6 +22,14 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
 RUN uv sync --frozen --no-dev && chmod +x deploy/*.sh
 
+# قاعدة الدولة لتحليلات الزوار (0005 §٢١٩): DB-IP Lite (CC BY 4.0) تتجدّد مع كل نشر — هذا الشهر، وإلا
+# السابق (أول الشهر قبل صدوره). تعذّر التنزيل لا يكسر البناء: الدولة تصير «غير معروفة» فقط
+RUN mkdir -p /app/geo && for m in "$(date -u +%Y-%m)" "$(date -u -d '-1 month' +%Y-%m)"; do \
+      curl -fsSL --max-time 120 -o /tmp/geo.gz "https://download.db-ip.com/free/dbip-country-lite-$m.mmdb.gz" \
+      && gunzip -c /tmp/geo.gz > /app/geo/dbip-country-lite.mmdb && break; \
+      rm -f /app/geo/dbip-country-lite.mmdb; \
+    done; rm -f /tmp/geo.gz; ls -l /app/geo
+
 RUN useradd --system --create-home --uid 10001 app && mkdir -p /app/private-app-releases /backups && chown -R app /app /backups
 USER app
 # `uv run --no-sync` وقت التشغيل بلا ذاكرة مؤقتة (المستخدم بلا صلاحية كتابة خارج بيته)
