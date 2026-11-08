@@ -204,3 +204,25 @@ def test_plan_change_prices_current_cycle_and_rejects_archived(ctx: dict[str, An
     note = _post(c, oh, url, {"action": "note", "reason": "مستأجر على باقة مؤرشفة"})
     assert note.status_code == 200
     assert note.json()["tenant"]["entitlement"]["plan_code"] == "dual"
+
+
+def test_free_monthly_plan_can_be_assigned(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-11-08: باقة شهرية مجانية تُسنَد؛ صفر الربعي/السنوي وحده يعني «غير معروضة»."""
+    from core.models import PlanCatalog
+    from core.subscription import PLANS
+
+    c = Client()
+    oh = _operator_headers("ops12", "هدى — تشغيل")
+    tid = ctx["tenant"].id
+    PLANS.ensure_seeded()  # الكتالوج يُبذر كسولاً — التحديث قبل البذر لا يمسّ شيئاً
+    with platform_context():
+        assert PlanCatalog.objects.filter(code="single").update(price_monthly_minor=0) == 1
+    PLANS.refresh()
+    r = _post(
+        c,
+        oh,
+        f"/api/platform/tenants/{tid}/subscription",
+        {"action": "plan", "plan_code": "single", "reason": "شريك"},
+    )
+    assert r.status_code == 200, r.content
+    assert r.json()["tenant"]["entitlement"]["renewal_amount_minor"] == "0"

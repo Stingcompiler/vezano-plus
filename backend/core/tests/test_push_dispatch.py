@@ -28,7 +28,9 @@ def sent(monkeypatch: pytest.MonkeyPatch) -> Sent:
     calls: Sent = []
 
     def fake(ep: Any, *, title: str, body: str, path: str, tag: str) -> dict[str, Any]:
-        calls.append({"endpoint": ep.endpoint, "title": title, "body": body, "path": path})
+        calls.append(
+            {"endpoint": ep.endpoint, "title": title, "body": body, "path": path, "tag": tag}
+        )
         return {"sent": True, "reason": ""}
 
     monkeypatch.setattr(push, "deliver", fake)
@@ -185,3 +187,47 @@ def test_operator_browser_subscribes_and_receives_team_notices(sent: Sent) -> No
         "/api/platform/push/subscribe", sub2, content_type="application/json", headers=support
     )
     assert r.status_code == 200
+
+
+def test_revoked_device_retry_and_unique_tags(
+    ctx: dict[str, Any],  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """مراجعة 2026-11-08: الجهاز المسحوب لا يستلم؛ الفشل العابر يُعاد، والدائم يوسم؛ وسم فريد
+    لكل إشعار."""
+    from core.models import Device
+
+    _subscribe(ctx, "owner")
+    _subscribe(ctx, "cashier")
+    with tenant_context(ctx["tenant"].id):
+        Device.objects.filter(id=ctx["device_ids"]["cashier"]).update(status="revoked")
+    outcomes = iter([{"sent": False, "reason": "provider_503"}, {"sent": True, "reason": ""}])
+    tags: list[str] = []
+
+    def flaky(ep: Any, *, title: str, body: str, path: str, tag: str) -> dict[str, Any]:
+        tags.append(tag)
+        assert ep.endpoint.endswith("/owner")  # المسحوب لا يُرسل إليه
+        return next(outcomes, {"sent": True, "reason": ""})
+
+    monkeypatch.setattr(push, "deliver", flaky)
+    n = _emit(ctx, category="operational", dedupe_key="r:1")
+    assert _dispatch(ctx) == 0  # فشل عابر: لا يوسم
+    with tenant_context(ctx["tenant"].id):
+        assert Notification.objects.get(id=n.id).pushed_at is None
+    assert _dispatch(ctx) == 1  # أُعيد فنجح
+    with tenant_context(ctx["tenant"].id):
+        assert Notification.objects.get(id=n.id).pushed_at is not None
+    # وسمان مختلفان لإشعارين من النوع نفسه
+    _emit(ctx, category="operational", dedupe_key="r:2")
+    _emit(ctx, category="operational", dedupe_key="r:3")
+    _dispatch(ctx)
+    assert len(set(tags[-2:])) == 2
+    # فشل دائم (انتهى الاشتراك): يوسم بلا إعادة
+    monkeypatch.setattr(push, "deliver", lambda ep, **kw: {"sent": False, "reason": "expired"})
+    m = _emit(ctx, category="operational", dedupe_key="r:4")
+    _dispatch(ctx)
+    with tenant_context(ctx["tenant"].id):
+        assert Notification.objects.get(id=m.id).pushed_at is not None
+    assert push_dispatch.settled(
+        ["provider_error"], timezone.now() - timedelta(minutes=11), timezone.now()
+    )

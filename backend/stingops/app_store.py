@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -136,11 +137,12 @@ class MerchantDownloadLinkView(APIView):
 
     @extend_schema(request=None, responses={200: None, 404: None})
     def post(self, request: Request, release_id: UUID) -> Response:
-        auth = _require_merchant(request)
+        _require_merchant(request)
         r = AppRelease.objects.filter(pk=release_id).exclude(storage_key="").first()
         if r is None:
             return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
-        token = signing.dumps({"r": str(r.id), "t": str(auth.tenant_id)}, salt=LINK_SALT)
+        # الرابط مربوط بالإصدار وعمره خمس دقائق فقط؛ الجلسة فُحصت هنا عند إصداره
+        token = signing.dumps({"r": str(r.id)}, salt=LINK_SALT)
         return Response(
             {"url": f"/api/apps/download/{token}", "expires_in": LINK_MAX_AGE},
         )
@@ -171,6 +173,17 @@ class SignedDownloadView(APIView):
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+
+def _storage_room_for(size: int) -> bool:
+    """مراجعة 2026-11-08: القرص مشترك مع قاعدتي فيزانو بلص وفيزانو ERP — لا يتجاوز مجموع المثبِّتات
+    `APP_STORE_TOTAL_MAX_BYTES`، ويبقى على القرص `APP_STORE_DISK_RESERVE_BYTES` فارغاً بعد الحفظ."""
+    root = Path(settings.APP_STORE_ROOT)
+    root.mkdir(parents=True, exist_ok=True)
+    used = sum(f.stat().st_size for f in root.iterdir() if f.is_file())
+    if used + size > settings.APP_STORE_TOTAL_MAX_BYTES:
+        return False
+    return shutil.disk_usage(root).free - size >= settings.APP_STORE_DISK_RESERVE_BYTES
 
 
 def _save_upload(upload: UploadedFile[bytes]) -> tuple[str, str, int]:
@@ -212,6 +225,8 @@ class OperatorAppsView(APIView):
             name=data["name"], platform=data["platform"], version=data["version"]
         ).exists():
             return Response({"detail": "release_exists"}, status=status.HTTP_409_CONFLICT)
+        if upload is not None and not _storage_room_for(upload.size or 0):
+            return Response({"detail": "storage_full"}, status=status.HTTP_400_BAD_REQUEST)
         key, sha, size = _save_upload(upload) if upload is not None else ("", "", 0)
         auth = request.auth
         assert isinstance(auth, AuthContext)

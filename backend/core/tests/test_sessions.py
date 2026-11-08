@@ -241,3 +241,55 @@ def test_disabled_after_upload_can_only_push_pending_then_session_ends() -> None
     assert r.status_code != 200 or not any(
         m.get("tenant_id") == str(session.tenant_id) for m in r.json().get("memberships", [])
     )
+
+
+def test_upload_grace_ends_after_deadline_even_with_pending() -> None:
+    """مراجعة 2026-11-08: جهاز لا يبلّغ أبداً أن طابوره فرغ لا يرفع باسم المعطَّل بعد `UPLOAD_GRACE`."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.auth import device_refresh
+    from core.auth.tokens import UPLOAD_GRACE
+    from core.models import User
+
+    reset_scenario()
+    client = Client()
+    _user, device, reg = cashier_with_device(client)
+    with platform_context():
+        session = Session.unscoped.get(device_id=reg["device_id"])
+        epoch = session.tenant.sync_state.sync_epoch  # type: ignore[union-attr]
+        cashier_id = str(session.user_id)
+
+    def push(n: int, rid: str) -> Any:
+        return device.post(
+            "/api/sync/push",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "sync_epoch": epoch,
+                "request_id": rid,
+                "operations": [],
+                "pending_after": n,
+            },
+        )
+
+    assert push(5, "d1").status_code == 200
+    owner = owner_in_a(Client())
+    with platform_context():
+        from shifts.models import Shift
+
+        Shift.unscoped.filter(user_id=cashier_id, state="open").update(state="closed")
+    r = owner.post(
+        f"/api/org/users/{cashier_id}/revocation",
+        {"action": "disable", "mode": "after_upload", "reason": "ترك العمل"},
+    )
+    assert r.status_code == 200, r.content
+    assert push(4, "d2").status_code == 200
+    # انقضت المهلة والطابور لم يفرغ: لا دفع ولا تجديد
+    with platform_context():
+        User.unscoped.filter(id=cashier_id).update(
+            deactivated_at=timezone.now() - UPLOAD_GRACE - timedelta(minutes=1)
+        )
+    assert push(3, "d3").status_code == 401
+    with platform_context(), pytest.raises(device_refresh.RefreshRejected):
+        device_refresh._check_live(Session.unscoped.get(id=session.id))

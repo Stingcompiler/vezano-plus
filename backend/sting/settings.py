@@ -156,3 +156,8 @@ APP_STORE_ROOT = Path(
     os.environ.get("STING_APP_STORE_ROOT", str(BASE_DIR / "private-app-releases"))
 )
 APP_STORE_MAX_BYTES = 512 * 1024 * 1024
+# مراجعة 2026-11-08: سقف مجموع المثبِّتات، وفراغ يبقى على القرص المشترك مع قواعد البيانات
+APP_STORE_TOTAL_MAX_BYTES = int(os.environ.get("STING_APP_STORE_TOTAL_MAX_BYTES", 6 * 1024**3))
+APP_STORE_DISK_RESERVE_BYTES = int(
+    os.environ.get("STING_APP_STORE_DISK_RESERVE_BYTES", 5 * 1024**3)
+)

@@ -14,7 +14,7 @@ import "@/features/org/org.css";
 import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
-import { pushPermission, pushSupported, subscribePush, unsubscribePush } from "@/lib/pwa";
+import { pushPermission, pushSupported, subscribePush } from "@/lib/pwa";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 
 interface NoticeRow {
@@ -69,7 +69,8 @@ function BrowserAlerts() {
     setNote("");
     try {
       if (st.subscribed) {
-        await unsubscribePush();
+        // مراجعة 2026-11-08: اشتراك المتصفح واحد للأصل كله ويشاركه اشتراك جهاز المتجر (WEB-02) —
+        // الإيقاف هنا يُلغي ربط المشغّل في الخادم فقط ولا يمسّ اشتراك المتصفح
         const { data } = await platformApi().POST("/api/platform/push/unsubscribe", {
           body: {} as never,
         });

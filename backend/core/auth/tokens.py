@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
 from typing import Any
 
 from django.utils import timezone
@@ -96,12 +97,20 @@ def revoke_device_sessions(device: Device) -> int:
         )
 
 
+#: أقصى مهلة لرفع المعلّق بعد التعطيل (مراجعة 2026-11-08): جهاز لا يبلّغ أبداً أن طابوره فرغ لا يبقى
+#: يرفع باسم المعطَّل إلى ما لا نهاية — بعدها يُسترد المعلّق بمسار الاسترداد (SYS-07)
+UPLOAD_GRACE = timedelta(hours=72)
+
+
 def in_upload_grace(user: User, session: Session | None) -> bool:
     """مستخدم عُطِّل «بعد رفع المعلّق» (ACC-09): جلسة جهازه التي أبلغت عن معلّق تبقى صالحة لرفع
-    ذلك المعلّق وحده حتى يفرغ الطابور (`report_pending` يُنهيها). فحص 2026-11-07: كان التعطيل يرفض
-    المستخدم غير النشط في كل طلب، فيعلق العمل على الجهاز ولا يُرفع."""
+    ذلك المعلّق وحده حتى يفرغ الطابور (`report_pending` يُنهيها) أو تنقضي `UPLOAD_GRACE` من
+    التعطيل. فحص 2026-11-07: كان التعطيل يرفض المستخدم غير النشط في كل طلب، فيعلق العمل على
+    الجهاز ولا يُرفع."""
     return (
         not user.is_active
+        and user.deactivated_at is not None
+        and timezone.now() - user.deactivated_at <= UPLOAD_GRACE
         and session is not None
         and session.revoked_at is None
         and session.revoke_after_upload

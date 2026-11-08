@@ -24,12 +24,23 @@ from typing import Any
 from django.utils import timezone
 
 from core import notifications, push
-from core.models import DeviceEndpoint, Notification, NotificationPreference, User, UserBranchAccess
+from core.models import (
+    Device,
+    DeviceEndpoint,
+    Notification,
+    NotificationPreference,
+    User,
+    UserBranchAccess,
+)
 from core.tenancy import platform_context, tenant_context
 
 log = logging.getLogger(__name__)
 
 MAX_AGE = timedelta(hours=6)
+#: مراجعة 2026-11-08: فشل عابر عند المزوّد (5xx/شبكة) يُعاد في الدورات التالية خلال هذه المدة؛
+#: الانتهاء (404/410) ونجاح أي إرسال يوسمان فوراً. بعد النافذة يوسم الإشعار ولا يُعاد.
+RETRY_WINDOW = timedelta(minutes=10)
+PERMANENT = frozenset({"expired", "push_not_configured"})
 #: توقيت الخرطوم ثابت (UTC+2، بلا توقيت صيفي)
 KHARTOUM = dt_timezone(timedelta(hours=2))
 QUIET_FROM, QUIET_TO = 23, 7
@@ -77,7 +88,12 @@ def dispatch_tenant(tenant_id: uuid.UUID, *, derive: bool, now: datetime | None 
     now = now or timezone.now()
     sent = 0
     with tenant_context(tenant_id):
-        endpoints = list(DeviceEndpoint.objects.filter(expired_at__isnull=True))
+        # الجهاز المسحوب أو المجمَّد أو الممحو لا يستلم (جهاز مفقود لا تظهر عليه تنبيهات المتجر)
+        endpoints = list(
+            DeviceEndpoint.objects.filter(
+                expired_at__isnull=True, device__status=Device.Status.ACTIVE
+            )
+        )
         if not endpoints:
             Notification.objects.filter(pushed_at__isnull=True).update(pushed_at=now)
             return 0
@@ -103,28 +119,52 @@ def dispatch_tenant(tenant_id: uuid.UUID, *, derive: bool, now: datetime | None 
             }
         for n in pending:
             fresh = n.resolved_at is None and now - n.occurred_at <= MAX_AGE
+            reasons: list[str] = []
             if fresh:
                 text = CATEGORY_PUSH.get(n.category, CATEGORY_PUSH["operational"])
                 for ep in endpoints:
                     user = users.get(ep.user)
                     if user is None or not _wants(n, user, branches[user.id], prefs[user.id], now):
                         continue
+                    # وسم فريد لكل إشعار: إشعاران من النوع نفسه لا يستبدل أحدهما الآخر على الجهاز
                     out = push.deliver(
-                        ep, title=text["title"], body=text["body"], path=_path(n), tag=n.kind
+                        ep, title=text["title"], body=text["body"], path=_path(n), tag=str(n.id)
                     )
                     sent += int(bool(out.get("sent")))
+                    reasons.append("sent" if out.get("sent") else str(out.get("reason", "")))
+            if not settled(reasons, n.occurred_at, now):
+                continue  # فشل عابر: يُعاد في الدورة التالية
             n.pushed_at = now
             n.save(update_fields=["pushed_at"])
     return sent
 
 
-def tenants_with_endpoints() -> list[uuid.UUID]:
+def settled(reasons: list[str], occurred_at: datetime, now: datetime) -> bool:
+    """يوسم الإشعار إن لم يكن له مستلم، أو نجح إرسال، أو كان كل فشل دائماً، أو انقضت
+    نافذة الإعادة."""
+    if not reasons or "sent" in reasons or all(r in PERMANENT for r in reasons):
+        return True
+    return now - occurred_at > RETRY_WINDOW
+
+
+def tenants_with_endpoints(*, pending_only: bool = False) -> list[uuid.UUID]:
+    """المنشآت ذات أجهزة فعّالة مشتركة. `pending_only` (دورات الإرسال بين الاشتقاقات): التي لها إشعار
+    لم يُرسل فقط — استعلام واحد بدل معاملة لكل منشأة كل 15 ثانية (مراجعة 2026-11-08)."""
     with platform_context():
-        return list(
-            DeviceEndpoint.unscoped.filter(expired_at__isnull=True)
+        tids = set(
+            DeviceEndpoint.unscoped.filter(
+                expired_at__isnull=True, device__status=Device.Status.ACTIVE
+            )
             .values_list("tenant_id", flat=True)
             .distinct()
         )
+        if pending_only and tids:
+            tids &= set(
+                Notification.unscoped.filter(tenant_id__in=tids, pushed_at__isnull=True)
+                .values_list("tenant_id", flat=True)
+                .distinct()
+            )
+        return list(tids)
 
 
 def dispatch_all(*, derive: bool) -> dict[str, int]:
@@ -136,7 +176,7 @@ def dispatch_all(*, derive: bool) -> dict[str, int]:
         out["operator"] = operator_push.dispatch()
     except Exception:  # noqa: BLE001
         log.exception("push: operator dispatch failed")
-    for tid in tenants_with_endpoints():
+    for tid in tenants_with_endpoints(pending_only=not derive):
         try:
             out["tenants"] += dispatch_tenant(tid, derive=derive)
         except Exception:  # noqa: BLE001

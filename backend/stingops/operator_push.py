@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from core import push
 from core.models import User
+from core.push_dispatch import settled
 from core.tenancy import platform_context
 from stingops.models import OperatorNotice, OperatorPushEndpoint
 
@@ -75,6 +76,7 @@ def dispatch() -> int:
             )
         )
         for n in pending:
+            reasons: list[str] = []
             if endpoints and (now - n.created_at).total_seconds() <= MAX_AGE_HOURS * 3600:
                 label = OperatorNotice.Kind(n.kind).label
                 path = n.href if n.href.startswith("/platform") else "/platform/notices"
@@ -84,9 +86,12 @@ def dispatch() -> int:
                         title=f"إدارة فيزانو — {label}",
                         body="وصل ما ينتظر نظر الفريق.",
                         path=path,
-                        tag=f"plt-{n.kind}",
+                        tag=f"plt-{n.id}",
                     )
                     sent += int(bool(out.get("sent")))
+                    reasons.append("sent" if out.get("sent") else str(out.get("reason", "")))
+            if not settled(reasons, n.created_at, now):
+                continue  # فشل عابر عند المزوّد: يُعاد في الدورة التالية
             n.pushed_at = now
             n.save(update_fields=["pushed_at"])
     return sent
