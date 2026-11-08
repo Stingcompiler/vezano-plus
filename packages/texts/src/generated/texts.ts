@@ -9339,6 +9339,7 @@ export const TEXTS = {
     "تواصل",
     "حالة الخدمة",
     "حساب جديد",
+    "متجر التطبيقات",
   ],
   "shared:features/public/site.ts": [
     "فيزانو بلص",

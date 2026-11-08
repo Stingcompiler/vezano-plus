@@ -49,6 +49,10 @@ test.describe("متجر التطبيقات", () => {
     );
     await page.goto("/");
     const section = page.locator("#lp-apps");
+    // رابط الشريط العام يقود إلى القسم (§٢٢٣)
+    await expect(
+      page.locator("#lp-links").getByRole("link", { name: "متجر التطبيقات", includeHidden: true }),
+    ).toHaveAttribute("href", "/#lp-apps");
     await section.scrollIntoViewIfNeeded();
     await expect(section.getByRole("heading", { name: "متجر التطبيقات" })).toBeVisible();
     await expect(section.getByText("Vezano Plus")).toHaveCount(2);

@@ -15,16 +15,13 @@
 .vz-app:last-child {
   border-block-end: 0;
 }
-/* شعار النظام في مربّع محايد (لا لون حالة): يُعرف الصف بالنظر قبل القراءة */
+/* شعار النظام بلا مربّع مصبوغ (دليل البطاقات §١٥٨): الشعار وحده بلون النص يُعرف الصف بالنظر */
 .vz-app__icon {
-  flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
-  inline-size: 48px;
-  block-size: 48px;
-  border-radius: 14px;
-  background: var(--color-brand-tint);
-  color: var(--color-brand-strong);
+  inline-size: 40px;
+  block-size: 40px;
+  color: var(--color-ink-strong);
 }
 /* الهاتف: الشعار بجانب الاسم دائماً، والزرّ تحتهما بعرض العمود */
 @media (max-width: 833px) {

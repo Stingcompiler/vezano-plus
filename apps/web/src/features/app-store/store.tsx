@@ -144,7 +144,7 @@ function ReleaseRow({
   return (
     <li className="vz-app">
       <span className="vz-app__icon" data-platform={r.platform}>
-        <PlatformIcon platform={r.platform} size={26} />
+        <PlatformIcon platform={r.platform} size={30} />
       </span>
       <div className="vz-app__main">
         <strong className="vz-app__name">{r.name}</strong>
