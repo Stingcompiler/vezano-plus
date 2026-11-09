@@ -2494,6 +2494,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/org/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description HOME · شريط إعلانات المنصة (0005 §٢٣١): ما وصل إلى هذا المتجر ولم تنتهِ نافذته ولم يُلغَ. */
+        get: operations["org_announcements_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/org/apps": {
         parameters: {
             query?: never;
@@ -12288,6 +12305,20 @@ export interface components {
             };
             updated_at: string;
         };
+        GetOrgAnnouncementsResponse: {
+            announcements: {
+                active: boolean;
+                body: string;
+                cta_label: string;
+                cta_url: string;
+                ends_at: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                starts_at: string;
+                title: string;
+            }[];
+        };
         GetOrgAppsResponse: {
             releases: {
                 apple_url: string;
@@ -13979,16 +14010,25 @@ export interface components {
                 audience: string;
                 audience_count: number;
                 audience_label: string;
+                audience_value: string;
+                audience_value_label: string;
                 body: string;
                 cancelled_at: string;
                 cancelled_by_name: string;
                 created_at: string;
                 created_by_name: string;
+                cta_label: string;
+                cta_url: string;
+                delivered_at: string;
+                delivered_count: number;
+                emailed_count: number;
                 ends_at: string;
                 id: string;
                 kind: string;
                 kind_label: string;
                 scheduled_at: string;
+                send_email: boolean;
+                send_push: boolean;
                 starts_at: string;
                 status: string;
                 status_label: string;
@@ -14000,16 +14040,25 @@ export interface components {
                 audience: string;
                 audience_count: number;
                 audience_label: string;
+                audience_value: string;
+                audience_value_label: string;
                 body: string;
                 cancelled_at: string;
                 cancelled_by_name: string;
                 created_at: string;
                 created_by_name: string;
+                cta_label: string;
+                cta_url: string;
+                delivered_at: string;
+                delivered_count: number;
+                emailed_count: number;
                 ends_at: string;
                 id: string;
                 kind: string;
                 kind_label: string;
                 scheduled_at: string;
+                send_email: boolean;
+                send_push: boolean;
                 starts_at: string;
                 status: string;
                 status_label: string;
@@ -23875,6 +23924,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    org_announcements_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetOrgAnnouncementsResponse"];
+                };
             };
             /** @description No response body */
             403: {

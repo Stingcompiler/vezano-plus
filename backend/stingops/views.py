@@ -493,6 +493,7 @@ class OperatorAudiencePreviewView(APIView):
                 audience=str(body.get("audience") or "market"),
                 body=str(body.get("body") or ""),
                 kind=str(body.get("kind") or "maintenance"),
+                audience_value=str(body.get("audience_value") or ""),
             )
         )
 
@@ -1222,3 +1223,19 @@ class OperatorMessageHandleView(APIView):
         except inbox.InboxRejected as e:
             return Response({"detail": e.code}, status=e.status)
         return Response(out)
+
+
+class TenantAnnouncementsView(APIView):
+    """HOME · شريط إعلانات المنصة (0005 §٢٣١): ما وصل إلى هذا المتجر ولم تنتهِ نافذته ولم يُلغَ."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None})
+    def get(self, request: Request) -> Response:
+        from stingops import announce
+
+        auth = request.auth
+        if not isinstance(auth, AuthContext) or auth.tenant_id is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(auth.tenant_id):
+            return Response({"announcements": announce.active_for_tenant()})

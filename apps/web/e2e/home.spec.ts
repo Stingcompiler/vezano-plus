@@ -634,3 +634,43 @@ test.describe("HOME-03", () => {
     await context.setOffline(false);
   });
 });
+
+test.describe("HOME-01 · إعلانات المنصة (0005 §٢٣١)", () => {
+  test("الإعلان النافذ شريط بأعلى اللوحة بزرّه، و«إخفاء» يبقى بعد إعادة التحميل", async ({
+    page,
+  }) => {
+    const later = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+    await page.route("**/api/org/announcements", (route) =>
+      route.fulfill(
+        json(200, {
+          announcements: [
+            {
+              id: "an1",
+              kind: "payment",
+              kind_label: "تذكير بالدفع",
+              title: "اشتراكك ينتهي بعد 3 أيام",
+              body: "جدّد الآن حتى لا تتوقف المزامنة.",
+              starts_at: later(-1),
+              ends_at: later(48),
+              active: true,
+              cta_label: "جدّد الاشتراك",
+              cta_url: "/org/subscription",
+            },
+          ],
+        }),
+      ),
+    );
+    await loginTo(page, OWNER);
+    const bar = page.getByRole("region", { name: "إعلانات المنصة" });
+    await expect(bar).toContainText("تذكير بالدفع — اشتراكك ينتهي بعد 3 أيام");
+    await expect(bar).toContainText("سارٍ حتى");
+    await expect(bar.getByRole("link", { name: "جدّد الاشتراك" })).toHaveAttribute(
+      "href",
+      "/org/subscription",
+    );
+    await bar.getByRole("button", { name: "إخفاء" }).click();
+    await expect(bar).toHaveCount(0);
+    // الإخفاء محفوظ في هذا المتصفح (الجلسة في الذاكرة فإعادة التحميل تعيد إلى الدخول)
+    expect(await page.evaluate(() => localStorage.getItem("vz-ann-hidden"))).toContain("an1");
+  });
+});

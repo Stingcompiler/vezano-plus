@@ -231,3 +231,24 @@ def test_revoked_device_retry_and_unique_tags(
     assert push_dispatch.settled(
         ["provider_error"], timezone.now() - timedelta(minutes=11), timezone.now()
     )
+
+
+def test_platform_announcement_push_shows_its_own_text(
+    ctx: dict[str, Any],  # noqa: F811
+    sent: Sent,
+) -> None:
+    """0005 §٢٣٢: إعلان المنصة نصّ للمتاجر كلها، فيظهر عنوانه ونصّه في الإشعار الفوري."""
+    _subscribe(ctx, "owner")
+    _emit(
+        ctx,
+        kind="platform_announcement",
+        category="account",
+        title="جديد: تقارير الهامش",
+        body="تقرير الهامش لكل صنف صار في التقارير.",
+        href="/notify/inbox",
+        dedupe_key="ann:x",
+    )
+    assert _dispatch(ctx) == 1
+    assert sent[0]["title"] == "فيزانو بلص — جديد: تقارير الهامش"
+    assert sent[0]["body"] == "تقرير الهامش لكل صنف صار في التقارير."
+    assert sent[0]["path"] == "/notify/inbox"

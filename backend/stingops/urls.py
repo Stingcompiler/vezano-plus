@@ -57,6 +57,7 @@ from stingops.views import (
     OperatorVerificationActionView,
     OperatorVerificationsView,
     SupportGrantView,
+    TenantAnnouncementsView,
 )
 
 urlpatterns = [
@@ -65,6 +66,7 @@ urlpatterns = [
     path("public/beacon", PublicBeaconView.as_view(), name="public-beacon"),
     path("platform/analytics", OperatorAnalyticsView.as_view(), name="platform-analytics"),
     path("org/apps", MerchantAppsView.as_view(), name="org-apps"),
+    path("org/announcements", TenantAnnouncementsView.as_view(), name="org-announcements"),
     path(
         "org/apps/<uuid:release_id>/link", MerchantDownloadLinkView.as_view(), name="org-app-link"
     ),

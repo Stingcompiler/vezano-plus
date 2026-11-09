@@ -96,16 +96,25 @@ class ProofClaim(models.Model):
 
 
 class PlatformAnnouncement(models.Model):
-    """PLT-04: إعلان منصة أو نافذة صيانة — بموعد وأثر ومدة وجمهور معلَن قبل الجدولة؛ لا وعد بميزة
-    لباقة لا تشملها (ACC-104). يغذّي PUB-03 ولا يُرسل شيئاً للزبائن النهائيين."""
+    """PLT-04: إعلان منصة — صيانة، ميزة، عرض، تنبيه، تذكير دفع، أو إعلان عام — بموعد وجمهور معلَن
+    قبل الجدولة؛ لا وعد بميزة لباقة لا تشملها (ACC-104). يصل إلى صناديق المتاجر المستهدفة وشريط
+    لوحتها (0005 §٢٣١)، والصيانة تغذّي PUB-03 أيضاً. لا يُرسل شيئاً للزبائن النهائيين."""
 
     class Kind(models.TextChoices):
         MAINTENANCE = "maintenance", "صيانة مجدولة"
-        NOTICE = "notice", "إعلان"
+        # 0005 §٢٣١: أنواع تصل إلى المتاجر داخل التطبيق وبالإشعار الفوري والبريد
+        FEATURE = "feature", "ميزة جديدة"
+        OFFER = "offer", "عرض أو تخفيض"
+        ALERT = "alert", "تنبيه مهم"
+        PAYMENT = "payment", "تذكير بالدفع"
+        NOTICE = "notice", "إعلان عام"
 
     class Audience(models.TextChoices):
         ALL = "all", "كل المتاجر"
         MARKET = "market", "متاجر ذات مزامنة سوق فعّالة"
+        PLAN = "plan", "متاجر باقة معيّنة"
+        STATUS = "status", "متاجر بحالة اشتراك"
+        TENANT = "tenant", "متجر واحد"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "مسودة"
@@ -122,6 +131,19 @@ class PlatformAnnouncement(models.Model):
     ends_at = models.DateTimeField()
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     audience_count = models.PositiveIntegerField(default=0)
+    #: قيمة الجمهور: رمز الباقة، أو الحالة (active|trial|late|suspended|pending_approval)،
+    #: أو معرّف المتجر
+    audience_value = models.CharField(max_length=64, blank=True, default="")
+    #: القنوات: داخل التطبيق دائماً، والفوري والبريد اختياريان
+    send_push = models.BooleanField(default=True)
+    send_email = models.BooleanField(default=False)
+    #: زرّ اختياري داخل الإعلان: مسار داخل التطبيق (/org/subscription) أو رابط https
+    cta_label = models.CharField(max_length=60, blank=True, default="")
+    cta_url = models.CharField(max_length=300, blank=True, default="")
+    #: متى وصل إلى صناديق المتاجر، وكم متجراً وكم بريداً
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    delivered_count = models.PositiveIntegerField(default=0)
+    emailed_count = models.PositiveIntegerField(default=0)
     created_by_name = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     scheduled_at = models.DateTimeField(null=True, blank=True)

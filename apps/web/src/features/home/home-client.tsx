@@ -15,6 +15,7 @@ import { useOnline } from "@/lib/online";
 
 import { agoParts, hhmm } from "./format";
 import { countLocalPending, readHomeCache, writeHomeCache } from "./home-cache";
+import { PlatformAnnouncements } from "./platform-announcements";
 import type { Attention, Decision, HomeSummary, Kpi } from "./types";
 import { readOpenShift } from "@sting/sync-core";
 
@@ -235,6 +236,7 @@ export function HomeClient() {
   return (
     <Frame title={summary.tenant_name} nav={<AppNav currentId="home" />} footer={null} notice={bar}>
       <div className="home" data-screen={screen} data-state={state}>
+        <PlatformAnnouncements />
         {isOwner ? (
           <>
             <header className="home-head">

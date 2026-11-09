@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (210 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (214 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -25,6 +25,7 @@ export const API_ERROR_CODES = [
   "approval_pending",
   "audience_or_duration_required",
   "audience_out_of_tenant",
+  "audience_value_invalid",
   "backup_unusable",
   "bad_registration_secret",
   "bad_transition",
@@ -49,6 +50,8 @@ export const API_ERROR_CODES = [
   "conflict",
   "corrupt",
   "cost_policy_invalid",
+  "cta_incomplete",
+  "cta_url_invalid",
   "currency_mismatch",
   "cycle_invalid",
   "cycle_unavailable",
@@ -95,6 +98,7 @@ export const API_ERROR_CODES = [
   "invite_expired",
   "invite_is_own",
   "item_not_found",
+  "kind_invalid",
   "kind_not_revertible",
   "limit_required",
   "limits_exceeded",
@@ -1551,6 +1555,22 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
   ],
   "POST /api/platform/announcements": [
+    {
+      status: 400,
+      code: "audience_value_invalid",
+    },
+    {
+      status: 400,
+      code: "cta_incomplete",
+    },
+    {
+      status: 400,
+      code: "cta_url_invalid",
+    },
+    {
+      status: 400,
+      code: "kind_invalid",
+    },
     {
       status: 400,
       code: "window_in_past",

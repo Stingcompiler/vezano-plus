@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Notice, Status, TextField } from "@sting/ui-web";
+import { Button, Notice, SelectField, Status, SwitchField, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -19,14 +19,26 @@ import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "ready" | "validation_error" | "saving" | "success";
 
+type Kind = "maintenance" | "feature" | "offer" | "alert" | "payment" | "notice";
+type AudienceCode = "all" | "market" | "plan" | "status" | "tenant";
+
 interface Announcement {
   id: string;
-  kind: "maintenance" | "notice";
+  kind: Kind;
   kind_label: string;
   title: string;
   body: string;
-  audience: "all" | "market";
+  audience: AudienceCode;
   audience_label: string;
+  audience_value?: string;
+  audience_value_label?: string;
+  send_push?: boolean;
+  send_email?: boolean;
+  cta_label?: string;
+  cta_url?: string;
+  delivered_at?: string;
+  delivered_count?: number;
+  emailed_count?: number;
   starts_at: string;
   ends_at: string;
   status: "draft" | "scheduled" | "cancelled" | "done";
@@ -36,6 +48,38 @@ interface Announcement {
   scheduled_at: string;
   cancelled_by_name: string;
 }
+
+interface Option {
+  code: string;
+  label: string;
+}
+
+/** أنواع الإعلان (0005 §٢٣١) — الصيانة أولاً كما رُسمت، ثم ما يصل إلى المتاجر */
+const KINDS: readonly (readonly [Kind, string])[] = [
+  ["maintenance", "صيانة مجدولة"],
+  ["feature", "ميزة جديدة"],
+  ["offer", "عرض أو تخفيض"],
+  ["alert", "تنبيه مهم"],
+  ["payment", "تذكير بالدفع"],
+  ["notice", "إعلان عام"],
+];
+const AUDIENCES: readonly (readonly [AudienceCode, string])[] = [
+  ["market", "متاجر ذات مزامنة سوق فعّالة"],
+  ["all", "كل المتاجر"],
+  ["plan", "باقة معيّنة"],
+  ["status", "حالة اشتراك"],
+  ["tenant", "متجر واحد"],
+];
+const ERRORS: Record<string, string> = {
+  window_invalid: "نهاية النافذة قبل بدايتها.",
+  window_in_past: "النافذة في الماضي — الإعلان يُجدول قبل موعده بوقت كافٍ.",
+  title_and_body_required: "العنوان والنص مطلوبان.",
+  audience_value_invalid: "اختر الباقة أو الحالة أو المتجر للجمهور.",
+  cta_incomplete: "الزرّ يحتاج تسمية ووجهة معاً، أو اتركهما فارغين.",
+  cta_url_invalid: "وجهة الزرّ مسار داخل التطبيق يبدأ بـ / أو رابط يبدأ بـ https://",
+  kind_invalid: "اختر نوع الإعلان من القائمة.",
+  audience_invalid: "اختر الجمهور من القائمة.",
+};
 
 interface Preview {
   targeted: number;
@@ -63,8 +107,17 @@ const localIso = (d: Date) =>
 export function AnnouncementsClient() {
   const router = useRouter();
   const [rows, setRows] = useState<Announcement[]>([]);
-  const [kind, setKind] = useState<"maintenance" | "notice">("maintenance");
-  const [audience, setAudience] = useState<"all" | "market">("market");
+  const [kind, setKind] = useState<Kind>("maintenance");
+  const [audience, setAudience] = useState<AudienceCode>("market");
+  const [audienceValue, setAudienceValue] = useState("");
+  const [plans, setPlans] = useState<Option[]>([]);
+  const [statuses, setStatuses] = useState<Option[]>([]);
+  const [storeQ, setStoreQ] = useState("");
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [sendPush, setSendPush] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [ctaLabel, setCtaLabel] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [starts, setStarts] = useState(() => localIso(new Date(Date.now() + 6 * 3_600_000)));
@@ -97,8 +150,13 @@ export function AnnouncementsClient() {
       return;
     }
     const { data, response } = await platformApi().GET("/api/platform/announcements");
-    const b = data as unknown as { announcements: Announcement[] } | undefined;
-    if (response.ok && b) setRows(b.announcements);
+    const b = data as unknown as
+      { announcements: Announcement[]; plans?: Option[]; statuses?: Option[] } | undefined;
+    if (response.ok && b) {
+      setRows(b.announcements);
+      setPlans(b.plans ?? []);
+      setStatuses(b.statuses ?? []);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -110,14 +168,29 @@ export function AnnouncementsClient() {
     const t = setTimeout(() => {
       void (async () => {
         const { data, response } = await platformApi().POST("/api/platform/announcements/preview", {
-          body: { audience, body, kind } as never,
+          body: { audience, body, kind, audience_value: audienceValue } as never,
         });
         const b = data as unknown as Preview | undefined;
         if (response.ok && b) setPreview(b);
       })().catch(() => undefined);
     }, 150);
     return () => clearTimeout(t);
-  }, [audience, body, kind]);
+  }, [audience, body, kind, audienceValue]);
+
+  // «متجر واحد»: بحث بالاسم في جدول المستأجرين (PLT-20)
+  useEffect(() => {
+    if (audience !== "tenant" || !operatorToken()) return;
+    const t = setTimeout(() => {
+      void (async () => {
+        const { data, response } = await platformApi().GET("/api/platform/tenants/directory", {
+          params: { query: { q: storeQ, sort: "name", dir: "asc", page: 1, page_size: 8 } },
+        });
+        const b = data as unknown as { tenants: { id: string; name: string }[] } | undefined;
+        if (response.ok && b) setStores(b.tenants.map((x) => ({ id: x.id, name: x.name })));
+      })().catch(() => undefined);
+    }, 200);
+    return () => clearTimeout(t);
+  }, [audience, storeQ]);
 
   const save = async (): Promise<Announcement | null> => {
     const r = await platformApi().POST("/api/platform/announcements", {
@@ -125,6 +198,11 @@ export function AnnouncementsClient() {
         id: draftId || undefined,
         kind,
         audience,
+        audience_value: audienceValue,
+        send_push: sendPush,
+        send_email: sendEmail,
+        cta_label: ctaLabel.trim(),
+        cta_url: ctaUrl.trim(),
         title,
         body,
         starts_at: new Date(starts).toISOString(),
@@ -272,15 +350,7 @@ export function AnnouncementsClient() {
             ) : null}
             {err && err !== "promise_outside_plan" ? (
               <Notice kind="warning" title="لم يُحفظ">
-                <p className="acc-lead">
-                  {err === "window_invalid"
-                    ? "نهاية النافذة قبل بدايتها."
-                    : err === "window_in_past"
-                      ? "النافذة في الماضي — الإعلان يُجدول قبل موعده بوقت كافٍ."
-                      : err === "title_and_body_required"
-                        ? "العنوان والنص مطلوبان."
-                        : err}
-                </p>
+                <p className="acc-lead">{ERRORS[err] ?? err}</p>
               </Notice>
             ) : null}
 
@@ -289,17 +359,18 @@ export function AnnouncementsClient() {
                 <div className="acc-actions">
                   {saved ? <Status state="saved_local" label="تم الحفظ" /> : null}
                 </div>
-                <h3 className="cat-head__title">صياغة إعلان صيانة مجدولة</h3>
+                <h3 className="cat-head__title">
+                  {kind === "maintenance"
+                    ? "صياغة إعلان صيانة مجدولة"
+                    : `صياغة إعلان — ${KINDS.find(([k]) => k === kind)?.[1] ?? ""}`}
+                </h3>
                 <p className="acc-choice__note">
-                  نافذة صيانة على مزامنة السوق — لا تمسّ POS المحلي
+                  {kind === "maintenance"
+                    ? "نافذة صيانة على مزامنة السوق — لا تمسّ POS المحلي"
+                    : "يصل إلى صندوق كل متجر مستهدف وشريط لوحته طوال النافذة."}
                 </p>
                 <div className="pos-chips" role="group" aria-label="النوع">
-                  {(
-                    [
-                      ["maintenance", "صيانة مجدولة"],
-                      ["notice", "إعلان"],
-                    ] as const
-                  ).map(([k, label]) => (
+                  {KINDS.map(([k, label]) => (
                     <button
                       key={k}
                       type="button"
@@ -337,21 +408,100 @@ export function AnnouncementsClient() {
                   error={windowError}
                 />
                 <div className="pos-chips" role="group" aria-label="الجمهور">
-                  {(
-                    [
-                      ["market", "متاجر ذات مزامنة سوق فعّالة"],
-                      ["all", "كل المتاجر"],
-                    ] as const
-                  ).map(([k, label]) => (
+                  {AUDIENCES.map(([k, label]) => (
                     <button
                       key={k}
                       type="button"
                       className={`pos-chip${audience === k ? " pos-chip--on" : ""}`}
-                      onClick={() => setAudience(k)}
+                      onClick={() => {
+                        setAudience(k);
+                        setAudienceValue("");
+                      }}
                     >
                       {label}
                     </button>
                   ))}
+                </div>
+                {audience === "plan" ? (
+                  <SelectField
+                    label="الباقة"
+                    value={audienceValue}
+                    onChange={(e) => setAudienceValue(e.target.value)}
+                    options={[
+                      { value: "", label: "اختر الباقة" },
+                      ...plans.map((o) => ({ value: o.code, label: o.label })),
+                    ]}
+                  />
+                ) : null}
+                {audience === "status" ? (
+                  <SelectField
+                    label="حالة الاشتراك"
+                    value={audienceValue}
+                    onChange={(e) => setAudienceValue(e.target.value)}
+                    options={[
+                      { value: "", label: "اختر الحالة" },
+                      ...statuses.map((o) => ({ value: o.code, label: o.label })),
+                    ]}
+                  />
+                ) : null}
+                {audience === "tenant" ? (
+                  <div className="plt-ann__store">
+                    <TextField
+                      label="ابحث عن المتجر"
+                      value={storeQ}
+                      onChange={(e) => setStoreQ(e.target.value)}
+                    />
+                    <div className="pos-chips" role="radiogroup" aria-label="المتجر">
+                      {stores.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={audienceValue === t.id}
+                          className={`pos-chip${audienceValue === t.id ? " pos-chip--on" : ""}`}
+                          onClick={() => setAudienceValue(t.id)}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                      {stores.length === 0 ? (
+                        <span className="acc-choice__note">لا متجر بهذا الاسم.</span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+                <h3 className="cat-head__title">القنوات والزرّ</h3>
+                <p className="acc-choice__note">
+                  داخل التطبيق دائماً: صندوق الوارد وشريط لوحة المتجر طوال النافذة.
+                </p>
+                <SwitchField
+                  label="إشعار فوري للأجهزة"
+                  checked={sendPush}
+                  onChange={setSendPush}
+                  hint="لمن فعّل الإشعارات الفورية، وتحترم ساعات الهدوء."
+                />
+                <SwitchField
+                  label="بريد لمالك المتجر"
+                  checked={sendEmail}
+                  onChange={setSendEmail}
+                  hint="الصيانة والتنبيه وتذكير الدفع تصل كل مالك له بريد؛ الباقي لمن فعّل بريد «حسابي»."
+                />
+                <div className="plt-ann__cta">
+                  <TextField
+                    label="تسمية زرّ اختياري"
+                    value={ctaLabel}
+                    maxLength={60}
+                    onChange={(e) => setCtaLabel(e.target.value)}
+                  />
+                  <TextField
+                    label="وجهة الزرّ"
+                    value={ctaUrl}
+                    mono
+                    maxLength={300}
+                    placeholder="/org/subscription"
+                    hint="مسار داخل التطبيق يبدأ بـ / أو رابط https."
+                    onChange={(e) => setCtaUrl(e.target.value)}
+                  />
                 </div>
                 <p className="acc-choice__note">
                   <strong>قيد</strong> · لا يمكن اختيار «ميزة سوق مميّزة» في نص موجَّه لباقة لا
@@ -419,9 +569,18 @@ export function AnnouncementsClient() {
                     <li key={a.id}>
                       <strong>{a.title}</strong>
                       <div className="cus-sub">
-                        {a.kind_label} · {a.audience_label} · <When iso={a.starts_at} /> —{" "}
+                        {a.kind_label} · {a.audience_label}
+                        {a.audience_value_label ? `: ${a.audience_value_label}` : ""} ·{" "}
+                        <When iso={a.starts_at} /> —{" "}
                         <span className="sting-mono">{hhmm(a.ends_at)}</span>
                         {a.status === "scheduled" ? ` · ${storesWord(a.audience_count)}` : ""}
+                        {a.delivered_count ? ` · وصل ${storesWord(a.delivered_count)}` : ""}
+                        {a.emailed_count ? (
+                          <>
+                            {" "}
+                            · <span className="sting-mono">{a.emailed_count}</span> بريد
+                          </>
+                        ) : null}
                         {a.cancelled_by_name ? ` · ألغاه ${a.cancelled_by_name}` : ""}
                       </div>
                       <Status

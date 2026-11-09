@@ -53,6 +53,14 @@ CATEGORY_PUSH: dict[str, dict[str, str]] = {
 }
 
 
+def push_text(n: Notification) -> dict[str, str]:
+    """عنوان الإشعار الفوري: ثابت لكل فئة (لا أسماء ولا مبالغ)، عدا إعلان المنصة — نصّ كتبه المشغّل
+    للمتاجر كلها فلا سرّ فيه، فيظهر عنوانه ونصّه كما هما على الهاتف والتطبيق المثبَّت (0005 §٢٣٢)."""
+    if n.kind == "platform_announcement":
+        return {"title": f"فيزانو بلص — {n.title}"[:120], "body": n.body[:240]}
+    return CATEGORY_PUSH.get(n.category, CATEGORY_PUSH["operational"])
+
+
 def in_quiet_hours(now: datetime) -> bool:
     h = now.astimezone(KHARTOUM).hour
     return h >= QUIET_FROM or h < QUIET_TO
@@ -121,7 +129,7 @@ def dispatch_tenant(tenant_id: uuid.UUID, *, derive: bool, now: datetime | None 
             fresh = n.resolved_at is None and now - n.occurred_at <= MAX_AGE
             reasons: list[str] = []
             if fresh:
-                text = CATEGORY_PUSH.get(n.category, CATEGORY_PUSH["operational"])
+                text = push_text(n)
                 for ep in endpoints:
                     user = users.get(ep.user)
                     if user is None or not _wants(n, user, branches[user.id], prefs[user.id], now):
@@ -171,11 +179,18 @@ def dispatch_all(*, derive: bool) -> dict[str, int]:
     """دورة واحدة: فريق المنصة ثم كل منشأة لها أجهزة مشتركة. خطأ منشأة لا يوقف غيرها."""
     from stingops import operator_push
 
-    out = {"operator": 0, "tenants": 0}
+    out = {"operator": 0, "tenants": 0, "announcements": 0}
     try:
         out["operator"] = operator_push.dispatch()
     except Exception:  # noqa: BLE001
         log.exception("push: operator dispatch failed")
+    # إعلانات المنصة التي حان موعدها تُكتب في الصناديق أولاً، فيدفعها الموزّع في الدورة نفسها (§٢٣١)
+    try:
+        from stingops import announce
+
+        out["announcements"] = announce.deliver_due()
+    except Exception:  # noqa: BLE001
+        log.exception("push: announcement delivery failed")
     for tid in tenants_with_endpoints(pending_only=not derive):
         try:
             out["tenants"] += dispatch_tenant(tid, derive=derive)

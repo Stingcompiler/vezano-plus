@@ -6261,6 +6261,28 @@
         }
       }
     },
+    "/api/org/announcements": {
+      "get": {
+        "operationId": "org_announcements_retrieve",
+        "description": "HOME · شريط إعلانات المنصة (0005 §٢٣١): ما وصل إلى هذا المتجر ولم تنتهِ نافذته ولم يُلغَ.",
+        "tags": ["org"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetOrgAnnouncementsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/org/apps": {
       "get": {
         "operationId": "org_apps_retrieve",
@@ -40248,6 +40270,64 @@
         ],
         "type": "object"
       },
+      "GetOrgAnnouncementsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "announcements": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "cta_label": {
+                  "type": "string"
+                },
+                "cta_url": {
+                  "type": "string"
+                },
+                "ends_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "starts_at": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "kind_label",
+                "title",
+                "body",
+                "starts_at",
+                "ends_at",
+                "active",
+                "cta_label",
+                "cta_url"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["announcements"],
+        "type": "object"
+      },
       "GetOrgAppsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -46959,6 +47039,12 @@
               "audience_label": {
                 "type": "string"
               },
+              "audience_value": {
+                "type": "string"
+              },
+              "audience_value_label": {
+                "type": "string"
+              },
               "body": {
                 "type": "string"
               },
@@ -46974,6 +47060,21 @@
               "created_by_name": {
                 "type": "string"
               },
+              "cta_label": {
+                "type": "string"
+              },
+              "cta_url": {
+                "type": "string"
+              },
+              "delivered_at": {
+                "type": "string"
+              },
+              "delivered_count": {
+                "type": "integer"
+              },
+              "emailed_count": {
+                "type": "integer"
+              },
               "ends_at": {
                 "type": "string"
               },
@@ -46988,6 +47089,12 @@
               },
               "scheduled_at": {
                 "type": "string"
+              },
+              "send_email": {
+                "type": "boolean"
+              },
+              "send_push": {
+                "type": "boolean"
               },
               "starts_at": {
                 "type": "string"
@@ -47015,6 +47122,15 @@
               "status",
               "status_label",
               "audience_count",
+              "audience_value",
+              "audience_value_label",
+              "send_push",
+              "send_email",
+              "cta_label",
+              "cta_url",
+              "delivered_at",
+              "delivered_count",
+              "emailed_count",
               "created_by_name",
               "created_at",
               "scheduled_at",
@@ -47042,6 +47158,12 @@
               "audience_label": {
                 "type": "string"
               },
+              "audience_value": {
+                "type": "string"
+              },
+              "audience_value_label": {
+                "type": "string"
+              },
               "body": {
                 "type": "string"
               },
@@ -47057,6 +47179,21 @@
               "created_by_name": {
                 "type": "string"
               },
+              "cta_label": {
+                "type": "string"
+              },
+              "cta_url": {
+                "type": "string"
+              },
+              "delivered_at": {
+                "type": "string"
+              },
+              "delivered_count": {
+                "type": "integer"
+              },
+              "emailed_count": {
+                "type": "integer"
+              },
               "ends_at": {
                 "type": "string"
               },
@@ -47071,6 +47208,12 @@
               },
               "scheduled_at": {
                 "type": "string"
+              },
+              "send_email": {
+                "type": "boolean"
+              },
+              "send_push": {
+                "type": "boolean"
               },
               "starts_at": {
                 "type": "string"
@@ -47098,6 +47241,15 @@
               "status",
               "status_label",
               "audience_count",
+              "audience_value",
+              "audience_value_label",
+              "send_push",
+              "send_email",
+              "cta_label",
+              "cta_url",
+              "delivered_at",
+              "delivered_count",
+              "emailed_count",
               "created_by_name",
               "created_at",
               "scheduled_at",
