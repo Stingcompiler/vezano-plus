@@ -507,6 +507,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "operator_required",
     },
   ],
+  "GET /api/platform/tenants/directory": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
   "GET /api/portal/{slug}": [
     {
       status: 404,
