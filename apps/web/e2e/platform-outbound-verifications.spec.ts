@@ -296,7 +296,7 @@ test.describe("PLT-06", () => {
     let released = false;
     let rows = ROWS;
     let pending = 5;
-    await page.route("**/api/platform/verifications", async (route) => {
+    await page.route(/\/api\/platform\/verifications(\?.*)?$/, async (route) => {
       while (!released) await new Promise((r) => setTimeout(r, 50));
       return route.fulfill(json(200, LIST(rows, pending)));
     });
@@ -407,7 +407,7 @@ test.describe("PLT-06", () => {
 
   // فحص 2026-10-17 VP12: «روجع كل شيء» بعيّنته، و«لم يصل طلب» حالة أخرى بلا متوسط
   test("empty: لا منتظر — روجع N طلباً هذا الأسبوع بمتوسطه", async ({ page }, info) => {
-    await page.route("**/api/platform/verifications", (route) =>
+    await page.route(/\/api\/platform\/verifications(\?.*)?$/, (route) =>
       route.fulfill(json(200, LIST([ROWS[3]], 0, 4, 6))),
     );
     await operatorLogin(page);
@@ -419,7 +419,7 @@ test.describe("PLT-06", () => {
   });
 
   test("empty: بلا مراجعات هذا الأسبوع — «لم يصل طلب» بلا متوسط", async ({ page }) => {
-    await page.route("**/api/platform/verifications", (route) =>
+    await page.route(/\/api\/platform\/verifications(\?.*)?$/, (route) =>
       route.fulfill(json(200, LIST([], 0, 0, 0))),
     );
     await operatorLogin(page);

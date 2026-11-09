@@ -14,6 +14,7 @@ import "@/features/public/public.css";
 import "@/features/market/market.css";
 import "./platform.css";
 import { agoParts } from "@/features/home/format";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
@@ -48,6 +49,7 @@ export interface TenantRow {
 }
 
 interface Payload {
+  page?: PageInfo;
   tenants: TenantRow[];
   total: number;
   shown: number;
@@ -105,6 +107,7 @@ export function TenantsClient() {
   const [data, setData] = useState<Payload | null>(null);
   const [denied, setDenied] = useState(false);
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   // PLT-00: بطاقات النظرة العامة تفتح القائمة بمرشّحها (?filter=)
   const params = useSearchParams();
   const initial = params.get("filter");
@@ -132,13 +135,13 @@ export function TenantsClient() {
   });
 
   const load = useCallback(
-    async (query: string, f: Filter) => {
+    async (query: string, f: Filter, p: number) => {
       if (!operatorToken()) {
         router.replace("/platform/login");
         return;
       }
       const { data, response } = await platformApi().GET("/api/platform/tenants", {
-        params: { query: { q: query, filter: f } },
+        params: { query: { q: query, filter: f, ...pageQuery(p) } },
       });
       if (response.status === 403 || response.status === 401) {
         setDenied(true);
@@ -151,9 +154,11 @@ export function TenantsClient() {
   );
 
   useEffect(() => {
-    const t = setTimeout(() => void load(q, filter).catch(() => undefined), 150);
+    const t = setTimeout(() => void load(q, filter, page).catch(() => undefined), 150);
     return () => clearTimeout(t);
-  }, [q, filter, load]);
+  }, [q, filter, page, load]);
+  // بحث أو مرشّح جديد يبدأ من الصفحة الأولى
+  useEffect(() => setPage(1), [q, filter]);
 
   const state: State = denied
     ? "permission_denied"
@@ -374,7 +379,7 @@ export function TenantsClient() {
                           : "متجراً"}
                   </strong>
                 </div>
-                <div ref={tableBox} className="plt-tenants">
+                <div ref={tableBox} className="plt-tenants" id="plt-tenants-list">
                   <Table
                     caption="المستأجرون"
                     columns={columns}
@@ -383,6 +388,7 @@ export function TenantsClient() {
                     onOpenRow={(t) => router.push(`/platform/tenants/${t.id}`)}
                     forceCards={narrow}
                   />
+                  <PlatformPager info={data.page} onPage={setPage} anchorId="plt-tenants-list" />
                 </div>
                 <p className="acc-choice__note">{data.access_rule}</p>
                 <p className="acc-choice__note">

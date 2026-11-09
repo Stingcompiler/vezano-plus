@@ -15,6 +15,7 @@ import "@/features/market/market.css";
 import "./platform.css";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 
 type State = "loading" | "ready" | "empty" | "partial";
 
@@ -39,6 +40,7 @@ interface Dispute {
   limit_note: string;
 }
 interface Payload {
+  page?: PageInfo;
   state: "ready" | "empty" | "partial";
   disputes: Dispute[];
   open_count: number;
@@ -60,15 +62,18 @@ export function DisputesOpsClient() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
 
+  const [page, setPage] = useState(1);
   const load = useCallback(async () => {
     if (!operatorToken()) {
       router.replace("/platform/login");
       return;
     }
-    const { data, response } = await platformApi().GET("/api/platform/disputes");
+    const { data, response } = await platformApi().GET("/api/platform/disputes", {
+      params: { query: pageQuery(page) },
+    });
     const b = data as unknown as Payload | undefined;
     if (response.ok && b) setData(b);
-  }, [router]);
+  }, [router, page]);
 
   useEffect(() => {
     void load().catch(() => undefined);
@@ -270,7 +275,9 @@ export function DisputesOpsClient() {
                 label={state === "partial" ? "قرب الحدّ" : "قيد المتابعة"}
               />
             </div>
-            <h3 className="cat-head__title">الخلافات المفتوحة</h3>
+            <h3 className="cat-head__title" id="plt-disputes-list">
+              الخلافات المفتوحة
+            </h3>
             <p className="acc-choice__note">مرتّبة بزمن الاستجابة المتبقّي</p>
             <Table
               caption="الخلافات المفتوحة"
@@ -286,6 +293,7 @@ export function DisputesOpsClient() {
                 </Notice>
               }
             />
+            <PlatformPager info={data?.page} onPage={setPage} anchorId="plt-disputes-list" />
             <p className="acc-choice__note">
               <strong>حدّ التدخّل ثابت في كل صف:</strong> المنصة تفتح قناة، وتحفظ الأدلة المرفوعة،
               وتقيس زمن الاستجابة، وتقترح مساراً. لا تُحرّك رصيداً ولا تُلزم طرفاً بمبلغ. متى تجاوز

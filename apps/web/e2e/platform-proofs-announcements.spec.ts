@@ -78,7 +78,7 @@ test.describe("PLT-03", () => {
     page,
   }, info) => {
     let handover = false;
-    await page.route("**/api/platform/proofs?status=pending", (route) =>
+    await page.route(/\/api\/platform\/proofs\?status=pending(&.*)?$/, (route) =>
       route.fulfill(
         json(200, {
           proofs: [
@@ -176,7 +176,7 @@ test.describe("PLT-03", () => {
       reference_used: used,
     });
     let pending = [p2];
-    await page.route("**/api/platform/proofs?status=pending", (route) =>
+    await page.route(/\/api\/platform\/proofs\?status=pending(&.*)?$/, (route) =>
       route.fulfill(
         json(200, { proofs: pending, pending_count: pending.length, claim_minutes: 15 }),
       ),
@@ -282,7 +282,7 @@ test.describe("PLT-03", () => {
       tenant_name: "متجر البركة",
     };
     const p1 = PROOF();
-    await page.route("**/api/platform/proofs?status=pending", (route) =>
+    await page.route(/\/api\/platform\/proofs\?status=pending(&.*)?$/, (route) =>
       route.fulfill(json(200, { proofs: [p1], pending_count: 1, claim_minutes: 15 })),
     );
     let approves = 0;

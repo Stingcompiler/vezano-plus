@@ -19,6 +19,7 @@ from core.models import Tenant
 from core.tenancy import platform_context, tenant_context
 from stingops import roles, services
 from stingops.models import OperatorAccessLog
+from stingops.paging import PAGE_PARAMS, paginate
 
 
 def _operator(request: Request) -> AuthContext | None:
@@ -217,6 +218,7 @@ class OperatorTenantsView(APIView):
         parameters=[
             OpenApiParameter("q", str, OpenApiParameter.QUERY, required=False),
             OpenApiParameter("filter", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
         ],
         responses={200: None, 403: None},
     )
@@ -225,9 +227,13 @@ class OperatorTenantsView(APIView):
         if auth is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
         return Response(
-            services.tenants_payload(
-                q=str(request.query_params.get("q", "")),
-                filter_code=str(request.query_params.get("filter", "all")),
+            paginate(
+                services.tenants_payload(
+                    q=str(request.query_params.get("q", "")),
+                    filter_code=str(request.query_params.get("filter", "all")),
+                ),
+                "tenants",
+                request,
             )
         )
 
@@ -345,7 +351,10 @@ class OperatorProofsView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False)],
+        parameters=[
+            OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
+        ],
         responses={200: None, 403: None},
     )
     def get(self, request: Request) -> Response:
@@ -353,8 +362,12 @@ class OperatorProofsView(APIView):
         if auth is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
         return Response(
-            review_svc.proofs_payload(
-                viewer=auth.user, status=str(request.query_params.get("status", "pending"))
+            paginate(
+                review_svc.proofs_payload(
+                    viewer=auth.user, status=str(request.query_params.get("status", "pending"))
+                ),
+                "proofs",
+                request,
             )
         )
 
@@ -516,11 +529,11 @@ class OperatorVerificationsView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(responses={200: None, 403: None})
+    @extend_schema(parameters=PAGE_PARAMS, responses={200: None, 403: None})
     def get(self, request: Request) -> Response:
         if _operator(request) is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
-        return Response(ops_svc.verifications_payload())
+        return Response(paginate(ops_svc.verifications_payload(), "requests", request))
 
 
 class OperatorVerificationActionView(APIView):
@@ -565,15 +578,22 @@ class OperatorReportsView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False)],
+        parameters=[
+            OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
+        ],
         responses={200: None, 403: None},
     )
     def get(self, request: Request) -> Response:
         if _operator(request) is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
         return Response(
-            mod_svc.reports_payload(
-                status=str(request.query_params.get("status") or "under_review")
+            paginate(
+                mod_svc.reports_payload(
+                    status=str(request.query_params.get("status") or "under_review")
+                ),
+                "reports",
+                request,
             )
         )
 
@@ -638,11 +658,11 @@ class OperatorDisputesView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(responses={200: None, 403: None})
+    @extend_schema(parameters=PAGE_PARAMS, responses={200: None, 403: None})
     def get(self, request: Request) -> Response:
         if _operator(request) is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
-        return Response(mod_svc.disputes_payload())
+        return Response(paginate(mod_svc.disputes_payload(), "disputes", request))
 
 
 class OperatorDisputeActionView(APIView):
@@ -836,6 +856,7 @@ class OperatorDemoRequestsView(APIView):
         parameters=[
             OpenApiParameter("status", str, OpenApiParameter.QUERY),
             OpenApiParameter("tenants", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
         ],
         responses={200: None, 403: None},
     )
@@ -850,7 +871,11 @@ class OperatorDemoRequestsView(APIView):
                 {"tenants": demo.tenant_choices(str(request.query_params.get("tenants") or ""))}
             )
         return Response(
-            demo.payload(status_filter=str(request.query_params.get("status") or "open"))
+            paginate(
+                demo.payload(status_filter=str(request.query_params.get("status") or "open")),
+                "requests",
+                request,
+            )
         )
 
 
@@ -1101,7 +1126,10 @@ class OperatorMessagesView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False)],
+        parameters=[
+            OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
+        ],
         responses={200: None, 403: None},
     )
     def get(self, request: Request) -> Response:
@@ -1110,7 +1138,13 @@ class OperatorMessagesView(APIView):
         if _operator(request) is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
         return Response(
-            inbox.messages_payload(status_filter=str(request.query_params.get("status") or "new"))
+            paginate(
+                inbox.messages_payload(
+                    status_filter=str(request.query_params.get("status") or "new")
+                ),
+                "messages",
+                request,
+            )
         )
 
 

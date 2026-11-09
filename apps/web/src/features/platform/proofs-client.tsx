@@ -20,6 +20,7 @@ import { operatorToken, platformApi } from "@/features/platform/operator-session
 import { imageSrc } from "@/features/platform/image-src";
 import { PageTitle } from "@/features/platform/page-title";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 
 type State = "ready" | "validation_error" | "conflict" | "success";
 
@@ -62,6 +63,7 @@ interface Proof {
 }
 
 interface Payload {
+  page?: PageInfo;
   proofs: Proof[];
   pending_count: number;
   claim_minutes: number;
@@ -107,17 +109,18 @@ export function ProofsClient() {
   const [err, setErr] = useState<{ code: string; extra: Record<string, string> } | null>(null);
   const [decided, setDecided] = useState<Proof | null>(null);
 
+  const [page, setPage] = useState(1);
   const load = useCallback(async () => {
     if (!operatorToken()) {
       router.replace("/platform/login");
       return;
     }
     const { data, response } = await platformApi().GET("/api/platform/proofs", {
-      params: { query: { status: "pending" } },
+      params: { query: { status: "pending", ...pageQuery(page) } },
     });
     const body = data as unknown as Payload | undefined;
     if (response.ok && body) setData(body);
-  }, [router]);
+  }, [router, page]);
 
   useEffect(() => {
     void load().catch(() => undefined);
@@ -304,7 +307,7 @@ export function ProofsClient() {
                     </p>
                   </Notice>
                 ) : null}
-                <ul className="cus-list">
+                <ul id="plt-proofs-list" className="cus-list">
                   {data.proofs.map((p) => (
                     <li key={p.id}>
                       <Button
@@ -331,6 +334,7 @@ export function ProofsClient() {
                     </li>
                   ))}
                 </ul>
+                <PlatformPager info={data?.page} onPage={setPage} anchorId="plt-proofs-list" />
               </>
             ) : null}
 

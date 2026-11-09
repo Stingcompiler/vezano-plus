@@ -16901,6 +16901,30 @@
      "filter": {
       "type": "string"
      },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
+     },
      "requests": {
       "items": {
        "additionalProperties": false,
@@ -17155,6 +17179,30 @@
      "open_count": {
       "type": "integer"
      },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
+     },
      "referred_week": {
       "type": "integer"
      },
@@ -17183,7 +17231,8 @@
      "referred_week",
      "closed_30d",
      "intervention_days",
-     "fetched_at"
+     "fetched_at",
+     "page"
     ],
     "type": "object"
    }
@@ -17663,12 +17712,37 @@
      },
      "new_count": {
       "type": "integer"
+     },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
      }
     },
     "required": [
      "filter",
      "new_count",
-     "messages"
+     "messages",
+     "page"
     ],
     "type": "object"
    }
@@ -18330,6 +18404,30 @@
      "claim_minutes": {
       "type": "integer"
      },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
+     },
      "pending_count": {
       "type": "integer"
      },
@@ -18472,7 +18570,8 @@
     "required": [
      "proofs",
      "pending_count",
-     "claim_minutes"
+     "claim_minutes",
+     "page"
     ],
     "type": "object"
    }
@@ -18579,6 +18678,30 @@
      },
      "open_count": {
       "type": "integer"
+     },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
      },
      "reasons": {
       "items": {
@@ -18733,7 +18856,8 @@
      "open_count",
      "appeals",
      "reasons",
-     "fetched_at"
+     "fetched_at",
+     "page"
     ],
     "type": "object"
    }
@@ -18753,6 +18877,30 @@
      },
      "filter": {
       "type": "string"
+     },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
      },
      "q": {
       "type": "string"
@@ -18854,7 +19002,8 @@
      "filter",
      "q",
      "access_rule",
-     "fetched_at"
+     "fetched_at",
+     "page"
     ],
     "type": "object"
    }
@@ -19334,6 +19483,30 @@
      "oldest_waiting_hours": {
       "type": "integer"
      },
+     "page": {
+      "additionalProperties": false,
+      "properties": {
+       "number": {
+        "type": "integer"
+       },
+       "pages": {
+        "type": "integer"
+       },
+       "size": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "number",
+       "size",
+       "total",
+       "pages"
+      ],
+      "type": "object"
+     },
      "pending_count": {
       "type": "integer"
      },
@@ -19441,7 +19614,8 @@
      "avg_review_hours_week",
      "reviewed_week",
      "badge_text",
-     "fetched_at"
+     "fetched_at",
+     "page"
     ],
     "type": "object"
    }
