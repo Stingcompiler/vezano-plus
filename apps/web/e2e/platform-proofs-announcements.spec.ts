@@ -531,3 +531,67 @@ test.describe("PLT-04", () => {
     await expect(page.locator('[data-screen="PLT-04"][data-state="success"]')).toBeVisible();
   });
 });
+
+test.describe("PLT-04 · أنواع الإعلان وجماهيره (0005 §٢٣١)", () => {
+  test("تذكير بالدفع لمتجر واحد بالبريد وزرّ: الجمهور والقنوات والزرّ تُرسل كما اختيرت", async ({
+    page,
+  }) => {
+    await mockAnnouncements(page);
+    let saved: Record<string, unknown> = {};
+    let previewed: Record<string, unknown> = {};
+    await page.route("**/api/platform/announcements", async (route) => {
+      if (route.request().method() === "GET")
+        return route.fulfill(
+          json(200, {
+            announcements: [],
+            plans: [{ code: "single", label: "أساسي" }],
+            statuses: [{ code: "late", label: "متأخر الدفع أو منتهٍ" }],
+          }),
+        );
+      saved = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fulfill(json(200, { announcement: ANN({ title: String(saved.title) }) }));
+    });
+    await page.route("**/api/platform/announcements/preview", (route) => {
+      previewed = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fulfill(
+        json(200, {
+          targeted: previewed.audience_value ? 1 : 0,
+          segments: [
+            { label: "متجر واحد: بقالة النيل", count: 1, note: "يصل الإعلان", included: true },
+          ],
+          promise_outside_plan: false,
+          outside_count: 0,
+          kind: "payment",
+        }),
+      );
+    });
+    await operatorLogin(page);
+    // بعد الدخول: مساعد الدخول يسجّل مسار المستأجرين الأعمّ، والأحدث يسبق
+    await page.route(/\/api\/platform\/tenants\/directory(\?.*)?$/, (route) =>
+      route.fulfill(json(200, { tenants: [{ id: "t1", name: "بقالة النيل" }] })),
+    );
+    await goSection(page, "الإعلانات");
+    const root = page.locator('[data-screen="PLT-04"]');
+    await root.getByRole("button", { name: "تذكير بالدفع" }).click();
+    await expect(root.getByRole("heading", { name: "صياغة إعلان — تذكير بالدفع" })).toBeVisible();
+    await root.getByLabel("العنوان").fill("اشتراكك ينتهي بعد 3 أيام");
+    await root.getByLabel("النص المعروض للتاجر").fill("جدّد الآن حتى لا تتوقف المزامنة.");
+    await root.getByRole("button", { name: "متجر واحد" }).click();
+    await root.getByLabel("ابحث عن المتجر").fill("النيل");
+    await root.getByRole("radio", { name: "بقالة النيل" }).click();
+    await expect.poll(() => previewed.audience_value).toBe("t1");
+    await root.getByRole("switch", { name: "بريد لمالك المتجر" }).click();
+    await root.getByLabel("تسمية زرّ اختياري").fill("جدّد الاشتراك");
+    await root.getByLabel("وجهة الزرّ").fill("/org/subscription");
+    await root.getByRole("button", { name: "حفظ", exact: true }).click();
+    await expect.poll(() => saved.kind).toBe("payment");
+    expect(saved).toMatchObject({
+      audience: "tenant",
+      audience_value: "t1",
+      send_push: true,
+      send_email: true,
+      cta_label: "جدّد الاشتراك",
+      cta_url: "/org/subscription",
+    });
+  });
+});

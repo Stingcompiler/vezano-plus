@@ -458,3 +458,16 @@
     clip: rect(0 0 0 0);
   }
 }
+
+/* شريط إعلانات المنصة (0005 §٢٣١): إشعار لكل إعلان نافذ بأعلى اللوحة، والزرّان في سطر */
+.home-ann {
+  display: grid;
+  gap: 10px;
+  margin-block-end: 16px;
+}
+.home-ann__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}

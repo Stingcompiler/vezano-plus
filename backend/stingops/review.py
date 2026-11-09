@@ -264,9 +264,17 @@ def _market_tenant_ids() -> set[Any]:
         return ids
 
 
-def audience_preview(*, audience: str, body: str, kind: str) -> dict[str, Any]:
+def audience_preview(
+    *, audience: str, body: str, kind: str, audience_value: str = ""
+) -> dict[str, Any]:
     """الجمهور المتأثّر قبل الجدولة — حيّ مع كل تعديل؛ ونصّ يَعِد بميزة سوق لجمهور لا يملكها يُمنع."""
     now = timezone.now()
+    if audience in {
+        PlatformAnnouncement.Audience.PLAN,
+        PlatformAnnouncement.Audience.STATUS,
+        PlatformAnnouncement.Audience.TENANT,
+    }:
+        return _narrow_preview(audience, audience_value, body, kind, now)
     with platform_context():
         all_ids = set(Tenant.unscoped.values_list("id", flat=True))
         market_ids = _market_tenant_ids()
@@ -324,6 +332,62 @@ def audience_preview(*, audience: str, body: str, kind: str) -> dict[str, Any]:
     }
 
 
+def _narrow_preview(audience: str, value: str, body: str, kind: str, now: Any) -> dict[str, Any]:
+    """باقة أو حالة أو متجر واحد (0005 §٢٣١): المستهدفون وأجهزتهم، والزبائن النهائيون
+    خارجاً دائماً."""
+    from stingops import announce
+
+    target = announce.targets(audience, value)
+    market_ids = _market_tenant_ids()
+    with platform_context():
+        online = (
+            Session.unscoped.filter(
+                tenant_id__in=target,
+                device__isnull=False,
+                last_seen_at__gte=now - timedelta(minutes=ONLINE_MINUTES),
+            )
+            .values("device_id")
+            .distinct()
+            .count()
+        )
+        devices_total = Device.unscoped.filter(
+            branch__tenant_id__in=target, status=Device.Status.ACTIVE
+        ).count()
+    label = announce.audience_value_label(audience, value)
+    promise = any(ph in (body or "") for ph in MARKET_PHRASES)
+    outside = len(target - market_ids) if promise else 0
+    return {
+        "targeted": len(target),
+        "segments": [
+            {
+                "label": f"{PlatformAnnouncement.Audience(audience).label}: {label}"
+                if label
+                else PlatformAnnouncement.Audience(audience).label,
+                "count": len(target),
+                "note": "يصل الإعلان إلى صندوق كل متجر منها" if target else "اختر قيمة الجمهور",
+                "included": True,
+            },
+            {
+                "label": "أجهزة تعمل الآن في هذه المتاجر",
+                "count": online,
+                "note": "ستتلقّى الإشعار داخل التطبيق",
+                "included": True,
+                "devices_total": devices_total,
+            },
+            {
+                "label": "زبائن نهائيون",
+                "count": 0,
+                "note": "لا يُرسل لهم شيء — إعلان المنصة للمتاجر وحدها",
+                "included": False,
+                "fixed": True,
+            },
+        ],
+        "promise_outside_plan": bool(outside),
+        "outside_count": outside,
+        "kind": kind,
+    }
+
+
 def announcement_payload(a: PlatformAnnouncement) -> dict[str, Any]:
     return {
         "id": str(a.id),
@@ -338,6 +402,15 @@ def announcement_payload(a: PlatformAnnouncement) -> dict[str, Any]:
         "status": a.status,
         "status_label": PlatformAnnouncement.Status(a.status).label,
         "audience_count": a.audience_count,
+        "audience_value": a.audience_value,
+        "audience_value_label": _value_label(a),
+        "send_push": a.send_push,
+        "send_email": a.send_email,
+        "cta_label": a.cta_label,
+        "cta_url": a.cta_url,
+        "delivered_at": _iso(a.delivered_at),
+        "delivered_count": a.delivered_count,
+        "emailed_count": a.emailed_count,
         "created_by_name": a.created_by_name,
         "created_at": _iso(a.created_at),
         "scheduled_at": _iso(a.scheduled_at),
@@ -346,9 +419,24 @@ def announcement_payload(a: PlatformAnnouncement) -> dict[str, Any]:
     }
 
 
+def _value_label(a: PlatformAnnouncement) -> str:
+    from stingops import announce
+
+    return announce.audience_value_label(a.audience, a.audience_value) if a.audience_value else ""
+
+
 def announcements_payload() -> dict[str, Any]:
+    from stingops import announce
+
     rows = list(PlatformAnnouncement.objects.order_by("-created_at")[:50])
-    return {"announcements": [announcement_payload(a) for a in rows]}
+    return {
+        "announcements": [announcement_payload(a) for a in rows],
+        # خيارات النموذج (0005 §٢٣١): الأنواع، والباقات، ومجموعات الحالة
+        "kinds": [{"code": k.value, "label": k.label} for k in PlatformAnnouncement.Kind],
+        "audiences": [{"code": k.value, "label": k.label} for k in PlatformAnnouncement.Audience],
+        "plans": [{"code": code, "label": plan.name} for code, plan in subscription.PLANS.items()],
+        "statuses": [{"code": k, "label": v} for k, v in announce.STATUS_LABELS.items()],
+    }
 
 
 def _parse_dt(raw: str, field: str) -> datetime:
@@ -366,7 +454,34 @@ def save_announcement(*, viewer: User, body: dict[str, Any]) -> PlatformAnnounce
     if not title or not text:
         raise ReviewRejected("title_and_body_required")
     kind = str(body.get("kind") or PlatformAnnouncement.Kind.MAINTENANCE)
+    if kind not in PlatformAnnouncement.Kind.values:
+        raise ReviewRejected("kind_invalid")
     audience = str(body.get("audience") or PlatformAnnouncement.Audience.MARKET)
+    if audience not in PlatformAnnouncement.Audience.values:
+        raise ReviewRejected("audience_invalid")
+    audience_value = str(body.get("audience_value") or "").strip()
+    narrow = {
+        PlatformAnnouncement.Audience.PLAN,
+        PlatformAnnouncement.Audience.STATUS,
+        PlatformAnnouncement.Audience.TENANT,
+    }
+    if audience in narrow:
+        from stingops import announce
+
+        if not announce.targets(audience, audience_value) and not (
+            audience == PlatformAnnouncement.Audience.PLAN and audience_value in subscription.PLANS
+        ):
+            raise ReviewRejected("audience_value_invalid")
+    else:
+        audience_value = ""
+    cta_label = str(body.get("cta_label") or "").strip()[:60]
+    cta_url = str(body.get("cta_url") or "").strip()[:300]
+    if bool(cta_label) != bool(cta_url):
+        raise ReviewRejected("cta_incomplete")
+    if cta_url and not (
+        (cta_url.startswith("/") and not cta_url.startswith("//")) or cta_url.startswith("https://")
+    ):
+        raise ReviewRejected("cta_url_invalid")
     starts = _parse_dt(str(body.get("starts_at") or ""), "starts_at")
     ends = _parse_dt(str(body.get("ends_at") or ""), "ends_at")
     if ends <= starts:
@@ -381,6 +496,10 @@ def save_announcement(*, viewer: User, body: dict[str, Any]) -> PlatformAnnounce
     if a.status not in {PlatformAnnouncement.Status.DRAFT, PlatformAnnouncement.Status.SCHEDULED}:
         raise ReviewRejected("not_editable", 409)
     a.kind, a.title, a.body, a.audience = kind, title[:200], text[:600], audience
+    a.audience_value = audience_value
+    a.cta_label, a.cta_url = cta_label, cta_url
+    a.send_push = body.get("send_push", True) not in (False, "false", "0", 0)
+    a.send_email = body.get("send_email", False) in (True, "true", "1", 1)
     a.starts_at, a.ends_at = starts, ends
     a.save()
     OperatorAccessLog.objects.create(operator=viewer, action="announcement_saved", detail=a.title)
@@ -394,7 +513,9 @@ def schedule_announcement(*, viewer: User, announcement_id: uuid.UUID) -> Platfo
         raise ReviewRejected("not_found", 404)
     if a.status != PlatformAnnouncement.Status.DRAFT:
         raise ReviewRejected("not_schedulable", 409, {"status": a.status})
-    preview = audience_preview(audience=a.audience, body=a.body, kind=a.kind)
+    preview = audience_preview(
+        audience=a.audience, body=a.body, kind=a.kind, audience_value=a.audience_value
+    )
     if preview["promise_outside_plan"]:
         raise ReviewRejected(
             "promise_outside_plan", 400, {"outside_count": preview["outside_count"]}
@@ -408,6 +529,11 @@ def schedule_announcement(*, viewer: User, announcement_id: uuid.UUID) -> Platfo
     OperatorAccessLog.objects.create(
         operator=viewer, action="announcement_scheduled", detail=f"{a.title} — {a.audience_count}"
     )
+    # الصيانة تُبلَّغ فوراً إنذاراً مسبقاً، والباقي عند بدء نافذته من دورة الموزّع (0005 §٢٣١)
+    from stingops import announce
+
+    announce.deliver_due()
+    a.refresh_from_db()
     return a
 
 
@@ -421,6 +547,10 @@ def cancel_announcement(*, viewer: User, announcement_id: uuid.UUID) -> Platform
     a.cancelled_at = timezone.now()
     a.cancelled_by_name = viewer.display_name
     a.save(update_fields=["status", "cancelled_at", "cancelled_by_name"])
+    if a.delivered_at is not None:
+        from stingops import announce
+
+        announce.withdraw(a)
     OperatorAccessLog.objects.create(
         operator=viewer, action="announcement_cancelled", detail=a.title
     )
