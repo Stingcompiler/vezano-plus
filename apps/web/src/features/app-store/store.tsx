@@ -25,6 +25,7 @@ import { operatorRole, operatorToken } from "@/features/platform/operator-sessio
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { apiBaseUrl, getAccessToken } from "@/lib/api";
 
+import { LINK_ICONS, LinkIconMark } from "./link-icon";
 import { PlatformIcon, type Platform } from "./platform-icon";
 
 /**
@@ -54,6 +55,11 @@ export interface Release {
   platform_label: string;
   version: string;
   published_at: string;
+  /** ملف تثبيت يُنزَّل بجلسة تاجر، أو رابط بتسمية وأيقونة منصة يفتحه أيّ أحد (§٢٣٠) */
+  kind?: "file" | "link";
+  link_url?: string;
+  link_label?: string;
+  link_icon?: string;
   filename?: string;
   size_bytes?: number;
   sha256?: string;
@@ -66,6 +72,10 @@ const ERRORS: Record<string, string> = {
   file_type_invalid: "الامتداد لا يناسب النظام المختار.",
   file_too_large: "الحد الأقصى للملف 512 ميبيبايت.",
   apple_url_invalid: "أدخل رابطاً من apps.apple.com أو testflight.apple.com.",
+  link_invalid: "أدخل رابطاً كاملاً يبدأ بـ https://",
+  link_label_required: "اكتب تسمية للرابط، مثل «حمّل من Google Play».",
+  link_icon_invalid: "اختر أيقونة من القائمة.",
+  file_or_link: "انشر ملفاً أو رابطاً، لا الاثنين معاً.",
   release_exists: "هذا الإصدار منشور بالفعل لهذا التطبيق والنظام.",
   storage_full: "مساحة المتجر ممتلئة. اسحب إصدارات قديمة ثم أعد النشر.",
   admin_required: "النشر لمدير المنصة وحده.",
@@ -144,7 +154,11 @@ function ReleaseRow({
   return (
     <li className="vz-app">
       <span className="vz-app__icon">
-        <PlatformIcon platform={r.platform} size={30} />
+        {r.kind === "link" ? (
+          <LinkIconMark icon={r.link_icon ?? "website"} size={30} />
+        ) : (
+          <PlatformIcon platform={r.platform} size={30} />
+        )}
       </span>
       <div className="vz-app__main">
         <strong className="vz-app__name">{r.name}</strong>
@@ -160,6 +174,27 @@ function ReleaseRow({
       </div>
       <div className="vz-app__action">{action}</div>
     </li>
+  );
+}
+
+/** زرّ رابط المنصة الأخرى: يُفتح في تبويب جديد، بأيقونتها وتسمية المشغّل. */
+function LinkButton({
+  r,
+  variant = "secondary",
+}: {
+  r: Release;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <a
+      href={r.link_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`c-btn c-btn--${variant} vz-app__link`}
+    >
+      <LinkIconMark icon={r.link_icon ?? "website"} size={18} />
+      {r.link_label || "فتح الرابط"}
+    </a>
   );
 }
 
@@ -226,9 +261,13 @@ export function PublicAppsSection() {
                   key={r.id}
                   r={r}
                   action={
-                    <Link href="/login?next=%2Forg%2Fapps" className="c-btn c-btn--secondary">
-                      سجّل الدخول للتنزيل
-                    </Link>
+                    r.kind === "link" ? (
+                      <LinkButton r={r} />
+                    ) : (
+                      <Link href="/login?next=%2Forg%2Fapps" className="c-btn c-btn--secondary">
+                        سجّل الدخول للتنزيل
+                      </Link>
+                    )
                   }
                 />
               )}
@@ -310,17 +349,8 @@ export function MerchantAppsClient() {
                       r={r}
                       details
                       action={
-                        r.apple_url ? (
-                          <a
-                            href={r.apple_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="c-btn c-btn--secondary"
-                          >
-                            {r.apple_url.includes("testflight.")
-                              ? "فتح في TestFlight"
-                              : "فتح في App Store"}
-                          </a>
+                        r.kind === "link" ? (
+                          <LinkButton r={r} />
                         ) : (
                           <Button loading={busyId === r.id} onClick={() => void download(r)}>
                             تنزيل ملف التثبيت
@@ -351,7 +381,12 @@ export function OperatorAppsClient() {
   const [platform, setPlatform] = useState<Platform>("android");
   const [name, setName] = useState("Vezano Plus");
   const [version, setVersion] = useState("");
-  const [appleUrl, setAppleUrl] = useState("");
+  const [source, setSource] = useState<"file" | "link">("file");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
+  const [linkIcon, setLinkIcon] = useState<string>("google_play");
+  // آيفون رابط دائماً: لا تثبيت لملف خارج App Store
+  const asLink = platform === "ios" || source === "link";
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | undefined>(undefined);
   const [error, setError] = useState("");
@@ -384,8 +419,11 @@ export function OperatorAppsClient() {
     body.set("name", name.trim());
     body.set("version", version.trim());
     body.set("platform", platform);
-    if (platform === "ios") body.set("apple_url", appleUrl.trim());
-    else if (file) body.set("file", file);
+    if (asLink) {
+      body.set("link_url", linkUrl.trim());
+      body.set("link_label", linkLabel.trim());
+      body.set("link_icon", linkIcon);
+    } else if (file) body.set("file", file);
     setBusy(true);
     // XHR لا fetch: تقدّم رفع ملف كبير على شبكة بطيئة
     const xhr = new XMLHttpRequest();
@@ -407,7 +445,7 @@ export function OperatorAppsClient() {
         setMessage("نُشر الإصدار وصار متاحاً للتجار.");
         setVersion("");
         setFile(null);
-        setAppleUrl("");
+        setLinkUrl("");
         void load();
       } else if (xhr.status === 401) goLogin();
       else setError(ERRORS[detail] ?? "تعذّر النشر. تحقّق من الاتصال وأعد المحاولة.");
@@ -433,7 +471,7 @@ export function OperatorAppsClient() {
   };
 
   const ready = Boolean(
-    name.trim() && version.trim() && (platform === "ios" ? appleUrl.trim() : file),
+    name.trim() && version.trim() && (asLink ? linkUrl.trim() && linkLabel.trim() : file),
   );
   const state = failed
     ? "server_error"
@@ -478,15 +516,70 @@ export function OperatorAppsClient() {
                   setFile(null);
                 }}
               />
+              {platform === "ios" ? null : (
+                <div className="pos-chips vz-publish__kind" role="radiogroup" aria-label="المصدر">
+                  {(
+                    [
+                      ["file", "رفع ملف التثبيت"],
+                      ["link", "رابط من منصة أخرى"],
+                    ] as const
+                  ).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      role="radio"
+                      aria-checked={source === k}
+                      className={`pos-chip${source === k ? " pos-chip--on" : ""}`}
+                      onClick={() => {
+                        setSource(k);
+                        setFile(null);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="vz-publish__source">
-                {platform === "ios" ? (
-                  <TextField
-                    label="رابط App Store أو TestFlight"
-                    value={appleUrl}
-                    mono
-                    onChange={(e) => setAppleUrl(e.target.value)}
-                    required
-                  />
+                {asLink ? (
+                  <div className="vz-publish__link">
+                    <TextField
+                      label="الرابط"
+                      value={linkUrl}
+                      mono
+                      inputMode="url"
+                      placeholder="https://"
+                      maxLength={500}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      required
+                    />
+                    <TextField
+                      label="تسمية الزرّ"
+                      value={linkLabel}
+                      maxLength={80}
+                      hint="ما يراه الزائر والتاجر، مثل «حمّل من Google Play»."
+                      onChange={(e) => setLinkLabel(e.target.value)}
+                      required
+                    />
+                    <fieldset className="vz-icons">
+                      <legend>أيقونة المنصة</legend>
+                      <div className="vz-icons__grid" role="radiogroup" aria-label="أيقونة المنصة">
+                        {LINK_ICONS.map((ic) => (
+                          <button
+                            key={ic.value}
+                            type="button"
+                            role="radio"
+                            aria-checked={linkIcon === ic.value}
+                            className={`vz-icons__opt${linkIcon === ic.value ? " vz-icons__opt--on" : ""}`}
+                            onClick={() => setLinkIcon(ic.value)}
+                          >
+                            <LinkIconMark icon={ic.value} size={20} />
+                            <span>{ic.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                  </div>
                 ) : (
                   <Upload
                     label="ملف التثبيت"
@@ -510,7 +603,9 @@ export function OperatorAppsClient() {
                   disabledReason={
                     ready && !(file && file.size > MAX_BYTES)
                       ? undefined
-                      : "أكمل الحقول واختر الملف"
+                      : asLink
+                        ? "أكمل الرابط وتسميته"
+                        : "أكمل الحقول واختر الملف"
                   }
                 >
                   نشر للتجار

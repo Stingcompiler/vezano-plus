@@ -12293,6 +12293,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14050,6 +14054,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14064,6 +14072,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14078,6 +14090,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -15741,6 +15757,10 @@ export interface components {
         GetPublicAppsResponse: {
             releases: {
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;

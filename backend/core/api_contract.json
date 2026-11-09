@@ -610,9 +610,12 @@
    "409:same_reviewer"
   ],
   "POST /api/platform/apps": [
-   "400:apple_url_invalid",
+   "400:file_or_link",
    "400:file_required",
    "400:file_type_invalid",
+   "400:link_icon_invalid",
+   "400:link_invalid",
+   "400:link_label_required",
    "400:storage_full",
    "403:operator_required",
    "409:release_exists"
@@ -12725,6 +12728,18 @@
         "id": {
          "type": "string"
         },
+        "kind": {
+         "type": "string"
+        },
+        "link_icon": {
+         "type": "string"
+        },
+        "link_label": {
+         "type": "string"
+        },
+        "link_url": {
+         "type": "string"
+        },
         "name": {
          "type": "string"
         },
@@ -12754,6 +12769,10 @@
         "platform_label",
         "version",
         "published_at",
+        "kind",
+        "link_url",
+        "link_label",
+        "link_icon",
         "filename",
         "size_bytes",
         "sha256",
@@ -16483,6 +16502,18 @@
         "id": {
          "type": "string"
         },
+        "kind": {
+         "type": "string"
+        },
+        "link_icon": {
+         "type": "string"
+        },
+        "link_label": {
+         "type": "string"
+        },
+        "link_url": {
+         "type": "string"
+        },
         "name": {
          "type": "string"
         },
@@ -16512,6 +16543,10 @@
         "platform_label",
         "version",
         "published_at",
+        "kind",
+        "link_url",
+        "link_label",
+        "link_icon",
         "filename",
         "size_bytes",
         "sha256",
@@ -20093,6 +20128,18 @@
         "id": {
          "type": "string"
         },
+        "kind": {
+         "type": "string"
+        },
+        "link_icon": {
+         "type": "string"
+        },
+        "link_label": {
+         "type": "string"
+        },
+        "link_url": {
+         "type": "string"
+        },
         "name": {
          "type": "string"
         },
@@ -20115,7 +20162,11 @@
         "platform",
         "platform_label",
         "version",
-        "published_at"
+        "published_at",
+        "kind",
+        "link_url",
+        "link_label",
+        "link_icon"
        ],
        "type": "object"
       },
@@ -44973,6 +45024,18 @@
        "id": {
         "type": "string"
        },
+       "kind": {
+        "type": "string"
+       },
+       "link_icon": {
+        "type": "string"
+       },
+       "link_label": {
+        "type": "string"
+       },
+       "link_url": {
+        "type": "string"
+       },
        "name": {
         "type": "string"
        },
@@ -45002,6 +45065,10 @@
        "platform_label",
        "version",
        "published_at",
+       "kind",
+       "link_url",
+       "link_label",
+       "link_icon",
        "filename",
        "size_bytes",
        "sha256",
@@ -45033,6 +45100,18 @@
         "id": {
          "type": "string"
         },
+        "kind": {
+         "type": "string"
+        },
+        "link_icon": {
+         "type": "string"
+        },
+        "link_label": {
+         "type": "string"
+        },
+        "link_url": {
+         "type": "string"
+        },
         "name": {
          "type": "string"
         },
@@ -45062,6 +45141,10 @@
         "platform_label",
         "version",
         "published_at",
+        "kind",
+        "link_url",
+        "link_label",
+        "link_icon",
         "filename",
         "size_bytes",
         "sha256",

@@ -53,9 +53,11 @@ def test_publish_browse_download_remove(
     assert c.get(API, headers=admin).json()["releases"][0]["id"] == rel["id"]
     # الفهرس العام بلا ملف ولا رابط، وفهرس التاجر يحتاج جلسته
     pub = c.get("/api/public/apps").json()["releases"]
+    public_keys = ("id", "name", "platform", "platform_label", "version", "published_at", "kind")
     assert pub == [
-        {k: rel[k] for k in ("id", "name", "platform", "platform_label", "version", "published_at")}
+        {**{k: rel[k] for k in public_keys}, "link_url": "", "link_label": "", "link_icon": ""}
     ]
+    assert rel["kind"] == "file"
     assert c.get("/api/org/apps").status_code == 401
     assert c.get("/api/org/apps", headers=merchant).json()["releases"][0]["sha256"] == rel["sha256"]
     # التنزيل: رابط موقَّع لجلسة تاجر، يخدم الملف بلا جلسة، ويُرفض المزوَّر والمنتهي
@@ -70,15 +72,40 @@ def test_publish_browse_download_remove(
     stale = signing.dumps({"r": rel["id"], "t": "x"}, salt="other")
     assert c.get(f"/api/apps/download/{stale}").status_code == 404
     assert signing.loads(link["url"].rsplit("/", 1)[1], salt=LINK_SALT)["r"] == rel["id"]
-    # آيفون: رابط Apple فقط، ولا رابط تنزيل له
+    # آيفون رابط دائماً؛ الرابط https بتسمية وأيقونة من القائمة، ولا رابط تنزيل له (§٢٣٠)
     ios: dict[str, Any] = {"name": "Vezano", "version": "1.0", "platform": "ios"}
-    assert c.post(API, ios, headers=admin).json()["detail"] == "apple_url_invalid"
-    ios_bad = {**ios, "apple_url": "https://evil.example/app"}
-    assert c.post(API, ios_bad, headers=admin).json()["detail"] == "apple_url_invalid"
-    ok = c.post(API, {**ios, "apple_url": "https://apps.apple.com/app/id123456"}, headers=admin)
+    assert c.post(API, ios, headers=admin).json()["detail"] == "link_invalid"
+    plain = {**ios, "link_url": "http://apps.apple.com/app/id1", "link_label": "App Store"}
+    assert c.post(API, plain, headers=admin).json()["detail"] == "link_invalid"
+    no_label = {**ios, "link_url": "https://apps.apple.com/app/id1"}
+    assert c.post(API, no_label, headers=admin).json()["detail"] == "link_label_required"
+    bad_icon = {**no_label, "link_label": "App Store", "link_icon": "myspace"}
+    assert c.post(API, bad_icon, headers=admin).json()["detail"] == "link_icon_invalid"
+    ok = c.post(API, {**bad_icon, "link_icon": "app_store"}, headers=admin)
     assert ok.status_code == 201
-    ios_id = ok.json()["release"]["id"]
+    ios_rel = ok.json()["release"]
+    assert ios_rel["kind"] == "link" and ios_rel["apple_url"] == "https://apps.apple.com/app/id1"
+    ios_id = ios_rel["id"]
     assert c.post(f"/api/org/apps/{ios_id}/link", headers=merchant).status_code == 404
+    # عميل أقدم يرسل `apple_url` بلا أيقونة: رابط عام بتسميته
+    old = {**ios, "version": "0.9", "apple_url": "https://testflight.apple.com/join/x"}
+    assert c.post(API, {**old, "link_label": "TestFlight"}, headers=admin).status_code == 201
+    # رابط لأندرويد بأيقونة Google Play يظهر للزائر برابطه وتسميته؛ ملف ورابط معاً مرفوض
+    play = {
+        "name": "Vezano",
+        "version": "2.0",
+        "platform": "android",
+        "link_url": "https://play.google.com/store/apps/details?id=app.vezano",
+        "link_label": "حمّل من Google Play",
+        "link_icon": "google_play",
+    }
+    both = c.post(API, {**play, "file": _apk(b"z")}, headers=admin)
+    assert both.json()["detail"] == "file_or_link"
+    assert c.post(API, play, headers=admin).status_code == 201
+    shown = {r["version"]: r for r in c.get("/api/public/apps").json()["releases"]}
+    assert shown["2.0"]["link_icon"] == "google_play"
+    assert shown["2.0"]["link_label"] == "حمّل من Google Play"
+    assert "sha256" not in shown["2.0"]
     # السحب: لمدير المنصة، يحذف الملف ويُدقَّق
     rm = f"/api/platform/apps/{rel['id']}/remove"
     assert c.post(rm, headers=merchant).status_code == 403

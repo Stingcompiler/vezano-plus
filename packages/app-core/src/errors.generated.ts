@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (207 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (210 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -22,7 +22,6 @@ export const API_ERROR_CODES = [
   "already_suspended",
   "ambiguous_name",
   "amount_mismatch",
-  "apple_url_invalid",
   "approval_pending",
   "audience_or_duration_required",
   "audience_out_of_tenant",
@@ -76,6 +75,7 @@ export const API_ERROR_CODES = [
   "factor_required",
   "feature_invalid",
   "fields_missing",
+  "file_or_link",
   "file_required",
   "file_type_invalid",
   "finance_required",
@@ -102,6 +102,9 @@ export const API_ERROR_CODES = [
   "line_expired",
   "lines_invalid",
   "link_exists",
+  "link_icon_invalid",
+  "link_invalid",
+  "link_label_required",
   "live_restore_requirements",
   "logo_too_large",
   "manager_required",
@@ -502,6 +505,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
   ],
   "GET /api/platform/tenants": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
+  "GET /api/platform/tenants/directory": [
     {
       status: 403,
       code: "operator_required",
@@ -1566,7 +1575,7 @@ export const API_ERRORS_BY_OPERATION: Readonly<
   "POST /api/platform/apps": [
     {
       status: 400,
-      code: "apple_url_invalid",
+      code: "file_or_link",
     },
     {
       status: 400,
@@ -1575,6 +1584,18 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "file_type_invalid",
+    },
+    {
+      status: 400,
+      code: "link_icon_invalid",
+    },
+    {
+      status: 400,
+      code: "link_invalid",
+    },
+    {
+      status: 400,
+      code: "link_label_required",
     },
     {
       status: 400,

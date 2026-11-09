@@ -40264,6 +40264,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -40293,6 +40305,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -47232,6 +47248,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -47261,6 +47289,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -47287,6 +47319,18 @@
                 "type": "string"
               },
               "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "link_icon": {
+                "type": "string"
+              },
+              "link_label": {
+                "type": "string"
+              },
+              "link_url": {
                 "type": "string"
               },
               "name": {
@@ -47318,6 +47362,10 @@
               "platform_label",
               "version",
               "published_at",
+              "kind",
+              "link_url",
+              "link_label",
+              "link_icon",
               "filename",
               "size_bytes",
               "sha256",
@@ -47343,6 +47391,18 @@
                   "type": "string"
                 },
                 "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
                   "type": "string"
                 },
                 "name": {
@@ -47374,6 +47434,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -53930,6 +53994,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -53946,7 +54022,18 @@
                   "type": "string"
                 }
               },
-              "required": ["id", "name", "platform", "platform_label", "version", "published_at"],
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon"
+              ],
               "type": "object"
             },
             "type": "array"
