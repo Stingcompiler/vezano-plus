@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { PlatformAnnouncements } from "@/components/home/platform-announcements";
 import { type HomeSummary, openHref, readHomeCache, writeHomeCache } from "@/lib/home";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
@@ -226,6 +227,8 @@ export default function Home() {
           {banner}
         </Pressable>
       ) : null}
+      {/* إعلانات المنصة النافذة لهذا المتجر (0005 §٢٣٤) */}
+      <PlatformAnnouncements onNavigate={(p) => router.push(p)} />
       {/* البحث العام (HOME-03) كحقل شريط الويب: لمسة تفتح شاشة البحث بحقلها مركّزاً */}
       <Pressable
         accessibilityRole="search"
