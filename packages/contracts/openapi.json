@@ -8359,6 +8359,20 @@
         "parameters": [
           {
             "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
             "name": "status",
             "schema": {
               "type": "string"
@@ -8436,6 +8450,22 @@
       "get": {
         "operationId": "platform_disputes_retrieve",
         "description": "PLT-08: الخلافات المفتوحة بزمن الاستجابة المتبقّي وحدّ التدخّل.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "tags": ["platform"],
         "responses": {
           "200": {
@@ -8725,6 +8755,20 @@
         "operationId": "platform_messages_retrieve",
         "description": "رسائل الدعم الواردة من المنشآت (SYS-11) — جديدة/معالَجة/الكل.",
         "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
           {
             "in": "query",
             "name": "status",
@@ -9163,6 +9207,20 @@
         "parameters": [
           {
             "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
             "name": "status",
             "schema": {
               "type": "string"
@@ -9329,6 +9387,20 @@
         "parameters": [
           {
             "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
             "name": "status",
             "schema": {
               "type": "string"
@@ -9437,6 +9509,20 @@
             "name": "filter",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
             }
           },
           {
@@ -9644,6 +9730,22 @@
       "get": {
         "operationId": "platform_verifications_retrieve",
         "description": "PLT-06: طلبات تحقق منشآت السوق — الأقدم أولاً ومتوسط المراجعة كمقياس.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "tags": ["platform"],
         "responses": {
           "200": {
@@ -47776,6 +47878,25 @@
           "filter": {
             "type": "string"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "requests": {
             "items": {
               "additionalProperties": false,
@@ -48135,6 +48256,25 @@
           "open_count": {
             "type": "integer"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "referred_week": {
             "type": "integer"
           },
@@ -48163,7 +48303,8 @@
           "referred_week",
           "closed_30d",
           "intervention_days",
-          "fetched_at"
+          "fetched_at",
+          "page"
         ],
         "type": "object"
       },
@@ -49161,9 +49302,28 @@
           },
           "new_count": {
             "type": "integer"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
           }
         },
-        "required": ["filter", "new_count", "messages"],
+        "required": ["filter", "new_count", "messages", "page"],
         "type": "object"
       },
       "GetPlatformMessagesByReportIdResponse": {
@@ -50846,6 +51006,25 @@
           "claim_minutes": {
             "type": "integer"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "pending_count": {
             "type": "integer"
           },
@@ -50980,7 +51159,7 @@
             "type": "array"
           }
         },
-        "required": ["proofs", "pending_count", "claim_minutes"],
+        "required": ["proofs", "pending_count", "claim_minutes", "page"],
         "type": "object"
       },
       "PostPlatformProofsByTenantIdByProofIdByActionResponse": {
@@ -51281,6 +51460,25 @@
           "open_count": {
             "type": "integer"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "reasons": {
             "items": {
               "additionalProperties": false,
@@ -51426,7 +51624,7 @@
             "type": "array"
           }
         },
-        "required": ["reports", "open_count", "appeals", "reasons", "fetched_at"],
+        "required": ["reports", "open_count", "appeals", "reasons", "fetched_at", "page"],
         "type": "object"
       },
       "PostPlatformReportsByTenantIdByReportIdDecideResponse": {
@@ -51608,6 +51806,25 @@
           "filter": {
             "type": "string"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "q": {
             "type": "string"
           },
@@ -51708,7 +51925,8 @@
           "filter",
           "q",
           "access_rule",
-          "fetched_at"
+          "fetched_at",
+          "page"
         ],
         "type": "object"
       },
@@ -52693,6 +52911,25 @@
           "oldest_waiting_hours": {
             "type": "integer"
           },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
           "pending_count": {
             "type": "integer"
           },
@@ -52795,7 +53032,8 @@
           "avg_review_hours_week",
           "reviewed_week",
           "badge_text",
-          "fetched_at"
+          "fetched_at",
+          "page"
         ],
         "type": "object"
       },

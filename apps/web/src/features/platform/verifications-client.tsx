@@ -17,6 +17,7 @@ import { agoParts } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { imageSrc } from "@/features/platform/image-src";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 
 type State = "loading" | "ready" | "empty" | "validation_error" | "success";
 
@@ -38,6 +39,7 @@ interface Req {
 }
 
 interface Payload {
+  page?: PageInfo;
   requests: Req[];
   pending_count: number;
   oldest_waiting_hours: number;
@@ -73,15 +75,18 @@ export function VerificationsClient() {
   const [err, setErr] = useState("");
   const [decided, setDecided] = useState<Req | null>(null);
 
+  const [page, setPage] = useState(1);
   const load = useCallback(async () => {
     if (!operatorToken()) {
       router.replace("/platform/login");
       return;
     }
-    const { data, response } = await platformApi().GET("/api/platform/verifications");
+    const { data, response } = await platformApi().GET("/api/platform/verifications", {
+      params: { query: pageQuery(page) },
+    });
     const b = data as unknown as Payload | undefined;
     if (response.ok && b) setData(b);
-  }, [router]);
+  }, [router, page]);
 
   useEffect(() => {
     void load().catch(() => undefined);
@@ -240,7 +245,7 @@ export function VerificationsClient() {
                     </>
                   ) : null}
                 </p>
-                <ul className="cus-list">
+                <ul id="plt-verifications-list" className="cus-list">
                   {data.requests.map((r) => (
                     <li key={r.tenant_id}>
                       {r.status === "pending" || r.status === "needs_more" ? (
@@ -268,6 +273,11 @@ export function VerificationsClient() {
                     </li>
                   ))}
                 </ul>
+                <PlatformPager
+                  info={data?.page}
+                  onPage={setPage}
+                  anchorId="plt-verifications-list"
+                />
                 <p className="acc-choice__note">
                   نص الشارة ثابت ومعروض للمشتري: «{data.badge_text}».
                 </p>

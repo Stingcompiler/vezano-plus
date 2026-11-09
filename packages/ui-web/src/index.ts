@@ -26,7 +26,7 @@ export { Dialog, type DialogProps } from "./components/Dialog";
 export { Sheet, type SheetProps } from "./components/Sheet";
 export { Panel, type PanelProps } from "./components/Panel";
 export { Table, type Column, type SortDir, type TableProps } from "./components/Table";
-export { FilterBar, Pagination, LoadMore } from "./components/Filter";
+export { FilterBar, Pagination, LoadMore, pageWindow } from "./components/Filter";
 export type {
   FilterChip,
   FilterBarProps,

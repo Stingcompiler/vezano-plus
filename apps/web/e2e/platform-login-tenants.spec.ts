@@ -268,3 +268,38 @@ test.describe("PLT-02", () => {
     });
   });
 });
+
+test.describe("PLT-02 · الترقيم (0005 §٢٢٨)", () => {
+  test("القائمة تطلب صفحة بحجم 25، والأرقام تنقل، والبحث يعود إلى الأولى", async ({ page }) => {
+    const asked: string[] = [];
+    await page.route(/\/api\/platform\/tenants(\?.*)?$/, (route) => {
+      const url = new URL(route.request().url());
+      const p = Number(url.searchParams.get("page") ?? "0");
+      asked.push(`${url.searchParams.get("q") ?? ""}:${p}:${url.searchParams.get("page_size")}`);
+      const total = 128;
+      return route.fulfill(
+        json(
+          200,
+          LIST(ROWS, {
+            total,
+            shown: ROWS.length,
+            page: { number: p || 1, size: 25, total, pages: 6 },
+          }),
+        ),
+      );
+    });
+    await operatorLogin(page);
+    const pager = page.getByRole("navigation", { name: "ترقيم الصفحات" });
+    await expect(pager).toBeVisible();
+    await expect(pager).toContainText("1–25 من 128");
+    await expect(pager.getByRole("button", { name: "الصفحة 1" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await pager.getByRole("button", { name: "الصفحة 2" }).click();
+    await expect(pager).toContainText("26–50 من 128");
+    expect(asked).toContain(":2:25");
+    await page.getByLabel("ابحث باسم المنشأة أو معرِّف المستأجر").fill("النيل");
+    await expect.poll(() => asked.at(-1)).toBe("النيل:1:25");
+  });
+});

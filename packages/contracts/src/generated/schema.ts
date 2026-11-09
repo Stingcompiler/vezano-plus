@@ -14200,6 +14200,12 @@ export interface components {
             };
             fetched_at?: string;
             filter?: string;
+            page?: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             requests?: {
                 channel: string;
                 channel_label: string;
@@ -14289,6 +14295,12 @@ export interface components {
             intervention_days: number;
             near_limit_count: number;
             open_count: number;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             referred_week: number;
             response_samples: number;
             response_target_hours: number;
@@ -14540,6 +14552,12 @@ export interface components {
                 tenant_name: string;
             }[];
             new_count: number;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
         };
         GetPlatformMessagesByReportIdResponse: {
             app_version: string;
@@ -14969,6 +14987,12 @@ export interface components {
         };
         GetPlatformProofsResponse: {
             claim_minutes: number;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             pending_count: number;
             proofs: {
                 amount_minor: string;
@@ -15077,6 +15101,12 @@ export interface components {
             }[];
             fetched_at: string;
             open_count: number;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             reasons: {
                 code: string;
                 label: string;
@@ -15159,6 +15189,12 @@ export interface components {
             active_count: number;
             fetched_at: string;
             filter: string;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             q: string;
             shown: number;
             tenants: {
@@ -15438,6 +15474,12 @@ export interface components {
             badge_text: string;
             fetched_at: string;
             oldest_waiting_hours: number;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
             pending_count: number;
             requests: {
                 checklist: {
@@ -26028,6 +26070,8 @@ export interface operations {
     platform_demo_requests_retrieve: {
         parameters: {
             query?: {
+                page?: number;
+                page_size?: number;
                 status?: string;
                 tenants?: string;
             };
@@ -26107,7 +26151,10 @@ export interface operations {
     };
     platform_disputes_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -26451,6 +26498,8 @@ export interface operations {
     platform_messages_retrieve: {
         parameters: {
             query?: {
+                page?: number;
+                page_size?: number;
                 status?: string;
             };
             header?: never;
@@ -26937,6 +26986,8 @@ export interface operations {
     platform_proofs_retrieve: {
         parameters: {
             query?: {
+                page?: number;
+                page_size?: number;
                 status?: string;
             };
             header?: never;
@@ -27110,6 +27161,8 @@ export interface operations {
     platform_reports_retrieve: {
         parameters: {
             query?: {
+                page?: number;
+                page_size?: number;
                 status?: string;
             };
             header?: never;
@@ -27218,6 +27271,8 @@ export interface operations {
         parameters: {
             query?: {
                 filter?: string;
+                page?: number;
+                page_size?: number;
                 q?: string;
             };
             header?: never;
@@ -27423,7 +27478,10 @@ export interface operations {
     };
     platform_verifications_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

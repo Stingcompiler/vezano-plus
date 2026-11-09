@@ -14,6 +14,7 @@ import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 
 type State = "loading" | "ready" | "empty" | "permission_denied";
 type ReqStatus = "new" | "contacted" | "converted" | "closed";
@@ -41,6 +42,7 @@ interface DemoRequest {
   comments?: { body: string; author: string; at: string }[];
 }
 interface Payload {
+  page?: PageInfo;
   requests: DemoRequest[];
   filter: string;
   counts: Record<ReqStatus | "open", number> & { linked?: number };
@@ -109,14 +111,15 @@ export function DemoRequestsClient() {
     if (response.ok && b?.tenants) setTenants(b.tenants);
   }, []);
 
+  const [page, setPage] = useState(1);
   const load = useCallback(
-    async (f: Filter) => {
+    async (f: Filter, p: number) => {
       if (!operatorToken()) {
         router.replace("/platform/login");
         return;
       }
       const { data: d, response } = await platformApi().GET("/api/platform/demo-requests", {
-        params: { query: { status: f } },
+        params: { query: { status: f, ...pageQuery(p) } },
       });
       if (response.status === 403 || response.status === 401) {
         setDenied(true);
@@ -129,8 +132,9 @@ export function DemoRequestsClient() {
   );
 
   useEffect(() => {
-    void load(filter).catch(() => undefined);
-  }, [load, filter]);
+    void load(filter, page).catch(() => undefined);
+  }, [load, filter, page]);
+  useEffect(() => setPage(1), [filter]);
 
   const apply = async (r: DemoRequest, status: ReqStatus | "") => {
     setError("");
@@ -151,7 +155,7 @@ export function DemoRequestsClient() {
         setComment("");
         setTenantId("");
         setOpenId("");
-        await load(filter);
+        await load(filter, page);
       } else {
         const code = b?.detail ?? "";
         setError(ERRORS[code] ?? `تعذّر التنفيذ (${code || res.response.status})`);
@@ -248,7 +252,7 @@ export function DemoRequestsClient() {
                     </p>
                   </Notice>
                 ) : null}
-                <ul className="plt-demo">
+                <ul id="plt-demo-list" className="plt-demo">
                   {data.requests.map((r) => (
                     <li key={r.id} className="plt-demo__item c-card" data-status={r.status}>
                       <div className="plt-demo__top">
@@ -390,6 +394,7 @@ export function DemoRequestsClient() {
                     </li>
                   ))}
                 </ul>
+                <PlatformPager info={data?.page} onPage={setPage} anchorId="plt-demo-list" />
                 <p className="acc-choice__note">{data.rule}</p>
               </>
             ) : null}

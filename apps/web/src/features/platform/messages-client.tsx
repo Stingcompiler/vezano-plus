@@ -14,6 +14,7 @@ import "./platform.css";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { operatorToken, platformApi } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
+import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/paging";
 
 type Filter = "new" | "handled" | "all";
 
@@ -32,6 +33,7 @@ interface Message {
   payload?: Record<string, unknown>;
 }
 interface Payload {
+  page?: PageInfo;
   filter: Filter;
   new_count: number;
   messages: Message[];
@@ -63,6 +65,8 @@ export function MessagesClient() {
   const [err, setErr] = useState("");
   const [failed, setFailed] = useState(false);
 
+  const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [filter]);
   const load = useCallback(async () => {
     if (!operatorToken()) {
       router.replace("/platform/login");
@@ -70,7 +74,7 @@ export function MessagesClient() {
     }
     try {
       const { data: d, response } = await platformApi().GET("/api/platform/messages", {
-        params: { query: { status: filter } },
+        params: { query: { status: filter, ...pageQuery(page) } },
       });
       if (response.ok && d) {
         setData(d as unknown as Payload);
@@ -79,7 +83,7 @@ export function MessagesClient() {
     } catch {
       setFailed(true);
     }
-  }, [router, filter]);
+  }, [router, filter, page]);
 
   useEffect(() => {
     void load();
@@ -171,7 +175,7 @@ export function MessagesClient() {
               </Notice>
             ) : null}
 
-            <ul className="plt-notices" aria-label="الرسائل">
+            <ul id="plt-messages-list" className="plt-notices" aria-label="الرسائل">
               {data?.messages.map((m) => (
                 <li key={m.id} className={`plt-notice${m.handled ? "" : " plt-notice--new"}`}>
                   <div className="plt-notice__main">
@@ -200,6 +204,7 @@ export function MessagesClient() {
                 </li>
               ))}
             </ul>
+            <PlatformPager info={data?.page} onPage={setPage} anchorId="plt-messages-list" />
 
             {open ? (
               <section className="plt-msg" aria-label="تفاصيل الرسالة">

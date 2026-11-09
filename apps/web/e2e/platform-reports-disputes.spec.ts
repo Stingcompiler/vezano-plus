@@ -299,7 +299,7 @@ test.describe("PLT-08", () => {
       ROWS[2]!,
     ];
     let near = 2;
-    await page.route("**/api/platform/disputes", async (route) => {
+    await page.route(/\/api\/platform\/disputes(\?.*)?$/, async (route) => {
       while (!released) await new Promise((r) => setTimeout(r, 50));
       return route.fulfill(json(200, PAYLOAD(rows, near)));
     });
@@ -399,7 +399,7 @@ test.describe("PLT-08", () => {
   });
 
   test("empty: لا خلافات مفتوحة — وضع صحّي لا خطأ", async ({ page }, info) => {
-    await page.route("**/api/platform/disputes", (route) =>
+    await page.route(/\/api\/platform\/disputes(\?.*)?$/, (route) =>
       route.fulfill(json(200, PAYLOAD([], 0, 0))),
     );
     await operatorLogin(page);

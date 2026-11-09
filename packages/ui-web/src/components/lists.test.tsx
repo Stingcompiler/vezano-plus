@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { expectNoA11yViolations } from "../test/axe";
 import { Button } from "./Button";
 import { DocPreview } from "./DocPreview";
-import { FilterBar, Pagination } from "./Filter";
+import { FilterBar, Pagination, pageWindow } from "./Filter";
 import { Notice } from "./Notice";
 import { Pick } from "./Pick";
 import { Table, type Column } from "./Table";
@@ -118,6 +118,23 @@ describe("C-FILTER", () => {
     expect(screen.getByRole("navigation", { name: "ترقيم الصفحات" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "السابقة" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "التالية" })).toBeEnabled();
+    await expectNoA11yViolations(container);
+  });
+
+  it("أرقام الصفحات بنافذة وفجوات، والمدى «من»، والحالية aria-current", async () => {
+    const onPage = vi.fn();
+    const { container } = render(
+      <Pagination page={6} pageCount={13} total={312} pageSize={25} onPage={onPage} />,
+    );
+    expect(pageWindow(6, 13)).toEqual([1, "gap", 5, 6, 7, "gap", 13]);
+    expect(pageWindow(1, 4)).toEqual([1, 2, 3, 4]);
+    expect(container.querySelector(".c-filter__range")).toHaveTextContent("126–150 من 312");
+    expect(screen.getByRole("button", { name: "الصفحة 6" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "الصفحة 13" }));
+    expect(onPage).toHaveBeenCalledWith(13);
     await expectNoA11yViolations(container);
   });
 });

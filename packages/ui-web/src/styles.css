@@ -1179,11 +1179,75 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
   color: var(--color-ink-muted);
   font-size: var(--text-note);
 }
+/* ترقيم الصفحات (0005 §٢٢٨): المدى فوق، ثم «السابقة» والأرقام و«التالية» في سطر؛ كل زرّ ≥ 44px.
+   على الهاتف تختفي الأرقام البعيدة تلقائياً بنافذة الأرقام نفسها، والسطر يلتفّ ولا يفيض. */
 .c-filter__pagination {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-block: 12px 4px;
+}
+.c-filter__range {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+}
+.c-filter__pages {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
   justify-content: center;
+  gap: 6px;
+  max-inline-size: 100%;
+}
+.c-filter__nums {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.c-filter__num {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding-inline: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panelSm);
+  background: transparent;
+  color: var(--color-ink-strong);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.c-filter__num:hover {
+  background: var(--color-surface-sunken);
+}
+.c-filter__num:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+.c-filter__num--on {
+  background: var(--color-brand-primary);
+  color: var(--color-surface-card);
+  cursor: default;
+}
+.c-filter__num--on:hover {
+  background: var(--color-brand-primary);
+}
+.c-filter__gap {
+  min-inline-size: 24px;
+  text-align: center;
+  color: var(--color-ink-faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .c-filter__num {
+    transition: none;
+  }
 }
 .c-filter__more {
   display: flex;
