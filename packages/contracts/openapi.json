@@ -9777,7 +9777,14 @@
         "tags": ["platform"],
         "responses": {
           "200": {
-            "description": "No response body"
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformTenantsDirectoryResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "No response body"
@@ -52953,6 +52960,155 @@
           }
         },
         "required": ["proof"],
+        "type": "object"
+      },
+      "GetPlatformTenantsDirectoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "countries": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "tenants": {
+                  "type": "integer"
+                }
+              },
+              "required": ["code", "tenants"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "country": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "boolean"
+          },
+          "devices_total": {
+            "type": "integer"
+          },
+          "fetched_at": {
+            "type": "string"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
+          "q": {
+            "type": "string"
+          },
+          "shown": {
+            "type": "integer"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "tenants": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "branches": {
+                  "type": "integer"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "country_at": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "devices_active": {
+                  "type": "integer"
+                },
+                "devices_all": {
+                  "type": "integer"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "last_seen_at": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "plan_code": {
+                  "type": "string"
+                },
+                "plan_label": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "status_label": {
+                  "type": "string"
+                },
+                "users": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "country",
+                "country_at",
+                "plan_label",
+                "plan_code",
+                "status",
+                "status_label",
+                "devices_active",
+                "devices_all",
+                "branches",
+                "users",
+                "last_seen_at",
+                "created_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "unknown_country": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tenants",
+          "total",
+          "shown",
+          "devices_total",
+          "countries",
+          "unknown_country",
+          "sort",
+          "desc",
+          "q",
+          "country",
+          "page",
+          "fetched_at"
+        ],
         "type": "object"
       },
       "GetPlatformVerificationsResponse": {

@@ -15489,6 +15489,43 @@ export interface components {
                 submitted_at: string;
             };
         };
+        GetPlatformTenantsDirectoryResponse: {
+            countries: {
+                code: string;
+                tenants: number;
+            }[];
+            country: string;
+            desc: boolean;
+            devices_total: number;
+            fetched_at: string;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
+            q: string;
+            shown: number;
+            sort: string;
+            tenants: {
+                branches: number;
+                country: string;
+                country_at: string;
+                created_at: string;
+                devices_active: number;
+                devices_all: number;
+                id: string;
+                last_seen_at: string;
+                name: string;
+                plan_code: string;
+                plan_label: string;
+                status: string;
+                status_label: string;
+                users: number;
+            }[];
+            total: number;
+            unknown_country: number;
+        };
         GetPlatformVerificationsResponse: {
             avg_review_hours_week: number;
             badge_text: string;
@@ -27517,7 +27554,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetPlatformTenantsDirectoryResponse"];
+                };
             };
             /** @description No response body */
             403: {
