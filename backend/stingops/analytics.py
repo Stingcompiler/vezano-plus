@@ -49,6 +49,12 @@ MOBILE_UA = re.compile(r"mobi|iphone|android", re.IGNORECASE)
 #: المسار الذي يعني «بدأ التسجيل» في مسار التحويل
 SIGNUP_PATH = "/register"
 SELF_HOSTS = {"plus.vezano.app", "localhost", "127.0.0.1"}
+#: مراجعة 2026-11-09: صفحات الدخول يفتحها التاجر الحالي كل يوم — ليست زيارة للموقع ولا بداية تحويل
+EXCLUDED_PATHS = ("/login", "/select-org", "/invite", "/platform")
+#: سقف الإشارات من عنوان واحد في عشر دقائق: يحدّ الإغراق بمتصفحات مختلفة الهوية من جهاز واحد،
+#: ويتّسع لمقهى أو شبكة جوال مشتركة
+MAX_PER_ADDRESS_WINDOW = 120
+ADDRESS_WINDOW_SECONDS = 600
 
 
 def today_local(now: datetime | None = None) -> date:
@@ -141,21 +147,48 @@ def source_of(page_url: str, referrer: str) -> str:
     return host[:80]
 
 
+def _excluded(path: str) -> bool:
+    return any(path == p or path.startswith(p + "/") for p in EXCLUDED_PATHS)
+
+
+def _address_over_limit(ip: str) -> bool:
+    """عدّاد عشر دقائق لكل عنوان في ذاكرة العملية؛ مفتاحه بصمة لا العنوان نفسه."""
+    from django.core.cache import cache
+
+    key = "beacon-ip:" + hashlib.sha256(f"{settings.SECRET_KEY}|{ip}".encode()).hexdigest()[:24]
+    if cache.add(key, 1, ADDRESS_WINDOW_SECONDS):
+        return False
+    try:
+        return int(cache.incr(key)) > MAX_PER_ADDRESS_WINDOW
+    except ValueError:  # انتهى المفتاح بين add وincr
+        cache.add(key, 1, ADDRESS_WINDOW_SECONDS)
+        return False
+
+
 def record(*, ip: str, ua: str, page_url: str, referrer: str) -> bool:
-    """يسجّل زيارة؛ False إن رُفضت (آلي أو تجاوز السقف). لا يحفظ العنوان ولا المتصفح."""
+    """يسجّل زيارة؛ False إن رُفضت (آلي، صفحة دخول، تجاوز السقف). لا يحفظ العنوان ولا المتصفح.
+
+    المصدر واحد للزائر في اليوم (مراجعة 2026-11-09): مصدر أول صفحة فتحها ذلك اليوم. الإشارات
+    التالية من التنقّل داخل الموقع تحمل المُحيل الأصلي بلا `utm`، فكانت تقسم الزائر الواحد بين
+    «facebook» و«l.facebook.com» و«مباشر»."""
     if is_bot(ua):
+        return False
+    path = clean_path(page_url)
+    if _excluded(path) or _address_over_limit(ip):
         return False
     now = timezone.now()
     day = today_local(now)
     visitor = visitor_key(ip, ua, day)
-    if SiteVisit.objects.filter(day=day, visitor=visitor).count() >= MAX_PER_VISITOR_DAY:
+    earlier = SiteVisit.objects.filter(day=day, visitor=visitor)
+    if earlier.count() >= MAX_PER_VISITOR_DAY:
         return False
+    first = earlier.order_by("occurred_at", "id").values_list("source", flat=True).first()
     SiteVisit.objects.create(
         day=day,
         occurred_at=now,
-        path=clean_path(page_url),
+        path=path,
         country=country_of(ip),
-        source=source_of(page_url, referrer),
+        source=first if first is not None else source_of(page_url, referrer),
         device=device_of(ua),
         visitor=visitor,
     )
@@ -264,7 +297,8 @@ def report(days: int, now: datetime | None = None) -> dict[str, Any]:
         "funnel": [
             {"key": "visitors", "label": "زاروا الموقع", "value": visitors},
             {"key": "signup", "label": "فتحوا صفحة التسجيل", "value": signup},
-            {"key": "stores", "label": "أنشؤوا متجراً", "value": new_stores},
+            # كل متجر جديد في المدّة من أي مدخل (الموقع، الجوال، المشغّل) — لا زوار الإشارة وحدهم
+            {"key": "stores", "label": "متاجر جديدة (من كل المداخل)", "value": new_stores},
             {"key": "paid", "label": "دفعوا أول اشتراك", "value": first_paid},
         ],
         "geo_ready": _reader() is not None,

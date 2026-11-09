@@ -223,6 +223,8 @@ export function AnalyticsClient() {
                     <span className="plt-kpi__note">
                       <Delta now={t.visitors} before={t.prev_visitors} />
                     </span>
+                    {/* البصمة تتجدّد يومياً (لا تتبّع عبر الأيام): من زار ثلاثة أيام يُعدّ ثلاث مرات */}
+                    <span className="plt-kpi__note">يُعدّ الزائر مرة في كل يوم يزور فيه</span>
                   </div>
                   <div className="plt-kpi">
                     <span className="plt-kpi__label">الصفحات المفتوحة</span>
@@ -297,7 +299,9 @@ export function AnalyticsClient() {
                   <h3 className="plt-ana__sub">مسار التحويل</h3>
                   <p className="acc-choice__note">
                     النسبة الصغيرة من الخطوة السابقة. والخطوتان الأخيرتان من سجلّ المتاجر
-                    والإيصالات، لا من الزيارات.
+                    والإيصالات، لا من الزيارات: تشملان متاجر سُجّلت من الجوال أو أنشأها المشغّل، فقد
+                    تتجاوز نسبتهما ما يوحي به الموقع وحده. التاجر والمشغّل الداخلان بجلستيهما وصفحات
+                    الدخول لا تُعدّ زيارات.
                   </p>
                   <ol className="plt-ana__rows">
                     {data.funnel.map((f, i) => (
