@@ -1,0 +1,39 @@
+/* PLT-20 — جدول المستأجرين (0005 §٢٢٩): ملخّص بسطر واحد لا بطاقة لكل رقم، ومرشّحات في صفّ،
+   وجدول يتحوّل بطاقات على الهاتف بتسميات الأعمدة (C-TABLE). الرموز الدلالية وحدها. */
+.plt-dir__sum {
+  margin: 4px 0 12px;
+  color: var(--color-ink-strong);
+  font-weight: 500;
+}
+.plt-dir__filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 16px;
+  align-items: end;
+  margin-block-end: 12px;
+}
+.plt-dir__filters > * {
+  min-inline-size: 0;
+}
+@media (max-width: 833px) {
+  .plt-dir__filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.plt-dir__name {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.plt-dir__name strong {
+  color: var(--color-ink-strong);
+  overflow-wrap: anywhere;
+}
+.plt-dir__muted {
+  color: var(--color-ink-muted);
+  font-size: 0.8125rem;
+}
+.plt-dir__code {
+  color: var(--color-ink-faint);
+  font-size: 0.75rem;
+}

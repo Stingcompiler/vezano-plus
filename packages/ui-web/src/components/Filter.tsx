@@ -106,7 +106,8 @@ export function Pagination({ page, pageCount, onPage, total, pageSize }: Paginat
     <nav className="c-filter__pagination" aria-label="ترقيم الصفحات">
       {from !== undefined && to !== undefined ? (
         <p className="c-filter__range">
-          <span className="sting-mono">
+          {/* المدى يُقرأ من اليسار «1–25» داخل سطر عربي — بلا dir يعكسه المتصفح «25–1» */}
+          <span className="sting-mono" dir="ltr">
             {from}–{to}
           </span>{" "}
           من <span className="sting-mono">{total}</span>

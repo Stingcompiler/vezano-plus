@@ -53,6 +53,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # PLT-09: قياس p95 حيّ لطلبات /api — عدّاد لا محتوى
     "stingops.metrics.LatencyMiddleware",
+    # 0005 §٢٢٩: دولة المستأجر من عنوان طلباته — مرة في الساعة، والعنوان لا يُحفظ
+    "stingops.tenant_country.TenantCountryMiddleware",
 ]
 
 # أصلا تطبيق الحاسوب (ماك ثم ويندوز) — sting/desktop_cors.py

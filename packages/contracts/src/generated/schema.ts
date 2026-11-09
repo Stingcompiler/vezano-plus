@@ -3939,6 +3939,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/tenants/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description PLT-20: جدول المستأجرين — الدولة التي يعمل منها كل حساب وأجهزته وفروعه ومستخدموه (0005 §٢٢٩).
+         *     حقول تشغيل لا دفاتر: لا مبيعات ولا عملاء ولا أصناف.
+         */
+        get: operations["platform_tenants_directory_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/verifications": {
         parameters: {
             query?: never;
@@ -27469,6 +27489,38 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_tenants_directory_retrieve: {
+        parameters: {
+            query?: {
+                country?: string;
+                dir?: string;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -9726,6 +9726,65 @@
         }
       }
     },
+    "/api/platform/tenants/directory": {
+      "get": {
+        "operationId": "platform_tenants_directory_retrieve",
+        "description": "PLT-20: جدول المستأجرين — الدولة التي يعمل منها كل حساب وأجهزته وفروعه ومستخدموه (0005 §٢٢٩).\nحقول تشغيل لا دفاتر: لا مبيعات ولا عملاء ولا أصناف.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "country",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dir",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/verifications": {
       "get": {
         "operationId": "platform_verifications_retrieve",
