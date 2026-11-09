@@ -83,3 +83,61 @@
 .vz-publish__grid > .acc-links {
   grid-column: 1 / -1;
 }
+
+/* روابط المنصات (0005 §٢٣٠): زرّ الرابط بأيقونته، ومنتقي الأيقونة شبكة خيارات بعلامة واحدة للمختار —
+   حدّ ولون نصّ لا مربّع مصبوغ (دليل البطاقات §١٥٨) */
+.vz-app__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.vz-publish__kind {
+  grid-column: 1 / -1;
+}
+.vz-publish__link {
+  display: grid;
+  gap: 12px;
+}
+.vz-icons {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.vz-icons legend {
+  margin-block-end: 8px;
+  font-weight: 700;
+  color: var(--color-ink-strong);
+}
+.vz-icons__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.vz-icons__opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  background: var(--color-surface-card);
+  color: var(--color-ink-strong);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.vz-icons__opt:hover {
+  border-color: var(--color-brand-line);
+}
+.vz-icons__opt:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+.vz-icons__opt--on {
+  border-color: var(--color-brand-primary);
+  box-shadow: inset 0 0 0 1px var(--color-brand-primary);
+  color: var(--color-brand-strong);
+  font-weight: 700;
+}

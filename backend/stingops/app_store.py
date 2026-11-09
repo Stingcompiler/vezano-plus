@@ -1,5 +1,5 @@
-"""متجر التطبيقات (0005 §٢١٥): ينشر مدير المنصة إصدارات أندرويد وويندوز وماك (ملفات تثبيت) وآيفون
-(رابط App Store أو TestFlight)، ويتصفّحها الزائر، وينزّلها التاجر بجلسته.
+"""متجر التطبيقات (0005 §٢١٥، §٢٣٠): ينشر مدير المنصة لكل نظام ملف تثبيت أو رابطاً بتسمية وأيقونة
+منصة (Google Play، App Store، GitHub…)، ويتصفّحها الزائر، وينزّل التاجر الملفات بجلسته.
 
 - الملف في تخزين خاص (`APP_STORE_ROOT`) لا يخدمه الويب. التنزيل رابط موقَّع قصير العمر يصدره
   الخادم لجلسة تاجر، فيتنزّل الملف بمدير تنزيلات المتصفح (لا يُحمَّل 512 ميبيبايت في ذاكرة الصفحة).
@@ -41,7 +41,6 @@ FORMATS: dict[str, frozenset[str]] = {
     "windows": frozenset({".exe", ".msi"}),
     "macos": frozenset({".dmg", ".pkg"}),
 }
-APPLE_HOSTS = frozenset({"apps.apple.com", "testflight.apple.com"})
 LINK_SALT = "stingops.app_store.download"
 LINK_MAX_AGE = 300  # ثوانٍ: يكفي لبدء التنزيل، ولا يصلح رابطاً يُتداول
 
@@ -50,28 +49,59 @@ def _storage() -> FileSystemStorage:
     return FileSystemStorage(location=settings.APP_STORE_ROOT)
 
 
+#: أيقونات منصات الروابط (0005 §٢٣٠) — يختارها المشغّل فتظهر بجوار الاسم؛ «website» رابط عام
+LINK_ICONS = frozenset(
+    {
+        "google_play",
+        "app_store",
+        "app_gallery",
+        "microsoft_store",
+        "github",
+        "gitlab",
+        "f_droid",
+        "flathub",
+        "snapcraft",
+        "google_drive",
+        "dropbox",
+        "telegram",
+        "website",
+    }
+)
+
+
 class ReleaseInput(serializers.Serializer[dict[str, Any]]):
     name = serializers.CharField(max_length=100)
     version = serializers.CharField(max_length=40)
     platform = serializers.ChoiceField(choices=AppRelease.Platform.choices)
     file = serializers.FileField(required=False, max_length=255)
-    apple_url = serializers.URLField(required=False, max_length=500)
+    link_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    link_label = serializers.CharField(required=False, allow_blank=True, max_length=80)
+    link_icon = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    # عملاء أقدم (نموذج آيفون قبل §٢٣٠): `apple_url` اسم آخر لـ`link_url`
+    apple_url = serializers.CharField(required=False, allow_blank=True, max_length=500)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         platform = attrs["platform"]
         upload: UploadedFile[bytes] | None = attrs.get("file")
-        url = str(attrs.get("apple_url") or "")
-        if platform == AppRelease.Platform.IOS:
+        url = str(attrs.pop("link_url", "") or attrs.pop("apple_url", "") or "").strip()
+        attrs.pop("apple_url", None)
+        if url and upload is not None:
+            raise serializers.ValidationError("file_or_link")
+        if url or platform == AppRelease.Platform.IOS:
+            # آيفون رابط دائماً: لا تثبيت لملف خارج App Store
             parsed = urlsplit(url)
-            if (
-                upload is not None
-                or parsed.scheme != "https"
-                or parsed.netloc not in APPLE_HOSTS
-                or parsed.path in {"", "/"}
-            ):
-                raise serializers.ValidationError("apple_url_invalid")
+            if upload is not None or parsed.scheme != "https" or not parsed.netloc:
+                raise serializers.ValidationError("link_invalid")
+            label = str(attrs.get("link_label") or "").strip()
+            if not label:
+                raise serializers.ValidationError("link_label_required")
+            icon = str(attrs.get("link_icon") or "website")
+            if icon not in LINK_ICONS:
+                raise serializers.ValidationError("link_icon_invalid")
+            attrs |= {"link_url": url, "link_label": label, "link_icon": icon}
             return attrs
-        if url or upload is None:
+        attrs |= {"link_url": "", "link_label": "", "link_icon": ""}
+        if upload is None:
             raise serializers.ValidationError("file_required")
         if Path(upload.name or "").suffix.lower() not in FORMATS[platform]:
             raise serializers.ValidationError("file_type_invalid")
@@ -81,6 +111,7 @@ class ReleaseInput(serializers.Serializer[dict[str, Any]]):
 
 
 def _row(r: AppRelease, *, merchant: bool) -> dict[str, Any]:
+    """الرابط يظهر للجميع (يفتحه أيّ أحد)؛ الملف وتفاصيله لجلسة التاجر وحدها."""
     out: dict[str, Any] = {
         "id": str(r.id),
         "name": r.name,
@@ -88,13 +119,18 @@ def _row(r: AppRelease, *, merchant: bool) -> dict[str, Any]:
         "platform_label": r.get_platform_display(),
         "version": r.version,
         "published_at": r.published_at.isoformat().replace("+00:00", "Z"),
+        "kind": "link" if r.link_url else "file",
+        "link_url": r.link_url,
+        "link_label": r.link_label,
+        "link_icon": r.link_icon,
     }
     if merchant:
         out |= {
             "filename": r.filename,
             "size_bytes": r.size_bytes,
             "sha256": r.sha256,
-            "apple_url": r.apple_url,
+            # نسخ الحاسوب الأقدم تقرأ رابط آيفون من هذا الحقل
+            "apple_url": r.link_url if r.platform == AppRelease.Platform.IOS else "",
         }
     return out
 

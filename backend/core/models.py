@@ -27,6 +27,10 @@ class Tenant(models.Model):
     base_currency = models.CharField(max_length=3)
     base_currency_exponent = models.SmallIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+    # الدولة التي يعمل منها الحساب (0005 §٢٢٩): رمز ISO من عنوان آخر طلب بجلسة، يُحدَّث مرة في
+    # الساعة على الأكثر؛ العنوان نفسه لا يُحفظ
+    last_country = models.CharField(max_length=2, blank=True, default="")
+    last_country_at = models.DateTimeField(null=True, blank=True)
 
     objects: ClassVar[TenantManager] = TenantManager()
     unscoped: ClassVar[models.Manager[Tenant]] = models.Manager()

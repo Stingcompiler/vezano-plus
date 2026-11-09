@@ -3939,6 +3939,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/tenants/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description PLT-20: جدول المستأجرين — الدولة التي يعمل منها كل حساب وأجهزته وفروعه ومستخدموه (0005 §٢٢٩).
+         *     حقول تشغيل لا دفاتر: لا مبيعات ولا عملاء ولا أصناف.
+         */
+        get: operations["platform_tenants_directory_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/verifications": {
         parameters: {
             query?: never;
@@ -12273,6 +12293,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14030,6 +14054,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14044,6 +14072,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -14058,6 +14090,10 @@ export interface components {
                 apple_url: string;
                 filename: string;
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -15469,6 +15505,43 @@ export interface components {
                 submitted_at: string;
             };
         };
+        GetPlatformTenantsDirectoryResponse: {
+            countries: {
+                code: string;
+                tenants: number;
+            }[];
+            country: string;
+            desc: boolean;
+            devices_total: number;
+            fetched_at: string;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
+            q: string;
+            shown: number;
+            sort: string;
+            tenants: {
+                branches: number;
+                country: string;
+                country_at: string;
+                created_at: string;
+                devices_active: number;
+                devices_all: number;
+                id: string;
+                last_seen_at: string;
+                name: string;
+                plan_code: string;
+                plan_label: string;
+                status: string;
+                status_label: string;
+                users: number;
+            }[];
+            total: number;
+            unknown_country: number;
+        };
         GetPlatformVerificationsResponse: {
             avg_review_hours_week: number;
             badge_text: string;
@@ -15684,6 +15757,10 @@ export interface components {
         GetPublicAppsResponse: {
             releases: {
                 id: string;
+                kind: string;
+                link_icon: string;
+                link_label: string;
+                link_url: string;
                 name: string;
                 platform: string;
                 platform_label: string;
@@ -27469,6 +27546,40 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_tenants_directory_retrieve: {
+        parameters: {
+            query?: {
+                country?: string;
+                dir?: string;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformTenantsDirectoryResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

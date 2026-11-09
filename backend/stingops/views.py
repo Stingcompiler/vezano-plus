@@ -238,6 +238,45 @@ class OperatorTenantsView(APIView):
         )
 
 
+class OperatorTenantDirectoryView(APIView):
+    """PLT-20: جدول المستأجرين — الدولة التي يعمل منها كل حساب وأجهزته وفروعه ومستخدموه (0005 §٢٢٩).
+    حقول تشغيل لا دفاتر: لا مبيعات ولا عملاء ولا أصناف."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("country", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("sort", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("dir", str, OpenApiParameter.QUERY, required=False),
+            *PAGE_PARAMS,
+        ],
+        responses={200: None, 403: None},
+    )
+    def get(self, request: Request) -> Response:
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        qp = request.query_params
+
+        def _int(key: str, default: int) -> int:
+            try:
+                return int(str(qp.get(key) or default))
+            except ValueError:
+                return default
+
+        return Response(
+            services.directory_payload(
+                q=str(qp.get("q", "")),
+                country=str(qp.get("country", "")),
+                sort=str(qp.get("sort", "created")),
+                desc=str(qp.get("dir", "desc")) != "asc",
+                page=_int("page", 1),
+                page_size=_int("page_size", 25),
+            )
+        )
+
+
 class OperatorTenantDetailView(APIView):
     """PLT-02/detail: تفاصيل الاستحقاق — كل فتح يُدقَّق."""
 

@@ -476,8 +476,9 @@ class MessageTriage(models.Model):
 
 
 class AppRelease(models.Model):
-    """متجر التطبيقات (0005 §٢١٥): إصدار ينشره مدير المنصة لأندرويد أو ويندوز أو ماك (ملف تثبيت في
-    تخزين خاص) أو لآيفون (رابط App Store/TestFlight). يتصفّحه الزائر، وينزّله التاجر بجلسته."""
+    """متجر التطبيقات (0005 §٢١٥، §٢٣٠): إصدار ينشره مدير المنصة لأي نظام — ملف تثبيت في تخزين
+    خاص (أندرويد وويندوز وماك) أو رابط بتسمية وأيقونة منصة (Google Play، App Store، GitHub…).
+    يتصفّحه الزائر؛ الرابط يفتحه أيّ أحد، والملف ينزّله التاجر بجلسته."""
 
     class Platform(models.TextChoices):
         ANDROID = "android", "أندرويد"
@@ -494,7 +495,10 @@ class AppRelease(models.Model):
     size_bytes = models.BigIntegerField(default=0)
     # بصمة SHA-256 للملف: يقارنها التاجر قبل التثبيت (ملف تنفيذي من الإنترنت)
     sha256 = models.CharField(max_length=64, blank=True, default="")
-    apple_url = models.URLField(blank=True, default="", max_length=500)
+    # رابط بدل الملف (0005 §٢٣٠): متجر آخر أو صفحة تنزيل، بتسمية يكتبها المشغّل وأيقونة يختارها
+    link_url = models.URLField(blank=True, default="", max_length=500)
+    link_label = models.CharField(max_length=80, blank=True, default="")
+    link_icon = models.CharField(max_length=20, blank=True, default="")
     published_by_name = models.CharField(max_length=120, blank=True, default="")
     published_at = models.DateTimeField(default=timezone.now)
 

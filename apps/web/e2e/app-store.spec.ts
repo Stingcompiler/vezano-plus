@@ -39,8 +39,25 @@ const MERCHANT = [
     size_bytes: 0,
     sha256: "",
     apple_url: "https://testflight.apple.com/join/abc",
+    kind: "link",
+    link_url: "https://testflight.apple.com/join/abc",
+    link_label: "فتح في TestFlight",
+    link_icon: "app_store",
   },
 ];
+/** رابط Google Play لأندرويد (§٢٣٠): يظهر للزائر بأيقونته وتسميته ويُفتح بلا جلسة. */
+const PLAY = {
+  id: "r3",
+  name: "Vezano Plus",
+  platform: "android",
+  platform_label: "أندرويد",
+  version: "1.5.0",
+  published_at: AT,
+  kind: "link",
+  link_url: "https://play.google.com/store/apps/details?id=app.vezano",
+  link_label: "حمّل من Google Play",
+  link_icon: "google_play",
+};
 
 test.describe("متجر التطبيقات", () => {
   test("الصفحة العامة: تصفّح بالنظام بلا تنزيل، و«سجّل الدخول للتنزيل»", async ({ page }, info) => {
@@ -227,5 +244,61 @@ test.describe("متجر التطبيقات", () => {
       });
     await root.getByRole("button", { name: "نشر للتجار" }).click();
     await expect(root.getByText("هذا الإصدار منشور بالفعل لهذا التطبيق والنظام.")).toBeVisible();
+  });
+
+  test("PLT-18 · رابط بتسمية وأيقونة منصة يظهر للزائر بجانب الاسم (§٢٣٠)", async ({ page }) => {
+    let rows: unknown[] = [];
+    let sent: Record<string, string> = {};
+    await page.route("**/api/platform/login", (route) =>
+      route.fulfill(
+        json(200, { access: "op", refresh: "r", session_id: "s", display_name: "هدى — تشغيل" }),
+      ),
+    );
+    await page.route("**/api/platform/apps", async (route) => {
+      if (route.request().method() === "GET") return route.fulfill(json(200, { releases: rows }));
+      const body = route.request().postData() ?? "";
+      sent = Object.fromEntries(
+        [...body.matchAll(/name="([^"]+)"\r\n\r\n([^\r]*)/g)].map((m) => [m[1] ?? "", m[2] ?? ""]),
+      );
+      rows = [PLAY];
+      return route.fulfill(json(201, { release: PLAY }));
+    });
+    await page.goto("/platform/login");
+    await page.getByLabel("بريد المشغّل").fill("ops.huda@sting.internal");
+    await page.getByLabel("كلمة المرور").fill("very-secret-ops");
+    await page.getByRole("button", { name: "دخول مساحة المشغّل" }).click();
+    await goSection(page, "متجر التطبيقات");
+    const root = page.locator('[data-screen="PLT-18"]');
+    await root.getByLabel("رقم الإصدار").fill("1.5.0");
+    await root.getByRole("radio", { name: "رابط من منصة أخرى" }).click();
+    await root.getByLabel("الرابط").fill(PLAY.link_url);
+    await root.getByLabel("تسمية الزرّ").fill(PLAY.link_label);
+    await root.getByRole("radio", { name: "Google Play" }).click();
+    await expect(root.getByRole("radio", { name: "Google Play" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await root.getByRole("button", { name: "نشر للتجار" }).click();
+    await expect(root.getByText("نُشر الإصدار وصار متاحاً للتجار.")).toBeVisible();
+    expect(sent).toMatchObject({
+      platform: "android",
+      link_url: PLAY.link_url,
+      link_label: PLAY.link_label,
+      link_icon: "google_play",
+    });
+    expect(sent.file).toBeUndefined();
+    // الصف يحمل أيقونة Google Play بجانب الاسم
+    await expect(root.locator('.vz-app__icon [data-link-icon="google_play"]')).toHaveCount(1);
+    // الزائر يرى الرابط نفسه بتسميته ويفتحه بلا جلسة
+    await page.route("**/api/public/apps", (route) =>
+      route.fulfill(json(200, { releases: [APK, PLAY] })),
+    );
+    await page.goto("/");
+    const section = page.locator("#lp-apps");
+    const link = section.getByRole("link", { name: "حمّل من Google Play" });
+    await expect(link).toHaveAttribute("href", PLAY.link_url);
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(section.locator('.vz-app__icon [data-link-icon="google_play"]')).toHaveCount(1);
+    await expect(section.getByRole("link", { name: "سجّل الدخول للتنزيل" })).toHaveCount(1);
   });
 });

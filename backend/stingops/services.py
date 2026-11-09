@@ -9,7 +9,7 @@ from datetime import timedelta
 from typing import Any
 
 from django.contrib.auth.hashers import check_password, make_password
-from django.db.models import Max
+from django.db.models import F, Max
 from django.utils import timezone
 
 from core.auth import totp
@@ -254,6 +254,121 @@ def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
         "filter": filter_code,
         "q": q,
         "access_rule": ACCESS_RULE,
+        "fetched_at": _iso(now),
+    }
+
+
+#: فرز جدول المستأجرين (0005 §٢٢٩) — مفتاح الاستعلام ← حقل الترتيب
+DIRECTORY_SORTS = {
+    "name": "name",
+    "country": "last_country",
+    "devices": "devices_active",
+    "users": "users_active",
+    "branches": "branches_active",
+    "created": "created_at",
+    "seen": "last_seen",
+}
+
+
+def directory_payload(
+    *,
+    q: str = "",
+    country: str = "",
+    sort: str = "created",
+    desc: bool = True,
+    page: int = 1,
+    page_size: int = 25,
+) -> dict[str, Any]:
+    """PLT-20: جدول المستأجرين — الدولة والأجهزة والفروع والمستخدمون وآخر نشاط في صفّ واحد.
+
+    العدّ والفرز والقصّ في قاعدة البيانات، ثم صفوف الصفحة وحدها تُبنى بحالة الاشتراك
+    (`tenant_row`)؛ فلا يكلّف ألف مستأجر ألف بناء في كل فتح."""
+    from django.db.models import Count, IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    now = timezone.now()
+
+    def _count(model: Any, **flt: Any) -> Any:
+        sq = (
+            model.unscoped.filter(tenant=OuterRef("pk"), **flt)
+            .order_by()
+            .values("tenant")
+            .annotate(n=Count("pk"))
+            .values("n")
+        )
+        return Coalesce(Subquery(sq, output_field=IntegerField()), 0)
+
+    seen_sq = (
+        Session.unscoped.filter(tenant=OuterRef("pk"))
+        .order_by("-last_seen_at")
+        .values("last_seen_at")[:1]
+    )
+    with platform_context():
+        base = Tenant.unscoped.all()
+        total = base.count()
+        countries = [
+            {"code": r["last_country"], "tenants": r["n"]}
+            for r in base.exclude(last_country="")
+            .values("last_country")
+            .annotate(n=Count("id"))
+            .order_by("-n", "last_country")
+        ]
+        unknown_country = base.filter(last_country="").count()
+        devices_total = Device.unscoped.filter(status=Device.Status.ACTIVE).count()
+        qs = base.annotate(
+            devices_active=_count(Device, status=Device.Status.ACTIVE),
+            devices_all=_count(Device),
+            branches_active=_count(Branch, is_active=True),
+            users_active=_count(User, is_active=True),
+            last_seen=Subquery(seen_sq),
+        )
+        term = q.strip()
+        if term:
+            qs = qs.filter(id=term) if _is_uuid(term) else qs.filter(name__icontains=term)
+        if country == "unknown":
+            qs = qs.filter(last_country="")
+        elif len(country) == 2:
+            qs = qs.filter(last_country=country.upper())
+        field = DIRECTORY_SORTS.get(sort, "created_at")
+        key = F(field).desc(nulls_last=True) if desc else F(field).asc(nulls_last=True)
+        shown = qs.count()
+        size = min(max(page_size, 1), 100)
+        pages = max((shown + size - 1) // size, 1)
+        number = min(max(page, 1), pages)
+        chunk = list(qs.order_by(key, "name")[(number - 1) * size : number * size])
+        rows = []
+        for t in chunk:
+            r = tenant_row(t, now)
+            rows.append(
+                {
+                    "id": r["id"],
+                    "name": r["name"],
+                    "country": t.last_country,
+                    "country_at": _iso(t.last_country_at),
+                    "plan_label": r["plan_label"],
+                    "plan_code": r["plan_code"],
+                    "status": r["status"],
+                    "status_label": r["status_label"],
+                    "devices_active": int(t.devices_active),
+                    "devices_all": int(t.devices_all),
+                    "branches": int(t.branches_active),
+                    "users": int(t.users_active),
+                    "last_seen_at": _iso(t.last_seen),
+                    "created_at": _iso(t.created_at),
+                }
+            )
+    return {
+        "tenants": rows,
+        "total": total,
+        "shown": shown,
+        "devices_total": devices_total,
+        "countries": countries,
+        "unknown_country": unknown_country,
+        "sort": sort if sort in DIRECTORY_SORTS else "created",
+        "desc": desc,
+        "q": q,
+        "country": country,
+        "page": {"number": number, "size": size, "total": shown, "pages": pages},
         "fetched_at": _iso(now),
     }
 

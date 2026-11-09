@@ -9726,6 +9726,72 @@
         }
       }
     },
+    "/api/platform/tenants/directory": {
+      "get": {
+        "operationId": "platform_tenants_directory_retrieve",
+        "description": "PLT-20: جدول المستأجرين — الدولة التي يعمل منها كل حساب وأجهزته وفروعه ومستخدموه (0005 §٢٢٩).\nحقول تشغيل لا دفاتر: لا مبيعات ولا عملاء ولا أصناف.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "country",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dir",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformTenantsDirectoryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/verifications": {
       "get": {
         "operationId": "platform_verifications_retrieve",
@@ -40198,6 +40264,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -40227,6 +40305,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -47166,6 +47248,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -47195,6 +47289,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -47221,6 +47319,18 @@
                 "type": "string"
               },
               "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "link_icon": {
+                "type": "string"
+              },
+              "link_label": {
+                "type": "string"
+              },
+              "link_url": {
                 "type": "string"
               },
               "name": {
@@ -47252,6 +47362,10 @@
               "platform_label",
               "version",
               "published_at",
+              "kind",
+              "link_url",
+              "link_label",
+              "link_icon",
               "filename",
               "size_bytes",
               "sha256",
@@ -47277,6 +47391,18 @@
                   "type": "string"
                 },
                 "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
                   "type": "string"
                 },
                 "name": {
@@ -47308,6 +47434,10 @@
                 "platform_label",
                 "version",
                 "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon",
                 "filename",
                 "size_bytes",
                 "sha256",
@@ -52896,6 +53026,155 @@
         "required": ["proof"],
         "type": "object"
       },
+      "GetPlatformTenantsDirectoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "countries": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "tenants": {
+                  "type": "integer"
+                }
+              },
+              "required": ["code", "tenants"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "country": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "boolean"
+          },
+          "devices_total": {
+            "type": "integer"
+          },
+          "fetched_at": {
+            "type": "string"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
+          "q": {
+            "type": "string"
+          },
+          "shown": {
+            "type": "integer"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "tenants": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "branches": {
+                  "type": "integer"
+                },
+                "country": {
+                  "type": "string"
+                },
+                "country_at": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "devices_active": {
+                  "type": "integer"
+                },
+                "devices_all": {
+                  "type": "integer"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "last_seen_at": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "plan_code": {
+                  "type": "string"
+                },
+                "plan_label": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "status_label": {
+                  "type": "string"
+                },
+                "users": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "country",
+                "country_at",
+                "plan_label",
+                "plan_code",
+                "status",
+                "status_label",
+                "devices_active",
+                "devices_all",
+                "branches",
+                "users",
+                "last_seen_at",
+                "created_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "unknown_country": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tenants",
+          "total",
+          "shown",
+          "devices_total",
+          "countries",
+          "unknown_country",
+          "sort",
+          "desc",
+          "q",
+          "country",
+          "page",
+          "fetched_at"
+        ],
+        "type": "object"
+      },
       "GetPlatformVerificationsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -53715,6 +53994,18 @@
                 "id": {
                   "type": "string"
                 },
+                "kind": {
+                  "type": "string"
+                },
+                "link_icon": {
+                  "type": "string"
+                },
+                "link_label": {
+                  "type": "string"
+                },
+                "link_url": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -53731,7 +54022,18 @@
                   "type": "string"
                 }
               },
-              "required": ["id", "name", "platform", "platform_label", "version", "published_at"],
+              "required": [
+                "id",
+                "name",
+                "platform",
+                "platform_label",
+                "version",
+                "published_at",
+                "kind",
+                "link_url",
+                "link_label",
+                "link_icon"
+              ],
               "type": "object"
             },
             "type": "array"

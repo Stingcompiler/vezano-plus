@@ -53,6 +53,13 @@ export const PLATFORM_ICONS = {
       <path d="M16.5 13v7M13 16.5h7" />
     </I>
   ),
+  // جدول المستأجرين: شبكة صفوف وأعمدة
+  directory: (
+    <I>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10" />
+    </I>
+  ),
   // أعمدة تحليلات الزوار
   analytics: (
     <I>
