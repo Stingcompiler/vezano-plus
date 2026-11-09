@@ -46,7 +46,8 @@ def test_beacon_counts_without_storing_address(monkeypatch: Any) -> None:
     rows = list(SiteVisit.objects.order_by("id"))
     assert [(r.path, r.country, r.source, r.device) for r in rows] == [
         ("/", "SD", "facebook", "mobile"),
-        ("/plans", "SD", "google.com", "mobile"),
+        # الزائر نفسه في اليوم نفسه: مصدر أول صفحة (مراجعة 2026-11-09)
+        ("/plans", "SD", "facebook", "mobile"),
         ("/register", "", "", "desktop"),
     ]
     # البصمة نفسها للزائر نفسه في اليوم، ولا أثر للعنوان في أي حقل
@@ -117,3 +118,28 @@ def test_prune_keeps_retention_window(settings: Any) -> None:
     SiteVisit.objects.create(day=today - timedelta(days=29), path="/", visitor="y")
     assert analytics.prune(timezone.now()) == 1
     assert list(SiteVisit.objects.values_list("visitor", flat=True)) == ["y"]
+
+
+def test_review_2026_11_09_login_excluded_one_source_and_address_cap(monkeypatch: Any) -> None:
+    """مراجعة 2026-11-09: صفحات الدخول لا تُعدّ، والزائر مصدر واحد في اليوم، وللعنوان
+    الواحد سقف."""
+    from django.core.cache import cache
+
+    cache.clear()
+    monkeypatch.setattr(analytics, "country_of", lambda ip: "")
+    c = Client()
+    # تاجر حالي يفتح صفحة الدخول كل يوم: ليست زيارة
+    assert _beacon(c, "/login?next=%2F", LAPTOP, "5.5.5.5") == 204
+    assert _beacon(c, "/invite/abc", LAPTOP, "5.5.5.5") == 204
+    assert SiteVisit.objects.count() == 0
+    # أول صفحة من فيسبوك بـutm، ثم تنقّل داخلي يحمل المُحيل الأصلي بلا utm: مصدر واحد
+    _beacon(c, "/?utm_source=facebook", PHONE, "6.6.6.6", "https://l.facebook.com/")
+    _beacon(c, "/plans", PHONE, "6.6.6.6", "https://l.facebook.com/")
+    _beacon(c, "/register", PHONE, "6.6.6.6", "")
+    assert set(SiteVisit.objects.values_list("source", flat=True)) == {"facebook"}
+    # سقف العنوان: متصفحات مختلفة الهوية من عنوان واحد لا تتجاوز السقف
+    monkeypatch.setattr(analytics, "MAX_PER_ADDRESS_WINDOW", 3)
+    cache.clear()
+    for i in range(6):
+        _beacon(c, "/", f"{LAPTOP} v{i}", "7.7.7.7")
+    assert SiteVisit.objects.filter(path="/", device="desktop").count() == 3

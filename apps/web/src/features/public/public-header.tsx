@@ -8,6 +8,8 @@ import { type CSSProperties, type MouseEvent, useEffect, useState } from "react"
 
 import "./landing.css";
 import { BrandMark, BrandName } from "@/features/public/brand-mark";
+import { operatorToken } from "@/features/platform/operator-session";
+import { getAccessToken } from "@/lib/api";
 import { sendVisitBeacon } from "@/lib/visit-beacon";
 
 /**
@@ -48,8 +50,10 @@ export function PublicHeader({
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  // تحليلات الزوار (0005 §٢١٩): إشارة لكل صفحة عامة تُفتح — الترويسة حاضرة في كلها
+  // تحليلات الزوار (0005 §٢١٩): إشارة لكل صفحة عامة تُفتح — الترويسة حاضرة في كلها. تاجر أو مشغّل
+  // داخل بجلسته ليس زائراً للموقع (مراجعة 2026-11-09)
   useEffect(() => {
+    if (getAccessToken() || operatorToken()) return;
     sendVisitBeacon();
   }, [pathname]);
   // على الهاتف فقط: يختفي بعد تمرير متّصل للأسفل ويعود بعد تمرير متّصل للأعلى — بتراكم ≥ 24px
