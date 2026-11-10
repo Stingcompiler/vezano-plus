@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import type { OrderRow } from "@/features/market/orders-client";
@@ -207,7 +208,7 @@ export function ShipClient({ id }: { id: string }) {
                 </p>
                 {d.side === "supplier" && d.can_ship ? (
                   <>
-                    <table className="pur-lines">
+                    <LinesTable>
                       <thead>
                         <tr>
                           <th scope="col">الصنف والوحدة</th>
@@ -268,7 +269,7 @@ export function ShipClient({ id }: { id: string }) {
                           );
                         })}
                       </tbody>
-                    </table>
+                    </LinesTable>
                     <TextField
                       label="رقم الناقل (اختياري)"
                       value={carrier}

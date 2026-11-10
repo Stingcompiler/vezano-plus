@@ -57,6 +57,28 @@ export async function expectFrame(page: Page, info: TestInfo, f: FrameExpectatio
       expect(actual.trim(), `${selector} ${prop}`).toBe(hexToRgb(tokenValue(token)));
     }
   }
+  // لا تمرير أفقي للصفحة في أي مقاس (مراجعة 2026-11-10 و-١–و-٣): ما يفيض يتمرّر داخل حاويته أو
+  // يُعاد ترتيبه، ولا يدفع الصفحة كلها فتبتعد الأزرار والمبالغ عن النافذة
+  const overflow = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const wide: string[] = [];
+    if (doc.scrollWidth > doc.clientWidth + 1) {
+      // أبعد العناصر تجاوزاً — لتسمية المسبِّب في رسالة الفشل
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>(".c-frame__main *"))) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && (r.left < -1 || r.right > doc.clientWidth + 1)) {
+          const name = `${el.tagName.toLowerCase()}.${String(el.className).split(" ")[0]}`;
+          wide.push(`${name}[${Math.round(r.left)},${Math.round(r.right)}]`);
+        }
+        if (wide.length >= 4) break;
+      }
+    }
+    return { scroll: doc.scrollWidth, client: doc.clientWidth, wide };
+  });
+  expect(
+    overflow.scroll,
+    `تمرير أفقي للصفحة في ${f.screenId}/${f.state} @${width}: ${overflow.scroll} > ${overflow.client} — ${overflow.wide.join(" ")}`,
+  ).toBeLessThanOrEqual(overflow.client + 1);
   // لا معنى باللون وحده ولا حرف عربي داخل mono (القاعدة 2) — يُفحص في كل مقاس
   const monoArabic = await page
     .locator(".sting-mono")

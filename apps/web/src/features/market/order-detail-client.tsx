@@ -20,6 +20,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import type { OrderRow } from "@/features/market/orders-client";
@@ -277,7 +278,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                       <span className="sting-mono">{latest.number}</span> يُعرض اقتراحاً يحتاج
                       قبولاً جديداً.
                     </p>
-                    <table className="pur-lines">
+                    <LinesTable>
                       <thead>
                         <tr>
                           <th scope="col">الصنف</th>
@@ -325,7 +326,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                           );
                         })}
                       </tbody>
-                    </table>
+                    </LinesTable>
                     {d.side === "buyer" ? (
                       <div className="acc-actions">
                         <Button pos loading={busy} onClick={() => void accept(latest.number)}>
@@ -351,7 +352,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                 ) : null}
 
                 <h3 className="cat-head__title">سلّم الكميات</h3>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف والوحدة</th>
@@ -379,7 +380,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </LinesTable>
                 <p className="acc-choice__note">{d.ladder_rule}</p>
                 <div className="home-kpis">
                   <div className="home-kpi">

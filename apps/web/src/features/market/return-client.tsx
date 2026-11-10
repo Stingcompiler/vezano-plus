@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import type { OrderRow } from "@/features/market/orders-client";
 import { api } from "@/lib/api";
@@ -244,7 +245,7 @@ export function ReturnClient({ id }: { id: string }) {
                   مرتجع على الطلب <span className="sting-mono">{p.order.number_label}</span> —
                   الكميات القابلة للإرجاع
                 </h3>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف</th>
@@ -315,7 +316,7 @@ export function ReturnClient({ id }: { id: string }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </LinesTable>
                 {p.side === "buyer" ? (
                   <div className="acc-actions">
                     <Button

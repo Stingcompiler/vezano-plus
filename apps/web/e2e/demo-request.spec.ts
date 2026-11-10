@@ -89,6 +89,24 @@ test.describe("طلب الجولة", () => {
   });
 });
 
+test.describe("طلب الجولة — رسالة التحقق", () => {
+  test("إرسال فارغ على نافذة قصيرة: الرسالة تُمرَّر إلى النافذة ويُنقل إليها التركيز", async ({
+    page,
+  }) => {
+    // مراجعة 2026-11-10 (و-٤): الرسالة أعلى النموذج والزرّ أسفله — كانت تُنشأ خارج النافذة
+    // والتركيز باقٍ على الزرّ. نافذة بارتفاع لوحة المفاتيح الظاهرة تجعل ذلك حتمياً في كل مقاس.
+    const { width } = page.viewportSize()!;
+    await page.setViewportSize({ width, height: 400 });
+    await page.goto("/#lp-contact");
+    const form = page.locator(".lp__contact");
+    await form.getByRole("button", { name: /اطلب الجولة/ }).click();
+    const error = form.locator(".lp__contact-error");
+    await expect(error).toContainText("اكتب اسمك");
+    await expect(error).toBeInViewport();
+    await expect(error).toBeFocused();
+  });
+});
+
 test.describe("متابعة طلب الجولة (PUB-06)", () => {
   test("بحث بالهاتف ← رمز إلى بريد الطلب ← الحالة وتعليقات الفريق، والتحديث بلا رمز جديد", async ({
     page,

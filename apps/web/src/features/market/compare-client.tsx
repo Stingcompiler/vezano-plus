@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { agoParts } from "@/features/home/format";
 import type { Detail, Version } from "@/features/market/order-detail-client";
@@ -356,7 +357,7 @@ export function CompareClient({ id }: { id: string }) {
                   <span className="sting-mono">Q-{cmp.order.number}</span> —{" "}
                   {cmp.order.supplier_name}
                 </h3>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">البند</th>
@@ -505,7 +506,7 @@ export function CompareClient({ id }: { id: string }) {
                       </td>
                     </tr>
                   </tbody>
-                </table>
+                </LinesTable>
                 {targetVersion?.valid_until && state !== "expired" ? (
                   <p className="acc-choice__note">
                     صلاحية النسخة <span className="sting-mono">{targetVersion.number}</span> تنتهي

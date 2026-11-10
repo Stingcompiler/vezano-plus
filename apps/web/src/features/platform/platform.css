@@ -1182,7 +1182,8 @@
   color: var(--color-brand-strong);
   text-decoration: underline;
   cursor: pointer;
-  min-block-size: 32px;
+  /* هدف اللمس 44 (القاعدة 10؛ مراجعة 2026-11-10 و-٩) */
+  min-block-size: var(--layout-touchTarget, 44px);
 }
 
 /* 0005 §١٩٠ — عدّاد الوارد في القائمة الجانبية */
@@ -1193,7 +1194,7 @@
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--color-danger, #b42318);
-  color: #fff;
+  color: var(--color-on-danger, #fff);
   font-size: var(--text-badge);
   text-align: center;
 }

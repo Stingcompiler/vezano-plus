@@ -19,7 +19,7 @@
 }
 
 .mp-reason {
-  color: var(--color-red-700, #b91c1c);
+  color: var(--color-danger, #b91c1c);
   font-size: var(--text-badge, 0.875rem);
 }
 
@@ -373,4 +373,48 @@
 [data-screen="MP-03"] .cus-head .c-status {
   align-self: flex-start;
   inline-size: fit-content;
+}
+
+/* جداول السطور في السوق (`.pur-lines`): كانت تأخذ شكلها من ورقة شاشات الشراء، وشاشات السوق لا
+   تحمّلها — فتظهر بلا تباعد، وعلى الهاتف أعرض من بطاقتها (`.cat-table` تقصّ ما يفيض) فتُقصّ
+   أعمدتها الأخيرة ومبالغها بلا تمرير (مراجعة 2026-11-10 و-١). هنا شكلها، وعلى الهاتف تتمرّر داخل
+   نفسها بعناوين أعمدتها فيُبلغ العمود الأخير. */
+.mp .pur-lines,
+[data-screen^="MP-"] .pur-lines,
+[data-screen^="ORD-"] .pur-lines {
+  inline-size: 100%;
+  border-collapse: collapse;
+  margin-block: var(--space-3, 12px);
+}
+.mp .pur-lines th,
+.mp .pur-lines td,
+[data-screen^="MP-"] .pur-lines th,
+[data-screen^="MP-"] .pur-lines td,
+[data-screen^="ORD-"] .pur-lines th,
+[data-screen^="ORD-"] .pur-lines td {
+  padding: var(--space-2, 8px);
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+  vertical-align: top;
+}
+@media (max-width: 833px) {
+  .mp .pur-lines,
+  [data-screen^="MP-"] .pur-lines,
+  [data-screen^="ORD-"] .pur-lines {
+    display: block;
+    overflow-x: auto;
+    max-inline-size: 100%;
+    -webkit-overflow-scrolling: touch;
+    /* حاوية لما هو مطلق الموضع داخلها (نص مخفي بصرياً في رأس عمود): بلا ذلك يخرج من منطقة
+       التمرير ويمدّ الصفحة نفسها */
+    position: relative;
+  }
+  .mp .pur-lines th,
+  .mp .pur-lines td,
+  [data-screen^="MP-"] .pur-lines th,
+  [data-screen^="MP-"] .pur-lines td,
+  [data-screen^="ORD-"] .pur-lines th,
+  [data-screen^="ORD-"] .pur-lines td {
+    white-space: nowrap;
+  }
 }

@@ -94,6 +94,11 @@
 
 /* PTY-08: معاينة المستند — ما سيراه المستلم؛ تُطبع وحدها بترويسة تحمل الوقت */
 .pty-doc {
+  /* جدول الكشف (خمسة أعمدة مبالغ) أعرض من الهاتف: يتمرّر داخل المعاينة ولا يمدّ الصفحة
+     (مراجعة 2026-11-10 و-٣) */
+  overflow-x: auto;
+  max-inline-size: 100%;
+  position: relative;
   border: 1px solid var(--color-border, #cbd5e1);
   border-radius: var(--radius-md, 9px);
   padding: var(--space-3, 12px);

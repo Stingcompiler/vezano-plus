@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import type { Detail } from "@/features/market/order-detail-client";
 import type { OrderRow } from "@/features/market/orders-client";
@@ -284,7 +285,7 @@ export function ReceiveClient({ id }: { id: string }) {
                   الشحنة {ordinal(p.shipment.number)} · {p.order.supplier_name} · المستلم:{" "}
                   {app.session.displayName ?? "—"}
                 </p>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف</th>
@@ -373,7 +374,7 @@ export function ReceiveClient({ id }: { id: string }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </LinesTable>
                 <div className="pub-cols">
                   <div>
                     <strong>ما يكتبه هذا الإجراء في دفترك:</strong>

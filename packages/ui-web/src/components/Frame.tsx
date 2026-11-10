@@ -52,6 +52,17 @@ export function Frame({
   // درج التنقل على الهاتف (< 834): القائمة تنزلق من جانب البداية؛ على الحاسوب شريط جانبي ثابت.
   // الروابط تبقى في DOM دائماً (النصوص المرسومة تُفحص في كل المقاسات) — الإغلاق بالإزاحة لا بالإخفاء.
   const [navOpen, setNavOpen] = useState(false);
+  // الدرج المغلق خارج الشاشة يبقى في DOM بنصوصه، لكنه ليس في ترتيب التركيز ولا يقرؤه قارئ الشاشة:
+  // كان Tab يمرّ بروابطه كلها وهي غير مرئية (مراجعة 2026-11-10 و-٥). `inert` لا يمسّ النص المرسوم.
+  const [drawerMode, setDrawerMode] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 833px)");
+    const sync = () => setDrawerMode(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [canBack, setCanBack] = useState(false);
   // يُحسب بعد الإماهة: لا سجل على الخادم، والجذر بلا رجوع
   useEffect(() => {
@@ -110,7 +121,33 @@ export function Frame({
   useEffect(() => {
     if (!navOpen) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") setNavOpen(false);
+      if (e.key === "Escape") {
+        setNavOpen(false);
+        return;
+      }
+      // الدرج المفتوح يحبس Tab داخله: كان التركيز يخرج إلى ما خلفه وهو محجوب بالستار
+      // (مراجعة 2026-11-10 و-٥)
+      const nav = navRef.current;
+      if (e.key !== "Tab" || nav === null) return;
+      const stops = [
+        ...nav.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select, [tabindex="0"]',
+        ),
+      ].filter((el) => el.offsetParent !== null);
+      const first = stops[0];
+      const last = stops[stops.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (!nav.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     const mq = window.matchMedia("(min-width: 834px)");
     const onWide = () => setNavOpen(false);
@@ -183,7 +220,14 @@ export function Frame({
           ) : null}
           {/* النقر على رابط داخل الدرج يغلقه (الانتقال عميلي فلا إعادة تحميل تُغلقه) — يُلتقط
               في مرحلة الالتقاط على الحاوية، والعناصر نفسها أزرار/روابط بمفاتيحها */}
-          <div id="frame-nav" className="c-frame__nav" data-region tabIndex={-1} ref={navRef}>
+          <div
+            id="frame-nav"
+            className="c-frame__nav"
+            data-region
+            tabIndex={-1}
+            ref={navRef}
+            inert={side && drawerMode && !navOpen}
+          >
             {side ? (
               <div className="c-frame__nav-head">
                 <span className="c-frame__nav-title">

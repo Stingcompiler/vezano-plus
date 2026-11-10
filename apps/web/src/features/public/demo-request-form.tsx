@@ -10,7 +10,7 @@
 import { isEmailLike, isValidDemoWhatsapp } from "@sting/app-core";
 import { Button, Notice, RadioGroupField, Status, TextAreaField, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "./demo-track.css";
@@ -29,6 +29,15 @@ export function DemoRequestForm({ intro }: { intro: ReactNode }) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // رسالة التحقق أعلى النموذج وزرّ الإرسال أسفله: على الهاتف كانت تُنشأ خارج النافذة والتركيز باقٍ
+  // على الزرّ، فلا يتغيّر شيء أمام الزائر (مراجعة 2026-11-10 و-٤). تُمرَّر إلى النافذة ويُنقل إليها
+  // التركيز فيقرؤها قارئ الشاشة.
+  const errRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!err) return;
+    errRef.current?.scrollIntoView({ block: "center" });
+    errRef.current?.focus({ preventScroll: true });
+  }, [err]);
   const [sent, setSent] = useState<CodeSent | null>(null);
   const [code, setCode] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -186,7 +195,11 @@ export function DemoRequestForm({ intro }: { intro: ReactNode }) {
 
       {step === "form" ? (
         <>
-          {err ? <Notice kind="error" title={err} /> : null}
+          {err ? (
+            <div ref={errRef} tabIndex={-1} className="lp__contact-error">
+              <Notice kind="error" title={err} />
+            </div>
+          ) : null}
           <div className="lp__contact-grid">
             <TextField
               label="اسمك"

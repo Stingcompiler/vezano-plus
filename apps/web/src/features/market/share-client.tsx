@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth } from "@/features/home/format";
 import { api } from "@/lib/api";
@@ -292,7 +293,7 @@ export function ShareClient() {
 
                 <h3 className="cat-head__title">روابطي ودعواتي</h3>
                 {data.invites.length ? (
-                  <table className="pur-lines">
+                  <LinesTable>
                     <thead>
                       <tr>
                         <th scope="col">الرابط</th>
@@ -338,7 +339,7 @@ export function ShareClient() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </LinesTable>
                 ) : (
                   <p className="acc-choice__note">لا روابط بعد.</p>
                 )}

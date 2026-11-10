@@ -19,15 +19,18 @@
 
 /* PUR-05: الهامش السالب بلونه لا بنافذة */
 .pur-neg {
-  color: var(--color-red-700, #b91c1c);
+  color: var(--color-danger, #b91c1c);
 }
 
 .pur-unit {
   font-family: inherit;
 }
 
+/* بطاقة لكل سطر على الهاتف — لشاشات الشراء وحدها. الورقة تبقى محمّلة بعد مغادرة الشاشة، فكانت
+   تحوّل جداول السوق (الصنف نفسه `.pur-lines`) إلى بطاقات بلا عناوين أعمدة بحسب ما زاره المستخدم
+   قبلها (مراجعة 2026-11-10 و-١). */
 @media (max-width: 833px) {
-  .pur-lines thead {
+  [data-screen^="PUR-"] .pur-lines thead {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -35,13 +38,13 @@
     clip: rect(0 0 0 0);
   }
 
-  .pur-lines tr {
+  [data-screen^="PUR-"] .pur-lines tr {
     display: grid;
     gap: var(--space-2, 8px);
     padding-block: var(--space-2, 8px);
   }
 
-  .pur-lines td {
+  [data-screen^="PUR-"] .pur-lines td {
     border: 0;
     padding: 0;
   }
