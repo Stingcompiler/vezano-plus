@@ -10,12 +10,13 @@ from typing import Any
 
 import pytest
 
+from catalog import services as catalog_services
 from core.models import User
 from core.tenancy import tenant_context
 from sales.models import Payment, Sale, SaleLine, SaleReturn
 from sales.tests.test_duplicates import ctx as ctx_fixture
 from sales.tests.test_returns import return_op
-from sales.tests.test_sale import do_push, sale_op
+from sales.tests.test_sale import ITEM, do_push, sale_op
 
 pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.usefixtures("pinned_clock")]
 ctx = ctx_fixture
@@ -106,3 +107,57 @@ def test_owner_discount_has_no_cap(ctx: dict[str, Any]) -> None:
     assert do_push(ctx, op) == ["accepted"]
     with tenant_context(ctx["tenant"].id):
         assert Sale.objects.get().exceeds_discount_cap is False
+
+
+# ------------------------------------------------------- مراجعة 2026-11-10 (ع-٦)
+def _decide(ctx: dict[str, Any], who: str, item_id: Any, decision: str) -> Any:  # noqa: F811
+    from django.test import Client
+
+    return Client().post(
+        f"/api/sync/quarantine/{item_id}/decide",
+        {"decision": decision, "reason": "راجعتُ الفاتورة مع الكاشير"},
+        content_type="application/json",
+        headers={"Authorization": f"Bearer {ctx[who]}"},
+    )
+
+
+def _over_return(ctx: dict[str, Any]) -> tuple[Sale, Any]:  # noqa: F811
+    """بيع وحدة بـ10,000 ثم مرتجع خمس وحدات بسعر الأصل — طلب المراجعة نفسه."""
+    from sync.models import QuarantinedOperation
+
+    assert do_push(ctx, sale_op(ctx, invoice="INV-1", qty="1000")) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        sale = Sale.objects.get(invoice_number="INV-1")
+    assert do_push(ctx, return_op(ctx, sale, qty="5000")) == ["conflicted"]
+    with tenant_context(ctx["tenant"].id):
+        assert not SaleReturn.objects.exists()
+        held = QuarantinedOperation.objects.get(code="return_exceeds_sale")
+        # لا نقد خرج ولا مخزون دخل: رصيد الصنف بيع الوحدة وحده
+        assert catalog_services.branch_balances(ctx["branch"].id) == {ITEM: "-1000"}
+    return sale, held.id
+
+
+def test_return_exceeding_the_sale_quantity_waits_for_the_owner(ctx: dict[str, Any]) -> None:
+    """كان يُقبل ويُخرج 50,000 نقداً ويُدخل خمس وحدات موسوماً — الآن يُحجر، والكاشير لا يحسمه."""
+    _sale, item_id = _over_return(ctx)
+    assert _decide(ctx, "access2", item_id, "accept").status_code == 403
+    r = _decide(ctx, "access", item_id, "reject")
+    assert r.status_code == 200 and r.json()["item"]["decision"] == "reject"
+    with tenant_context(ctx["tenant"].id):
+        assert not SaleReturn.objects.exists()
+        assert catalog_services.branch_balances(ctx["branch"].id) == {ITEM: "-1000"}
+
+
+def test_owner_accepting_an_exceeding_return_applies_it_flagged(ctx: dict[str, Any]) -> None:
+    """النقد خرج فعلاً عند الجهاز: قبول المالك يحفظ الواقعة بآثارها موسومة، مرة واحدة."""
+    _sale, item_id = _over_return(ctx)
+    r = _decide(ctx, "access", item_id, "accept")
+    assert r.status_code == 200, r.content
+    with tenant_context(ctx["tenant"].id):
+        ret = SaleReturn.objects.get()
+        assert ret.cash_minor == 50000 and ret.exceeds_original is True
+        assert catalog_services.branch_balances(ctx["branch"].id) == {ITEM: "4000"}
+    again = _decide(ctx, "access", item_id, "accept")
+    assert again.status_code == 400 and again.json()["detail"] == "already_decided"
+    with tenant_context(ctx["tenant"].id):
+        assert SaleReturn.objects.count() == 1

@@ -837,6 +837,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       status: 400,
       code: "validation_error",
     },
+    {
+      status: 403,
+      code: "price_owner_only",
+    },
   ],
   "POST /api/catalog/items/{item_id}/aliases": [
     {

@@ -309,7 +309,8 @@
    "409:group_exists"
   ],
   "POST /api/catalog/items": [
-   "400:validation_error"
+   "400:validation_error",
+   "403:price_owner_only"
   ],
   "POST /api/catalog/items/{item_id}/aliases": [
    "409:alias_taken"
@@ -50206,6 +50207,9 @@
        "correction_id": {
         "type": "string"
        },
+       "operation_id": {
+        "type": "string"
+       },
        "receipt_id": {
         "type": "string"
        }
@@ -50267,19 +50271,46 @@
             "business_date": {
              "type": "string"
             },
+            "condition": {
+             "type": "string"
+            },
+            "delta_base_qty_milli": {
+             "type": "string"
+            },
+            "destination": {
+             "type": "string"
+            },
             "device_id": {
+             "type": "string"
+            },
+            "factor_milli": {
+             "type": "string"
+            },
+            "item_id": {
              "type": "string"
             },
             "kind": {
              "type": "string"
             },
+            "line_id": {
+             "type": "string"
+            },
+            "line_total_minor": {
+             "type": "string"
+            },
             "method": {
+             "type": "string"
+            },
+            "movement_id": {
              "type": "string"
             },
             "occurred_at": {
              "type": "string"
             },
             "party_id": {
+             "type": "string"
+            },
+            "qty_milli": {
              "type": "string"
             },
             "reason": {
@@ -50294,29 +50325,37 @@
             "reference": {
              "type": "string"
             },
+            "return_id": {
+             "type": "string"
+            },
+            "return_number": {
+             "type": "string"
+            },
+            "sale_id": {
+             "type": "string"
+            },
+            "sale_line_id": {
+             "type": "string"
+            },
             "shift_id": {
+             "type": "string"
+            },
+            "source_entity": {
+             "type": "string"
+            },
+            "source_id": {
+             "type": "string"
+            },
+            "total_minor": {
+             "type": "string"
+            },
+            "unit_price_minor": {
              "type": "string"
             },
             "user_id": {
              "type": "string"
             }
            },
-           "required": [
-            "kind",
-            "method",
-            "reason",
-            "user_id",
-            "party_id",
-            "shift_id",
-            "branch_id",
-            "device_id",
-            "reference",
-            "receipt_id",
-            "occurred_at",
-            "amount_minor",
-            "business_date",
-            "receipt_number"
-           ],
            "type": "object"
           }
          },

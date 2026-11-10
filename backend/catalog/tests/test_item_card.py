@@ -14,7 +14,12 @@ from catalog import services
 from catalog.limits import FACTOR_MAX_MILLI, IMAGE_MAX_BYTES, NAME_MAX_LEN, PRICE_MAX_MINOR
 from catalog.models import ItemUnit
 from core.scenario import faults
-from core.scenario.seed import DEMO_CASHIER_IDENTIFIER, DEMO_PASSWORD, reset_scenario
+from core.scenario.seed import (
+    DEMO_CASHIER_IDENTIFIER,
+    DEMO_OWNER_IDENTIFIER,
+    DEMO_PASSWORD,
+    reset_scenario,
+)
 from sync.push import PROTOCOL_VERSION
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -35,15 +40,29 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 
 class Api:
-    def __init__(self) -> None:
-        reset_scenario()
+    """جلسة الكاشير افتراضاً؛ `owner=True` جلسة المالك — تحديد سعر البيع عند الإنشاء له وحده
+    (مراجعة 2026-11-10 ع-١٧)."""
+
+    def __init__(self, *, owner: bool = False) -> None:
+        seed = reset_scenario()
         self.client = Client()
-        r = self.client.post(
+        body = self.client.post(
             "/api/auth/account/login",
-            {"identifier": DEMO_CASHIER_IDENTIFIER, "password": DEMO_PASSWORD},
+            {
+                "identifier": DEMO_OWNER_IDENTIFIER if owner else DEMO_CASHIER_IDENTIFIER,
+                "password": DEMO_PASSWORD,
+            },
             content_type="application/json",
-        )
-        self.h = {"HTTP_AUTHORIZATION": f"Bearer {r.json()['access']}"}
+        ).json()
+        if owner:
+            # حساب المالك بعضويتين: يختار منشأة السيناريو بتذكرة الاختيار
+            body = self.client.post(
+                "/api/account/select",
+                {"tenant_id": str(seed.tenant_a.id)},
+                content_type="application/json",
+                HTTP_X_SELECT_TICKET=body["select_ticket"],
+            ).json()
+        self.h = {"HTTP_AUTHORIZATION": f"Bearer {body['access']}"}
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         return self.client.get(path, params or {}, **self.h)  # type: ignore[arg-type]
@@ -78,7 +97,7 @@ def test_units_list_carries_decimal_places() -> None:
 def test_create_rejects_all_errors_together_with_limits(monkeypatch: pytest.MonkeyPatch) -> None:
     """CAT-02 validation_error «خطآن يمنعان الحفظ»: الوحدة لم تُحدَّد + الباركود مستخدم في صنف آخر —
     معاً لا أوّلهما. وحدود الطول والقيمة تُرفض برمز وحدّ وقيمة (ACC-25)."""
-    api = Api()
+    api = Api(owner=True)
     r = api.post(
         "/api/catalog/items",
         {"name": "سكر ناعم", "base_unit_id": "", "barcode": "6291000000142"},
@@ -134,7 +153,7 @@ def test_create_rejects_all_errors_together_with_limits(monkeypatch: pytest.Monk
 def test_create_then_image_then_card_and_pull() -> None:
     """CAT-02 saving/success: الصنف يُحفظ أولاً ثم الصورة؛ البطاقة تُقرأ من `items/{id}`؛ الصورة لا
     تُرسل في PULL (حضورها فقط)؛ كل كتابة تصل الأجهزة."""
-    api = Api()
+    api = Api(owner=True)
     units = api.units()
     r = api.post(
         "/api/catalog/items",
@@ -310,3 +329,17 @@ def test_units_add_and_factor_change_keeps_past(monkeypatch: pytest.MonkeyPatch)
 
 def test_requires_tenant_session() -> None:
     assert Client().get("/api/catalog/units").status_code == 401
+
+
+def test_cashier_cannot_set_the_sale_price_when_creating() -> None:
+    """مراجعة 2026-11-10 (ع-١٧): من لا يغيّر السعر لا يحدّده عند الإنشاء؛ بلا سعر يُنشأ الصنف."""
+    api = Api()
+    units = api.units()
+    priced = {"name": "سكر رخيص", "base_unit_id": units["piece"]["id"], "sale_price_minor": "1"}
+    r = api.post("/api/catalog/items", priced)
+    assert r.status_code == 403 and r.json()["detail"] == "price_owner_only"
+    assert api.get("/api/catalog/items", {"q": "سكر رخيص"}).json()["items"] == []
+    for unpriced in ({"name": "صنف بلا سعر"}, {"name": "صنف بسعر صفر", "sale_price_minor": "0"}):
+        r = api.post("/api/catalog/items", {**unpriced, "base_unit_id": units["piece"]["id"]})
+        assert r.status_code == 201, r.json()
+        assert r.json()["sale_price_minor"] == "0"

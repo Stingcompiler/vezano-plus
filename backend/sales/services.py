@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -278,6 +280,20 @@ def apply_credit_override(
 
 # ---------------------------------------------------------------- المرتجع (T1.20؛ POS-10)
 
+#: قرار المالك في SYS-03 بقبول مرتجع تجاوز أصله — داخله يُطبَّق المرتجع موسوماً بدل أن يُحجر
+_accepting_exceeding_return: ContextVar[bool] = ContextVar(
+    "accepting_exceeding_return", default=False
+)
+
+
+@contextmanager
+def accepting_exceeding_return() -> Iterator[None]:
+    token = _accepting_exceeding_return.set(True)
+    try:
+        yield
+    finally:
+        _accepting_exceeding_return.reset(token)
+
 
 def apply_sale_return(
     tenant_id: uuid.UUID,
@@ -326,8 +342,8 @@ def apply_sale_return_line(
     entity_id: uuid.UUID,
     payload: Mapping[str, Any],
 ) -> None:
-    """سطر المرتجع: السقف تراكمي عبر كل مرتجعات الفاتورة (ACC-11) — التجاوز لا يُرفض بل يُكشف
-    مركزياً ويُوسم على المستند (§٧.٣: «تُحفظ الواقعة ومسار تسويتها دون تعديل الأصل»)."""
+    """سطر المرتجع: السقف تراكمي عبر كل مرتجعات الفاتورة (ACC-11). التجاوز يُحجر تعارضاً ليقرّره
+    المالك في SYS-03؛ قبوله يحفظ الواقعة موسومة `exceeds_original` دون تعديل الأصل (§٧.٣)."""
     from django.db.models import Sum
 
     from sales.models import SaleLine, SaleReturn, SaleReturnLine
@@ -349,6 +365,13 @@ def apply_sale_return_line(
     )
     already = sums["q"] or 0
     already_value = sums["v"] or 0
+    over_qty = int(already) + qty > line.qty_milli
+    over_value = int(already_value) + total > line.line_total_minor
+    # تجاوز الأصل تراكمياً (كمية أو قيمة) لا يدخل الصندوق ولا المخزون تلقائياً: يُحجر تعارضاً
+    # ليقرّر المالك في SYS-03. كان يُقبل ويُوسم، فمرتجع 5 من فاتورة بوحدة واحدة يُخرج نقد الخمس
+    # قبل أي مراجعة (مراجعة 2026-11-10 ع-٦). قبول المالك يطبّقه موسوماً كما كان.
+    if (over_qty or over_value) and not _accepting_exceeding_return.get():
+        raise BusinessConflict("return_exceeds_sale", str(line.id))
     SaleReturnLine.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
@@ -360,8 +383,6 @@ def apply_sale_return_line(
         unit_price_minor=int(payload["unit_price_minor"]),
         line_total_minor=total,
     )
-    over_qty = int(already) + qty > line.qty_milli
-    over_value = int(already_value) + total > line.line_total_minor
     if (over_qty or over_value) and not ret.exceeds_original:
         ret.exceeds_original = True
         ret.save(update_fields=["exceeds_original"])

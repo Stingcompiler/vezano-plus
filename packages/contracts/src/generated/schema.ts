@@ -4715,6 +4715,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scenario/faults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["scenario_faults_retrieve"];
+        put?: never;
+        post: operations["scenario_faults_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenario/market": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description بوابة المرحلة ٣ (§١٥.٥): يهيّئ السوق على منشآت السيناريو — «ب» بائع بقائمة تحقق مكتملة
+         *     بانتظار المراجعة (MK-4) وباقة تفتح النشر، ومسودّتا عرض (عام، وخاص بقائمة أسعار عضوها «أ»)،
+         *     «أ» و«ج» مشتريان، مالك نشط للثالثة «ج»، ومشغّل منصة — خلف حارس الأعطال؛ يعيد الرموز لا
+         *     الأسرار.
+         */
+        post: operations["scenario_market_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenario/marketing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description يسجّل إذن التسويق أو إيقافه لطرف في منشأة السيناريو (بوابة NOT — ACC-105/109) — خلف حارس
+         *     الأعطال؛ ينوب عن رابط الاشتراك/QR وإلغائه حتى يُبنى (PUB).
+         */
+        post: operations["scenario_marketing_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenario/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description إعادة ضبط السيناريو إلى الحالة الابتدائية (§١٥.٤).
+         *
+         *     محمية بالحارس لا بالمصادقة: البيئة نفسها تجريبية.
+         */
+        post: operations["scenario_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenario/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description يضبط اشتراك منشأة السيناريو (بوابة ORG-06/08 — ACC-80–82) — خلف حارس الأعطال. */
+        post: operations["scenario_subscription_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenario/verification-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description آخر رمز تحقق أُرسل لمعرّف — للتطوير والاختبار فقط (لا مزوّد إرسال معتمد بعد، G-02). */
+        get: operations["scenario_verification_code_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -5380,6 +5493,10 @@ export interface components {
          * @enum {string}
          */
         ExportKindEnum: "pdf" | "link";
+        Fault: {
+            key: components["schemas"]["KeyEnum"];
+            on: boolean;
+        };
         GroupList: {
             total_items: number;
         };
@@ -5452,6 +5569,20 @@ export interface components {
             factor_milli?: string;
             barcode?: string;
         };
+        /**
+         * @description * `drop_ack` - drop_ack
+         *     * `freeze_reconciliation` - freeze_reconciliation
+         *     * `network_cut` - network_cut
+         *     * `printer_fail` - printer_fail
+         *     * `verify_send_fail` - verify_send_fail
+         *     * `sms_provider_silent` - sms_provider_silent
+         *     * `sms_temp_reject` - sms_temp_reject
+         *     * `sms_worker_cut` - sms_worker_cut
+         *     * `po_send_fail` - po_send_fail
+         *     * `maintenance` - maintenance
+         * @enum {string}
+         */
+        KeyEnum: "drop_ack" | "freeze_reconciliation" | "network_cut" | "printer_fail" | "verify_send_fail" | "sms_provider_silent" | "sms_temp_reject" | "sms_worker_cut" | "po_send_fail" | "maintenance";
         Login: {
             /** Format: uuid */
             tenant_id: string;
@@ -5484,6 +5615,14 @@ export interface components {
             /** Format: uuid */
             request_id: string;
             status: string;
+        };
+        Marketing: {
+            /** @default a */
+            tenant: components["schemas"]["TenantEnum"];
+            name: string;
+            phone: string;
+            /** @default true */
+            consent: boolean;
         };
         Me: {
             /** Format: uuid */
@@ -5684,6 +5823,13 @@ export interface components {
             /** @default  */
             note: string;
         };
+        /**
+         * @description * `single` - single
+         *     * `dual` - dual
+         *     * `trial` - trial
+         * @enum {string}
+         */
+        PlanCodeEnum: "single" | "dual" | "trial";
         PriceRequest: {
             proposed_price_minor: string;
             reason?: string;
@@ -5873,6 +6019,13 @@ export interface components {
          * @enum {string}
          */
         SideEnum: "customer_due" | "supplier_owed";
+        /**
+         * @description * `trial` - trial
+         *     * `active` - active
+         *     * `expired` - expired
+         * @enum {string}
+         */
+        StateEnum: "trial" | "active" | "expired";
         StockOpening: {
             /** @default  */
             branch_id: string;
@@ -5885,6 +6038,13 @@ export interface components {
             endpoint: string;
             p256dh: string;
             auth: string;
+        };
+        Subscription: {
+            state: components["schemas"]["StateEnum"];
+            /** @default 0 */
+            days_since_expiry: number;
+            /** @default single */
+            plan_code: components["schemas"]["PlanCodeEnum"];
         };
         SupportReport: {
             app_version?: string;
@@ -5906,6 +6066,12 @@ export interface components {
             /** Format: date-time */
             last_accepted_at: string | null;
         };
+        /**
+         * @description * `a` - a
+         *     * `b` - b
+         * @enum {string}
+         */
+        TenantEnum: "a" | "b";
         TokenPair: {
             access: string;
             refresh: string;
@@ -17236,6 +17402,7 @@ export interface components {
             applied: {
                 balance_after_minor?: string;
                 correction_id?: string;
+                operation_id?: string;
                 receipt_id?: string;
             };
             item: {
@@ -17253,20 +17420,37 @@ export interface components {
                     entity: string;
                     id: string;
                     payload: {
-                        amount_minor: string;
-                        branch_id: string;
-                        business_date: string;
-                        device_id: string;
-                        kind: string;
-                        method: string;
-                        occurred_at: string;
-                        party_id: string;
-                        reason: string;
-                        receipt_id: string;
-                        receipt_number: string;
-                        reference: string;
-                        shift_id: string;
-                        user_id: string;
+                        amount_minor?: string;
+                        branch_id?: string;
+                        business_date?: string;
+                        condition?: string;
+                        delta_base_qty_milli?: string;
+                        destination?: string;
+                        device_id?: string;
+                        factor_milli?: string;
+                        item_id?: string;
+                        kind?: string;
+                        line_id?: string;
+                        line_total_minor?: string;
+                        method?: string;
+                        movement_id?: string;
+                        occurred_at?: string;
+                        party_id?: string;
+                        qty_milli?: string;
+                        reason?: string;
+                        receipt_id?: string;
+                        receipt_number?: string;
+                        reference?: string;
+                        return_id?: string;
+                        return_number?: string;
+                        sale_id?: string;
+                        sale_line_id?: string;
+                        shift_id?: string;
+                        source_entity?: string;
+                        source_id?: string;
+                        total_minor?: string;
+                        unit_price_minor?: string;
+                        user_id?: string;
                     };
                 }[];
                 operation_id: string;
@@ -29116,6 +29300,165 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_faults_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_faults_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Fault"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_market_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_marketing_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Marketing"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_subscription_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Subscription"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    scenario_verification_code_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

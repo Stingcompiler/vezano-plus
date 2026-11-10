@@ -188,10 +188,10 @@ def detail_payload(q: QuarantinedOperation) -> dict[str, Any]:
     confirmed = _confirmed(q)
     kind = str(q.original.get("kind", "")) if isinstance(q.original, Mapping) else ""
     effect = _receipt_effect(q, confirmed) if kind in ("payment_receipt", "refund") else {}
-    acceptable = (
-        kind in ("payment_receipt", "refund")
-        and confirmed is not None
-        and q.reason == QuarantinedOperation.Reason.CONFLICTED
+    acceptable = q.reason == QuarantinedOperation.Reason.CONFLICTED and (
+        (kind in ("payment_receipt", "refund") and confirmed is not None)
+        # مرتجع تجاوز أصله (مراجعة 2026-11-10 ع-٦): القبول يطبّقه موسوماً — النقد خرج فعلاً
+        or (kind == "sale_return" and q.code == EXCEEDING_RETURN)
     )
     return {
         "item": item_payload(q),
@@ -242,11 +242,40 @@ def decide(q: QuarantinedOperation, *, decision: str, reason: str, actor: User) 
     return {"item": item_payload(q), "applied": applied}
 
 
+EXCEEDING_RETURN = "return_exceeds_sale"
+
+
+def _accept_exceeding_return(q: QuarantinedOperation, *, actor: User) -> dict[str, Any]:
+    """يمرّر المرتجع المحجوز بخطّ PUSH نفسه بهويته ومُدخِله الأصليين، مأذوناً له بتجاوز الأصل:
+    يُحفظ موسوماً `exceeds_original` بآثاره (نقد أو ذمّة ومخزون). أي نتيجة غير القبول تُبطل القرار."""
+    from sales.services import accepting_exceeding_return
+    from sync.counter import ensure_state
+    from sync.push import PROTOCOL_VERSION, push
+
+    with accepting_exceeding_return():
+        resp = push(
+            device_id=q.device,
+            actor_user_id=q.actor_user or actor.id,
+            envelope={
+                "protocol_version": PROTOCOL_VERSION,
+                "sync_epoch": ensure_state(q.tenant_id).sync_epoch,
+                "request_id": f"review-{q.id}",
+                "operations": [dict(q.original) if isinstance(q.original, Mapping) else {}],
+            },
+        )
+    result = resp.results[0] if resp.results else None
+    if result is None or result.status not in ("accepted", "duplicate"):
+        raise ReviewRejected("manual_merge_required")
+    return {"operation_id": result.operation_id}
+
+
 def _accept(q: QuarantinedOperation, *, reason: str, actor: User) -> dict[str, Any]:
     """قبول نسخة الجهاز دون إعادة كتابة الأصل: سداد مؤكد بمبلغ آخر → تصحيح مبلغ يشير إليه."""
     detail = detail_payload(q)
     if not detail["acceptable"]:
         raise ReviewRejected("manual_merge_required")
+    if q.code == EXCEEDING_RETURN:
+        return _accept_exceeding_return(q, actor=actor)
     head = _head(_members(q.original), "parties.PaymentReceipt")
     chead = _head(detail["confirmed"]["members"], "parties.PaymentReceipt")
     r = PaymentReceipt.objects.filter(

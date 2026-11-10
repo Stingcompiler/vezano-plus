@@ -206,6 +206,17 @@ class ItemsView(APIView):
         s.is_valid(raise_exception=True)
         d = s.validated_data
         with tenant_context(tid):
+            # سعر البيع قرار منشأة (المالك): من لا يغيّر السعر لا يحدّده عند الإنشاء أيضاً — كان
+            # الكاشير يُمنع من تعديل السعر ثم ينشئ صنفاً جديداً بأي سعر (مراجعة 2026-11-10 ع-١٧).
+            # بلا سعر يُنشأ الصنف، ويُسعَّر عند البيع بإدخال مسجَّل باسم من أدخله (POS-05).
+            price = str(d.get("sale_price_minor", "") or "")
+            if price.isdigit() and int(price) > 0 and isinstance(auth := request.auth, AuthContext):
+                v = home.viewer_for(auth.user, auth.device)
+                if not (v.is_owner or v.role_code in prices.PRICE_ROLES):
+                    return Response(
+                        {"detail": "price_owner_only", "role_name": v.role_name},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             unit_id = _uuid(d.get("base_unit_id", ""))
             unit = Unit.objects.filter(id=unit_id).first() if unit_id else None
             group = (
