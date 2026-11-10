@@ -1,11 +1,14 @@
 /**
  * C-TABLE — جدول كثيف ≥834px ← بطاقة صف <834px بنفس التسميات (02-Design-System):
  * ممنوع التمرير الأفقي لقراءة بيانات مالية؛ لا يُحذف عمود يحمل قراراً.
+ * استثناء اضطراري (مراجعة 2026-11-10 و-٢): جدول ≥834 أضيق من أعمدته (لوحي بشريط جانبي) يتمرّر
+ * داخل نفسه بدل أن تُقصّ أعمدته أو تتمرّر الصفحة كلها — والبديل المطابق للقاعدة (بطاقة صف بحسب
+ * عرض الحاوية لا النافذة) قرار تصميم مفتوح.
  * table دلالي مع scope على الرؤوس؛ الترتيب aria-sort؛ أعمدة المال mono محاذاة بداية؛
  * الحالات: ready, loading (هياكل صفوف), empty, stale, server_error, partial.
  * أسهم بين الخلايا، Home/End للصف، Enter يفتح الصف (23-Handoff).
  */
-import { type KeyboardEvent, type ReactNode, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 export interface Column<Row> {
   readonly key: string;
@@ -107,10 +110,30 @@ export function Table<Row>({
   };
 
   const showEmpty = !loading && rows.length === 0;
+  // حين تضيق البطاقة عن الجدول (لوحي بشريط جانبي) يتمرّر داخل نفسه (مراجعة 2026-11-10 و-٢)، ومنطقة
+  // التمرير يجب أن تبلغها لوحة المفاتيح لتُمرَّر (WCAG 2.1.1) — فتصير موقف تركيز باسم الجدول حينها
+  // وحده، لا في كل جدول.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scrollable, setScrollable] = useState(false);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (el === null) return;
+    const measure = () => setScrollable(el.scrollWidth > el.clientWidth + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => ro.disconnect();
+  }, [rows.length, columns.length, loading]);
   return (
     <div
+      ref={wrapRef}
       className={`c-table${forceCards ? " c-table--cards" : ""}`}
       data-loading={loading ? "true" : undefined}
+      role={scrollable ? "region" : undefined}
+      aria-label={scrollable ? caption : undefined}
+      tabIndex={scrollable ? 0 : undefined}
     >
       {notice ? <div className="c-table__notice">{notice}</div> : null}
       <table className="c-table__table" role="grid">

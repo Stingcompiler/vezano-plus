@@ -1116,6 +1116,9 @@ html[dir="ltr"] .c-field__switch[aria-checked="true"] .c-field__switch-thumb {
 @media (min-width: 834px) {
   .c-table:not(.c-table--cards) {
     overflow-x: auto;
+    /* أفقياً فقط: `overflow-x: auto` يجعل العمودي `auto` أيضاً، وبكسل من تقريب حدود الجدول كان
+       يجعله منطقة تمرير عمودية بلا محتوى يُمرَّر */
+    overflow-y: hidden;
     max-inline-size: 100%;
     /* حاوية لما هو مطلق الموضع داخلها (العنوان المخفي بصرياً): لا يخرج من منطقة التمرير */
     position: relative;
