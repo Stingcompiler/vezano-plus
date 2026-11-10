@@ -260,6 +260,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "permission_denied",
     },
   ],
+  "GET /api/catalog/balances": [
+    {
+      status: 403,
+      code: "branch_forbidden",
+    },
+  ],
   "GET /api/catalog/items/{item_id}": [
     {
       status: 404,

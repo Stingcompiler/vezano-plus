@@ -108,16 +108,9 @@ def _dt(value: Any) -> Any:
     return parsed if timezone.is_aware(parsed) else timezone.make_aware(parsed)
 
 
-def _exceeds_discount_cap(
-    user: User | None, branch_id: uuid.UUID, discount: int, subtotal: int
-) -> bool:
-    """يقيس الخصم بسقف دور البائع في فرع البيع (حدّ العملية والنسبة؛ صفر = بلا حدّ). الرفض ليس
-    المطلوب دون اتصال (0005 §٧.٤)، والمطلوب أن يكتشف الخادم التجاوز (مراجعة 2026-11-05 بند ٣)."""
-    if discount <= 0:
-        return False
+def _caps_in_branch(user: User | None, branch_id: uuid.UUID) -> DiscountCaps:
     from core.models import UserBranchAccess
 
-    is_owner = bool(user and user.is_owner)
     access = (
         UserBranchAccess.unscoped.filter(user=user, branch_id=branch_id, revoked_at__isnull=True)
         .select_related("role")
@@ -125,10 +118,28 @@ def _exceeds_discount_cap(
         if user
         else None
     )
-    caps = caps_for(access.role.code if access else "", is_owner)
-    if caps.per_op_minor and discount > caps.per_op_minor:
-        return True
-    return bool(caps.percent and discount * 100 > subtotal * caps.percent)
+    return caps_for(access.role.code if access else "", bool(user and user.is_owner))
+
+
+def _exceeds_discount_cap(
+    seller: User | None, uploader: User | None, branch_id: uuid.UUID, discount: int, subtotal: int
+) -> bool:
+    """يقيس الخصم بسقف الدور في فرع البيع (حدّ العملية والنسبة؛ صفر = بلا حدّ). الرفض ليس
+    المطلوب دون اتصال (0005 §٧.٤)، والمطلوب أن يكتشف الخادم التجاوز (مراجعة 2026-11-05 بند ٣).
+
+    البائع من الحمولة وصاحب الجلسة الرافعة قد يختلفان (جهاز مشترك يرفع عمل زميل)، فيُقاس الخصم
+    بسقف كليهما ويُوسم إن تجاوز أيّهما: كاشير ينسب بيعه إلى المالك في حمولة مُعدّة لا يستعير
+    سقفه (مراجعة 2026-11-10 ع-٢). ثمن ذلك أن خصم المالك الذي يرفعه كاشير يُوسم للمراجعة."""
+    if discount <= 0:
+        return False
+    people = [seller] if uploader is None or uploader == seller else [seller, uploader]
+    for person in people:
+        caps = _caps_in_branch(person, branch_id)
+        if caps.per_op_minor and discount > caps.per_op_minor:
+            return True
+        if caps.percent and discount * 100 > subtotal * caps.percent:
+            return True
+    return False
 
 
 def apply_sale(
@@ -162,7 +173,11 @@ def apply_sale(
         discount_minor=discount,
         discount_reason=str(payload.get("discount_reason", "") or ""),
         exceeds_discount_cap=_exceeds_discount_cap(
-            user, branch_id, discount, int(payload["subtotal_minor"])
+            user,
+            User.unscoped.filter(id=actor_user_id).first(),
+            branch_id,
+            discount,
+            int(payload["subtotal_minor"]),
         ),
         total_minor=int(payload["total_minor"]),
         business_date=parse_date(str(payload["business_date"])) or timezone.localdate(),

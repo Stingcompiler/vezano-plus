@@ -22,7 +22,8 @@
    "403:permission_denied"
   ],
   "GET /api/catalog/balances": [
-   "401:لم يتم تزويد بيانات الدخول."
+   "401:لم يتم تزويد بيانات الدخول.",
+   "403:branch_forbidden"
   ],
   "GET /api/catalog/items": [
    "401:لم يتم تزويد بيانات الدخول."
@@ -15835,7 +15836,50 @@
       "type": "string"
      },
      "opening_balances": {
-      "items": {},
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "amount_minor": {
+         "type": "string"
+        },
+        "business_date": {
+         "type": "string"
+        },
+        "decided_by_name": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "occurred_at": {
+         "type": "string"
+        },
+        "party_id": {
+         "type": "string"
+        },
+        "reason": {
+         "type": "string"
+        },
+        "reference": {
+         "type": "string"
+        },
+        "side": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "party_id",
+        "side",
+        "amount_minor",
+        "reason",
+        "reference",
+        "business_date",
+        "decided_by_name",
+        "occurred_at"
+       ],
+       "type": "object"
+      },
       "type": "array"
      },
      "phone": {
@@ -49713,6 +49757,9 @@
            },
            "type": "array"
           },
+          "amount_minor": {
+           "type": "string"
+          },
           "balance_as_of": {
            "type": "string"
           },
@@ -49734,13 +49781,31 @@
           "base_unit_name": {
            "type": "string"
           },
+          "branch_id": {
+           "type": "string"
+          },
+          "business_date": {
+           "type": "string"
+          },
+          "change_minor": {
+           "type": "string"
+          },
           "credit_limit_minor": {
            "type": "string"
           },
           "deactivated_at": {
            "type": "string"
           },
+          "delta_base_qty_milli": {
+           "type": "string"
+          },
+          "device_id": {
+           "type": "string"
+          },
           "distinct_from_id": {
+           "type": "string"
+          },
+          "factor_milli": {
            "type": "string"
           },
           "group_id": {
@@ -49758,6 +49823,9 @@
           "image_updated_at": {
            "type": "string"
           },
+          "invoice_number": {
+           "type": "string"
+          },
           "is_active": {
            "type": "boolean"
           },
@@ -49767,10 +49835,28 @@
           "is_supplier": {
            "type": "boolean"
           },
+          "item_id": {
+           "type": "string"
+          },
+          "item_name": {
+           "type": "string"
+          },
           "last_sale_at": {
            "type": "string"
           },
+          "line_id": {
+           "type": "string"
+          },
+          "line_total_minor": {
+           "type": "string"
+          },
           "merged_into": {
+           "type": "string"
+          },
+          "method": {
+           "type": "string"
+          },
+          "movement_id": {
            "type": "string"
           },
           "name": {
@@ -49782,10 +49868,16 @@
           "note": {
            "type": "string"
           },
+          "occurred_at": {
+           "type": "string"
+          },
           "parent_id": {
            "type": "string"
           },
           "parent_name": {
+           "type": "string"
+          },
+          "payment_id": {
            "type": "string"
           },
           "phone": {
@@ -49794,11 +49886,44 @@
           "price_updated_at": {
            "type": "string"
           },
+          "qty_milli": {
+           "type": "string"
+          },
+          "reason": {
+           "type": "string"
+          },
+          "received_minor": {
+           "type": "string"
+          },
+          "sale_id": {
+           "type": "string"
+          },
           "sale_price_minor": {
            "type": "string"
           },
           "sort_order": {
            "type": "integer"
+          },
+          "source_entity": {
+           "type": "string"
+          },
+          "source_id": {
+           "type": "string"
+          },
+          "subtotal_minor": {
+           "type": "string"
+          },
+          "total_minor": {
+           "type": "string"
+          },
+          "unit_code": {
+           "type": "string"
+          },
+          "unit_id": {
+           "type": "string"
+          },
+          "unit_price_minor": {
+           "type": "string"
           },
           "units": {
            "items": {
@@ -49844,6 +49969,9 @@
            "type": "array"
           },
           "updated_at": {
+           "type": "string"
+          },
+          "user_id": {
            "type": "string"
           },
           "value": {
@@ -50004,6 +50132,12 @@
       "items": {
        "additionalProperties": false,
        "properties": {
+        "code": {
+         "type": "string"
+        },
+        "detail": {
+         "type": "string"
+        },
         "member_receipts": {
          "items": {
           "additionalProperties": false,
@@ -50036,8 +50170,7 @@
        },
        "required": [
         "operation_id",
-        "status",
-        "member_receipts"
+        "status"
        ],
        "type": "object"
       },

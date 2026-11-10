@@ -40,11 +40,19 @@ def _providers() -> Any:
     services.CASH_EFFECT_PROVIDERS[:] = saved
 
 
+ACTOR = "00000000-0000-0000-0000-000000000001"
+
+
 @pytest.fixture
 def ctx(two_tenants: TwoTenants) -> dict[str, Any]:
     with platform_context():
+        # هوية ثابتة: `cash_movement` ينسب حركاته إليه، والرفع يرفض مُدخِلاً من خارج المنشأة
         owner = User.objects.create_user(
-            tenant=two_tenants.a, username="salem", display_name="سالم", is_owner=True
+            tenant=two_tenants.a,
+            username="salem",
+            display_name="سالم",
+            is_owner=True,
+            id=uuid.UUID(ACTOR),
         )
         role = Role.unscoped.create(tenant=two_tenants.a, code="owner", name="مالك")
         UserBranchAccess.unscoped.create(
@@ -107,7 +115,7 @@ def cash_movement(shift_id: str, kind: str, amount: str, dep: str) -> dict[str, 
                     "kind": kind,
                     "signed_amount_minor": amount,
                     "reason": "توريد للخزنة الرئيسية" if kind == "withdrawal" else "عهدة إضافية",
-                    "actor_user_id": "00000000-0000-0000-0000-000000000001",
+                    "actor_user_id": ACTOR,
                     "occurred_at": f"{D}T09:00:00Z",
                 },
             }

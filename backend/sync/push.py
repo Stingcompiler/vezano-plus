@@ -287,6 +287,37 @@ def _quarantine(
         )
 
 
+#: حقول الحمولة التي تحمل فرع العملية — يجب أن تساوي فرع الجهاز الناقل. `branch_to_id` وجهة
+#: التحويل: فرع آخر من المنشأة نفسها بطبيعته، يتحقق منه مُطبِّق التحويل.
+_BRANCH_FIELDS = ("branch_id", "branch_from_id")
+#: حقول الحمولة التي تنسب العملية إلى مستخدم — يجب أن يكون من المنشأة نفسها
+_USER_FIELDS = ("user_id", "actor_user_id")
+
+
+def _identity_problem(
+    tenant_id: uuid.UUID, branch_id: str, op: ParsedOperation
+) -> tuple[str, str] | None:
+    """(الرمز، التفصيل) إن حملت العملية فرعاً غير فرع جهازها أو مستخدماً من خارج المنشأة.
+
+    الجهاز مسجَّل لفرع واحد (§١٠.١) وكل عميل يكتب فرع جهازه؛ فرع آخر لا يأتي إلا من طلب مُعدّ:
+    جهاز الفرع الأول كان يكتب بيعاً ومخزوناً في الثاني، وفرع غير موجود يُقبل بيعاً بلا أثر مخزني.
+    المُدخِل يجوز أن يختلف عن صاحب الجلسة (جهاز مشترك يرفع عمل زميل دون اتصال) لكنه من المنشأة."""
+    from core.models import User
+
+    users: set[str] = set()
+    for m in op.members:
+        if branch_id:
+            for name in _BRANCH_FIELDS:
+                value = m.payload.get(name)
+                if value not in (None, "") and str(value) != branch_id:
+                    return "branch_out_of_scope", f"{m.entity}.{name}"
+        users.update(str(m.payload[n]) for n in _USER_FIELDS if m.payload.get(n))
+    for raw in sorted(users):
+        if not _is_uuid(raw) or not User.unscoped.filter(tenant_id=tenant_id, id=raw).exists():
+            return "user_out_of_scope", raw
+    return None
+
+
 def _commit_operation(
     tenant_id: uuid.UUID,
     device_id: uuid.UUID,
@@ -324,6 +355,10 @@ def _commit_operation_tx(
         ).first()
         if existing is not None:
             return _compare_existing(existing, op)
+        # عملية جديدة: فرعها ومُدخِلها يُقاسان بالجهاز المصادَق لا بما تحمله (مراجعة 2026-11-10)
+        out_of_scope = _identity_problem(tenant_id, scope_id, op)
+        if out_of_scope is not None:
+            return OperationResult(str(op.operation_id), "rejected", *out_of_scope)
         # عضو يحمل هوية أثر معتمد تحت عملية أخرى (بند ٤–٥)
         taken = Member.unscoped.filter(
             tenant_id=tenant_id, entity_id__in=[m.entity_id for m in op.members]
@@ -391,6 +426,15 @@ def push(
     `branch_id` فرع الجهاز الناقل (من المصادقة): يحدد `scope_id` للكيانات الفرعية في sync_log.
     """
     tenant_id = require_tenant()
+    if not branch_id:
+        # منادٍ لم يمرّر الفرع: يُشتق من الجهاز نفسه، فلا يُفهرَس كيان فرعي بمفتاح فارغ لا يقرؤه
+        # سحب، ولا يسقط فحص الفرع (مراجعة 2026-11-10 ع-٥)
+        from core.models import Device
+
+        own = Device.unscoped.filter(tenant_id=tenant_id, id=device_id).values_list(
+            "branch_id", flat=True
+        )
+        branch_id = str(own.first() or "")
     if envelope.get("protocol_version") != PROTOCOL_VERSION:
         raise PushError("protocol_version_unsupported", str(envelope.get("protocol_version")))
     request_id = str(envelope.get("request_id", ""))
@@ -474,6 +518,8 @@ def push(
             result = OperationResult(str(op.operation_id), "rejected", "commit_failed")
         if result.status == "conflicted":
             _quarantine(tenant_id, device_id, op.raw, "conflicted", result.code, result.detail)
+        elif result.status == "rejected" and result.code.endswith("_out_of_scope"):
+            _quarantine(tenant_id, device_id, op.raw, "rejected", result.code, result.detail)
         if result.status in ("accepted", "duplicate"):
             accepted_now.add(op.operation_id)
             entities_now.update(m.entity_id for m in op.members)

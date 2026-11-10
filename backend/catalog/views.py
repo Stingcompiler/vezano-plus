@@ -80,13 +80,19 @@ class BalancesView(APIView):
             return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
         with tenant_context(tid):
             # فرع الجلسة: الجهاز، وإلا أول فرع مخوَّل للمستخدم (جلسة حساب بلا جهاز)
-            viewer_branch = home.viewer_for(auth.user, auth.device).branch
+            viewer = home.viewer_for(auth.user, auth.device)
+            viewer_branch = viewer.branch
             raw = str(request.query_params.get("branch_id", "")) or (
                 str(viewer_branch.id) if viewer_branch is not None else ""
             )
             branch_id = _uuid(raw)
             if branch_id is None:
                 return Response({"detail": "branch_required"}, status=status.HTTP_400_BAD_REQUEST)
+            # غير المالك يرى فرع جلسته وحده كما في `/api/inventory/balances`
+            # (مراجعة 2026-11-10 ع-٨)
+            own = viewer_branch.id if viewer_branch is not None else None
+            if not viewer.is_owner and branch_id != own:
+                return Response({"detail": "branch_forbidden"}, status=status.HTTP_403_FORBIDDEN)
             return Response(
                 {
                     "branch_id": str(branch_id),
