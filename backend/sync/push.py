@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -29,6 +30,8 @@ from sync.kinds import KindError, KindSpec, get_kind
 from sync.models import Member, Operation, QuarantinedOperation
 from sync.models_log import SyncLog
 from sync.scopes import scope_for
+
+logger = logging.getLogger(__name__)
 
 Status = Literal["accepted", "duplicate", "conflicted", "rejected", "pending_dependency"]
 
@@ -94,6 +97,20 @@ def _uuid(value: Any, what: str) -> uuid.UUID:
         raise KindError(f"{what}: not a uuid") from e
 
 
+def _check_id_fields(entity: str, fields: tuple[str, ...], payload: Mapping[str, Any]) -> None:
+    """كل حقل معرّف في الحمولة (`…_id`، وعناصر `…_ids`) معرّف صالح أو فارغ — يُرفض هنا رفضاً دائماً
+    مسمّى، لا في المُطبِّق باستثناء يُسقط النقل (مراجعة 2026-11-10 ع-٣)."""
+    for name in fields:
+        value = payload.get(name)
+        if value in (None, ""):
+            continue
+        if name.endswith("_id"):
+            _uuid(value, f"{entity}.{name}")
+        elif name.endswith("_ids") and isinstance(value, list):
+            for item in value:
+                _uuid(item, f"{entity}.{name}")
+
+
 @dataclass(frozen=True)
 class ParsedMember:
     entity: str
@@ -136,6 +153,8 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
     parsed: list[ParsedMember] = []
     seen: set[tuple[str, uuid.UUID]] = set()
     for m in raw_members:
+        if not isinstance(m, Mapping):
+            raise KindError("member must be an object")
         entity = str(m.get("entity", ""))
         espec = spec.entities.get(entity)
         if espec is None:
@@ -144,7 +163,7 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
         if (entity, entity_id) in seen:
             raise KindError(f"duplicate member {entity}:{entity_id}")
         seen.add((entity, entity_id))
-        if int(m.get("schema_version", 0)) != espec.schema_version:
+        if str(m.get("schema_version", "")) != str(espec.schema_version):
             raise KindError(f"{entity}: unsupported schema_version")
         payload = m.get("payload")
         if not isinstance(payload, dict):
@@ -158,6 +177,7 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
             raise KindError(f"{entity}: {e}") from e
         if espec.id_field is not None and str(payload.get(espec.id_field)) != str(entity_id):
             raise KindError(f"{entity}: {espec.id_field} must equal member id")
+        _check_id_fields(entity, espec.fields, payload)
         espec.validate(payload)
         parsed.append(ParsedMember(entity, entity_id, espec.schema_version, payload, digest))
 
@@ -458,7 +478,14 @@ def push(
     for raw in raw_ops:
         try:
             parsed.append(parse_operation(raw))
-        except KindError as e:
+        except Exception as e:
+            # KindError رفض مسمّى؛ وأي استثناء آخر من مُحقِّق نوعٍ صادف شكلاً لم يتوقعه (قائمة مكان
+            # نص…) رفضٌ دائم مثله لا 500 يُسقط النقل (مراجعة 2026-11-10 ع-٣)
+            if isinstance(e, KindError):
+                why = str(e)
+            else:
+                logger.exception("push: operation could not be parsed")
+                why = f"malformed operation: {type(e).__name__}"
             op_id = str(raw.get("operation_id", "")) if isinstance(raw, Mapping) else ""
             _quarantine(
                 tenant_id,
@@ -466,10 +493,10 @@ def push(
                 raw if isinstance(raw, Mapping) else {"raw": raw},
                 "rejected",
                 "validation",
-                str(e),
+                why,
             )
             key = uuid.UUID(op_id) if _is_uuid(op_id) else uuid.uuid4()
-            results[key] = OperationResult(op_id or str(key), "rejected", "validation", str(e))
+            results[key] = OperationResult(op_id or str(key), "rejected", "validation", why)
             failed_now.add(key)
             if isinstance(raw, Mapping):
                 for m in raw.get("members") or []:
@@ -515,6 +542,14 @@ def push(
         except DatabaseError as e:
             # فشل الالتزام (قيد مؤجل مثلاً): تراجعت المعاملة؛ يُسجَّل رفضاً بأصله (بند ٩)
             _quarantine(tenant_id, device_id, op.raw, "rejected", "commit_failed", str(e)[:500])
+            result = OperationResult(str(op.operation_id), "rejected", "commit_failed")
+        except Exception as e:
+            # استثناء لم يتوقعه التحقق ولا المُطبِّق: نقطة حفظ العملية تراجعت عنها وحدها. كان يخرج
+            # من هنا فيردّ الخادم 500 ويتراجع عن الظرف كله، والجهاز يعيده بلا نهاية فيتوقف طابوره
+            # (مراجعة 2026-11-10 ع-٣). تُحجر بأصلها وسببها، ويُسجَّل الأثر كاملاً للتشخيص.
+            logger.exception("push: operation %s (%s) failed in applier", op.operation_id, op.kind)
+            detail = f"{type(e).__name__}: {e}"[:500]
+            _quarantine(tenant_id, device_id, op.raw, "rejected", "commit_failed", detail)
             result = OperationResult(str(op.operation_id), "rejected", "commit_failed")
         if result.status == "conflicted":
             _quarantine(tenant_id, device_id, op.raw, "conflicted", result.code, result.detail)
