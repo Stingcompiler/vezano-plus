@@ -49,8 +49,7 @@ export async function addJob(job: PrintJob): Promise<void> {
   await saveQueue([...(await listQueue()), job]);
 }
 
-export const toBase64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
-export const fromBase64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+export { fromBase64, toBase64 } from "./base64";
 
 export async function clearQueue(): Promise<void> {
   if (window.__stingDeskQueue) {

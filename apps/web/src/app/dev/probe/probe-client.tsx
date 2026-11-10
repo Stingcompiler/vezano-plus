@@ -9,7 +9,16 @@ import { getStorage } from "@/lib/storage";
 
 type Kind = "ready" | "offline" | "error";
 
+/**
+ * صفحة فحص للتطوير والاختبار وحدهما: زرّها يكتب عملية `probe` في تخزين الجهاز الحقيقي، وكانت تُبنى
+ * في الإنتاج وداخل حزمة الحاسوب بلا حارس (مراجعة 2026-11-10 ع-١٨). في الإنتاج لا تُركَّب.
+ */
 export function ProbeClient() {
+  if (process.env.NODE_ENV === "production") return null;
+  return <Probe />;
+}
+
+function Probe() {
   const [kind, setKind] = useState<Kind>("ready");
   const [stored, setStored] = useState<string>("—");
   useEffect(() => {

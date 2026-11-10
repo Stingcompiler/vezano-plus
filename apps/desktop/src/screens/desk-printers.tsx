@@ -47,7 +47,11 @@ export function DeskPrinters() {
       const def = found.find((p) => p.default)?.name ?? found[0]?.name ?? "";
       setPrinters(found);
       setQueue(q);
-      setChoice(saved ?? { receipts: def, reports: def, networkIp: "" });
+      const initial = saved ?? { receipts: def, reports: def, networkIp: "" };
+      setChoice(initial);
+      // الطابعة الافتراضية المعروضة تُحفظ من أول مرة: كان الحفظ عند تغيير القائمة وحده، فبطابعة
+      // واحدة لا تغيير ممكن ولا اختيار محفوظ، ويذهب الإيصال إلى حوار النظام (مراجعة 2026-11-10 ع-١١)
+      if (!saved && def) void saveChoice(initial);
     })();
   }, []);
 
