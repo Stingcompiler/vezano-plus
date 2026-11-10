@@ -8,7 +8,7 @@
  */
 import { readVerifiers } from "@sting/sync-core";
 
-import { getStorage } from "@/lib/storage";
+import { getStorage, readTenantMeta, tenantsWithStorage } from "@/lib/storage";
 
 export const DEVICE_SETUP_KEY = "device.setup";
 export const DEVICE_SETUP_TENANTS_KEY = "device.setup.tenants";
@@ -36,12 +36,34 @@ export async function hasPinFor(userId: string | null | undefined): Promise<bool
   }
 }
 
+/**
+ * المنشآت المهيّأة على هذا الجهاز. لكل منشأة قاعدتها (مراجعة 2026-11-10 ع-٤)، فالقائمة اتحاد ما
+ * في القاعدة النشطة وما في قواعد المنشآت الأخرى على الجهاز.
+ */
 export async function localSetupTenants(): Promise<readonly string[]> {
+  const parse = (raw: string | null): string[] => {
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  };
+  const found = new Set<string>();
   try {
     const raw = await getStorage().read((tx) => tx.getMeta(DEVICE_SETUP_TENANTS_KEY));
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    for (const t of parse(raw)) found.add(t);
   } catch {
-    return [];
+    /* لا قاعدة نشطة مقروءة */
   }
+  for (const tenantId of tenantsWithStorage()) {
+    if (found.has(tenantId)) continue;
+    try {
+      const listed = parse(await readTenantMeta(tenantId, DEVICE_SETUP_TENANTS_KEY));
+      if (listed.includes(tenantId)) found.add(tenantId);
+    } catch {
+      /* قاعدة منشأة أخرى غير مقروءة: ليست قابلة للفتح دون اتصال */
+    }
+  }
+  return [...found];
 }

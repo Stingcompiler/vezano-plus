@@ -14,6 +14,7 @@ import { api, apiBaseUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { hasLocalSetup } from "@/lib/device-setup";
 import { useOnline } from "@/lib/online";
+import { openTenantStorage } from "@/lib/storage";
 import { BrandMark } from "@/features/public/brand-mark";
 import { PublicFooter } from "@/features/public/public-footer";
 
@@ -131,6 +132,9 @@ export function LoginClient() {
       }
       setSucceeded(true);
       if (data.access && data.refresh && data.session_id) {
+        // دخول مباشر بعضوية واحدة: قاعدة هذه المنشأة تُفتح قبل وضعها في السياق — الجهاز قد يحمل
+        // قاعدة منشأة أخرى من جلسة سابقة (مراجعة 2026-11-10 ع-٤)
+        if (data.tenant_id) await openTenantStorage(data.tenant_id);
         app.setTokens({ access: data.access, refresh: data.refresh, sessionId: data.session_id });
         app.setSession({
           ...app.session,

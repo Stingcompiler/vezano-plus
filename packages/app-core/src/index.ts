@@ -48,3 +48,16 @@ export type {
   SearchResult,
   Task,
 } from "./home-types";
+export {
+  ACTIVE_DATABASE_KEY,
+  activateTenantDatabase,
+  activeDatabase,
+  databaseOf,
+  type KeyValueStore,
+  LEGACY_DATABASE,
+  legacyInspected,
+  recordLegacyOwner,
+  releaseDatabase,
+  TENANT_LOCAL_PREFIXES,
+  tenantsWithDatabase,
+} from "./tenant-storage";
