@@ -11404,132 +11404,6 @@
         }
       }
     },
-    "/api/scenario/faults": {
-      "get": {
-        "operationId": "scenario_faults_retrieve",
-        "tags": ["scenario"],
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          }
-        }
-      },
-      "post": {
-        "operationId": "scenario_faults_create",
-        "tags": ["scenario"],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Fault"
-              }
-            }
-          },
-          "required": true
-        },
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
-    "/api/scenario/market": {
-      "post": {
-        "operationId": "scenario_market_create",
-        "description": "بوابة المرحلة ٣ (§١٥.٥): يهيّئ السوق على منشآت السيناريو — «ب» بائع بقائمة تحقق مكتملة\nبانتظار المراجعة (MK-4) وباقة تفتح النشر، ومسودّتا عرض (عام، وخاص بقائمة أسعار عضوها «أ»)،\n«أ» و«ج» مشتريان، مالك نشط للثالثة «ج»، ومشغّل منصة — خلف حارس الأعطال؛ يعيد الرموز لا\nالأسرار.",
-        "tags": ["scenario"],
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          },
-          "403": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
-    "/api/scenario/marketing": {
-      "post": {
-        "operationId": "scenario_marketing_create",
-        "description": "يسجّل إذن التسويق أو إيقافه لطرف في منشأة السيناريو (بوابة NOT — ACC-105/109) — خلف حارس\nالأعطال؛ ينوب عن رابط الاشتراك/QR وإلغائه حتى يُبنى (PUB).",
-        "tags": ["scenario"],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Marketing"
-              }
-            }
-          },
-          "required": true
-        },
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          },
-          "403": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
-    "/api/scenario/reset": {
-      "post": {
-        "operationId": "scenario_reset_create",
-        "description": "إعادة ضبط السيناريو إلى الحالة الابتدائية (§١٥.٤).\n\nمحمية بالحارس لا بالمصادقة: البيئة نفسها تجريبية.",
-        "tags": ["scenario"],
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
-    "/api/scenario/subscription": {
-      "post": {
-        "operationId": "scenario_subscription_create",
-        "description": "يضبط اشتراك منشأة السيناريو (بوابة ORG-06/08 — ACC-80–82) — خلف حارس الأعطال.",
-        "tags": ["scenario"],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Subscription"
-              }
-            }
-          },
-          "required": true
-        },
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          },
-          "403": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
-    "/api/scenario/verification-code": {
-      "get": {
-        "operationId": "scenario_verification_code_retrieve",
-        "description": "آخر رمز تحقق أُرسل لمعرّف — للتطوير والاختبار فقط (لا مزوّد إرسال معتمد بعد، G-02).",
-        "tags": ["scenario"],
-        "security": [{}],
-        "responses": {
-          "200": {
-            "description": "No response body"
-          }
-        }
-      }
-    },
     "/api/search": {
       "get": {
         "operationId": "search_retrieve",
@@ -12972,18 +12846,6 @@
         "type": "string",
         "description": "* `pdf` - pdf\n* `link` - link"
       },
-      "Fault": {
-        "type": "object",
-        "properties": {
-          "key": {
-            "$ref": "#/components/schemas/KeyEnum"
-          },
-          "on": {
-            "type": "boolean"
-          }
-        },
-        "required": ["key", "on"]
-      },
       "GroupList": {
         "type": "object",
         "properties": {
@@ -13187,22 +13049,6 @@
           }
         }
       },
-      "KeyEnum": {
-        "enum": [
-          "drop_ack",
-          "freeze_reconciliation",
-          "network_cut",
-          "printer_fail",
-          "verify_send_fail",
-          "sms_provider_silent",
-          "sms_temp_reject",
-          "sms_worker_cut",
-          "po_send_fail",
-          "maintenance"
-        ],
-        "type": "string",
-        "description": "* `drop_ack` - drop_ack\n* `freeze_reconciliation` - freeze_reconciliation\n* `network_cut` - network_cut\n* `printer_fail` - printer_fail\n* `verify_send_fail` - verify_send_fail\n* `sms_provider_silent` - sms_provider_silent\n* `sms_temp_reject` - sms_temp_reject\n* `sms_worker_cut` - sms_worker_cut\n* `po_send_fail` - po_send_fail\n* `maintenance` - maintenance"
-      },
       "Login": {
         "type": "object",
         "properties": {
@@ -13286,32 +13132,6 @@
           }
         },
         "required": ["request_id", "status"]
-      },
-      "Marketing": {
-        "type": "object",
-        "properties": {
-          "tenant": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TenantEnum"
-              }
-            ],
-            "default": "a"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 32
-          },
-          "consent": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": ["name", "phone"]
       },
       "Me": {
         "type": "object",
@@ -13851,11 +13671,6 @@
           }
         }
       },
-      "PlanCodeEnum": {
-        "enum": ["single", "dual", "trial"],
-        "type": "string",
-        "description": "* `single` - single\n* `dual` - dual\n* `trial` - trial"
-      },
       "PriceRequest": {
         "type": "object",
         "properties": {
@@ -14347,11 +14162,6 @@
         "type": "string",
         "description": "* `customer_due` - customer_due\n* `supplier_owed` - supplier_owed"
       },
-      "StateEnum": {
-        "enum": ["trial", "active", "expired"],
-        "type": "string",
-        "description": "* `trial` - trial\n* `active` - active\n* `expired` - expired"
-      },
       "StockOpening": {
         "type": "object",
         "properties": {
@@ -14387,28 +14197,6 @@
           }
         },
         "required": ["auth", "endpoint", "p256dh"]
-      },
-      "Subscription": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "$ref": "#/components/schemas/StateEnum"
-          },
-          "days_since_expiry": {
-            "type": "integer",
-            "minimum": 0,
-            "default": 0
-          },
-          "plan_code": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PlanCodeEnum"
-              }
-            ],
-            "default": "single"
-          }
-        },
-        "required": ["state"]
       },
       "SupportReport": {
         "type": "object",
@@ -14469,11 +14257,6 @@
           "server_time",
           "sync_epoch"
         ]
-      },
-      "TenantEnum": {
-        "enum": ["a", "b"],
-        "type": "string",
-        "description": "* `a` - a\n* `b` - b"
       },
       "TokenPair": {
         "type": "object",
