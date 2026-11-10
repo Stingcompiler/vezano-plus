@@ -67,6 +67,9 @@ export default function Register() {
   const [devCode, setDevCode] = useState<string | null>(null);
 
   const fetchDevCode = async (id: string) => {
+    // نقطة سيناريو تطويرية: لا تُركَّب في الإنتاج — فلا تُنادى في بناء الإصدار، والمعرّف لا يخرج
+    // في سلسلة استعلام طلبٍ لا معنى له (مراجعة 2026-11-10 ع-٢١)
+    if (!__DEV__) return setDevCode(null);
     try {
       const r = await fetch(
         `${API_URL}/api/scenario/verification-code?identifier=${encodeURIComponent(id)}`,

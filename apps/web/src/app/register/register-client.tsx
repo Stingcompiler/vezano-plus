@@ -42,6 +42,9 @@ export function RegisterClient() {
   const [devCode, setDevCode] = useState<string | null>(null);
 
   const fetchDevCode = async (id: string) => {
+    // نقطة سيناريو تطويرية: لا تُركَّب في الإنتاج (404) — فلا تُنادى فيه أصلاً، والمعرّف لا يخرج في
+    // سلسلة استعلام طلبٍ لا معنى له (مراجعة 2026-11-10 ع-٢١)
+    if (process.env.NODE_ENV === "production") return setDevCode(null);
     try {
       const r = await fetch(
         `${apiBaseUrl()}/api/scenario/verification-code?identifier=${encodeURIComponent(id)}`,

@@ -125,7 +125,9 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
     if (!sale) return;
     // فشل الطابعة لا يلغي البيع: مفتاح العطل `printer_fail` يحاكي طابعة لا تستجيب (WEB-03 يربط الناقل)
     let failed = false;
-    if (online) {
+    // مفتاح العطل للتطوير والاختبار وحدهما: في الإنتاج لا طلب برمز الجلسة مع كل طباعة إلى نقطة
+    // غير مركَّبة (مراجعة 2026-11-10 ع-٢١)
+    if (online && process.env.NODE_ENV !== "production") {
       try {
         // خارج العقد (نقطة سيناريو تطويرية خلف حارس) — لذا fetch مباشر
         const r = await fetch(`${apiBaseUrl()}/api/scenario/faults`, {
