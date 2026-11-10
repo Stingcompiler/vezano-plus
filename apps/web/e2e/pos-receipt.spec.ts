@@ -350,6 +350,10 @@ test.describe("POS-08", () => {
       return rows.map((r) => r.kind);
     });
     expect(kinds.filter((k) => k === "sale")).toHaveLength(1);
+    // مراجعة 2026-11-10 (ع-١٦): إعادة التحميل لا تعيد الطبعة «أصلاً» — الوسم من سجل الجهاز لا الذاكرة
+    await login(page, "/pos/receipt/sale-1");
+    await expect(page.getByRole("button", { name: "إعادة طباعة نسخة" })).toBeVisible();
+    await expect(root.locator(".c-print__copy")).toHaveText("نسخة");
   });
 
   test("server_error: رُفض الرفع — البيع لا يُلغى", async ({ page }, info) => {

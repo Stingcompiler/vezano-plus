@@ -1,6 +1,6 @@
 import { type StoredOperation } from "@sting/platform";
 import { readLastPush, pushPending } from "@sting/app-core";
-import { type LocalSale, readSale } from "@sting/sync-core";
+import { type LocalSale, readSale, readSalePrints, recordSalePrint } from "@sting/sync-core";
 import { hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
 import {
@@ -44,7 +44,10 @@ export default function Receipt() {
     const storage = await getStorage();
     const s = await readSale(storage, id);
     setSale(s);
-    if (s) setOp(await storage.read((t) => t.getOperation(s.operation_id)));
+    if (s) {
+      setOp(await storage.read((t) => t.getOperation(s.operation_id)));
+      setPrints(await readSalePrints(storage, s.id));
+    }
     const home = await storage.read((t) => t.getMeta("home.cache"));
     if (home)
       setShop(
@@ -83,7 +86,7 @@ export default function Receipt() {
     const ok = await printReceipt(html(prints.length > 0));
     if (!ok) return setFailed(true);
     setFailed(false);
-    setPrints((p) => [...p, new Date().toISOString()]);
+    setPrints(await recordSalePrint(await getStorage(), sale.id, new Date().toISOString()));
   };
   const retry = async () => {
     const storage = await getStorage();

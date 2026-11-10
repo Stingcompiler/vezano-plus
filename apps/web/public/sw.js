@@ -1,14 +1,14 @@
 /* Service Worker — Sting (WEB-01/WEB-02؛ §١١.٦، §١٢.٥، §١٣.٢؛ ACC-76، 93، 95، 107)
  *
  * - يخزّن هيكل التطبيق والأصول الثابتة والخطوط (cache-first)، والتنقّل network-first مع الرجوع
- *   إلى الهيكل المخزَّن بلا اتصال.
+ *   بلا اتصال إلى الصفحة المخزَّنة **لمسارها**، ثم إلى الهيكل «/» لما لم يُزَر.
  * - لا يخزّن ردود `/api/` أبداً (لا cache-all) ولا نطاق بوابة الزبون `/portal/` — شبكة فقط.
  * - التحديث الآمن: العامل الجديد لا يستبدل الحالي من تحت يد المستخدم؛ الصفحة تطلب `SKIP_WAITING`
  *   بعد إذنه وبعد التحقق من خلوّ الطابور من معلّق (ACC-93)، أو يُطبَّق عند إغلاق آخر تبويب.
  * - Web Push (WEB-02): الحمولة عناوين ثابتة بلا محتوى حساس (لا مبالغ ولا أسماء)؛ النقر يفتح
  *   التطبيق على المسار المرفق أو يركّز تبويباً مفتوحاً. الاشتراك المنتهي يُبلَّغ للصفحة لتجدّد صامتاً.
  */
-const SW_VERSION = "sting-sw-v4";
+const SW_VERSION = "sting-sw-v5";
 const SHELL_CACHE = `${SW_VERSION}-shell`;
 const ASSET_CACHE = `${SW_VERSION}-assets`;
 // الأيقونات مع الهيكل: شاشة البداية والأيقونة المثبَّتة تعملان بلا اتصال (0005 §١٢٤)
@@ -26,6 +26,18 @@ const isAsset = (url) =>
   url.pathname.startsWith("/_next/static/") ||
   url.pathname.startsWith("/fonts/") ||
   /\.(woff2?|ttf|otf|png|svg|ico|webp)$/.test(url.pathname);
+
+// صفحات التنقّل المخزَّنة بمساراتها محدودة العدد: مسارات الإيصالات والعملاء لا تنتهي، والأقدم يخرج
+const MAX_PAGES = 60;
+
+async function rememberPage(pathname, response) {
+  const cache = await caches.open(SHELL_CACHE);
+  await cache.put(pathname, response);
+  const pages = (await cache.keys()).filter((r) => !SHELL_URLS.includes(new URL(r.url).pathname));
+  await Promise.all(
+    pages.slice(0, Math.max(0, pages.length - MAX_PAGES)).map((r) => cache.delete(r)),
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -75,14 +87,24 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (req.mode === "navigate") {
+    // كل صفحة تُخزَّن بمسارها هي: كان آخر تنقّل يُكتب تحت «/» فيعود بلا اتصال لأي مسار — صفحة
+    // المستخدمين تحت عنوان نقطة البيع (مراجعة 2026-11-10). ما لم يُزَر متصلاً يرجع إلى الهيكل «/».
     event.respondWith(
       fetch(req)
         .then((res) => {
-          if (res.ok) caches.open(SHELL_CACHE).then((cache) => cache.put("/", res.clone()));
+          if (res.ok && !res.redirected) {
+            const copy = res.clone();
+            event.waitUntil(rememberPage(url.pathname, copy));
+          }
           return res;
         })
         .catch(() =>
-          caches.match("/", { cacheName: SHELL_CACHE }).then((hit) => hit || Response.error()),
+          caches.open(SHELL_CACHE).then((cache) =>
+            cache
+              .match(url.pathname)
+              .then((own) => own || cache.match("/"))
+              .then((hit) => hit || Response.error()),
+          ),
         ),
     );
   }

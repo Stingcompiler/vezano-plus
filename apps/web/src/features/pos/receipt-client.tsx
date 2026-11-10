@@ -1,7 +1,14 @@
 "use client";
 
 import type { StoredOperation } from "@sting/platform";
-import { LAST_SALE_META, type LocalSale, readSale, unitDisplay } from "@sting/sync-core";
+import {
+  LAST_SALE_META,
+  type LocalSale,
+  readSale,
+  readSalePrints,
+  recordSalePrint,
+  unitDisplay,
+} from "@sting/sync-core";
 import {
   Button,
   formatMinor,
@@ -91,7 +98,10 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
       saleId === "last" ? ((await storage.read((tx) => tx.getMeta(LAST_SALE_META))) ?? "") : saleId;
     const s = id ? await readSale(storage, id) : null;
     setSale(s);
-    if (s) setOp(await storage.read((tx) => tx.getOperation(s.operation_id)));
+    if (s) {
+      setOp(await storage.read((tx) => tx.getOperation(s.operation_id)));
+      setPrints(await readSalePrints(storage, s.id));
+    }
     setLastPush(await readLastPush());
     setShop((await readHomeCache())?.summary.tenant_name ?? "");
   }, [saleId]);
@@ -161,7 +171,7 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
     }
     setPrintFailed(false);
     if (out === "system") printDocument();
-    setPrints((p) => [...p, new Date().toISOString()]);
+    setPrints(await recordSalePrint(getStorage(), sale.id, new Date().toISOString()));
   };
 
   const retry = async () => {

@@ -275,4 +275,35 @@ test.describe("WEB-01", () => {
     await expect(page).toHaveURL(/\/install\?sw=1$/); // لم يُعَد التحميل
     void info;
   });
+
+  test("عامل الخدمة بلا اتصال: كل مسار يعود بصفحته هو لا بآخر صفحة فُتحت (مراجعة 2026-11-10 ع-١٦)", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", "Service Worker في Chromium");
+    await page.goto("/welcome?sw=1");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+      if (!navigator.serviceWorker.controller)
+        await new Promise<void>((r) =>
+          navigator.serviceWorker.addEventListener("controllerchange", () => r(), { once: true }),
+        );
+    });
+    // تنقّلان كاملان والعامل يتحكم: الترحيب ثم الخطط — الخطط هي «آخر صفحة»
+    await page.goto("/welcome");
+    await expect(page.locator('[data-screen="ACC-01"]')).toBeVisible();
+    await page.goto("/plans");
+    await expect(page.locator('[data-screen="PUB-05"]')).toBeVisible();
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 300)));
+    await page.context().setOffline(true);
+    try {
+      await page.goto("/welcome", { waitUntil: "domcontentloaded" });
+      await expect(page.locator('[data-screen="ACC-01"]')).toBeAttached();
+      await expect(page.locator('[data-screen="PUB-05"]')).toHaveCount(0);
+      await page.goto("/plans", { waitUntil: "domcontentloaded" });
+      await expect(page.locator('[data-screen="PUB-05"]')).toBeAttached();
+    } finally {
+      await page.context().setOffline(false);
+    }
+  });
 });
