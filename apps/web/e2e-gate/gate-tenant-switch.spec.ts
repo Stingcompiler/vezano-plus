@@ -57,11 +57,21 @@ async function inspect(page: Page, database: string, needle: string) {
   );
 }
 
+/**
+ * الخروج بخطوتيه. التأكيد حالة في زر الخروج نفسه: إن أُعيد تركيب شريط التنقل بين النقرتين (انتقال
+ * لم يستقرّ بعد) ضاع التأكيد وبقي الاختبار ينتظر «اخرج» إلى نهاية مهلته — فتُعاد الخطوتان حتى
+ * نبلغ صفحة الدخول.
+ */
 async function logout(page: Page) {
   await goHome(page);
-  await page.getByRole("button", { name: "تسجيل الخروج" }).first().click();
-  await page.getByRole("button", { name: "اخرج", exact: true }).click();
-  await expect(page).toHaveURL(/\/login/);
+  const confirm = page.getByRole("button", { name: "اخرج", exact: true });
+  await expect(async () => {
+    if (/\/login/.test(page.url())) return;
+    if (!(await confirm.isVisible()))
+      await page.getByRole("button", { name: "تسجيل الخروج" }).first().click({ timeout: 5_000 });
+    await confirm.click({ timeout: 5_000 });
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+  }).toPass({ timeout: 90_000 });
 }
 
 async function loginTo(page: Page, shop: string) {
@@ -110,7 +120,8 @@ test("منشأة ثانية على الجهاز نفسه لا ترى بيانا�
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await expect(page.locator("body")).not.toContainText(text);
     await expect(page.locator("body")).not.toContainText("عمليات معلّقة");
-    if (!/\/$/.test(new URL(page.url()).pathname)) await page.goBack();
+    // العودة عبر روابط التنقل لا بزرّ الرجوع: تنتظر استقرار الرئيسية قبل الخطوة التالية
+    await goHome(page);
   }
   // وبيع الأولى المعلّق ما زال في قاعدتها لم يُمسّ
   expect(await inspect(page, "sting-bootstrap", CUSTOMER)).toMatchObject({
