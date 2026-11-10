@@ -14,7 +14,7 @@ import {
 import { AppState } from "react-native";
 
 import { SECRET_KEYS, secrets } from "@/lib/secrets";
-import { getStorage } from "@/lib/storage";
+import { getStorage, openTenantStorage } from "@/lib/storage";
 import { WEB_URL } from "@/lib/web";
 
 /**
@@ -160,7 +160,7 @@ type Unlock = "unlocked" | "offline" | "revoked";
 interface SessionApi {
   readonly state: SessionState;
   readonly api: ReturnType<typeof createApiClient>;
-  readonly signIn: (data: SignInPayload) => SessionState;
+  readonly signIn: (data: SignInPayload) => Promise<SessionState>;
   readonly signOut: () => void;
   /** بعد تسجيل الجهاز: جلسة جهاز + رمز التجديد الطويل في المخزن الآمن */
   readonly adoptDevice: (reg: DeviceRegistration) => Promise<void>;
@@ -325,8 +325,18 @@ export function SessionProvider({
   }, [idleMinutes, set]);
 
   const signIn = useCallback(
-    (data: SignInPayload) => {
-      const next = afterSignIn(ref.current, data);
+    async (data: SignInPayload) => {
+      let next = afterSignIn(ref.current, data);
+      if (next.status === "active" && next.tenantId) {
+        // ملف هذه المنشأة يُفتح قبل وضعها في الجلسة، وتجهيز الهاتف يُقرأ منه هو: كان الهاتف المجهَّز
+        // لمنشأة يُعدّ مجهَّزاً لأي منشأة تدخل بعدها، وتجهيزها يكتب فوق دفتر الأولى ومعلّقها
+        // (مراجعة 2026-11-10 ع-٤)
+        await openTenantStorage(next.tenantId);
+        const setup = await getStorage()
+          .then((st) => st.read((tx) => tx.getMeta(DEVICE_SETUP_KEY)))
+          .catch(() => null);
+        next = { ...next, setupDone: setup === "done" };
+      }
       set(next);
       return next;
     },

@@ -64,7 +64,7 @@ export default function Login() {
         setInvalid(true);
         return;
       }
-      const next = signIn(data);
+      const next = await signIn(data);
       resetTo(router, next.status === "active" ? "/" : "/select-org");
     } catch {
       setOffline(true);

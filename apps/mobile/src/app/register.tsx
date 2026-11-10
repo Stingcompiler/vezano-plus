@@ -145,7 +145,10 @@ export default function Register() {
       });
       if (response.status === 201 && data) {
         // تذكرة اختيار بلا عضويات ← إنشاء المنشأة بها
-        signIn({ select_ticket: data.select_ticket ?? "", memberships: data.memberships ?? [] });
+        await signIn({
+          select_ticket: data.select_ticket ?? "",
+          memberships: data.memberships ?? [],
+        });
         router.replace("/create-org");
         return;
       }

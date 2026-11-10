@@ -82,10 +82,10 @@ export default function CreateOrg() {
   if (!created && session.status !== "selecting" && session.status !== "active")
     return <Redirect href="/register" />;
 
-  const adopt = (data: Created) => {
+  const adopt = async (data: Created) => {
     setCreated(data);
     markFreshOrg();
-    signIn({
+    await signIn({
       access: data.access,
       refresh: data.refresh,
       session_id: data.session_id,
@@ -110,7 +110,7 @@ export default function CreateOrg() {
         params: { path: { client_request_id: requestId } },
       });
       if (response.ok && data) {
-        adopt(data);
+        await adopt(data);
         return;
       }
     } catch {
@@ -147,7 +147,7 @@ export default function CreateOrg() {
         await probeStatus();
         return;
       }
-      adopt(data);
+      await adopt(data);
     } catch {
       await probeStatus();
     } finally {
