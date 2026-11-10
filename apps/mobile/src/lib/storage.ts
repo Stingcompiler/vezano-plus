@@ -5,6 +5,7 @@ import {
   LEGACY_DATABASE,
   legacyInspected,
   recordLegacyOwner,
+  releaseDatabase,
 } from "@sting/app-core";
 import type { StoragePort } from "@sting/platform";
 import { type SqliteDriver, SqliteStorage } from "@sting/platform/sqlite";
@@ -117,6 +118,23 @@ export async function openTenantStorage(tenantId: string): Promise<void> {
   const name = activateTenantDatabase(store, tenantId);
   await store.persist();
   if (name !== before) opening = null;
+}
+
+/**
+ * يمحو ملف المنشأة النشطة من الهاتف — المحو عن بُعد (SYS-07): المالك أقرّ فقد المعلّق، فلا يبقى
+ * على الهاتف المفقود دفتر ولا عملاء. اسم الملف يعود حرّاً لمن يُجهَّز بعده.
+ */
+export async function wipeLocalStorage(): Promise<void> {
+  if (injected) return;
+  const store = await index();
+  const name = activeDatabase(store);
+  opening = null;
+  try {
+    await SQLite.deleteDatabaseAsync(fileFor(name));
+  } finally {
+    releaseDatabase(store, name);
+    await store.persist();
+  }
 }
 
 export function setStorageForTests(storage: StoragePort | null): void {

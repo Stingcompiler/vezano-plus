@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { BrandBar } from "@/components/brand-bar";
 import { BackgroundSync } from "@/lib/background-sync";
+import { LockGuard } from "@/lib/nav";
 import { restoreTheme } from "@/lib/theme";
 import { SessionProvider } from "@/lib/session";
 
@@ -63,18 +64,21 @@ export default function RootLayout() {
 function AppStack() {
   const c = useColors();
   return (
-    <Stack
-      screenOptions={{
-        header: ({ navigation, back }) => (
-          <BrandBar onBack={back ? () => navigation.goBack() : undefined} />
-        ),
-        contentStyle: { backgroundColor: c.surfacePage },
-      }}
-    >
-      {/* جذور بلا رجوع: لوحة التحكم والقفل وما بعد الدخول — «عودة» منها كانت ترجع إلى الدخول (0005 §٢٠٢) */}
-      {["(tabs)", "lock", "set-pin", "session-expired"].map((name) => (
-        <Stack.Screen key={name} name={name} options={{ header: () => <BrandBar /> }} />
-      ))}
-    </Stack>
+    <>
+      <Stack
+        screenOptions={{
+          header: ({ navigation, back }) => (
+            <BrandBar onBack={back ? () => navigation.goBack() : undefined} />
+          ),
+          contentStyle: { backgroundColor: c.surfacePage },
+        }}
+      >
+        {/* جذور بلا رجوع: لوحة التحكم والقفل وما بعد الدخول — «عودة» منها كانت ترجع إلى الدخول (0005 §٢٠٢) */}
+        {["(tabs)", "lock", "set-pin", "session-expired"].map((name) => (
+          <Stack.Screen key={name} name={name} options={{ header: () => <BrandBar /> }} />
+        ))}
+      </Stack>
+      <LockGuard />
+    </>
   );
 }
