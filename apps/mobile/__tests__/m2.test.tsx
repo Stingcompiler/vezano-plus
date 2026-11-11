@@ -1,3 +1,4 @@
+import { NAV_GROUPS, NAV_ITEMS } from "@sting/app-core";
 import { MemoryStorage } from "@sting/platform/memory";
 import {
   ITEM_PREFIX,
@@ -309,5 +310,14 @@ describe("M2 — البيع والورديات (0005 §١٩٣)", () => {
     expect(nativeRoute("/catalog")).toBe("/catalog");
     expect(nativeRoute("/org/users")).toBe("/org/users");
     expect(nativeRoute("/no/such/screen")).toBeNull();
+  });
+
+  it("التقارير كلها تُفتح داخل التطبيق — ومنها تقرير المبيعات بمرشّحه (0005 §٢٦٠)", () => {
+    const reports = NAV_ITEMS.filter((i) => i.group === NAV_GROUPS.reports);
+    expect(reports.length).toBeGreaterThanOrEqual(6);
+    for (const i of reports)
+      expect(`${i.label}: ${nativeRoute(i.href) ?? "web"}`).not.toContain("web");
+    expect(nativeRoute("/reports")).toBe("/reports");
+    expect(nativeRoute("/reports?range=today&method=all")).toBe("/reports");
   });
 });
