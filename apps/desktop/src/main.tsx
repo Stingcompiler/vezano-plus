@@ -16,6 +16,7 @@ import * as NotFound from "@/app/not-found";
 import { PageHost } from "./page-host";
 import { DesktopRoot } from "./platform/desktop-root";
 import { FileSaveHost, installDownloads } from "./platform/file-save";
+import { InboxNotifier } from "./platform/inbox-notifier";
 import { MenuEvents } from "./platform/menu-events";
 import { ShortcutRunner } from "./platform/shortcut-runner";
 import { DeskNotifications, CloseGuard } from "./screens/desk-notifications";
@@ -41,6 +42,7 @@ function Root() {
     <Providers>
       <ScrollTop />
       <CloseGuard />
+      <InboxNotifier />
       <FileSaveHost />
       <ShortcutRunner />
       <MenuEvents />

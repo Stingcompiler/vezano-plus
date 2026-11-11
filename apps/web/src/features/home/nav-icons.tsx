@@ -64,10 +64,17 @@ export const NAV_ICONS = {
       <path d="M5 12v8h14v-8" />
     </I>
   ),
-  notify: (
+  alerts: (
     <I>
       <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9" />
       <path d="M10 19a2 2 0 0 0 4 0" />
+    </I>
+  ),
+  // التواصل مع الزبائن: مكبّر صوت — ما ترسله أنت، لا جرس ما يصلك
+  notify: (
+    <I>
+      <path d="M4 10v4h3l7 4V6l-7 4H4Z" />
+      <path d="M17.5 9.5a3.5 3.5 0 0 1 0 5" />
     </I>
   ),
   org: (

@@ -354,4 +354,73 @@ test.describe("DESK-05", () => {
     });
     await context.setOffline(false);
   });
+
+  // بلاغ المالك 2026-11-11 (0005 §٢٥٦): الشاشة تعد بإشعار نظام «مفتوح في الخلفية» ولا شيء كان يرسله
+  test("متابعة الوارد: جديد غير مقروء والنافذة في الخلفية → إشعار نظام بعنوان الفئة مرة واحدة", async ({
+    page,
+  }) => {
+    const row = (id: string, o: Record<string, unknown> = {}) => ({
+      id,
+      kind: "invoice_due",
+      category: "operational",
+      category_label: "تشغيلي",
+      title: "فاتورة آجلة لمحمد عثمان — 5,000",
+      body: "استحقت اليوم",
+      read: false,
+      ...o,
+    });
+    let items = [row("n1")];
+    let hits = 0;
+    await page.route("**/api/notifications**", (route) => {
+      hits += 1;
+      return route.fulfill({
+        status: 200,
+        json: { items, unread: items.length, needs_action: 0, category: "" },
+      });
+    });
+    await page.route("**/api/auth/account/login", (route) =>
+      route.fulfill({
+        status: 200,
+        json: { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" },
+      }),
+    );
+    await page.addInitScript(() => {
+      (window as unknown as { __stingDesk: unknown }).__stingDesk = {
+        inbox: { pollMs: 300 },
+        notified: [],
+      };
+      document.hasFocus = () => false;
+    });
+    await page.goto("/login?next=%2Fdesktop%2Fnotifications");
+    await page.getByLabel("رقم الهاتف أو البريد").fill("owner@sting.example");
+    await page.getByLabel("كلمة المرور").fill("sting-demo-2026");
+    await page.getByRole("button", { name: "دخول" }).click();
+    await expect(page).toHaveURL(/\/desktop\/notifications$/);
+    const notified = () =>
+      page.evaluate(
+        () => (window as unknown as { __stingDesk: { notified: unknown[] } }).__stingDesk.notified,
+      );
+    const rounds = async (n: number) => {
+      const from = hits;
+      await expect.poll(() => hits - from).toBeGreaterThanOrEqual(n);
+    };
+    // خطّ الأساس: الوارد القديم لا يُفرَغ إشعارات
+    await rounds(2);
+    expect(await notified()).toEqual([]);
+    // وصل جديد: عنوان الفئة الثابت — بلا اسم العميل ولا المبلغ
+    items = [row("n2"), ...items];
+    await expect
+      .poll(notified)
+      .toEqual([{ title: "فيزانو بلص — تنبيه تشغيلي", body: "أمر في متجرك يحتاج نظرك." }]);
+    // الجولات التالية لا تكرّره
+    await rounds(2);
+    expect(await notified()).toHaveLength(1);
+    // النافذة في المقدمة: المستخدم داخل التطبيق — لا إشعار نظام
+    await page.evaluate(() => {
+      document.hasFocus = () => true;
+    });
+    items = [row("n3", { category: "account" }), ...items];
+    await rounds(2);
+    expect(await notified()).toHaveLength(1);
+  });
 });

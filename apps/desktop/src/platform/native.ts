@@ -110,6 +110,8 @@ export interface DeskFake {
   installed?: boolean;
   /** يفعّل اعتراض التنزيل (DESK-04) في المتصفح */
   downloads?: boolean;
+  /** يفعّل متابعة الوارد لإشعارات النظام (DESK-05) في المتصفح، بفاصل جولات للاختبار */
+  inbox?: { pollMs?: number };
 }
 
 declare global {
