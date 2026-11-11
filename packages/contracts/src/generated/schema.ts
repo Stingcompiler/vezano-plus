@@ -5976,6 +5976,7 @@ export interface components {
         /**
          * @description * `identifier_invalid` - identifier_invalid
          *     * `email_only` - email_only
+         *     * `already_applied` - already_applied
          *     * `resend_too_soon` - resend_too_soon
          *     * `resend_limit` - resend_limit
          *     * `send_failed` - send_failed
@@ -5983,7 +5984,7 @@ export interface components {
          *     * `code_invalid` - code_invalid
          * @enum {string}
          */
-        VerifyErrorDetailEnum: "identifier_invalid" | "email_only" | "resend_too_soon" | "resend_limit" | "send_failed" | "code_expired" | "code_invalid";
+        VerifyErrorDetailEnum: "identifier_invalid" | "email_only" | "already_applied" | "resend_too_soon" | "resend_limit" | "send_failed" | "code_expired" | "code_invalid";
         VerifyPolicy: {
             code_length: number;
             code_ttl_seconds: number;
@@ -5995,6 +5996,7 @@ export interface components {
         VerifyRequest: {
             identifier: string;
             purpose: components["schemas"]["PurposeEnum"];
+            contact_phone?: string;
         };
         VerifyRequestResponse: {
             /** Format: date-time */
@@ -15365,7 +15367,7 @@ export interface components {
             tenant: {
                 actions: string;
                 branches: number;
-                days_left: null;
+                days_left: number | null;
                 devices: number;
                 devices_list: {
                     branch: string;
@@ -15405,6 +15407,11 @@ export interface components {
                     trial: boolean;
                 }[];
                 proofs: unknown[];
+                similar_owners: {
+                    owner_name: string;
+                    tenant_id: string;
+                    tenant_name: string;
+                }[];
                 status: string;
                 status_label: string;
                 storage: {
@@ -15538,6 +15545,7 @@ export interface components {
                     status: string;
                     submitted_at: string;
                 }[];
+                similar_owners: unknown[];
                 status: string;
                 status_label: string;
                 storage: {
@@ -18058,6 +18066,14 @@ export interface operations {
                 };
             };
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyError"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

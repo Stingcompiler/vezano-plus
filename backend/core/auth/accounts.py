@@ -201,6 +201,41 @@ class RegisterTicketInvalid(Exception):
     pass
 
 
+class AlreadyApplied(Exception):
+    """تسجيل جديد ببريد أو رقم تواصل لحساب قائم — طلب تجربة مجانية مكرَّر (0005 §٢٦١)."""
+
+
+def phone_key(phone: str) -> str:
+    """آخر تسعة أرقام: 0912345678 و+249912345678 و00249912345678 رقم واحد. فارغ إن لم يكن رقماً."""
+    from core.contact import normalize_contact_phone
+
+    try:
+        digits = re.sub(r"\D", "", normalize_contact_phone(phone))
+    except ValueError:
+        return ""
+    return digits[-9:]
+
+
+def prior_application(identifier: str, contact_phone: str = "") -> str:
+    """هل سبق التسجيل بهذا البريد أو بهذا الرقم؟ يعيد `"email"` أو `"phone"` أو فارغاً.
+
+    البريد (المعرّف) فريد أصلاً، ورقم التواصل لم يكن يُفحص: رقم واحد ببريد آخر كان ينشئ حساباً
+    وتجربة جديدين. الاسم لا يمنع — الأسماء مشتركة — ويظهر تشابهه للمشغّل عند الاعتماد.
+    """
+    with platform_context():
+        if Account.unscoped.filter(identifier=identifier).exists():
+            return "email"
+        key = phone_key(contact_phone)
+        if key and (
+            Account.unscoped.filter(contact_phone__endswith=key).exists()
+            or Account.unscoped.filter(
+                identifier_kind=Account.Kind.PHONE, identifier__endswith=key
+            ).exists()
+        ):
+            return "phone"
+    return ""
+
+
 class SignupEmailOnly(Exception):
     """حساب جديد بهاتف والتسجيل بالبريد وحده (0005 §١٤٩)."""
 
@@ -256,5 +291,8 @@ def register_account(
     with platform_context(), transaction.atomic():
         if Account.unscoped.filter(identifier=identifier).exists():
             raise AccountExists
+        # الرقم نفسه ببريد آخر: طلب مكرَّر — يُفحص هنا أيضاً لأن خطوة الرمز قد تُتجاوز بعميل قديم
+        if prior_application(identifier, phone) == "phone":
+            raise AlreadyApplied
         account = create_account(identifier, password, display_name.strip(), contact_phone=phone)
         return _outcome_for(account, user_agent)

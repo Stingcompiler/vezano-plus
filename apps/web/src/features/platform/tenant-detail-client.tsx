@@ -59,6 +59,8 @@ interface Detail extends TenantRow {
   users: number;
   storage: { operations: number };
   owner_contact?: { name: string; email: string; phone: string; whatsapp_url: string };
+  /** مالكو منشآت أخرى بالاسم نفسه — قد يكون طلب تجربة مكرراً (0005 §٢٦١) */
+  similar_owners?: { tenant_id: string; tenant_name: string; owner_name: string }[];
   support_grants: {
     ticket_ref: string;
     hours: number;
@@ -318,6 +320,16 @@ export function TenantDetailClient({ id }: { id: string }) {
                       ) : null}
                     </div>
                   </div>
+                ) : null}
+                {/* 0005 §٢٦١ — الاسم لا يمنع التسجيل؛ تشابهه يُعرض هنا ليقرّر المشغّل عند الاعتماد */}
+                {d.similar_owners && d.similar_owners.length > 0 ? (
+                  <Notice kind="warning" title="اسم المالك مسجَّل في منشأة أخرى">
+                    <p className="acc-choice__note">
+                      قد يكون طلب تجربة مكرراً:{" "}
+                      {d.similar_owners.map((s) => `«${s.tenant_name}»`).join("، ")}. راجع قبل
+                      الاعتماد.
+                    </p>
+                  </Notice>
                 ) : null}
                 <div className="home-kpis">
                   <div className="home-kpi">

@@ -14,6 +14,9 @@ describe("طبقة منصة الحاسوب", () => {
     expect(isPublicPath("/legalese")).toBe(false);
     expect(externalTarget("/status", APP)).toBe(`${SITE}/status`);
     expect(externalTarget("/inventory", APP)).toBeNull();
+    // قسم التواصل في صفحة الهبوط يُفتح على الموقع؛ الجذر نفسه يبقى في التطبيق
+    expect(externalTarget("/#lp-contact", APP)).toBe(`${SITE}/#lp-contact`);
+    expect(externalTarget("/", APP)).toBeNull();
   });
 
   it("العناوين الكاملة لمواقع أخرى والبريد تفتح في المتصفح؛ أصل التطبيق لا", () => {

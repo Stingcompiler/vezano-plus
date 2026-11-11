@@ -479,6 +479,8 @@ def tenant_detail(*, operator: User, tenant_id: uuid.UUID) -> dict[str, Any] | N
         ],
         "devices_list": dev_rows,
         "owner_contact": _owner_contact(owner),
+        # 0005 §٢٦١ — مالك منشأة أخرى بالاسم نفسه: قد يكون طلب تجربة مكرراً (الاسم لا يمنع التسجيل)
+        "similar_owners": _similar_owners(owner),
         "branches": branches,
         "users": users,
         "storage": {"operations": ops},
@@ -500,6 +502,45 @@ def tenant_detail(*, operator: User, tenant_id: uuid.UUID) -> dict[str, Any] | N
             "موظف الدعم يرى تشخيصاً بلا بيانات — ولا باباً خلفياً إلى الدفاتر.",
         ],
     }
+
+
+def _owner_name(u: User) -> str:
+    """اسم المالك كما سجّله في حسابه، وإلا اسمه في المنشأة."""
+    return (u.account.display_name if u.account is not None else "") or u.display_name
+
+
+def _similar_owners(owner: User | None) -> list[dict[str, str]]:
+    """مالكو منشآت أخرى (بحساب آخر) يطابق اسمهم اسم هذا المالك بعد التطبيع — خمسة على الأكثر.
+
+    الاسم لا يمنع التسجيل (الأسماء مشتركة)، فيُعرض التشابه للمشغّل ليقرّر عند الاعتماد.
+    """
+    from stingops.demo_public import name_key
+
+    if owner is None or owner.tenant_id is None:
+        return []
+    key = name_key(_owner_name(owner))
+    if len(key) < 3:
+        return []
+    out: list[dict[str, str]] = []
+    with platform_context():
+        others = (
+            User.unscoped.filter(is_owner=True, is_active=True)
+            .exclude(tenant_id=owner.tenant_id)
+            .select_related("account", "tenant")
+            .order_by("-id")
+        )
+        for u in others:
+            if owner.account_id and u.account_id == owner.account_id:
+                continue  # الحساب نفسه بمنشأة أخرى: تاجر بأكثر من محل، لا تكرار
+            other = _owner_name(u)
+            if name_key(other) != key or u.tenant is None:
+                continue
+            out.append(
+                {"tenant_id": str(u.tenant_id), "tenant_name": u.tenant.name, "owner_name": other}
+            )
+            if len(out) == 5:
+                break
+    return out
 
 
 def _usage_for(t: Tenant, sub: TenantSubscription | None) -> dict[str, Any]:

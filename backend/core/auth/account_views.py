@@ -19,6 +19,7 @@ from rest_framework.views import APIView
 from core.auth import verify
 from core.auth.accounts import (
     AccountExists,
+    AlreadyApplied,
     ContactPhoneInvalid,
     InvalidCredentials,
     LoginLocked,
@@ -26,6 +27,7 @@ from core.auth.accounts import (
     SignupEmailOnly,
     login_account,
     normalize_identifier,
+    prior_application,
     register_account,
     require_signup_identifier,
 )
@@ -203,6 +205,8 @@ class AccountRegisterView(APIView):
             return Response({"detail": "phone_invalid"}, status=status.HTTP_400_BAD_REQUEST)
         except AccountExists:
             return Response({"detail": "account_exists"}, status=status.HTTP_409_CONFLICT)
+        except AlreadyApplied:
+            return Response({"detail": "already_applied"}, status=status.HTTP_409_CONFLICT)
         return Response(
             {
                 "memberships": [m.as_dict() for m in out.memberships],
@@ -215,6 +219,8 @@ class AccountRegisterView(APIView):
 class VerifyRequestSerializer(serializers.Serializer[dict[str, Any]]):
     identifier = serializers.CharField(max_length=254)
     purpose = serializers.ChoiceField(choices=PURPOSES)
+    # مع غرض `register`: رقم التواصل المُدخل، ليُفحص التكرار قبل إرسال الرمز (0005 §٢٦١)
+    contact_phone = serializers.CharField(max_length=40, allow_blank=True, required=False)
 
 
 class VerifyPolicySerializer(serializers.Serializer[dict[str, Any]]):
@@ -239,6 +245,7 @@ class VerifyErrorSerializer(serializers.Serializer[dict[str, Any]]):
         choices=[
             "identifier_invalid",
             "email_only",
+            "already_applied",
             "resend_too_soon",
             "resend_limit",
             "send_failed",
@@ -262,6 +269,7 @@ class VerifyRequestView(APIView):
         responses={
             202: VerifyRequestResponseSerializer,
             400: VerifyErrorSerializer,
+            409: VerifyErrorSerializer,
             429: VerifyErrorSerializer,
             503: VerifyErrorSerializer,
         },
@@ -279,6 +287,9 @@ class VerifyRequestView(APIView):
             except SignupEmailOnly:
                 # التسجيل بالبريد وحده (0005 §١٤٩) — قبل أي إرسال
                 return Response({"detail": "email_only", "policy": policy}, status=400)
+            # طلب تجربة مكرَّر ببريد أو رقم حسابٍ قائم: يُقال قبل إرسال الرمز (0005 §٢٦١)
+            if prior_application(normalized, s.validated_data.get("contact_phone", "")):
+                return Response({"detail": "already_applied", "policy": policy}, status=409)
         try:
             r = verify.request_code(s.validated_data["identifier"], s.validated_data["purpose"])
         except ValueError:
