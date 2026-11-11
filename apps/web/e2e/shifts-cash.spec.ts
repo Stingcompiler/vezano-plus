@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.12 — SHIFT-03 (4) + SHIFT-04 (5). حركة الصندوق والإقفال أحداث محلية (IndexedDB حقيقي) تُرفع
@@ -18,7 +19,7 @@ interface Seed {
 
 /** جهاز مسجّل ووردية مفتوحة منذ 4 ساعات (حدثها مؤكد) باسم سالم. */
 async function seed(page: Page, s: Seed) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ s, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

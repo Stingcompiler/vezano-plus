@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.40 — WEB-01 تثبيت PWA أو عدم دعم التثبيت (4). تعليمات حسب البيئة لا زر وهمي؛ من رفض لا يُسأل
@@ -11,7 +12,7 @@ import { fromFrame } from "./frame-provenance";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 async function seed(page: Page, pending = 0) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ pending }) => {
       const req = indexedDB.open("sting-bootstrap");

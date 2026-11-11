@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.26 — PTY-07 دمج أطراف (5) + PTY-09 تصحيح تاريخ الأعمال (4). الدمج خريطة هوية لا إعادة كتابة
@@ -12,7 +13,7 @@ import { fromFrame } from "./frame-provenance";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 async function seed(page: Page, role: "owner" | "manager" = "owner") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(async (role) => {
     const req = indexedDB.open("sting-bootstrap");
     const db = await new Promise<IDBDatabase>((res, rej) => {

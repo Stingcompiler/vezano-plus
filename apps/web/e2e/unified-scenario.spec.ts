@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.21 — السيناريو الموحَّد (القسم ٤ المرحلة ١ بند 5؛ ACC-08، ACC-13): بيع ١٠٠ = ٤٠ نقداً + ٦٠ آجلاً
@@ -27,7 +28,7 @@ const TEA = {
 };
 
 async function seed(page: Page) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ openedAt, tea }) => {
       const req = indexedDB.open("sting-bootstrap");

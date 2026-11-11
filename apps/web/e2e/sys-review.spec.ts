@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.35 — SYS-03 تعارض وحجر ومراجعة مالك (4). النسختان معروضتان ولا نختار عنك؛ قبول مخوَّل بسبب أو
@@ -83,7 +84,7 @@ const detail = (isOwner: boolean) => ({
 });
 
 async function seed(page: Page, role: "owner" | "cashier") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role }) => {
       const req = indexedDB.open("sting-bootstrap");

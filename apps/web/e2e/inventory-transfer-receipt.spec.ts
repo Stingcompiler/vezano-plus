@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.33 — INV-10 استلام تحويل جزئي ومراجعة فرق (5). عمودان: المرسل كما ادّعاه المصدر وما تعدّه أنت؛
@@ -11,7 +12,7 @@ import { fromFrame } from "./frame-provenance";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 async function seed(page: Page, branch: "b1" | "b2", role: "owner" | "storekeeper") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ branch, role }) => {
       const req = indexedDB.open("sting-bootstrap");

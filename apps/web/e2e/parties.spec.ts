@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.22 — PTY-01 (6) + PTY-02 (4). الأسماء من الجهاز فوراً والأرصدة تُوسم حتى تُطابَق؛ الرصيد
@@ -98,7 +99,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ parties, pendingSaleFor, matchedAt, now }) => {
       const req = indexedDB.open("sting-bootstrap");

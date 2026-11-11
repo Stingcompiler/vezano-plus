@@ -4,6 +4,7 @@ import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.25 — PTY-06 (6). سداد نقدي 40 على ذمّة 180: الرصيد المركّب 140 فوراً (لقطة + سداد محلي —
@@ -18,7 +19,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, usedRef, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

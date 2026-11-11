@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.11 — SHIFT-01 (5) + SHIFT-02 (5). الفتح حدث ثابت يُحفظ محلياً (IndexedDB حقيقي) ثم يُرفع؛
@@ -64,7 +65,7 @@ interface SeedShift {
 
 /** تسجيل الجهاز محلياً كما يتركه ACC-05 (الوردية لجهاز وفرع)، واختيارياً وردية مفتوحة منذ 4 ساعات. */
 async function seedDevice(page: Page, shift: SeedShift | null = null) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ shift, openedAt, movement }) => {
       const req = indexedDB.open("sting-bootstrap");

@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.16 — POS-05 (5) + خط حفظ البيع. مستلَم وباقٍ محسوبان محلياً (ACC-24)؛ عملية `sale` بأعضائها في
@@ -29,7 +30,7 @@ const TEA = {
 };
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ lines, balances, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

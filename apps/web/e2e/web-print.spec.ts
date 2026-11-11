@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.42 — WEB-03 ربط طابعة ويب وتجربة عربية (4). القدرة تُفحص قبل الزر (R-09)؛ BLE فقط عبر
@@ -21,7 +22,7 @@ interface Printer {
 }
 
 async function seed(page: Page, printers: Printer[] = []) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(async (printers) => {
     const req = indexedDB.open("sting-bootstrap");
     const db = await new Promise<IDBDatabase>((res, rej) => {
