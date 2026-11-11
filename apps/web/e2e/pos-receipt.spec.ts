@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.18 — POS-08 (5) + POS-11 (4). الإيصال لا ينتظر المزامنة: محفوظ محلياً مقابل مؤكد خادمياً،
@@ -21,7 +22,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ opState, lastPush, extraPending, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

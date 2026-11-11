@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.14 — POS-01 (6) + POS-02 (3). نقطة البيع CSR من الإسقاط المحلي (IndexedDB حقيقي): الكتالوج
@@ -81,7 +82,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ items, shift, balances, openedAt, setup }) => {
       const req = indexedDB.open("sting-bootstrap");

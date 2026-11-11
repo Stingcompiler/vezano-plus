@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.41 — WEB-02 إذن Web Push وحالاته (4). نشرح قبل حوار المتصفح؛ الرفض لا يمنع شيئاً ولا اشتراك
@@ -20,7 +21,7 @@ const STATUS = {
 };
 
 async function seed(page: Page) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(async () => {
     const req = indexedDB.open("sting-bootstrap");
     const db = await new Promise<IDBDatabase>((res, rej) => {

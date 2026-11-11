@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /** T1.4 — ACC-06 (5 حالات) + ACC-07 (4 حالات). */
 const json = (status: number, body: unknown) => ({ status, json: body });
@@ -141,7 +142,7 @@ const ENCODED =
 
 async function seedVerifiers(page: Page, rows: unknown[]) {
   // صفحة القفل تفتح التخزين المحلي (تنشئ مخازنه) — الترحيب لم يعد يقرؤه بلا جلسة (0005 §١٢٠)
-  await page.goto("/lock");
+  await openSeedPage(page, "/lock");
   await page.evaluate(
     async ({ rows }) => {
       const req = indexedDB.open("sting-bootstrap");

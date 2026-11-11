@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.20 — POS-10 (6). المرتجع يبدأ من الفاتورة الأصل وكل سطر يعرض المُباع والمُرتجَع سابقاً والمتاح
@@ -20,7 +21,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, priorTea, party, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.38 — SYS-07 استرداد جهاز مسحوب (5) + SYS-08 تغيّر جيل الخادم والمصالحة (4). الاسترداد للمالك
@@ -23,7 +24,7 @@ async function seed(
   ops: readonly OpSeed[],
   meta: Record<string, string> = {},
 ) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, ops, meta }) => {
       const req = indexedDB.open("sting-bootstrap");
