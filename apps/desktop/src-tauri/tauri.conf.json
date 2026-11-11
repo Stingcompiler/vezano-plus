@@ -42,7 +42,7 @@
       "minimumSystemVersion": "13.0",
       "dmg": {
         "background": "installer/dmg-background.png",
-        "windowSize": { "width": 660, "height": 400 },
+        "windowSize": { "width": 660, "height": 432 },
         "appPosition": { "x": 180, "y": 170 },
         "applicationFolderPosition": { "x": 480, "y": 170 }
       }
