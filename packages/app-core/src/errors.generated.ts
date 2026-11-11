@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (214 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (217 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -60,6 +60,8 @@ export const API_ERROR_CODES = [
   "default_branch",
   "delete_unavailable",
   "device_active",
+  "device_not_active",
+  "device_not_found",
   "device_session_required",
   "device_wiped",
   "dispute_closed",
@@ -148,6 +150,7 @@ export const API_ERROR_CODES = [
   "password_too_short",
   "password_unchanged",
   "payload_key_not_allowed",
+  "pending_unseen",
   "permission_denied",
   "phase_locked",
   "phone_invalid",
@@ -363,6 +366,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
   ],
   "GET /api/org/devices": [
+    {
+      status: 401,
+      code: "session_revoked",
+    },
     {
       status: 403,
       code: "owner_or_manager_required",
@@ -1378,6 +1385,24 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "delete_unavailable",
+    },
+  ],
+  "POST /api/org/devices/{device_id}/revoke": [
+    {
+      status: 403,
+      code: "owner_required",
+    },
+    {
+      status: 404,
+      code: "device_not_found",
+    },
+    {
+      status: 409,
+      code: "device_not_active",
+    },
+    {
+      status: 409,
+      code: "pending_unseen",
     },
   ],
   "POST /api/org/invitations": [
