@@ -3,6 +3,8 @@
 //   src-tauri/installer/header.bmp         150×57   ترويسة صفحات مثبّت ويندوز
 //   src-tauri/installer/dmg-background.png 660×400 نقطة (مرسومة ×2) خلفية نافذة DMG في ماك
 // التشغيل: pnpm --filter @sting/desktop exec node scripts/gen-installer-art.mjs
+/* global document, Image -- دوالّ `page.evaluate` تُنفَّذ داخل المتصفح */
+import { Buffer } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
