@@ -324,9 +324,55 @@ class DevicesView(APIView):
             out = _ctx(request)
             if isinstance(out, Response):
                 return out
+            auth, viewer = out
+            return Response(_devices_payload(auth, viewer))
+
+
+def _devices_payload(auth: AuthContext, viewer: home.Viewer) -> dict[str, Any]:
+    return org_branches.devices_payload(
+        scope=None if viewer.is_owner else viewer.branch,
+        current_device_id=auth.device.id if auth.device else None,
+        can_revoke=viewer.is_owner,
+    )
+
+
+class DeviceRevokeSerializer(serializers.Serializer[dict[str, Any]]):
+    pending_seen = serializers.IntegerField(min_value=0, required=False, default=0)
+
+
+class DeviceRevokeView(APIView):
+    """ORG-04 (0005 §٢٥٣): المالك يسحب جهازاً من القائمة — يحرّر مكانه من حدّ الباقة."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        request=DeviceRevokeSerializer,
+        responses={200: None, 403: None, 404: None, 409: None},
+    )
+    def post(self, request: Request, device_id: uuid.UUID) -> Response:
+        auth = request.auth
+        if not isinstance(auth, AuthContext) or auth.tenant_id is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        s = DeviceRevokeSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        with tenant_context(auth.tenant_id):
+            out = _ctx(request)
+            if isinstance(out, Response):
+                return out
             _, viewer = out
-            scope = None if viewer.is_owner else viewer.branch
-            return Response(org_branches.devices_payload(scope=scope))
+            from core import org_revoke
+
+            device = org_revoke.device_or_none(device_id)
+            if device is None:
+                return Response({"detail": "device_not_found"}, status=404)
+            try:
+                org_revoke.revoke_device_from_list(
+                    device, actor=auth.user, pending_seen=int(s.validated_data["pending_seen"])
+                )
+            except org_revoke.RevokeRejected as e:
+                code = status.HTTP_403_FORBIDDEN if e.code == "owner_required" else 409
+                return Response({"detail": e.code, "extra": e.detail}, status=code)
+            return Response(_devices_payload(auth, viewer))
 
 
 # ---------------------------------------------------------------- ORG-05 السحب

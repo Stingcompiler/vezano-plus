@@ -6514,6 +6514,54 @@
         }
       }
     },
+    "/api/org/devices/{device_id}/revoke": {
+      "post": {
+        "operationId": "org_devices_revoke_create",
+        "description": "ORG-04 (0005 §٢٥٣): المالك يسحب جهازاً من القائمة — يحرّر مكانه من حدّ الباقة.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["org"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceRevoke"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOrgDevicesByDeviceIdRevokeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/org/invitations": {
       "post": {
         "operationId": "org_invitations_create",
@@ -12780,6 +12828,16 @@
           "tenant_id",
           "user_id"
         ]
+      },
+      "DeviceRevoke": {
+        "type": "object",
+        "properties": {
+          "pending_seen": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        }
       },
       "DeviceVerifiers": {
         "type": "object",
@@ -40837,6 +40895,9 @@
           "as_of": {
             "type": "string"
           },
+          "can_revoke": {
+            "type": "boolean"
+          },
           "counts": {
             "additionalProperties": false,
             "properties": {
@@ -40871,6 +40932,9 @@
                 },
                 "id": {
                   "type": "string"
+                },
+                "is_current": {
+                  "type": "boolean"
                 },
                 "last_seen_at": {
                   "type": "string"
@@ -40916,14 +40980,117 @@
                 "pending_at",
                 "users",
                 "registered_at",
-                "sells"
+                "sells",
+                "is_current"
               ],
               "type": "object"
             },
             "type": "array"
           }
         },
-        "required": ["devices", "counts", "device_limit", "as_of"],
+        "required": ["devices", "counts", "device_limit", "can_revoke", "as_of"],
+        "type": "object"
+      },
+      "PostOrgDevicesByDeviceIdRevokeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of": {
+            "type": "string"
+          },
+          "can_revoke": {
+            "type": "boolean"
+          },
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "pending_total": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["total", "active", "pending_total"],
+            "type": "object"
+          },
+          "device_limit": {
+            "type": "integer"
+          },
+          "devices": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "branch_id": {
+                  "type": "string"
+                },
+                "branch_name": {
+                  "type": "string"
+                },
+                "connectivity": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "is_current": {
+                  "type": "boolean"
+                },
+                "last_seen_at": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "pending": {
+                  "type": "integer"
+                },
+                "pending_at": {
+                  "type": "string"
+                },
+                "prefix": {
+                  "type": "string"
+                },
+                "registered_at": {
+                  "type": "string"
+                },
+                "sells": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "users": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "prefix",
+                "branch_id",
+                "branch_name",
+                "status",
+                "connectivity",
+                "last_seen_at",
+                "pending",
+                "pending_at",
+                "users",
+                "registered_at",
+                "sells",
+                "is_current"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["devices", "counts", "device_limit", "can_revoke", "as_of"],
         "type": "object"
       },
       "PostOrgInvitationsResponse": {

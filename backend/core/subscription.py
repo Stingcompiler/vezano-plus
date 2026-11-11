@@ -692,7 +692,9 @@ def set_for_scenario(
 
 
 def device_limit() -> int:
-    return plan_of(ensure_subscription()).max_devices
+    """الحدّ الذي يُرفض عنده تسجيل جهاز جديد — الفعلي لا رقم الباقة وحده (0005 §٢٥٣): شاشة
+    الأجهزة كانت تعرض حدّ الباقة بلا ما منحه المشغّل ولا الإضافات المدفوعة."""
+    return int(effective_limits(ensure_subscription())["devices"] or 0)
 
 
 __all__ = [
