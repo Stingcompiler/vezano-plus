@@ -11,13 +11,23 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = process.env.PLAYWRIGHT_PORT ?? "3000";
 const LABEL = process.env.SHOTS_LABEL ?? "current";
 
-const REPRESENTATIVE = [
-  "public-pages.spec.ts", // PUB-01…05: الهبوط، الشروط، الحالة (بطاقات خدمة)، الباقات
-  "platform-overview.spec.ts", // PLT-00 (مؤشرات، قوائم، صفوف)
-  "platform-demo-requests.spec.ts", // PLT-14 (عدّادات، بطاقات طلبات، إجراءات)
-  "platform-plans.spec.ts", // PLT-16 (بطاقات باقات)
-  "home.spec.ts", // HOME-01/02/03 (لوحة المتجر، مؤشرات)
-];
+// `SHOTS_SPECS=pos,parties,shifts`: دفعة لقسم بعينه بدل الشاشات التمثيلية (بادئات أسماء المواصفات).
+// `SHOTS_WIDE=1`: يضيف مقاس 1920 — المساحة المهدرة على الشاشات الواسعة لا تظهر عند 1440.
+const ONLY = (process.env.SHOTS_SPECS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((s) => new RegExp(`/${s}[^/]*\\.spec\\.ts$`));
+
+const REPRESENTATIVE: (string | RegExp)[] = ONLY.length
+  ? ONLY
+  : [
+      "public-pages.spec.ts", // PUB-01…05: الهبوط، الشروط، الحالة (بطاقات خدمة)، الباقات
+      "platform-overview.spec.ts", // PLT-00 (مؤشرات، قوائم، صفوف)
+      "platform-demo-requests.spec.ts", // PLT-14 (عدّادات، بطاقات طلبات، إجراءات)
+      "platform-plans.spec.ts", // PLT-16 (بطاقات باقات)
+      "home.spec.ts", // HOME-01/02/03 (لوحة المتجر، مؤشرات)
+    ];
 
 // الداكن اختياري (SHOTS_SCHEMES=dark|both): مواصفاتنا تطابق ألوان الرموز الفاتحة عند 1440 فتفشل في الداكن
 // عمداً بعد أول إطار — اللقطة حينئذ لأول حالة فُحصت لا لآخرها. للداكن الموثوق: scripts/explore-status.mjs.
@@ -55,6 +65,7 @@ export default defineConfig({
           project("phone-390", 390, 844, "light"),
           project("tablet-834", 834, 1194, "light"),
           project("desktop-1440", 1440, 900, "light"),
+          ...(process.env.SHOTS_WIDE ? [project("wide-1920", 1920, 1080, "light")] : []),
         ]
       : []),
     ...(dark
