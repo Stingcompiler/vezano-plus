@@ -300,7 +300,8 @@ test.describe("SHIFT-03", () => {
     const notice = page.locator(".c-notice");
     await expect(notice).toContainText("مصروف 300.00 مسجّل. الرصيد 2,130.00، والحركة رقم 101");
     await expect(page.locator(".shift-expected__v")).toHaveText("2,130.00");
-    expect(pushed).toEqual(["cash_movement"]);
+    // الرفع يلي الحفظ ولا تنتظره الشاشة — ننتظر وصول طلبه (ع-٢٠)
+    await expect.poll(() => pushed).toEqual(["cash_movement"]);
     // العكس: الأصل يبقى مشطوباً والحركة المضادّة تشير إليه
     await page.getByRole("button", { name: "اعكس هذه الحركة" }).click();
     await expect(page.locator(".shift-expected__v")).toHaveText("2,430.00");
@@ -311,7 +312,7 @@ test.describe("SHIFT-03", () => {
     await expect(page.locator(".cat-foot")).toContainText(
       "الحركة المعكوسة تبقى ومعها الأصلية مشطوبةً لا محذوفة.",
     );
-    expect(pushed).toEqual(["cash_movement", "cash_movement"]);
+    await expect.poll(() => pushed).toEqual(["cash_movement", "cash_movement"]);
   });
 });
 

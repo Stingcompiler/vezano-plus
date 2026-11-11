@@ -105,9 +105,26 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @sting/web exec playwright install --with-deps chromium
       - run: pnpm --filter @sting/web build
-      - run: pnpm --filter @sting/web e2e --project=${{ matrix.project }}
+      # ثلاثة أشواط بخادم تطوير جديد لكلٍّ: الخادم يعيد تشغيل نفسه حين تبلغ ذاكرته 80% من حدّها
+      # (نحو الدقيقة 25 من 36)، فتسقط الاختبارات الجارية لحظتها بـERR_CONNECTION_RESET وتنجح بالإعادة
+      # — وهذا كل «التذبذب» في مراجعة 2026-11-10 (ع-٢٠). الاسم واحد للوظيفة لأن حماية الفرع تطلبه.
+      # إن عاد الخادم إلى إعادة التشغيل يظهر تحذيراً في الوظيفة بدل أن يختفي خلف الإعادة.
+      - name: e2e (${{ matrix.project }}) — 3 أشواط
+        shell: bash
         env:
           CI: "1"
+        run: |
+          set -o pipefail
+          status=0
+          for shard in 1 2 3; do
+            PLAYWRIGHT_HTML_OUTPUT_DIR="playwright-report/$shard" \
+              pnpm --filter @sting/web e2e --project=${{ matrix.project }} --shard="$shard/3" \
+              2>&1 | tee "e2e-$shard.log" || status=1
+          done
+          if grep -q "used memory threshold" e2e-*.log; then
+            echo "::warning::خادم التطوير أعاد تشغيل نفسه أثناء الاختبارات — زد عدد الأشواط"
+          fi
+          exit $status
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

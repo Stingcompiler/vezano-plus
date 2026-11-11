@@ -42,7 +42,9 @@ interface Device {
   sells: boolean;
 }
 
-const DEVICES: Device[] = [
+// دالة لا ثابت: الأوقات النسبية تُحسب عند الطلب — ثابتٌ يُحسب عند تحميل الملف يتقادم إن تأخّر
+// الاختبار دقيقةً تحت الحمل فيصير «قبل 40 ثانية» «قبل دقيقة» (ع-٢٠)
+const devices = (): Device[] => [
   dev({ id: "d1", name: "كاشير 1 — لوحي", users: ["سميّة", "كمال"], last_seen_at: ago(40) }),
   dev({
     id: "d2",
@@ -71,9 +73,9 @@ const DEVICES: Device[] = [
   }),
 ];
 
-const devicesPayload = (devices = DEVICES) => ({
-  devices,
-  counts: { total: devices.length, active: devices.length, pending_total: 312 },
+const devicesPayload = (list = devices()) => ({
+  devices: list,
+  counts: { total: list.length, active: list.length, pending_total: 312 },
   device_limit: 6,
   as_of: ago(60),
 });

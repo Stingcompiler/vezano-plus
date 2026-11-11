@@ -358,7 +358,8 @@ test.describe("POS-04", () => {
     await expect
       .poll(async () => (await readOps(page)).filter((o) => o.kind === "party_create").length)
       .toBe(1);
-    expect(pushed.map((o) => o.kind)).toEqual(["party_create"]);
+    // الرفع يلي الحفظ ولا تنتظره الشاشة — ننتظر وصول طلبه (ع-٢٠)
+    await expect.poll(() => pushed.map((o) => o.kind)).toEqual(["party_create"]);
   });
 
   test("validation_error: هاتف مسجَّل على طرف قائم — «هذا هو» أو «طرف جديد بنفس الرقم»", async ({

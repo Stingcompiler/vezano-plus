@@ -448,6 +448,35 @@ test.describe("PUR-02", () => {
     expect(posted).toMatchObject({ supplier_id: "s1", confirmed: false });
   });
 
+  test("تحميل متأخر للموردين لا يعيد اختيار المستخدم إلى المورد الأول (مراجعة 2026-11-10 ع-٢٠)", async ({
+    page,
+  }) => {
+    // وضع التطوير يشغّل أثر التحميل مرتين: الثاني يكتمل بعد أن اختار المستخدم مورده
+    let gets = 0;
+    await page.route("**/api/catalog/items", (route) =>
+      route.fulfill(json(200, { items: ITEMS, total: 3, all_total: 3, groups: [], offset: 0 })),
+    );
+    await page.route("**/api/inventory/purchasing/orders/preview", (route) => {
+      const b = route.request().postDataJSON() as {
+        supplier_id: string;
+        lines: { item_id: string; unit_code: string; qty_milli: string }[];
+        confirmed: boolean;
+      };
+      return route.fulfill(json(200, preview(b.supplier_id, b.lines, b.confirmed)));
+    });
+    await page.route(/\/api\/inventory\/purchasing\/orders(\?.*)?$/, async (route) => {
+      gets += 1;
+      if (gets > 1) await new Promise((r) => setTimeout(r, 1200));
+      return route.fulfill(json(200, list()));
+    });
+    await login(page, "/purchasing/orders/new");
+    const supplier = page.getByLabel("المورد");
+    await supplier.selectOption("s2");
+    await expect.poll(() => gets).toBeGreaterThan(1);
+    await page.waitForTimeout(1600);
+    await expect(supplier).toHaveValue("s2");
+  });
+
   test("المورد لا يورّد الصنف: نسأل قبل الحفظ ثم نؤكّد؛ فشل الإرسال يبقي الأمر «لم يُرسل» مع إعادة", async ({
     page,
   }) => {
