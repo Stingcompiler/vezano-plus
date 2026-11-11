@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { hhmm } from "@/features/home/format";
 import { readAttempt } from "@/features/market/cart-store";
@@ -211,7 +212,7 @@ export function RecoverClient() {
                 <p className="acc-choice__note">
                   <strong>لا كتابة فوق</strong> · التعارض يُحجَز ويُعرض الفرق للمراجعة.
                 </p>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف</th>
@@ -250,7 +251,7 @@ export function RecoverClient() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </LinesTable>
                 <div className="acc-actions">
                   <Button
                     pos

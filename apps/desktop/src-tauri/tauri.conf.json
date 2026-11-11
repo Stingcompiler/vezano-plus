@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://plus.vezano.app ipc: http://ipc.localhost; img-src 'self' data: blob: https://plus.vezano.app; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'"
+      "csp": "default-src 'self'; connect-src 'self' blob: https://plus.vezano.app ipc: http://ipc.localhost; img-src 'self' data: blob: https://plus.vezano.app; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'"
     }
   },
   "bundle": {

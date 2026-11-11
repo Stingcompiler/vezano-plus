@@ -99,6 +99,10 @@ export default function Lock() {
             return;
           }
           const out = await unlock(r.user.user_id);
+          if (out === "other_user") {
+            setOtherUser(r.user.display_name);
+            return;
+          }
           if (out === "revoked") {
             setRevoked(true);
             return;

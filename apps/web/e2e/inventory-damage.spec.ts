@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.31 — INV-07 هالك وحجر تالف (4). التالف لا يدخل المتاح للبيع (ACC-10): الحجر يخرج من المتاح
@@ -42,7 +43,7 @@ const ITEM = {
 };
 
 async function seed(page: Page, role: "owner" | "storekeeper" = "owner", balance = "8000") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, item, balance }) => {
       const req = indexedDB.open("sting-bootstrap");

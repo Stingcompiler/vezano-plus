@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.37 — SYS-05 تصدير نسخة محلية (5) + SYS-06 استعادة ومعاينة (6). كلمة حماية + AES-GCM (قرار
@@ -37,7 +38,7 @@ async function mockStorage(page: Page, free: number) {
 }
 
 async function seed(page: Page, ops: readonly OpSeed[], items: readonly string[]) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ ops, items }) => {
       const req = indexedDB.open("sting-bootstrap");

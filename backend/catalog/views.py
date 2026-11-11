@@ -80,13 +80,19 @@ class BalancesView(APIView):
             return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
         with tenant_context(tid):
             # فرع الجلسة: الجهاز، وإلا أول فرع مخوَّل للمستخدم (جلسة حساب بلا جهاز)
-            viewer_branch = home.viewer_for(auth.user, auth.device).branch
+            viewer = home.viewer_for(auth.user, auth.device)
+            viewer_branch = viewer.branch
             raw = str(request.query_params.get("branch_id", "")) or (
                 str(viewer_branch.id) if viewer_branch is not None else ""
             )
             branch_id = _uuid(raw)
             if branch_id is None:
                 return Response({"detail": "branch_required"}, status=status.HTTP_400_BAD_REQUEST)
+            # غير المالك يرى فرع جلسته وحده كما في `/api/inventory/balances`
+            # (مراجعة 2026-11-10 ع-٨)
+            own = viewer_branch.id if viewer_branch is not None else None
+            if not viewer.is_owner and branch_id != own:
+                return Response({"detail": "branch_forbidden"}, status=status.HTTP_403_FORBIDDEN)
             return Response(
                 {
                     "branch_id": str(branch_id),
@@ -200,6 +206,17 @@ class ItemsView(APIView):
         s.is_valid(raise_exception=True)
         d = s.validated_data
         with tenant_context(tid):
+            # سعر البيع قرار منشأة (المالك): من لا يغيّر السعر لا يحدّده عند الإنشاء أيضاً — كان
+            # الكاشير يُمنع من تعديل السعر ثم ينشئ صنفاً جديداً بأي سعر (مراجعة 2026-11-10 ع-١٧).
+            # بلا سعر يُنشأ الصنف، ويُسعَّر عند البيع بإدخال مسجَّل باسم من أدخله (POS-05).
+            price = str(d.get("sale_price_minor", "") or "")
+            if price.isdigit() and int(price) > 0 and isinstance(auth := request.auth, AuthContext):
+                v = home.viewer_for(auth.user, auth.device)
+                if not (v.is_owner or v.role_code in prices.PRICE_ROLES):
+                    return Response(
+                        {"detail": "price_owner_only", "role_name": v.role_name},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             unit_id = _uuid(d.get("base_unit_id", ""))
             unit = Unit.objects.filter(id=unit_id).first() if unit_id else None
             group = (

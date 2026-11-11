@@ -4,6 +4,8 @@
 
 ```bash
 cd backend
+# على قاعدة جديدة أولاً: مشغّل منصة يعتمد توثيق الموزّع — بدونه يتوقف البذر برسالة تسمّي السبب
+uv run python manage.py seed_operator --email ops@vezano.local --password '…'
 uv run python manage.py showcase reset   # يمحو منشأتَي العرض ثم يبنيهما من جديد (نحو دقيقة)
 uv run python manage.py showcase wipe    # يمحوهما فقط
 ```

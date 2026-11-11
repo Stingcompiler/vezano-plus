@@ -178,10 +178,10 @@ def test_damaged_return_goes_to_quarantine_and_credit_refund_lowers_debt(
     assert do_push(ctx, bad) == ["rejected"]
 
 
-def test_server_derives_effects_and_flags_exceeding_returns(ctx: dict[str, Any]) -> None:
+def test_server_derives_effects_and_quarantines_exceeding_returns(ctx: dict[str, Any]) -> None:
     """§٧.٣: حركة لا تطابق السطور، أو تالف يدخل المخزون الصالح، أو مجموع مرسل خاطئ — مرفوضة.
-    ACC-11: ردّ 2 ثم ردّ 2 على مُباع 3 يُقبل ويُوسم `exceeds_original` للمراجعة، والتفاصيل تعرض
-    المُرتجَع سابقاً لكل سطر."""
+    ACC-11: ردّ 2 ثم ردّ 2 على مُباع 3 — الثاني يتجاوز الأصل فيُحجر تعارضاً ليقرّره المالك، ولا
+    يدخل الصندوق ولا المخزون قبل قراره (مراجعة 2026-11-10 ع-٦)."""
     assert do_push(ctx, sale_op(ctx, invoice="INV-3", qty="3000")) == ["accepted"]
     with tenant_context(ctx["tenant"].id):
         sale = Sale.objects.get(invoice_number="INV-3")
@@ -197,19 +197,18 @@ def test_server_derives_effects_and_flags_exceeding_returns(ctx: dict[str, Any])
     first = return_op(ctx, sale, qty="2000", number="R3")
     second = return_op(ctx, sale, qty="2000", number="R4")
     assert do_push(ctx, first) == ["accepted"]
-    assert do_push(ctx, second) == ["accepted"]
+    assert do_push(ctx, second) == ["conflicted"]
     with tenant_context(ctx["tenant"].id):
         flags = {r.return_number: r.exceeds_original for r in SaleReturn.objects.all()}
-        assert flags == {"R3": False, "R4": True}
-        # المخزون عاد بالكمية المردودة كلها — الواقعة محفوظة ومسار تسويتها مركزي لا الرفض
-        assert catalog_services.branch_balances(ctx["branch"].id) == {ITEM: "1000"}
+        assert flags == {"R3": False}
+        # المخزون عاد بما قُبل وحده: بيع 3 وردّ 2
+        assert catalog_services.branch_balances(ctx["branch"].id) == {ITEM: "-1000"}
     c = Client()
     r = c.get(f"/api/sales/{sale.id}", HTTP_AUTHORIZATION=f"Bearer {ctx['access']}")
     assert r.status_code == 200
     body = r.json()
-    assert body["lines"][0]["returned_qty_milli"] == "4000"
-    assert [x["return_number"] for x in body["returns"]] == ["R3", "R4"]
-    assert body["returns"][1]["exceeds_original"] is True
+    assert body["lines"][0]["returned_qty_milli"] == "2000"
+    assert [x["return_number"] for x in body["returns"]] == ["R3"]
 
 
 def test_late_cash_refund_listed_after_close(ctx: dict[str, Any]) -> None:

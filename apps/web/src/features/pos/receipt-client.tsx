@@ -1,7 +1,14 @@
 "use client";
 
 import type { StoredOperation } from "@sting/platform";
-import { LAST_SALE_META, type LocalSale, readSale, unitDisplay } from "@sting/sync-core";
+import {
+  LAST_SALE_META,
+  type LocalSale,
+  readSale,
+  readSalePrints,
+  recordSalePrint,
+  unitDisplay,
+} from "@sting/sync-core";
 import {
   Button,
   formatMinor,
@@ -91,7 +98,10 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
       saleId === "last" ? ((await storage.read((tx) => tx.getMeta(LAST_SALE_META))) ?? "") : saleId;
     const s = id ? await readSale(storage, id) : null;
     setSale(s);
-    if (s) setOp(await storage.read((tx) => tx.getOperation(s.operation_id)));
+    if (s) {
+      setOp(await storage.read((tx) => tx.getOperation(s.operation_id)));
+      setPrints(await readSalePrints(storage, s.id));
+    }
     setLastPush(await readLastPush());
     setShop((await readHomeCache())?.summary.tenant_name ?? "");
   }, [saleId]);
@@ -125,7 +135,9 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
     if (!sale) return;
     // فشل الطابعة لا يلغي البيع: مفتاح العطل `printer_fail` يحاكي طابعة لا تستجيب (WEB-03 يربط الناقل)
     let failed = false;
-    if (online) {
+    // مفتاح العطل للتطوير والاختبار وحدهما: في الإنتاج لا طلب برمز الجلسة مع كل طباعة إلى نقطة
+    // غير مركَّبة (مراجعة 2026-11-10 ع-٢١)
+    if (online && process.env.NODE_ENV !== "production") {
       try {
         // خارج العقد (نقطة سيناريو تطويرية خلف حارس) — لذا fetch مباشر
         const r = await fetch(`${apiBaseUrl()}/api/scenario/faults`, {
@@ -159,7 +171,7 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
     }
     setPrintFailed(false);
     if (out === "system") printDocument();
-    setPrints((p) => [...p, new Date().toISOString()]);
+    setPrints(await recordSalePrint(getStorage(), sale.id, new Date().toISOString()));
   };
 
   const retry = async () => {
@@ -170,7 +182,7 @@ export function ReceiptClient({ saleId }: { saleId: string }) {
 
   return (
     <Frame title="نقطة البيع" nav={<PosNav currentId="pos" />} footer={null}>
-      <div className="pos" data-screen="POS-08" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="POS-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

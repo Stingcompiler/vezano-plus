@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.29 — INV-03 افتتاحيات المخزون (4) + INV-04 استلام بضاعة (5). الافتتاحية مستند واحد يُراجَع
@@ -60,7 +61,7 @@ const ITEMS = [
 ];
 
 async function seed(page: Page, role: "owner" | "storekeeper" = "owner") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, items }) => {
       const req = indexedDB.open("sting-bootstrap");

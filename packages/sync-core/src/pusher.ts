@@ -153,6 +153,30 @@ export async function applyResults(
   });
 }
 
+/**
+ * عند بدء التطبيق: ما بقي `pending` من تشغيل سابق لا طلب له في الطريق — أُغلق التطبيق أو أُعيد
+ * تحميله والطلب خارج فلم يعد ردّ يعيده `local`، و`collectBatch` لا يلتقط إلا `local`، فكان يبقى
+ * «قيد الرفع» إلى الأبد ولا يُرفع (مراجعة 2026-11-10 ع-١). يعود هنا إلى الطابور بموضعه؛ إن كان
+ * الطلب الأول وصل الخادم فالإعادة `duplicate` بالهوية نفسها بلا أثر ثانٍ (§٨.٣ بند ١٠).
+ * الكتابة على `tx` مباشرةً — لا مساعد async تحت Dexie. يعيد عدد ما أعاده.
+ */
+export async function recoverInFlight(storage: StoragePort): Promise<number> {
+  return storage.transaction(async (tx) => {
+    const stuck = await tx.listOperationsByState("pending");
+    for (const op of stuck) {
+      await tx.putOperation({ ...op, state: "local" });
+      await tx.putMeta(
+        attemptsKey(op.operationId),
+        appended(await tx.getMeta(attemptsKey(op.operationId)), {
+          at: new Date().toISOString(),
+          event: "requeued",
+        }),
+      );
+    }
+    return stuck.length;
+  });
+}
+
 export async function pushOnce(
   storage: StoragePort,
   options: PushOnceOptions,

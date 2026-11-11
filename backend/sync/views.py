@@ -68,8 +68,12 @@ class PushView(APIView):
             )
         try:
             with tenant_context(auth.tenant_id):
+                # فرع الجهاز من المصادقة: مفتاح كيانات الفرع في sync_log وحدّ ما يكتبه الجهاز
                 response = push(
-                    device_id=auth.device.id, actor_user_id=auth.user.id, envelope=s.validated_data
+                    device_id=auth.device.id,
+                    actor_user_id=auth.user.id,
+                    envelope=s.validated_data,
+                    branch_id=str(auth.device.branch_id),
                 )
         except PushError as e:
             code = (

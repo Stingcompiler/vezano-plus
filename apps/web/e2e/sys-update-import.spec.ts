@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.39 — SYS-09 تحديث التطبيق مع معلّق (5) + SYS-10 استيراد بيانات بمعاينة (6). لا تحديث إجباري
@@ -12,7 +13,7 @@ import { fromFrame } from "./frame-provenance";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 async function seed(page: Page, ops: number, meta: Record<string, string> = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ ops, meta }) => {
       const req = indexedDB.open("sting-bootstrap");

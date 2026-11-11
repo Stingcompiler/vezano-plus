@@ -14,7 +14,7 @@ import {
 import { AppState } from "react-native";
 
 import { SECRET_KEYS, secrets } from "@/lib/secrets";
-import { getStorage } from "@/lib/storage";
+import { getStorage, openTenantStorage } from "@/lib/storage";
 import { WEB_URL } from "@/lib/web";
 
 /**
@@ -155,12 +155,13 @@ interface DeviceRefreshed {
   readonly device_id: string;
 }
 
-type Unlock = "unlocked" | "offline" | "revoked";
+type Unlock = "unlocked" | "offline" | "revoked" | "other_user";
 
 interface SessionApi {
   readonly state: SessionState;
   readonly api: ReturnType<typeof createApiClient>;
-  readonly signIn: (data: SignInPayload) => SessionState;
+  readonly signIn: (data: SignInPayload) => Promise<SessionState>;
+  readonly forgetDevice: () => Promise<void>;
   readonly signOut: () => void;
   /** بعد تسجيل الجهاز: جلسة جهاز + رمز التجديد الطويل في المخزن الآمن */
   readonly adoptDevice: (reg: DeviceRegistration) => Promise<void>;
@@ -325,8 +326,18 @@ export function SessionProvider({
   }, [idleMinutes, set]);
 
   const signIn = useCallback(
-    (data: SignInPayload) => {
-      const next = afterSignIn(ref.current, data);
+    async (data: SignInPayload) => {
+      let next = afterSignIn(ref.current, data);
+      if (next.status === "active" && next.tenantId) {
+        // ملف هذه المنشأة يُفتح قبل وضعها في الجلسة، وتجهيز الهاتف يُقرأ منه هو: كان الهاتف المجهَّز
+        // لمنشأة يُعدّ مجهَّزاً لأي منشأة تدخل بعدها، وتجهيزها يكتب فوق دفتر الأولى ومعلّقها
+        // (مراجعة 2026-11-10 ع-٤)
+        await openTenantStorage(next.tenantId);
+        const setup = await getStorage()
+          .then((st) => st.read((tx) => tx.getMeta(DEVICE_SETUP_KEY)))
+          .catch(() => null);
+        next = { ...next, setupDone: setup === "done" };
+      }
       set(next);
       return next;
     },
@@ -373,6 +384,18 @@ export function SessionProvider({
 
   const completeSetup = useCallback(() => set({ ...ref.current, setupDone: true }), [set]);
 
+  /** بعد المحو عن بُعد: لا اعتماد جهاز ولا تجهيز ولا جلسة — الهاتف كأنه جديد. */
+  const forgetDevice = useCallback(async () => {
+    await Promise.all(
+      [SECRET_KEYS.deviceRefresh, SECRET_KEYS.deviceId, SECRET_KEYS.userId].map((k) =>
+        secrets()
+          .delete(k)
+          .catch(() => undefined),
+      ),
+    );
+    set({ ...ANONYMOUS, setupDone: false });
+  }, [set]);
+
   const lock = useCallback(() => {
     if (ref.current.status === "active") set({ ...ref.current, status: "locked" });
   }, [set]);
@@ -385,6 +408,13 @@ export function SessionProvider({
         set({ ...cur, status: "active" });
         return "unlocked";
       }
+      // رمز الجهاز المحفوظ يعيد جلسة صاحبه هو، لا جلسة من أدخل رمز القفل: هاتف مشترك عليه متحققات
+      // كل مستخدمي الفرع، فرمز كاشير كان يفتح جلسة المالك الذي جهّز الهاتف (مراجعة 2026-11-10
+      // ع-١٣). لغير صاحب الجلسة: لا تدوير ولا فتح — التبديل بتسليم الوردية أو بدخوله هو.
+      const owner = await secrets()
+        .get(SECRET_KEYS.userId)
+        .catch(() => null);
+      if (owner && owner !== userId) return "other_user";
       try {
         const d = await rotateDevice();
         if (d === "rejected") {
@@ -406,8 +436,18 @@ export function SessionProvider({
   );
 
   const value = useMemo(
-    () => ({ state, api, signIn, signOut, adoptDevice, completeSetup, lock, unlock }),
-    [state, api, signIn, signOut, adoptDevice, completeSetup, lock, unlock],
+    () => ({
+      state,
+      api,
+      signIn,
+      signOut,
+      adoptDevice,
+      completeSetup,
+      forgetDevice,
+      lock,
+      unlock,
+    }),
+    [state, api, signIn, signOut, adoptDevice, completeSetup, forgetDevice, lock, unlock],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

@@ -8,8 +8,10 @@ import {
   bankReferenceUsed,
   readPartyPendingCredit,
   readSaleCashRows,
+  readSalePrints,
   readSales,
   recordCreditOverride,
+  recordSalePrint,
   saleDraft,
   saveSaleLocally,
   type SaleInput,
@@ -270,4 +272,21 @@ it("آجل ومختلط تحت Dexie: الرصيد المركّب يرى الم�
   expect(bank.sale.bank_minor).toBe("10000");
   expect(await bankReferenceUsed(s, "TRF-88214")).toBe(true);
   expect(await bankReferenceUsed(s, "TRF-1")).toBe(false);
+});
+
+/** مراجعة 2026-11-10 (ع-١٦): الطبعات تُحفظ مع البيع على الجهاز — إعادة التحميل لا تعيدها «أصلاً». */
+it("طبعات الإيصال تبقى بعد إعادة فتح القاعدة: الأولى أصل وما بعدها نسخة", async () => {
+  const name = `sale-${Math.random()}`;
+  const s = new DexieStorage({ databaseName: name });
+  expect(await readSalePrints(s, "sale-1")).toEqual([]);
+  expect(await recordSalePrint(s, "sale-1", "2026-09-16T10:35:00Z")).toHaveLength(1);
+  await s.close();
+  const reopened = new DexieStorage({ databaseName: name });
+  expect(await readSalePrints(reopened, "sale-1")).toEqual(["2026-09-16T10:35:00Z"]);
+  expect(await recordSalePrint(reopened, "sale-1", "2026-09-16T10:40:00Z")).toEqual([
+    "2026-09-16T10:35:00Z",
+    "2026-09-16T10:40:00Z",
+  ]);
+  // بيع آخر لا يرث طبعات غيره
+  expect(await readSalePrints(reopened, "sale-2")).toEqual([]);
 });

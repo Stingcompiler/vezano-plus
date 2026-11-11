@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { useApp } from "@/lib/app-context";
 import { dayMonth } from "@/features/home/format";
@@ -201,7 +202,7 @@ export function SearchClient() {
                         {shown.multi_unit && !g.rankable ? " · مجموعة مستقلة" : ""}
                       </span>
                     </div>
-                    <table className="pur-lines">
+                    <LinesTable>
                       <thead>
                         <tr>
                           <th scope="col">المورد والعرض</th>
@@ -281,7 +282,7 @@ export function SearchClient() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </LinesTable>
                   </div>
                 ))
               : null}

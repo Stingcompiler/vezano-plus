@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.13 — SHIFT-05 (5). شاشة المالك بعد الإقفال: سجل الورديات من الخادم (15-D10) مرتّباً بالقيمة
@@ -142,7 +143,7 @@ async function login(page: Page, next: string) {
 
 /** وردية أُقفلت على هذا الجهاز وحدث إقفالها ما زال في الطابور (لم يُرفع). */
 async function seedLocalClosed(page: Page) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ openedAt, closedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

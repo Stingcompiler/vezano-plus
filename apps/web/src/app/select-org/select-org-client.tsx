@@ -15,7 +15,8 @@ import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { localSetupTenants } from "@/lib/device-setup";
 import { useOnline } from "@/lib/online";
-import { wipeLocalStorage } from "@/lib/storage";
+import { openTenantStorage, wipeLocalStorage } from "@/lib/storage";
+import { countPending } from "@/lib/sync";
 
 type State = "loading" | "ready" | "empty" | "offline" | "stale" | "permission_denied";
 
@@ -102,10 +103,18 @@ export function SelectOrgClient() {
         return;
       }
       if (!data) return;
-      // التبديل يُفرّغ الذاكرة المحلية للحساب السابق (ACC-138)
-      if (app.session.tenantId && app.session.tenantId !== data.tenant_id) {
+      // التبديل يُفرّغ قاعدة الحساب السابق (ACC-138) ما لم يكن فيها معلّق: المعلّق لا يُمحى، يبقى
+      // في قاعدة منشأته حتى يعود أصحابها ويرفعوه. ثم تُفتح قاعدة المنشأة المختارة قبل وضعها في
+      // السياق — الخروج يصفّر منشأة الجلسة، فكان الدخول بعده إلى منشأة أخرى يعرض بيانات الأولى
+      // (مراجعة 2026-11-10 ع-٤)
+      if (
+        app.session.tenantId &&
+        app.session.tenantId !== data.tenant_id &&
+        (await countPending().catch(() => 1)) === 0
+      ) {
         await wipeLocalStorage();
       }
+      await openTenantStorage(data.tenant_id);
       app.setTokens({ access: data.access, refresh: data.refresh, sessionId: data.session_id });
       app.setSession({
         ...app.session,

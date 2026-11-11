@@ -4,7 +4,7 @@ import { Button } from "@sting/ui-web";
 
 import { ThemeToggle } from "@/features/home/theme-toggle";
 import { usePathname, useRouter } from "next/navigation";
-import { type CSSProperties, type MouseEvent, useEffect, useState } from "react";
+import { type CSSProperties, type MouseEvent, useEffect, useRef, useState } from "react";
 
 import "./landing.css";
 import { BrandMark, BrandName } from "@/features/public/brand-mark";
@@ -50,6 +50,7 @@ export function PublicHeader({
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLButtonElement>(null);
   // تحليلات الزوار (0005 §٢١٩): إشارة لكل صفحة عامة تُفتح — الترويسة حاضرة في كلها. تاجر أو مشغّل
   // داخل بجلسته ليس زائراً للموقع (مراجعة 2026-11-09)
   useEffect(() => {
@@ -93,6 +94,18 @@ export function PublicHeader({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Esc يغلق القائمة ويعيد التركيز إلى زرّها، كدرج التطبيق (مراجعة 2026-11-10 و-٥)
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      menuRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   const go = (href: string) => (e: MouseEvent) => {
     e.preventDefault();
@@ -158,6 +171,7 @@ export function PublicHeader({
         {minimal ? null : (
           <button
             type="button"
+            ref={menuRef}
             className="lp__menu"
             aria-expanded={menuOpen}
             aria-controls="lp-links"

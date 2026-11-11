@@ -502,6 +502,19 @@ test.describe("CAT-03", () => {
       ),
     );
     await page.getByRole("button", { name: "إضافة وحدة" }).click();
+    // مراجعة 2026-11-10 (و-٨): بلوحة المفاتيح ظاهرة (نافذة قصيرة) الحوار داخل النافذة ويتمرّر
+    // داخله حتى زرّ التأكيد — كان الزرّان تحت حافتها بلا طريق إليهما
+    const full = page.viewportSize()!;
+    await page.setViewportSize({ width: full.width, height: 400 });
+    const dialog = page.getByRole("dialog");
+    const box = (await dialog.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(full.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(400);
+    const confirm = dialog.getByRole("button", { name: "إضافة وحدة" });
+    await confirm.scrollIntoViewIfNeeded();
+    await expect(confirm).toBeInViewport();
+    await page.setViewportSize(full);
     await page.getByRole("dialog").getByLabel("الوحدة").selectOption("u-bag");
     await page.getByRole("dialog").getByLabel("المعامل").fill("50");
     await page.getByRole("dialog").getByLabel("الباركود").fill("6291000000166");

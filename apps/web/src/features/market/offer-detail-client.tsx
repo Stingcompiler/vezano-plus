@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth } from "@/features/home/format";
 import type { OfferCard } from "@/features/market/home-client";
@@ -381,7 +382,7 @@ export function OfferDetailClient({ id }: { id: string }) {
                 {o.tiers.length ? (
                   <>
                     <h3 className="cat-head__title">شرائحك في القائمة الخاصة</h3>
-                    <table className="pur-lines">
+                    <LinesTable>
                       <thead>
                         <tr>
                           <th scope="col">الشريحة</th>
@@ -409,7 +410,7 @@ export function OfferDetailClient({ id }: { id: string }) {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </LinesTable>
                   </>
                 ) : null}
 

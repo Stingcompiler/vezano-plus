@@ -18,6 +18,7 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
+import "@/features/shifts/shifts.css";
 import { hhmm } from "@/features/home/format";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
@@ -127,7 +128,7 @@ export function MixedClient() {
 
   return (
     <Frame title="نقطة البيع" nav={<PosNav currentId="pos" />} footer={null}>
-      <div className="pos" data-screen="POS-07" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="POS-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">الدفع المختلط والتحويل</h2>

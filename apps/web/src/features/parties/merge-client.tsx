@@ -190,7 +190,7 @@ export function MergeClient({ sourceId, targetId }: { sourceId: string; targetId
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
-      <div className="pos" data-screen="PTY-07" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="PTY-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">دمج طرفين مكررين</h2>

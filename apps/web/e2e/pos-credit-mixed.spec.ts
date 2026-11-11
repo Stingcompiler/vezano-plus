@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { navTo } from "./nav";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.17 — POS-06 (5) + POS-07 (7). الآجل بالرصيد المركّب «خادمي X + معلّق هذا الجهاز Y = Z» (ACC-02)
@@ -22,7 +23,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ customer, balance, limit, pendingSales, qty, stock, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");

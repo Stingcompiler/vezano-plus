@@ -19,6 +19,46 @@ import type { OperationDraft } from "./types";
 
 export const SALE_PREFIX = "entity:sales.Sale:";
 export const LAST_SALE_META = "sales.last";
+/** أوقات طبع إيصال بيع على هذا الجهاز: `sales.prints.<معرّف البيع>` — مصفوفة ISO. */
+export const SALE_PRINTS_META = "sales.prints.";
+const MAX_PRINTS = 50;
+
+/**
+ * متى طُبع إيصال هذا البيع على هذا الجهاز. كان يُحفظ في ذاكرة الشاشة وحدها فتخرج الطبعة بعد إعادة
+ * التحميل أصلاً ثانياً بلا وسم «نسخة» (مراجعة 2026-11-10 ع-١٦؛ §١٢.٣ «كل طبعة بعد الأولى نسخة»).
+ */
+export async function readSalePrints(storage: StoragePort, saleId: string): Promise<string[]> {
+  const raw = await storage.read((tx) => tx.getMeta(SALE_PRINTS_META + saleId));
+  if (!raw) return [];
+  try {
+    const list: unknown = JSON.parse(raw);
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** يسجّل طبعة ناجحة ويعيد القائمة بعدها؛ الأولى تبقى أولى مهما كثرت النسخ. */
+export async function recordSalePrint(
+  storage: StoragePort,
+  saleId: string,
+  at: string,
+): Promise<string[]> {
+  return storage.transaction(async (tx) => {
+    const raw = await tx.getMeta(SALE_PRINTS_META + saleId);
+    let list: string[] = [];
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) list = parsed.filter((x): x is string => typeof x === "string");
+    } catch {
+      list = [];
+    }
+    const next = [...list, at];
+    const kept = next.length > MAX_PRINTS ? [next[0]!, ...next.slice(-(MAX_PRINTS - 1))] : next;
+    await tx.putMeta(SALE_PRINTS_META + saleId, JSON.stringify(kept));
+    return kept;
+  });
+}
 
 export type SalePaymentMethod = "cash" | "bank" | "credit";
 

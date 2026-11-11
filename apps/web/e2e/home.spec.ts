@@ -273,6 +273,42 @@ test.describe("HOME-01", () => {
   });
 });
 
+test.describe("درج التنقل ولوحة المفاتيح (مراجعة 2026-11-10 و-٥)", () => {
+  test("مغلقاً لا يدخله Tab، ومفتوحاً يحبس التركيز، وEsc يغلقه ويعيد التركيز إلى زرّه", async ({
+    page,
+  }) => {
+    test.skip((page.viewportSize()?.width ?? 0) >= 834, "الدرج على الهاتف وحده");
+    await loginTo(page, OWNER);
+    const nav = page.locator(".c-frame__nav");
+    const menu = page.locator(".c-frame__menu");
+    await expect(menu).toBeVisible();
+    // مغلقاً: روابطه خارج الشاشة ولا تدخل ترتيب التركيز
+    await expect(nav).not.toBeInViewport();
+    await expect(nav).toHaveAttribute("inert", "");
+    const inNav = () => page.evaluate(() => !!document.activeElement?.closest(".c-frame__nav"));
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press("Tab");
+      expect(await inNav(), `Tab ${i + 1} دخل الدرج المغلق`).toBe(false);
+    }
+    // مفتوحاً: التركيز داخله ولا يخرج بـTab ولا بـShift+Tab
+    await menu.click();
+    await expect(nav).toBeInViewport();
+    await expect.poll(inNav).toBe(true);
+    const stops = await nav.locator("a[href], button:not([disabled])").count();
+    for (let i = 0; i < stops + 3; i++) {
+      await page.keyboard.press("Tab");
+      expect(await inNav(), `Tab ${i + 1} خرج من الدرج المفتوح`).toBe(true);
+    }
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press("Shift+Tab");
+      expect(await inNav(), `Shift+Tab ${i + 1} خرج من الدرج المفتوح`).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(nav).not.toBeInViewport();
+    await expect(menu).toBeFocused();
+  });
+});
+
 test.describe("HOME-02", () => {
   test("ready: مهام الموظف بلا تقارير ممنوعة", async ({ page }, info) => {
     await loginTo(page, EMPLOYEE);
@@ -499,6 +535,44 @@ async function toSearch(page: Page, search: unknown, q = "الواحة") {
   await navTo(page, "بحث");
   await page.getByLabel("بحث", { exact: true }).fill(q);
 }
+
+/** نسبة تباين نصّ العنصر مع أقرب خلفية معتمة خلفه (WCAG 2.x). */
+async function contrastOf(page: Page, selector: string): Promise<number> {
+  return page
+    .locator(selector)
+    .first()
+    .evaluate((el) => {
+      const rgb = (c: string) => (c.match(/[\d.]+/g) ?? []).map(Number);
+      const lum = ([r = 0, g = 0, b = 0]: number[]) => {
+        const f = (v: number) => {
+          const x = v / 255;
+          return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      let node: Element | null = el;
+      let bg = [255, 255, 255];
+      while (node) {
+        const c = rgb(getComputedStyle(node).backgroundColor);
+        if (c.length >= 3 && (c[3] ?? 1) > 0.9) {
+          bg = c;
+          break;
+        }
+        node = node.parentElement;
+      }
+      const a = lum(rgb(getComputedStyle(el).color));
+      const b = lum(bg);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+}
+
+test.describe("الوضع الداكن (مراجعة 2026-11-10 و-٦)", () => {
+  test("نصّ حقل البحث مقروء على السطح الداكن — لا أسود على داكن", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await toSearch(page, SEARCH);
+    expect(await contrastOf(page, '[data-screen="HOME-03"] input')).toBeGreaterThanOrEqual(4.5);
+  });
+});
 
 test.describe("HOME-03", () => {
   test("ready: الأنواع بعناوين وترتيب ثابت، والإشعارات بجانبها", async ({ page }, info) => {

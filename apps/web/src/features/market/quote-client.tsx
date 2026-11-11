@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import type { OrderRow } from "@/features/market/orders-client";
 import type { Version, VersionLine } from "@/features/market/order-detail-client";
@@ -279,7 +280,7 @@ export function QuoteClient({ id }: { id: string }) {
                 <h3 className="cat-head__title">
                   <span className="sting-mono">{p.order.number_label}</span> — {p.order.buyer_name}
                 </h3>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف</th>
@@ -369,7 +370,7 @@ export function QuoteClient({ id }: { id: string }) {
                       );
                     })}
                   </tbody>
-                </table>
+                </LinesTable>
                 <TextField
                   label="رسوم النقل (بالقرش)"
                   kind="number"

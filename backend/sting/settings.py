@@ -148,6 +148,33 @@ SPECTACULAR_SETTINGS = {
 }
 
 
+# السجلات (مراجعة 2026-11-10 ع-١٤): لم يكن للخادم إعداد سجلات، فأخطاء الطلبات (500) تخرج بلا وقت
+# ولا مستوى، وسجلات التطبيق دون WARNING لا تخرج أصلاً. كل شيء إلى stderr — تجمعه الحاوية
+# (`docker compose logs api worker`) — بوقت ومستوى واسم المسجِّل، وأثر الاستثناء كاملاً.
+# لا يُسجَّل جسم طلب ولا ترويسة: لا رموز ولا بيانات عملاء في السجل.
+LOG_LEVEL = os.environ.get("STING_LOG_LEVEL", "INFO").upper()
+LOGGING: dict[str, object] = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "line": {
+            "format": "%(asctime)s %(levelname)s %(name)s: %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+        },
+    },
+    "handlers": {
+        "stderr": {"class": "logging.StreamHandler", "formatter": "line"},
+    },
+    "root": {"handlers": ["stderr"], "level": LOG_LEVEL},
+    "loggers": {
+        # أخطاء الطلبات بأثرها؛ 4xx المتوقعة (403، 404) لا تملأ السجل
+        "django.request": {"level": "ERROR"},
+        "django.security": {"level": "WARNING"},
+        # خادم التطوير يطبع سطراً لكل طلب بنفسه
+        "django.server": {"propagate": False, "handlers": ["stderr"], "level": "INFO"},
+    },
+}
+
 # تعليمات الدفع التي يراها التاجر في ORG-07 (مراجعة 2026-10-19، بند 10): JSON من
 # {"bank": "...", "account": "...", "holder": "..."}. غير مضبوط = لا بطاقة تحويل (لا حساب مخترع).
 PAYMENT_INSTRUCTIONS = os.environ.get("STING_PAYMENT_INSTRUCTIONS", "")

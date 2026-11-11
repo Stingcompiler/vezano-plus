@@ -11,6 +11,7 @@ import "@/features/pos/pos.css";
 import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
@@ -311,7 +312,7 @@ export function PriceListsClient({ listId, offerId }: { listId?: string; offerId
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الشريحة</th>
@@ -384,7 +385,7 @@ export function PriceListsClient({ listId, offerId }: { listId?: string; offerId
                       );
                     })}
                   </tbody>
-                </table>
+                </LinesTable>
                 <p className="acc-choice__note">
                   «بالتفاوض» مقبول ويمنع الطلب الفوري ويفتح طلب عرض سعر
                 </p>

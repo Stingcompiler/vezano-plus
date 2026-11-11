@@ -54,17 +54,38 @@ export async function readLocalBalances(storage: StoragePort): Promise<Map<strin
   return out;
 }
 
-/** يطبّق مطابقة خادمية للأرصدة: يكتب الأرصدة الواردة ويثبّت وقت المطابقة في meta. */
+/** حالتا عملية لم يرَها الخادم بعد: أثرها ليس في رقمه. */
+const UNSENT_STATES = ["local", "pending"] as const;
+
+const milli = (x: unknown): bigint => (typeof x === "string" && /^-?\d+$/.test(x) ? BigInt(x) : 0n);
+
+/**
+ * يطبّق مطابقة خادمية للأرصدة ويثبّت وقتها في meta. رقم الخادم لا يحوي ما لم يُرفع من هذا الجهاز،
+ * فيُكتب **مطروحاً منه أثر العمليات غير المرسلة** (`local` و`pending`) — وإلا عاد ما بيع دون اتصال
+ * «متاحاً» بعد أول مطابقة وسقط تنبيه تجاوز الرصيد (مراجعة 2026-11-10 ع-١٦). المتعارض والمحجور لا
+ * يدخلان: حكمهما عند المالك ولا يُقدَّمان رصيداً موثوقاً (§٨.٨).
+ */
 export async function storeBalances(
   storage: StoragePort,
   asOf: string,
   balances: readonly { readonly item_id: string; readonly qty_milli: string }[],
 ): Promise<void> {
   await storage.transaction(async (tx) => {
+    const unsent = new Map<string, bigint>();
+    for (const state of UNSENT_STATES) {
+      for (const op of await tx.listOperationsByState(state)) {
+        for (const m of op.members) {
+          if (m.entity !== "inventory.StockMovement") continue;
+          const item = String(m.payload["item_id"]);
+          unsent.set(item, (unsent.get(item) ?? 0n) + milli(m.payload["delta_base_qty_milli"]));
+        }
+      }
+    }
     for (const b of balances) {
+      const qty = milli(b.qty_milli) + (unsent.get(b.item_id) ?? 0n);
       await tx.putProjection({
         key: BALANCE_PREFIX + b.item_id,
-        value: { item_id: b.item_id, qty_milli: b.qty_milli, as_of: asOf },
+        value: { item_id: b.item_id, qty_milli: qty.toString(), as_of: asOf },
       });
     }
     await tx.putMeta(BALANCE_MATCH_META, asOf);

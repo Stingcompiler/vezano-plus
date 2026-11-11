@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -29,6 +30,8 @@ from sync.kinds import KindError, KindSpec, get_kind
 from sync.models import Member, Operation, QuarantinedOperation
 from sync.models_log import SyncLog
 from sync.scopes import scope_for
+
+logger = logging.getLogger(__name__)
 
 Status = Literal["accepted", "duplicate", "conflicted", "rejected", "pending_dependency"]
 
@@ -94,6 +97,20 @@ def _uuid(value: Any, what: str) -> uuid.UUID:
         raise KindError(f"{what}: not a uuid") from e
 
 
+def _check_id_fields(entity: str, fields: tuple[str, ...], payload: Mapping[str, Any]) -> None:
+    """كل حقل معرّف في الحمولة (`…_id`، وعناصر `…_ids`) معرّف صالح أو فارغ — يُرفض هنا رفضاً دائماً
+    مسمّى، لا في المُطبِّق باستثناء يُسقط النقل (مراجعة 2026-11-10 ع-٣)."""
+    for name in fields:
+        value = payload.get(name)
+        if value in (None, ""):
+            continue
+        if name.endswith("_id"):
+            _uuid(value, f"{entity}.{name}")
+        elif name.endswith("_ids") and isinstance(value, list):
+            for item in value:
+                _uuid(item, f"{entity}.{name}")
+
+
 @dataclass(frozen=True)
 class ParsedMember:
     entity: str
@@ -136,6 +153,8 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
     parsed: list[ParsedMember] = []
     seen: set[tuple[str, uuid.UUID]] = set()
     for m in raw_members:
+        if not isinstance(m, Mapping):
+            raise KindError("member must be an object")
         entity = str(m.get("entity", ""))
         espec = spec.entities.get(entity)
         if espec is None:
@@ -144,7 +163,7 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
         if (entity, entity_id) in seen:
             raise KindError(f"duplicate member {entity}:{entity_id}")
         seen.add((entity, entity_id))
-        if int(m.get("schema_version", 0)) != espec.schema_version:
+        if str(m.get("schema_version", "")) != str(espec.schema_version):
             raise KindError(f"{entity}: unsupported schema_version")
         payload = m.get("payload")
         if not isinstance(payload, dict):
@@ -158,6 +177,7 @@ def parse_operation(raw: Mapping[str, Any]) -> ParsedOperation:
             raise KindError(f"{entity}: {e}") from e
         if espec.id_field is not None and str(payload.get(espec.id_field)) != str(entity_id):
             raise KindError(f"{entity}: {espec.id_field} must equal member id")
+        _check_id_fields(entity, espec.fields, payload)
         espec.validate(payload)
         parsed.append(ParsedMember(entity, entity_id, espec.schema_version, payload, digest))
 
@@ -287,6 +307,37 @@ def _quarantine(
         )
 
 
+#: حقول الحمولة التي تحمل فرع العملية — يجب أن تساوي فرع الجهاز الناقل. `branch_to_id` وجهة
+#: التحويل: فرع آخر من المنشأة نفسها بطبيعته، يتحقق منه مُطبِّق التحويل.
+_BRANCH_FIELDS = ("branch_id", "branch_from_id")
+#: حقول الحمولة التي تنسب العملية إلى مستخدم — يجب أن يكون من المنشأة نفسها
+_USER_FIELDS = ("user_id", "actor_user_id")
+
+
+def _identity_problem(
+    tenant_id: uuid.UUID, branch_id: str, op: ParsedOperation
+) -> tuple[str, str] | None:
+    """(الرمز، التفصيل) إن حملت العملية فرعاً غير فرع جهازها أو مستخدماً من خارج المنشأة.
+
+    الجهاز مسجَّل لفرع واحد (§١٠.١) وكل عميل يكتب فرع جهازه؛ فرع آخر لا يأتي إلا من طلب مُعدّ:
+    جهاز الفرع الأول كان يكتب بيعاً ومخزوناً في الثاني، وفرع غير موجود يُقبل بيعاً بلا أثر مخزني.
+    المُدخِل يجوز أن يختلف عن صاحب الجلسة (جهاز مشترك يرفع عمل زميل دون اتصال) لكنه من المنشأة."""
+    from core.models import User
+
+    users: set[str] = set()
+    for m in op.members:
+        if branch_id:
+            for name in _BRANCH_FIELDS:
+                value = m.payload.get(name)
+                if value not in (None, "") and str(value) != branch_id:
+                    return "branch_out_of_scope", f"{m.entity}.{name}"
+        users.update(str(m.payload[n]) for n in _USER_FIELDS if m.payload.get(n))
+    for raw in sorted(users):
+        if not _is_uuid(raw) or not User.unscoped.filter(tenant_id=tenant_id, id=raw).exists():
+            return "user_out_of_scope", raw
+    return None
+
+
 def _commit_operation(
     tenant_id: uuid.UUID,
     device_id: uuid.UUID,
@@ -324,6 +375,10 @@ def _commit_operation_tx(
         ).first()
         if existing is not None:
             return _compare_existing(existing, op)
+        # عملية جديدة: فرعها ومُدخِلها يُقاسان بالجهاز المصادَق لا بما تحمله (مراجعة 2026-11-10)
+        out_of_scope = _identity_problem(tenant_id, scope_id, op)
+        if out_of_scope is not None:
+            return OperationResult(str(op.operation_id), "rejected", *out_of_scope)
         # عضو يحمل هوية أثر معتمد تحت عملية أخرى (بند ٤–٥)
         taken = Member.unscoped.filter(
             tenant_id=tenant_id, entity_id__in=[m.entity_id for m in op.members]
@@ -391,6 +446,15 @@ def push(
     `branch_id` فرع الجهاز الناقل (من المصادقة): يحدد `scope_id` للكيانات الفرعية في sync_log.
     """
     tenant_id = require_tenant()
+    if not branch_id:
+        # منادٍ لم يمرّر الفرع: يُشتق من الجهاز نفسه، فلا يُفهرَس كيان فرعي بمفتاح فارغ لا يقرؤه
+        # سحب، ولا يسقط فحص الفرع (مراجعة 2026-11-10 ع-٥)
+        from core.models import Device
+
+        own = Device.unscoped.filter(tenant_id=tenant_id, id=device_id).values_list(
+            "branch_id", flat=True
+        )
+        branch_id = str(own.first() or "")
     if envelope.get("protocol_version") != PROTOCOL_VERSION:
         raise PushError("protocol_version_unsupported", str(envelope.get("protocol_version")))
     request_id = str(envelope.get("request_id", ""))
@@ -414,7 +478,14 @@ def push(
     for raw in raw_ops:
         try:
             parsed.append(parse_operation(raw))
-        except KindError as e:
+        except Exception as e:
+            # KindError رفض مسمّى؛ وأي استثناء آخر من مُحقِّق نوعٍ صادف شكلاً لم يتوقعه (قائمة مكان
+            # نص…) رفضٌ دائم مثله لا 500 يُسقط النقل (مراجعة 2026-11-10 ع-٣)
+            if isinstance(e, KindError):
+                why = str(e)
+            else:
+                logger.exception("push: operation could not be parsed")
+                why = f"malformed operation: {type(e).__name__}"
             op_id = str(raw.get("operation_id", "")) if isinstance(raw, Mapping) else ""
             _quarantine(
                 tenant_id,
@@ -422,10 +493,10 @@ def push(
                 raw if isinstance(raw, Mapping) else {"raw": raw},
                 "rejected",
                 "validation",
-                str(e),
+                why,
             )
             key = uuid.UUID(op_id) if _is_uuid(op_id) else uuid.uuid4()
-            results[key] = OperationResult(op_id or str(key), "rejected", "validation", str(e))
+            results[key] = OperationResult(op_id or str(key), "rejected", "validation", why)
             failed_now.add(key)
             if isinstance(raw, Mapping):
                 for m in raw.get("members") or []:
@@ -472,8 +543,18 @@ def push(
             # فشل الالتزام (قيد مؤجل مثلاً): تراجعت المعاملة؛ يُسجَّل رفضاً بأصله (بند ٩)
             _quarantine(tenant_id, device_id, op.raw, "rejected", "commit_failed", str(e)[:500])
             result = OperationResult(str(op.operation_id), "rejected", "commit_failed")
+        except Exception as e:
+            # استثناء لم يتوقعه التحقق ولا المُطبِّق: نقطة حفظ العملية تراجعت عنها وحدها. كان يخرج
+            # من هنا فيردّ الخادم 500 ويتراجع عن الظرف كله، والجهاز يعيده بلا نهاية فيتوقف طابوره
+            # (مراجعة 2026-11-10 ع-٣). تُحجر بأصلها وسببها، ويُسجَّل الأثر كاملاً للتشخيص.
+            logger.exception("push: operation %s (%s) failed in applier", op.operation_id, op.kind)
+            detail = f"{type(e).__name__}: {e}"[:500]
+            _quarantine(tenant_id, device_id, op.raw, "rejected", "commit_failed", detail)
+            result = OperationResult(str(op.operation_id), "rejected", "commit_failed")
         if result.status == "conflicted":
             _quarantine(tenant_id, device_id, op.raw, "conflicted", result.code, result.detail)
+        elif result.status == "rejected" and result.code.endswith("_out_of_scope"):
+            _quarantine(tenant_id, device_id, op.raw, "rejected", result.code, result.detail)
         if result.status in ("accepted", "duplicate"):
             accepted_now.add(op.operation_id)
             entities_now.update(m.entity_id for m in op.members)

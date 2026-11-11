@@ -226,7 +226,7 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
-      <div className="pos" data-screen="PTY-08" data-state={state}>
+      <div className="pos pos--wide" data-screen="PTY-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">
@@ -384,7 +384,9 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                   <h3 className="cat-head__title">معاينة المستند</h3>
                 </div>
                 <PrintDoc title={docTitle("كشف حساب", stmt.party.name, stmt.tenant_name)}>
-                  <div className="pty-doc">
+                  {/* معاينة المستند تتمرّر داخلها على الهاتف (مراجعة 2026-11-10 و-٣): تبلغها لوحة المفاتيح */}
+                  {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- منطقة تمرير تُمرَّر بلوحة المفاتيح */}
+                  <div className="pty-doc" tabIndex={0}>
                     <div className="pty-doc__shop">{stmt.tenant_name}</div>
                     <div className="acc-choice__note">
                       كشف حساب: {stmt.party.name} · حتى{" "}

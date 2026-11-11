@@ -238,7 +238,9 @@ export function RolesClient() {
                     دور مخصَّص
                   </Button>
                 </div>
-                <div className="c-table" role="region" aria-label="مصفوفة الأدوار">
+                {/* منطقة تمرير حين تضيق عنها البطاقة (مراجعة 2026-11-10 و-٢): تبلغها لوحة المفاتيح */}
+                {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- منطقة تمرير تُمرَّر بلوحة المفاتيح */}
+                <div className="c-table" role="region" aria-label="مصفوفة الأدوار" tabIndex={0}>
                   <table className="c-table__table">
                     <caption className="c-table__caption">مصفوفة الأدوار والصلاحيات</caption>
                     <thead>

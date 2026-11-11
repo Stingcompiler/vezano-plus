@@ -128,7 +128,9 @@ export function OrderNewClient() {
       if (ob) {
         setSuppliers(ob.suppliers);
         if (!ob.can_create) setDenied(true);
-        if (ob.suppliers[0] && !supplier) setSupplier(ob.suppliers[0].id);
+        // تحديث وظيفي: تحميل يكتمل بعد أن اختار المستخدم مورداً لا يعيده إلى الأول
+        const first = ob.suppliers[0]?.id;
+        if (first) setSupplier((cur) => cur || first);
       }
       const ib = i.data as unknown as { items: ItemOpt[] } | undefined;
       if (ib) setItems(ib.items);

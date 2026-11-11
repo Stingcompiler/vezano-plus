@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { fromBase64, toBase64 } from "./base64";
 import { readClaims } from "./claims";
 import { detectOs, externalTarget, isPublicPath, SITE } from "./tauri";
 
@@ -34,5 +35,15 @@ describe("طبقة منصة الحاسوب", () => {
     const payload = btoa(JSON.stringify({ user_id: "u2", tid: "t1" })).replace(/=+$/, "");
     expect(readClaims(`h.${payload}.s`)).toEqual({ user_id: "u2", tid: "t1" });
     expect(readClaims("garbage")).toEqual({});
+  });
+
+  it("إيصال طويل يُرمَّز دون تجاوز حدّ الوسائط ويعود كما هو", () => {
+    // صورة نقطية لإيصال من مئات السطور: فوق حدّ وسائط الدالة بكثير
+    const big = Uint8Array.from({ length: 600_000 }, (_, i) => (i * 31) % 256);
+    const encoded = toBase64(big);
+    expect(encoded).toHaveLength(Math.ceil(big.length / 3) * 4);
+    expect(fromBase64(encoded)).toEqual(big);
+    expect(toBase64(new Uint8Array())).toBe("");
+    expect(toBase64(Uint8Array.from([1, 2, 3]))).toBe("AQID");
   });
 });

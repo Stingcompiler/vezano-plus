@@ -1701,10 +1701,14 @@ def seed_market(ctx: Ctx, start: date, today: date) -> None:
             registry_doc={"data_url": _DOC, "name": "سجل-تجاري.png"},
         )
         services.submit_verification(actor=d_owner, viewer=v)
-    if op is not None:
-        ops_mod.decide_verification(
-            viewer=op, tenant_id=ctx.dist.id, decision="verified", reasons=None
+    if op is None:
+        # بلا مشغّل لا يُعتمد توثيق الموزّع، فيفشل نشر أول عرض لاحقاً بـ`seller_not_verified` —
+        # رسالة لا تدل على السبب (مراجعة 2026-11-05 ثم 2026-11-10 ع-١٩)
+        raise ShowcaseError(
+            "لا مشغّل منصة نشط يعتمد توثيق الموزّع — أنشئه أولاً: "
+            "`manage.py seed_operator --email …` ثم أعد `showcase reset`"
         )
+    ops_mod.decide_verification(viewer=op, tenant_id=ctx.dist.id, decision="verified", reasons=None)
     offer_ids: list[Any] = []
     with tenant_context(ctx.dist.id):
         v = viewer_for(d_owner, None)

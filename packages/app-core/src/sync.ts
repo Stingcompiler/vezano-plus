@@ -15,6 +15,7 @@ import {
   pushOnce,
   type PushResponse,
   type PushTransport,
+  recoverInFlight,
   type TransportFailure,
 } from "@sting/sync-core";
 
@@ -34,6 +35,25 @@ export interface ReachStatus {
   readonly conflicted: number;
   readonly last_accepted_at: string | null;
 }
+
+/**
+ * ردّ ليس نجاحاً ولا مصادقة ولا جيلاً: 408 و429 و5xx عابرة تُعاد بتراجع؛ وبقية 4xx **دائمة** —
+ * الخادم يرفض الظرف نفسه (`protocol_version_unsupported` من عميل قديم، غلاف لا يقبله)، وإعادته كما
+ * هو لا تنفع. كانت كلها تُعدّ عابرة فيعيد الجهاز الظرف بلا نهاية (مراجعة 2026-11-10 ع-٣، ع-١٠).
+ */
+export function classifyFailure(
+  status: number,
+  detail: string | undefined,
+): Exclude<TransportFailure, { kind: "auth" | "epoch_mismatch" }> & { ok: false } {
+  if (status === 408) return { ok: false, kind: "transient", reason: "timeout", status };
+  if (status === 429) return { ok: false, kind: "transient", reason: "rate_limited", status };
+  if (status >= 400 && status < 500)
+    return { ok: false, kind: "permanent", status, detail: detail ?? "" };
+  return { ok: false, kind: "transient", reason: "server_error", status };
+}
+
+/** تخزينٌ أُعيد ما علق فيه «قيد الرفع» من تشغيل سابق — مرة لكل نسخة تخزين، أي لكل تشغيل. */
+const recoveredStorages = new WeakSet<StoragePort>();
 
 export function createPushTransport(
   api: ContractsClient,
@@ -55,7 +75,7 @@ export function createPushTransport(
         return { ok: false, kind: "auth", status: response.status, detail: err?.detail ?? "" };
       if (response.status === 409)
         return { ok: false, kind: "epoch_mismatch", currentEpoch: err?.sync_epoch ?? "" };
-      return { ok: false, kind: "transient", reason: "server_error", status: response.status };
+      return classifyFailure(response.status, err?.detail);
     },
   };
 }
@@ -114,6 +134,11 @@ export async function pushPending(
   opts: { manual?: boolean } = {},
 ): Promise<PushOnceOutcome> {
   const { storage } = deps;
+  if (!recoveredStorages.has(storage)) {
+    // قبل أي `await`: نداء ثانٍ متزامن في التشغيل نفسه لا يعيد ما هو في الطريق فعلاً
+    recoveredStorages.add(storage);
+    await recoverInFlight(storage);
+  }
   const epoch = (await storage.read((tx) => tx.getMeta("sync_epoch"))) ?? "";
   const halted = await storage.read((tx) => tx.getMeta(HALTED_META));
   if (halted && !opts.manual) {
@@ -153,6 +178,9 @@ export async function pushPending(
     if (out.kind === "retry" && out.failure.reason === "server_error") {
       const attempts = Number((await tx.getMeta("push_attempts")) ?? "0");
       if (attempts >= MAX_AUTO_ATTEMPTS) await tx.putMeta(HALTED_META, new Date().toISOString());
+    } else if (out.kind === "halt" && out.failure.kind === "permanent") {
+      // رفض دائم للظرف: الرفع التلقائي يقف من أول مرة ويُعلَن برمزه، ولا يستأنفه إلا الرفع اليدوي
+      await tx.putMeta(HALTED_META, new Date().toISOString());
     } else if (out.kind === "applied" || out.kind === "idle") {
       await tx.putMeta(HALTED_META, "");
     }
@@ -163,7 +191,12 @@ export async function pushPending(
       LAST_PUSH_META,
       JSON.stringify({
         kind: out.kind,
-        status: out.kind === "retry" ? out.failure.status : undefined,
+        status:
+          out.kind === "retry"
+            ? out.failure.status
+            : out.kind === "halt" && out.failure.kind === "permanent"
+              ? out.failure.status
+              : undefined,
         at: new Date().toISOString(),
       } satisfies LastPush),
     ),

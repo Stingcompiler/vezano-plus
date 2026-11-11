@@ -73,3 +73,38 @@ def test_portal_resubscribe_does_not_hand_out_the_token(ctx: dict[str, Any]) -> 
     again = subscribe({"phone": "0912000555", "token": token})
     assert again.status_code == 201 and again.json()["subscriber"]["token"] == token
     assert Client().get(f"/api/portal/{slug}/messages?t={token}").status_code == 200
+
+
+def test_party_card_hides_opening_balances_from_cashier(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-11-10 (ع-٧): البطاقة كانت تحجب الرصيد وتعيد مبلغ الرصيد الافتتاحي نفسه."""
+    c, ho, hc = Client(), _h(ctx["tokens"]["owner"]), _h(ctx["tokens"]["cashier"])
+    with tenant_context(ctx["tenant"].id):
+        ensure_state(ctx["tenant"].id)
+    pid = _post(c, ho, "/api/parties", {"name": "خالد العوض"}).json()["id"]
+    _post(
+        c,
+        ho,
+        f"/api/parties/{pid}/opening-balance",
+        {"side": "customer_due", "amount_minor": "123456", "reason": "دفتر 2024"},
+    )
+    seen = c.get(f"/api/parties/{pid}", headers=hc)
+    assert seen.status_code == 200
+    assert seen.json()["opening_balances"] == [] and b"123456" not in seen.content
+    full = c.get(f"/api/parties/{pid}", headers=ho).json()
+    assert [ob["amount_minor"] for ob in full["opening_balances"]] == ["123456"]
+
+
+def test_catalog_balances_are_limited_to_the_viewer_branch(
+    ctx: dict[str, Any],  # noqa: F811
+    two_tenants: Any,
+) -> None:
+    """مراجعة 2026-11-10 (ع-٨): `/api/inventory/balances` يرفض فرعاً آخر، وهذا المسار كان يعيده."""
+    c, ho, hc = Client(), _h(ctx["tokens"]["owner"]), _h(ctx["tokens"]["cashier"])
+    other = two_tenants.a_branches[1]
+    r = c.get(f"/api/catalog/balances?branch_id={other.id}", headers=hc)
+    assert r.status_code == 403 and r.json()["detail"] == "branch_forbidden"
+    assert c.get("/api/catalog/balances", headers=hc).status_code == 200
+    own = c.get(f"/api/catalog/balances?branch_id={ctx['branch'].id}", headers=hc)
+    assert own.status_code == 200
+    # المالك يرى كل الفروع
+    assert c.get(f"/api/catalog/balances?branch_id={other.id}", headers=ho).status_code == 200

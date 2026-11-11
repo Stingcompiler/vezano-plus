@@ -189,7 +189,7 @@ export function CustomerClient({ mode = "sale" }: { mode?: "sale" | "ledger" } =
       nav={ledger ? <AppNav currentId="parties" /> : <PosNav currentId="pos" />}
       footer={null}
     >
-      <div className="pos" data-screen="POS-04" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="POS-04" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">{creating ? "عميل جديد" : "اختيار العميل"}</h2>

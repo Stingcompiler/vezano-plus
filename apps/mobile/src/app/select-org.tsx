@@ -58,7 +58,7 @@ export default function SelectOrg() {
         return;
       }
       if (data) {
-        signIn(data);
+        await signIn(data);
         resetTo(router, "/");
       }
     } catch {

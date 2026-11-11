@@ -7,6 +7,7 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import "@/features/acc/acc.css";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
+import { openTenantStorage } from "@/lib/storage";
 
 type State = "ready" | "validation_error" | "saving" | "success" | "server_error";
 
@@ -67,7 +68,9 @@ export function CreateOrgClient() {
       .catch(() => undefined);
   }, [app.selection, app.tokens, router]);
 
-  const adopt = (data: Created) => {
+  const adopt = async (data: Created) => {
+    // منشأة جديدة: قاعدتها تُفتح قبل وضعها في السياق (مراجعة 2026-11-10 ع-٤)
+    await openTenantStorage(data.tenant_id);
     setCreated(data);
     app.setTokens({ access: data.access, refresh: data.refresh, sessionId: data.session_id });
     app.setSession({
@@ -117,7 +120,7 @@ export function CreateOrgClient() {
         await probeStatus();
         return;
       }
-      adopt(data);
+      await adopt(data);
     } catch {
       await probeStatus();
     } finally {
@@ -133,7 +136,7 @@ export function CreateOrgClient() {
         params: { path: { client_request_id: requestId } },
       });
       if (response.ok && data) {
-        adopt(data);
+        await adopt(data);
         return;
       }
     } catch {

@@ -178,9 +178,12 @@ class PartyCardView(APIView):
         row["can_edit"] = _can_edit(viewer)
         row["can_open_balance"] = viewer.is_owner
         row["has_movements"] = services.has_movements(party)
-        row["opening_balances"] = [
-            services.opening_payload(ob) for ob in party.opening_balances.order_by("occurred_at")
-        ]
+        # الرصيد الافتتاحي مبلغ: يُحجب كما يُحجب الرصيد نفسه (مراجعة 2026-11-10 ع-٧)
+        row["opening_balances"] = (
+            [services.opening_payload(ob) for ob in party.opening_balances.order_by("occurred_at")]
+            if viewer.can_see_finance
+            else []
+        )
         row["potential_duplicates"] = [
             services.party_payload(p) for p in services.potential_duplicates(party)
         ]

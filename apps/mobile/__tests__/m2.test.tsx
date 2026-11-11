@@ -2,9 +2,12 @@ import { MemoryStorage } from "@sting/platform/memory";
 import {
   ITEM_PREFIX,
   openShiftLocally,
+  readBalanceMatchedAt,
   readCartDraft,
+  readLocalBalances,
   readOpenShift,
   readSales,
+  storeBalances,
   writeCartDraft,
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
@@ -155,6 +158,63 @@ describe("M2 — البيع والورديات (0005 §١٩٣)", () => {
     await fireEvent.press(await screen.findByText("سكر"));
     await waitFor(async () => expect((await readCartDraft(storage)).lines).toHaveLength(1));
     expect(await screen.findByText(`${tx("POS-01", "السلة ·")}`, { exact: false })).toBeTruthy();
+  });
+
+  it("POS-01: الأرصدة تُطابَق مع الخادم عند فتح الشاشة، وما لم يُرفع يبقى مخصوماً", async () => {
+    await seed();
+    await storeBalances(storage, "2026-10-19T08:00:00Z", [{ item_id: "i1", qty_milli: "10000" }]);
+    // بيع 2 من هذا الهاتف لم يُرفع بعد
+    await storage.transaction(async (t) => {
+      await t.putOperation({
+        operationId: "op-unsent",
+        kind: "sale",
+        opVersion: 1,
+        dependencies: [],
+        members: [
+          {
+            entity: "inventory.StockMovement",
+            id: "mv-1",
+            schemaVersion: 1,
+            payload: { item_id: "i1", delta_base_qty_milli: "-2000" },
+            serverSeq: null,
+          },
+        ],
+        state: "local",
+        createdLocalSeq: 99,
+        snapshotRelation: "none",
+      });
+    });
+    // الخادم: جهاز آخر في الفرع باع 1 — رقمه 9 ولا يعرف بيع هذا الهاتف
+    const urls: string[] = [];
+    const server = (input: RequestInfo | URL) => {
+      const url = String(input instanceof Request ? input.url : input);
+      urls.push(url);
+      if (!url.includes("/api/catalog/balances"))
+        return Promise.reject(new TypeError("Network request failed"));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            branch_id: "b1",
+            as_of: "2026-10-19T09:30:00Z",
+            balances: [{ item_id: "i1", qty_milli: "9000" }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    };
+    await render(
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <SessionProvider fetchImpl={server} initial={ACTIVE}>
+          <Pos />
+        </SessionProvider>
+      </SafeAreaProvider>,
+    );
+    await waitFor(async () =>
+      expect(await readBalanceMatchedAt(storage)).toBe("2026-10-19T09:30:00Z"),
+    );
+    expect((await readLocalBalances(storage)).get("i1")?.qty_milli).toBe("7000");
+    // بلا `branch_id`: الخادم يأخذ فرع الجهاز المصادَق
+    expect(urls.find((u) => u.includes("/api/catalog/balances"))).not.toContain("branch_id");
   });
 
   it("POS-01: بلا وردية = «لا وردية مفتوحة» برسالة افتح وردية لا «ليست لديك صلاحية»", async () => {

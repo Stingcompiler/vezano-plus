@@ -49,6 +49,9 @@ export async function getJson<T>(path: string): Promise<ApiResult<T>> {
 }
 
 export async function devCodeFor(email: string): Promise<string | null> {
+  // نقطة سيناريو تطويرية: لا تُركَّب في الإنتاج (404) — فلا تُنادى فيه أصلاً، والبريد لا يخرج في
+  // سلسلة استعلام طلبٍ لا معنى له (مراجعة 2026-11-10 ع-٢١)
+  if (process.env.NODE_ENV === "production") return null;
   try {
     const r = await fetch(
       `${apiBaseUrl()}/api/scenario/verification-code?identifier=${encodeURIComponent(email)}`,

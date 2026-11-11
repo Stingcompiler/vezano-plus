@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.36 — SYS-04 انخفاض التخزين أو فشل استدامته (3) + SYS-11 الدعم والتشخيص (4). بالأيام لا
@@ -43,7 +44,7 @@ async function mockStorage(page: Page, free: number, persisted = true) {
 }
 
 async function seed(page: Page, role: "owner" | "cashier", ops: readonly OpSeed[]) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, ops }) => {
       const req = indexedDB.open("sting-bootstrap");

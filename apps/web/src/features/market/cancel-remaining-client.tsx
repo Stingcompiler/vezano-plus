@@ -12,6 +12,7 @@ import "@/features/sys/sys.css";
 import "@/features/org/org.css";
 import "@/features/public/public.css";
 import "./market.css";
+import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
 import type { OrderRow } from "@/features/market/orders-client";
 import { api } from "@/lib/api";
@@ -220,7 +221,7 @@ export function CancelRemainingClient({ id }: { id: string }) {
                   إلغاء متبقّي الطلب <span className="sting-mono">{d.order.number_label}</span>
                 </h3>
                 <p className="acc-choice__note">اقرأ ما سيُلغى وما سيبقى قبل التأكيد.</p>
-                <table className="pur-lines">
+                <LinesTable>
                   <thead>
                     <tr>
                       <th scope="col">الصنف</th>
@@ -242,7 +243,7 @@ export function CancelRemainingClient({ id }: { id: string }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </LinesTable>
                 <div className="pub-cols">
                   <div>
                     <strong>يُلغى</strong>

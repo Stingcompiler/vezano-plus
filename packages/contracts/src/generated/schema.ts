@@ -13508,7 +13508,17 @@ export interface components {
             name: string;
             name_normalized: string;
             note: string;
-            opening_balances: unknown[];
+            opening_balances: {
+                amount_minor: string;
+                business_date: string;
+                decided_by_name: string;
+                id: string;
+                occurred_at: string;
+                party_id: string;
+                reason: string;
+                reference: string;
+                side: string;
+            }[];
             phone: string;
             potential_duplicates: {
                 aliases: unknown[];
@@ -16991,6 +17001,7 @@ export interface components {
                 payload: {
                     alert_threshold_milli?: string;
                     aliases?: string[];
+                    amount_minor?: string;
                     balance_as_of?: string;
                     balance_minor?: string;
                     barcode?: string;
@@ -16998,28 +17009,54 @@ export interface components {
                     base_unit_decimal_places?: number;
                     base_unit_id?: string;
                     base_unit_name?: string;
+                    branch_id?: string;
+                    business_date?: string;
+                    change_minor?: string;
                     credit_limit_minor?: string;
                     deactivated_at?: string;
+                    delta_base_qty_milli?: string;
+                    device_id?: string;
                     distinct_from_id?: string;
+                    factor_milli?: string;
                     group_id?: string;
                     group_name?: string;
                     id?: string;
                     image_present?: boolean;
                     image_updated_at?: string;
+                    invoice_number?: string;
                     is_active?: boolean;
                     is_customer?: boolean;
                     is_supplier?: boolean;
+                    item_id?: string;
+                    item_name?: string;
                     last_sale_at?: string;
+                    line_id?: string;
+                    line_total_minor?: string;
                     merged_into?: string;
+                    method?: string;
+                    movement_id?: string;
                     name?: string;
                     name_normalized?: string;
                     note?: string;
+                    occurred_at?: string;
                     parent_id?: string;
                     parent_name?: string;
+                    payment_id?: string;
                     phone?: string;
                     price_updated_at?: string;
+                    qty_milli?: string;
+                    reason?: string;
+                    received_minor?: string;
+                    sale_id?: string;
                     sale_price_minor?: string;
                     sort_order?: number;
+                    source_entity?: string;
+                    source_id?: string;
+                    subtotal_minor?: string;
+                    total_minor?: string;
+                    unit_code?: string;
+                    unit_id?: string;
+                    unit_price_minor?: string;
                     units?: {
                         barcode: string;
                         code: string;
@@ -17031,6 +17068,7 @@ export interface components {
                         unit_id: string;
                     }[];
                     updated_at?: string;
+                    user_id?: string;
                     value?: string;
                 };
                 schema_version: number;
@@ -17065,7 +17103,9 @@ export interface components {
             protocol_version: number;
             request_id: string;
             results: {
-                member_receipts: {
+                code?: string;
+                detail?: string;
+                member_receipts?: {
                     entity: string;
                     id: string;
                     server_seq: string;
@@ -17196,6 +17236,7 @@ export interface components {
             applied: {
                 balance_after_minor?: string;
                 correction_id?: string;
+                operation_id?: string;
                 receipt_id?: string;
             };
             item: {
@@ -17213,20 +17254,37 @@ export interface components {
                     entity: string;
                     id: string;
                     payload: {
-                        amount_minor: string;
-                        branch_id: string;
-                        business_date: string;
-                        device_id: string;
-                        kind: string;
-                        method: string;
-                        occurred_at: string;
-                        party_id: string;
-                        reason: string;
-                        receipt_id: string;
-                        receipt_number: string;
-                        reference: string;
-                        shift_id: string;
-                        user_id: string;
+                        amount_minor?: string;
+                        branch_id?: string;
+                        business_date?: string;
+                        condition?: string;
+                        delta_base_qty_milli?: string;
+                        destination?: string;
+                        device_id?: string;
+                        factor_milli?: string;
+                        item_id?: string;
+                        kind?: string;
+                        line_id?: string;
+                        line_total_minor?: string;
+                        method?: string;
+                        movement_id?: string;
+                        occurred_at?: string;
+                        party_id?: string;
+                        qty_milli?: string;
+                        reason?: string;
+                        receipt_id?: string;
+                        receipt_number?: string;
+                        reference?: string;
+                        return_id?: string;
+                        return_number?: string;
+                        sale_id?: string;
+                        sale_line_id?: string;
+                        shift_id?: string;
+                        source_entity?: string;
+                        source_id?: string;
+                        total_minor?: string;
+                        unit_price_minor?: string;
+                        user_id?: string;
                     };
                 }[];
                 operation_id: string;

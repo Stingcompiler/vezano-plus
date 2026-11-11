@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.12 — SHIFT-03 (4) + SHIFT-04 (5). حركة الصندوق والإقفال أحداث محلية (IndexedDB حقيقي) تُرفع
@@ -18,7 +19,7 @@ interface Seed {
 
 /** جهاز مسجّل ووردية مفتوحة منذ 4 ساعات (حدثها مؤكد) باسم سالم. */
 async function seed(page: Page, s: Seed) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ s, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");
@@ -300,7 +301,8 @@ test.describe("SHIFT-03", () => {
     const notice = page.locator(".c-notice");
     await expect(notice).toContainText("مصروف 300.00 مسجّل. الرصيد 2,130.00، والحركة رقم 101");
     await expect(page.locator(".shift-expected__v")).toHaveText("2,130.00");
-    expect(pushed).toEqual(["cash_movement"]);
+    // الرفع يلي الحفظ ولا تنتظره الشاشة — ننتظر وصول طلبه (ع-٢٠)
+    await expect.poll(() => pushed).toEqual(["cash_movement"]);
     // العكس: الأصل يبقى مشطوباً والحركة المضادّة تشير إليه
     await page.getByRole("button", { name: "اعكس هذه الحركة" }).click();
     await expect(page.locator(".shift-expected__v")).toHaveText("2,430.00");
@@ -311,7 +313,7 @@ test.describe("SHIFT-03", () => {
     await expect(page.locator(".cat-foot")).toContainText(
       "الحركة المعكوسة تبقى ومعها الأصلية مشطوبةً لا محذوفة.",
     );
-    expect(pushed).toEqual(["cash_movement", "cash_movement"]);
+    await expect.poll(() => pushed).toEqual(["cash_movement", "cash_movement"]);
   });
 });
 

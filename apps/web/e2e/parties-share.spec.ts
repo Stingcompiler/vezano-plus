@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.27 — PTY-08 (5). معاينة الحقول والجمهور قبل المشاركة؛ الطباعة للحاضر من الشاشة؛ الملف والرابط
@@ -13,7 +14,7 @@ import { expectPrintDoc } from "./print-doc";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 async function seed(page: Page, role: "owner" | "manager" = "owner") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(async (role) => {
     const req = indexedDB.open("sting-bootstrap");
     const db = await new Promise<IDBDatabase>((res, rej) => {

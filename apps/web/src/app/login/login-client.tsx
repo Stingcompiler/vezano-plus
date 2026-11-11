@@ -14,6 +14,7 @@ import { api, apiBaseUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { hasLocalSetup } from "@/lib/device-setup";
 import { useOnline } from "@/lib/online";
+import { openTenantStorage } from "@/lib/storage";
 import { BrandMark } from "@/features/public/brand-mark";
 import { PublicFooter } from "@/features/public/public-footer";
 
@@ -77,6 +78,9 @@ export function LoginClient() {
   // بيئة التطوير فقط: لا مزوّد إرسال بعد (G-02) — حارس السيناريو يعيد آخر رمز؛ في الإنتاج 404 فلا يظهر
   const [devCode, setDevCode] = useState<string | null>(null);
   const fetchDevCode = async (id: string) => {
+    // نقطة سيناريو تطويرية: لا تُركَّب في الإنتاج (404) — فلا تُنادى فيه أصلاً، والمعرّف لا يخرج في
+    // سلسلة استعلام طلبٍ لا معنى له (مراجعة 2026-11-10 ع-٢١)
+    if (process.env.NODE_ENV === "production") return setDevCode(null);
     try {
       const r = await fetch(
         `${apiBaseUrl()}/api/scenario/verification-code?identifier=${encodeURIComponent(id)}`,
@@ -131,6 +135,9 @@ export function LoginClient() {
       }
       setSucceeded(true);
       if (data.access && data.refresh && data.session_id) {
+        // دخول مباشر بعضوية واحدة: قاعدة هذه المنشأة تُفتح قبل وضعها في السياق — الجهاز قد يحمل
+        // قاعدة منشأة أخرى من جلسة سابقة (مراجعة 2026-11-10 ع-٤)
+        if (data.tenant_id) await openTenantStorage(data.tenant_id);
         app.setTokens({ access: data.access, refresh: data.refresh, sessionId: data.session_id });
         app.setSession({
           ...app.session,

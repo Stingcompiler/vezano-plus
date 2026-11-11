@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.15 — POS-03 (3) + POS-04 (5). الخصم بسقوف الدور المعلنة (G-09 مؤقتاً) وتجاوزها حدثٌ يُنسب
@@ -27,7 +28,7 @@ interface Seed {
 
 /** وردية مفتوحة وسلة فيها شاي × 1 (240.00) وسقوف الكاشير كما قالها الخادم آخر مرة. */
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ parties, usedToday, role, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");
@@ -358,7 +359,8 @@ test.describe("POS-04", () => {
     await expect
       .poll(async () => (await readOps(page)).filter((o) => o.kind === "party_create").length)
       .toBe(1);
-    expect(pushed.map((o) => o.kind)).toEqual(["party_create"]);
+    // الرفع يلي الحفظ ولا تنتظره الشاشة — ننتظر وصول طلبه (ع-٢٠)
+    await expect.poll(() => pushed.map((o) => o.kind)).toEqual(["party_create"]);
   });
 
   test("validation_error: هاتف مسجَّل على طرف قائم — «هذا هو» أو «طرف جديد بنفس الرقم»", async ({
