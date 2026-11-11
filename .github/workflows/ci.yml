@@ -103,7 +103,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sting/web exec playwright install --with-deps chromium
+      # بإعادة المحاولة وببديل حين تتعذّر مستودعات النظام (0005 §٢٥٧)
+      - run: scripts/ci/install-chromium.sh @sting/web
       - run: pnpm --filter @sting/web build
       # ثلاثة أشواط بخادم تطوير جديد لكلٍّ: الخادم يعيد تشغيل نفسه حين تبلغ ذاكرته 80% من حدّها
       # (نحو الدقيقة 25 من 36)، فتسقط الاختبارات الجارية لحظتها بـERR_CONNECTION_RESET وتنجح بالإعادة
@@ -152,7 +153,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @sting/desktop exec node scripts/gen-routes.mjs --check
       - run: pnpm --filter @sting/desktop build
-      - run: pnpm --filter @sting/desktop exec playwright install --with-deps chromium
+      - run: scripts/ci/install-chromium.sh @sting/desktop
       - run: pnpm --filter @sting/desktop e2e --project=${{ matrix.project }}
         env:
           CI: "1"
@@ -220,7 +221,8 @@ jobs:
       - run: uv sync --frozen
         working-directory: backend
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sting/web exec playwright install --with-deps chromium
+      # بإعادة المحاولة وببديل حين تتعذّر مستودعات النظام (0005 §٢٥٧)
+      - run: scripts/ci/install-chromium.sh @sting/web
       - run: pnpm --filter @sting/web e2e:gate
       - uses: actions/upload-artifact@v4
         if: failure()
