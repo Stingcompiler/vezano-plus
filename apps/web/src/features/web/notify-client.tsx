@@ -167,8 +167,12 @@ export function NotifyClient() {
     }
   };
 
-  // تطبيق الحاسوب: لا Web Push داخله أصلاً — ليس رفضاً من المستخدم ولا «متصفحاً داخل تطبيق» (§٢٥٦)
+  // تطبيق الحاسوب: لا Web Push داخله أصلاً — ليس رفضاً من المستخدم ولا «متصفحاً داخل تطبيق». إشعاراته
+  // إشعارات نظام من شاشته DESK-05، فمن وصل هنا يُنقل إليها (0005 §٢٥٦)
   const desktopApp = perm === "unsupported" && pushHost() === "desktop_app";
+  useEffect(() => {
+    if (desktopApp) router.replace("/desktop/notifications");
+  }, [desktopApp, router]);
 
   const configuredReason =
     status && !status.configured ? "مفاتيح الإشعارات غير مضبوطة في النشر" : undefined;
@@ -210,19 +214,6 @@ export function NotifyClient() {
                 {renewFailed ? (
                   <Status state="server_error" label="تعذّر الاشتراك عند المزوّد" />
                 ) : null}
-              </Notice>
-            ) : null}
-
-            {state === "permission_denied" && desktopApp ? (
-              <Notice
-                kind="info"
-                title="تطبيق الحاسوب لا يرسل إشعارات فورية بعد"
-                action={<Button onClick={() => router.push("/notify/inbox")}>الوارد</Button>}
-              >
-                <p className="acc-lead">كل ما يصلك موجود في «الوارد» داخل التطبيق.</p>
-                <p className="acc-choice__note">
-                  الإشعار الفوري والتطبيق مغلق يعمل من المتصفح والهاتف.
-                </p>
               </Notice>
             ) : null}
 

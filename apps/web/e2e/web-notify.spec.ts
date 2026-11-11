@@ -242,24 +242,23 @@ test.describe("WEB-02", () => {
   });
 
   // بلاغ المالك 2026-11-11: «فشل تفعيل الإشعارات على تطبيق سطح المكتب» — لا Web Push داخل Tauri،
-  // والشاشة كانت تقول «صلاحية مرفوضة · متصفح داخل تطبيق» وأن التثبيت والعمل بلا اتصال لا يعملان (§٢٥٦)
-  test("تطبيق الحاسوب: لا «صلاحية مرفوضة» — نقول إنه لا يرسل إشعارات فورية بعد ونقود إلى الوارد", async ({
-    page,
-  }) => {
+  // والشاشة كانت تقول «صلاحية مرفوضة · متصفح داخل تطبيق» وأن التثبيت والعمل بلا اتصال لا يعملان.
+  // إشعارات الحاسوب إشعارات نظام من شاشته DESK-05، فمن وصل هنا يُنقل إليها (§٢٥٦)
+  test("تطبيق الحاسوب: لا «صلاحية مرفوضة» — ينتقل إلى شاشة إشعارات الحاسوب", async ({ page }) => {
     await mockServer(page);
     await fakePush(page, { host: "desktop_app", permission: "unsupported" });
-    await page.route("**/api/notifications**", (route) =>
-      route.fulfill(json(200, { items: [], unread: 0, category: "" })),
+    await seed(page);
+    await page.route("**/api/auth/account/login", (route) =>
+      route.fulfill(
+        json(200, { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" }),
+      ),
     );
-    await login(page, "/notify");
-    const root = page.locator('[data-screen="WEB-02"][data-host="desktop_app"]');
-    await expect(root).toContainText("تطبيق الحاسوب لا يرسل إشعارات فورية بعد");
-    await expect(root).toContainText("كل ما يصلك موجود في «الوارد» داخل التطبيق.");
-    await expect(root).not.toContainText("صلاحية مرفوضة");
-    await expect(root).not.toContainText("عدا التثبيت والإشعار والعمل بلا اتصال");
-    await expect(page.getByRole("button", { name: "تفعيل الإشعارات" })).toHaveCount(0);
-    await root.getByRole("button", { name: "الوارد" }).click();
-    await expect(page).toHaveURL(/\/notify\/inbox$/);
+    await page.goto("/login?next=%2Fnotify");
+    await page.getByLabel("رقم الهاتف أو البريد").fill("owner@sting.example");
+    await page.getByLabel("كلمة المرور").fill("sting-demo-2026");
+    await page.getByRole("button", { name: "دخول" }).click();
+    await expect(page).toHaveURL(/\/desktop\/notifications$/);
+    await expect(page.locator("body")).not.toContainText("صلاحية مرفوضة");
   });
 
   // أمر المالك 2026-11-11: «الإشعارات محصورة في التواصل مع الزبائن — نظّمها وخصّص لها صفحة» (§٢٥٦)
