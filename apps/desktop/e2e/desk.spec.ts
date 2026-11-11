@@ -35,6 +35,44 @@ async function seedMeta(page: Page, entries: Record<string, string>) {
   }, entries);
 }
 
+// أمر المالك 2026-11-11 (0005 §٢٥٨): ترحيب أول تشغيل — مزايا فيزانو وتهيئة الجهاز، العربية افتراضاً
+test.describe("DESK-00 ترحيب أول تشغيل", () => {
+  test("العربية افتراضاً بالهوية والمزايا والخطوات؛ «English» يترجم؛ «ابدأ» يسلّم إلى الدخول مرة واحدة", async ({
+    page,
+  }) => {
+    await open(page, "/desktop/welcome");
+    const card = page.locator('[data-screen="DESK-00"] .desk-welcome__card');
+    await expect(card).toHaveAttribute("dir", "rtl");
+    await expect(card.getByRole("heading", { level: 2 })).toHaveText("مرحباً بك في فيزانو بلص");
+    await expect(card).toContainText("مزايا فيزانو بلص");
+    await expect(card).toContainText("يبيع بلا إنترنت، ويرفع العمليات حين يعود الاتصال.");
+    await expect(card).toContainText("تهيئة الجهاز");
+    await expect(card.locator("ol > li")).toHaveCount(4);
+    await expect(card.locator("ul > li")).toHaveCount(4);
+    await expect(card.locator(".brand-name")).toContainText("فيزانو");
+
+    await card.getByRole("button", { name: "English" }).click();
+    await expect(card).toHaveAttribute("dir", "ltr");
+    await expect(card.getByRole("heading", { level: 2 })).toHaveText("Welcome to Vezano Plus");
+    await expect(card).toContainText("Setting up this device");
+    await expect(card.getByRole("button", { name: "English" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // لا تمرير أفقي في اللغتين
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
+
+    await card.getByRole("button", { name: "العربية" }).click();
+    await card.getByRole("button", { name: "ابدأ" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    expect(await page.evaluate(() => localStorage.getItem("desk.welcome.seen"))).toBe("1");
+  });
+});
+
 test.describe("DESK-01", () => {
   test("loading → ready: الفحص لا يتجاوز ثانيتين ثم أول تشغيل بخطواته الثلاث", async ({
     page,

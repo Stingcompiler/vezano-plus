@@ -108,3 +108,91 @@
   overflow-wrap: anywhere;
   color: var(--color-ink-strong);
 }
+
+/* ترحيب أول تشغيل (DESK-00 · 0005 §٢٥٨): بطاقة واحدة، عمودان على العرض وعمود على الضيق */
+.desk-welcome {
+  align-items: center;
+  padding-block: 24px;
+}
+.desk-welcome__card {
+  inline-size: min(100%, 980px);
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+}
+.desk-welcome__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+.desk-welcome__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  color: var(--color-ink-strong);
+}
+.desk-welcome__mark .brand-mark {
+  display: block;
+  inline-size: 48px;
+  block-size: 48px;
+}
+.desk-welcome__langs {
+  display: inline-flex;
+  gap: 6px;
+}
+.desk-welcome__lang {
+  min-block-size: var(--layout-touchTarget);
+  min-inline-size: 88px;
+  padding-inline: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panelSm);
+  background: var(--color-surface-card);
+  color: var(--color-ink-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.desk-welcome__lang[aria-pressed="true"] {
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-tint);
+  color: var(--color-brand-strong);
+  font-weight: 700;
+}
+.desk-welcome__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-ink-strong);
+}
+.desk-welcome__cols {
+  display: grid;
+  gap: 24px;
+}
+.desk-welcome__list {
+  margin: 10px 0 0;
+  padding-inline-start: 20px;
+  display: grid;
+  gap: 8px;
+  color: var(--color-ink-strong);
+  font-size: 15px;
+  line-height: 1.8;
+}
+.desk-welcome__list--steps {
+  padding-inline-start: 24px;
+}
+.desk-welcome__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.desk-welcome__actions > * {
+  min-inline-size: 200px;
+}
+@media (min-width: 834px) {
+  .desk-welcome__cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px;
+  }
+}

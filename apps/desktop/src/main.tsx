@@ -22,6 +22,7 @@ import { ShortcutRunner } from "./platform/shortcut-runner";
 import { DeskNotifications, CloseGuard } from "./screens/desk-notifications";
 import { DeskPrinters } from "./screens/desk-printers";
 import { DeskSetup } from "./screens/desk-setup";
+import { DeskWelcome } from "./screens/desk-welcome";
 import { DeskShortcuts } from "./screens/desk-shortcuts";
 import { installExternalLinks } from "./platform/external-links";
 import { detectOs, inTauri } from "./platform/tauri";
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
         element: r.path === "/" && inTauri ? <DesktopRoot /> : <PageHost mod={r.mod} />,
       })),
       // شاشات الحاسوب وحده (DESK-01…05) — لا مقابل لها في الويب
+      { path: "/desktop/welcome", element: <DeskWelcome /> },
       { path: "/desktop/setup", element: <DeskSetup /> },
       { path: "/desktop/printers", element: <DeskPrinters /> },
       { path: "/desktop/shortcuts", element: <DeskShortcuts /> },
