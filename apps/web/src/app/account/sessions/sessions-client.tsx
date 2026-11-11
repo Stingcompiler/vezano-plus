@@ -1,8 +1,8 @@
 "use client";
 
-import { Button, Dialog, Frame, Notice, Table } from "@sting/ui-web";
+import { Button, Dialog, Frame, Notice, Pagination, Table } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import "@/features/acc/acc.css";
 import { api } from "@/lib/api";
@@ -24,6 +24,27 @@ interface Row {
   readonly revoke_after_upload: boolean;
   readonly reported_pending: number | null;
   readonly can_revoke: boolean;
+}
+
+/** صفوف الصفحة الواحدة (0005 §٢٥٤): الحساب يجمع جلسات كل دخول فتطول القائمة بلا حدّ. */
+const PAGE_SIZE = 8;
+
+/**
+ * اسم الجلسة كما يُقرأ: جلسة بلا جهاز مسجَّل يصل اسمها نصَّ المتصفح الخام («Mozilla/5.0 (Macintosh; …»)
+ * مقصوصاً — يُعرض بصيغة أسماء الأجهزة نفسها «web · Macintosh». بيانات لا نص واجهة.
+ */
+function labelOf(row: Row): string {
+  if (!row.session_label.startsWith("Mozilla/")) return row.session_label;
+  const os = /\(([^;)]+)/.exec(row.session_label)?.[1]?.trim();
+  return os ? `web · ${os}` : "web";
+}
+
+/** الحالية أولاً، ثم الحيّة قبل المُبطَلة، ثم الأحدث نشاطاً. */
+function ordered(rows: readonly Row[]): Row[] {
+  const rank = (r: Row) => (r.is_current ? 0 : r.revoked_at ? 2 : 1);
+  return [...rows].sort(
+    (a, b) => rank(a) - rank(b) || b.last_seen_at.localeCompare(a.last_seen_at),
+  );
 }
 
 /** «آخر نشاط قبل N ساعات» / «نشطة الآن» — بأرقام لاتينية في mono. */
@@ -68,6 +89,7 @@ export function SessionsClient() {
   const [denied, setDenied] = useState(false);
   const [failed, setFailed] = useState(false);
   const [ended, setEnded] = useState<Row | null>(null);
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setRows(null);
@@ -137,13 +159,18 @@ export function SessionsClient() {
               ? "success"
               : "ready";
 
+  const all = useMemo(() => ordered(rows ?? []), [rows]);
+  const pageCount = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  const current = Math.min(page, pageCount);
+  const visible = all.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+
   const columns = [
     {
       key: "session",
       header: "الجلسة",
       render: (r: Row) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{r.session_label}</div>
+          <div className="acc-sessions__name">{labelOf(r)}</div>
           <div className="acc-choice__note">{whenOf(r)}</div>
         </div>
       ),
@@ -158,18 +185,16 @@ export function SessionsClient() {
       key: "effect",
       header: "أثر الإبطال",
       render: (r: Row) => (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div className="acc-sessions__effect">
           <span className="acc-choice__note">{effectOf(r)}</span>
           {r.can_revoke && !r.revoked_at ? (
-            <div>
-              <Button
-                variant="secondary"
-                onClick={() => onRevokeClick(r)}
-                loading={busy && target?.session_id === r.session_id}
-              >
-                إنهاء الجلسة
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              onClick={() => onRevokeClick(r)}
+              loading={busy && target?.session_id === r.session_id}
+            >
+              إنهاء الجلسة
+            </Button>
           ) : null}
         </div>
       ),
@@ -179,7 +204,7 @@ export function SessionsClient() {
   return (
     <Frame title="فيزانو بلص" footer={null}>
       <div className="acc-page" data-screen="ACC-09" data-state={state}>
-        <div className="acc-card" style={{ inlineSize: "min(100%, 760px)" }}>
+        <div className="acc-card acc-sessions" id="acc-sessions">
           <div className="acc-card__head">
             <h2 className="acc-card__title">· الجلسات النشطة</h2>
             <span
@@ -230,10 +255,20 @@ export function SessionsClient() {
             <Table
               caption="الجلسات النشطة"
               columns={columns}
-              rows={rows ?? []}
+              rows={visible}
               rowKey={(r) => r.session_id}
-              loading={rows === null ? skeletons : undefined}
+              loading={rows === null ? Math.min(skeletons, PAGE_SIZE) : undefined}
               forceCards={false}
+            />
+            <Pagination
+              page={current}
+              pageCount={pageCount}
+              total={all.length}
+              pageSize={PAGE_SIZE}
+              onPage={(n) => {
+                setPage(n);
+                document.getElementById("acc-sessions")?.scrollIntoView({ block: "start" });
+              }}
             />
 
             <div className="acc-item acc-item--violet">
