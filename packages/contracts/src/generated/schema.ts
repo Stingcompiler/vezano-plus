@@ -2608,6 +2608,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/org/devices/{device_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ORG-04 (0005 §٢٥٣): المالك يسحب جهازاً من القائمة — يحرّر مكانه من حدّ الباقة. */
+        post: operations["org_devices_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/org/invitations": {
         parameters: {
             query?: never;
@@ -5352,6 +5369,10 @@ export interface components {
             tenant_id: string;
             /** Format: uuid */
             device_id: string;
+        };
+        DeviceRevoke: {
+            /** @default 0 */
+            pending_seen: number;
         };
         DeviceVerifiers: {
             /** Format: uuid */
@@ -12444,6 +12465,7 @@ export interface components {
         };
         GetOrgDevicesResponse: {
             as_of: string;
+            can_revoke: boolean;
             counts: {
                 active: number;
                 pending_total: number;
@@ -12455,6 +12477,33 @@ export interface components {
                 branch_name: string;
                 connectivity: string;
                 id: string;
+                is_current: boolean;
+                last_seen_at: string;
+                name: string;
+                pending: number;
+                pending_at: string;
+                prefix: string;
+                registered_at: string;
+                sells: boolean;
+                status: string;
+                users: string[];
+            }[];
+        };
+        PostOrgDevicesByDeviceIdRevokeResponse: {
+            as_of: string;
+            can_revoke: boolean;
+            counts: {
+                active: number;
+                pending_total: number;
+                total: number;
+            };
+            device_limit: number;
+            devices: {
+                branch_id: string;
+                branch_name: string;
+                connectivity: string;
+                id: string;
+                is_current: boolean;
                 last_seen_at: string;
                 name: string;
                 pending: number;
@@ -24233,6 +24282,53 @@ export interface operations {
             };
             /** @description No response body */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    org_devices_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeviceRevoke"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOrgDevicesByDeviceIdRevokeResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

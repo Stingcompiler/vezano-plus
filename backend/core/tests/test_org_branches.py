@@ -146,3 +146,61 @@ def test_manager_scope_and_devices(ctx: dict[str, Any]) -> None:  # noqa: F811
     assert by["جهاز cashier"]["connectivity"] == "stale" and by["جهاز cashier"]["pending"] == 312
     assert by["جهاز cashier"]["users"] == ["أحمد ياسين"]
     assert body["counts"]["pending_total"] == 312
+
+
+def test_owner_revokes_device_from_list(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٥٣ (بلاغ المالك 2026-11-11): لم يكن في القائمة ما يسحب جهازاً، فبلغت المنشأة حدّ
+    الباقة ولا سبيل لتحرير مكان. السحب للمالك وحده، ولا يمرّ على معلّق لم يُرَ عدده، ويحرّر مكاناً
+    من الحدّ."""
+    from core.models import AuditEvent, Device
+    from core.subscription import can_register_device
+
+    c = Client()
+    oh = _h(ctx["tokens"]["owner"])
+    dev = ctx["device_ids"]["cashier"]
+    url = f"/api/org/devices/{dev}/revoke"
+
+    def post(h: dict[str, str], body: dict[str, Any]) -> Any:
+        return c.post(url, body, content_type="application/json", headers=h)
+
+    r = post(_h(ctx["tokens"]["manager"]), {})
+    assert r.status_code == 403 and r.json()["detail"] == "owner_required"
+
+    with tenant_context(ctx["tenant"].id):
+        assert can_register_device() == (False, "device_limit")  # 3 من 3
+        Session.objects.filter(device_id=dev).update(
+            reported_pending=4, reported_pending_at=timezone.now()
+        )
+    # معلّق لم يُعرض عدده على المالك بعد: رفض يحمل العدد
+    r = post(oh, {"pending_seen": 0})
+    assert r.status_code == 409
+    assert r.json() == {"detail": "pending_unseen", "extra": {"pending": 4}}
+    with tenant_context(ctx["tenant"].id):
+        assert Device.objects.get(id=dev).status == Device.Status.ACTIVE
+
+    r = post(oh, {"pending_seen": 4})
+    assert r.status_code == 200, r.json()
+    body = r.json()
+    row = next(d for d in body["devices"] if d["id"] == str(dev))
+    assert row["status"] == "revoked" and row["connectivity"] == "revoked"
+    assert body["counts"]["total"] == 3 and body["counts"]["active"] == 2
+    assert body["can_revoke"] is True
+    with tenant_context(ctx["tenant"].id):
+        assert not Session.objects.filter(device_id=dev, revoked_at__isnull=True).exists()
+        ev = AuditEvent.objects.filter(kind="device.revoked").get()
+        assert "4 عملية لم تُرفع" in ev.detail
+        assert can_register_device() == (True, "")  # مكان تحرّر
+    # جلسة الجهاز المسحوب لا تعمل بعده
+    assert c.get("/api/org/devices", headers=_h(ctx["tokens"]["cashier"])).status_code == 401
+
+    assert post(oh, {"pending_seen": 4}).json()["detail"] == "device_not_active"
+    r = c.post(
+        "/api/org/devices/00000000-0000-7000-8000-000000000000/revoke",
+        {},
+        content_type="application/json",
+        headers=oh,
+    )
+    assert r.status_code == 404
+    # غير المالك لا يُعرض له السحب
+    seen_by_manager = c.get("/api/org/devices", headers=_h(ctx["tokens"]["manager"])).json()
+    assert seen_by_manager["can_revoke"] is False

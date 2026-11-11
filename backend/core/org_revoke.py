@@ -236,6 +236,34 @@ def wipe_device(
     return {"action": "wipe_device", "device": device.name, "reason": reason.strip()[:300]}
 
 
+def revoke_device_from_list(device: Device, *, actor: User, pending_seen: int) -> dict[str, Any]:
+    """سحب جهاز من قائمة الأجهزة (ORG-04 · 0005 §٢٥٣): للمالك وحده. يوقف جلساته ويرفض رفعه
+    ويحرّر مكانه من حدّ الباقة. لا يُسحب جهاز عليه معلّق قبل أن يرى المالك عدده مكتوباً:
+    `pending_seen` أقل من المعلّق المبلَّغ = رفض يحمل العدد الحالي. المحفوظ على الجهاز يبقى
+    للاسترداد (SYS-07) — لا محو هنا."""
+    from core.auth.devices import revoke_device
+    from core.org_branches import reported_pending
+
+    if not actor.is_owner:
+        raise RevokeRejected("owner_required")
+    if device.status != Device.Status.ACTIVE:
+        raise RevokeRejected("device_not_active")
+    pending = reported_pending(device)
+    if pending > max(0, int(pending_seen)):
+        raise RevokeRejected("pending_unseen", {"pending": pending})
+    ended = revoke_device(device)
+    audit.record(
+        kind="device.revoked",
+        title=f"سحب الجهاز «{device.name}» من المنشأة",
+        actor=actor,
+        branch=device.branch,
+        detail=(f"عليه {pending} عملية لم تُرفع عند السحب — تبقى للاسترداد." if pending else ""),
+        ref_entity="core.Device",
+        ref_id=device.id,
+    )
+    return {"action": "revoke_device", "device": device.name, "sessions_ended": int(ended)}
+
+
 def audit_counts() -> dict[str, int]:
     """للعدّ في سجل التدقيق لاحقاً (ORG-10)."""
     return dict(
