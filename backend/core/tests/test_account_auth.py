@@ -370,6 +370,83 @@ class TestVerificationCode:
         assert (code, data["detail"]) == (400, "identifier_invalid")
 
 
+class TestTrialDuplicateGuard:
+    """0005 §٢٦١ (أمر المالك 2026-11-11): لا تقديم ثانٍ على التجربة المجانية بالبريد أو برقم الهاتف
+    نفسه — يُقال من أول خطوة قبل إرسال الرمز. البريد كان يُرفض في آخر خطوة، والرقم لم يكن يُفحص."""
+
+    @staticmethod
+    def _ticket(client: Client, email: str, phone: str | None) -> str:
+        body: dict[str, object] = {"identifier": email, "purpose": "register"}
+        if phone is not None:
+            body["contact_phone"] = phone
+        assert post(client, "/api/auth/verify/request", body)[0] == 202
+        otp = client.get("/api/scenario/verification-code", {"identifier": email}).json()["code"]
+        code, data = post(
+            client,
+            "/api/auth/verify/confirm",
+            {"identifier": email, "purpose": "register", "code": otp},
+        )
+        assert code == 200
+        return str(data["verified_ticket"])
+
+    def _register(self, client: Client, email: str, phone: str) -> None:
+        ticket = self._ticket(client, email, phone)
+        code, _ = post(
+            client,
+            "/api/auth/account/register",
+            {
+                "verified_ticket": ticket,
+                "password": PASSWORD,
+                "display_name": "ندى",
+                "phone": phone,
+            },
+        )
+        assert code == 201
+
+    def test_same_email_or_phone_is_refused_before_a_code_is_sent(self) -> None:
+        client = Client()
+        self._register(client, "nada@example.com", "0912 447 210")
+
+        def start(email: str, phone: str, purpose: str = "register") -> tuple[int, object]:
+            code, data = post(
+                client,
+                "/api/auth/verify/request",
+                {"identifier": email, "purpose": purpose, "contact_phone": phone},
+            )
+            return code, data.get("detail")
+
+        # البريد نفسه برقم آخر
+        assert start("nada@example.com", "0999 000 111") == (409, "already_applied")
+        # الرقم نفسه بصيغة أخرى وبريد آخر — ولم يُرسل رمز
+        assert start("other@example.com", "+249 912 447 210") == (409, "already_applied")
+        assert start("other2@example.com", "00249912447210") == (409, "already_applied")
+        r = client.get("/api/scenario/verification-code", {"identifier": "other@example.com"})
+        assert r.status_code != 200
+        # بريد جديد ورقم جديد: يمرّ
+        assert start("third@example.com", "0912447211") == (202, None)
+        # استعادة كلمة المرور لصاحب الحساب لا تُمنع
+        assert start("nada@example.com", "", "recover") == (202, None)
+
+    def test_final_step_also_refuses_a_reused_phone(self) -> None:
+        """عميل قديم لا يرسل الرقم مع طلب الرمز: الرفض عند التسجيل نفسه، ولا حساب يُنشأ."""
+        client = Client()
+        self._register(client, "first@example.com", "0912447220")
+        ticket = self._ticket(client, "second@example.com", None)
+        code, data = post(
+            client,
+            "/api/auth/account/register",
+            {
+                "verified_ticket": ticket,
+                "password": PASSWORD,
+                "display_name": "ندى",
+                "phone": "00249912447220",
+            },
+        )
+        assert (code, data["detail"]) == (409, "already_applied")
+        with platform_context():
+            assert not Account.unscoped.filter(identifier="second@example.com").exists()
+
+
 def test_health_reports_database(client: Client) -> None:
     r = client.get("/api/health")
     assert r.status_code == 200 and r.json() == {"ok": True}

@@ -30,6 +30,8 @@ export function externalTarget(href: string, appOrigin: string): string | null {
     return href;
   }
   if (href.startsWith("/") && isPublicPath(href)) return `${SITE}${href}`;
+  // قسمٌ من صفحة الهبوط («/#lp-contact» للتواصل): الهبوط ليس في التطبيق — يُفتح على الموقع (0005 §٢٦١)
+  if (href.startsWith("/#")) return `${SITE}${href}`;
   return null;
 }
 

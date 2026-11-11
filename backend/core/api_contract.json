@@ -260,7 +260,8 @@
   "POST /api/auth/account/register": [
    "400:email_only",
    "400:phone_invalid",
-   "409:account_exists"
+   "409:account_exists",
+   "409:already_applied"
   ],
   "POST /api/auth/device-refresh": [
    "401:token_invalid"
@@ -288,6 +289,7 @@
   "POST /api/auth/verify/request": [
    "400:email_only",
    "400:identifier_invalid",
+   "409:already_applied",
    "429:resend_limit",
    "429:resend_too_soon",
    "503:send_failed"
@@ -19346,7 +19348,14 @@
         "type": "integer"
        },
        "days_left": {
-        "type": "null"
+        "anyOf": [
+         {
+          "type": "integer"
+         },
+         {
+          "type": "null"
+         }
+        ]
        },
        "devices": {
         "type": "integer"
@@ -19503,6 +19512,29 @@
        },
        "proofs": {
         "items": {},
+        "type": "array"
+       },
+       "similar_owners": {
+        "items": {
+         "additionalProperties": false,
+         "properties": {
+          "owner_name": {
+           "type": "string"
+          },
+          "tenant_id": {
+           "type": "string"
+          },
+          "tenant_name": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "tenant_id",
+          "tenant_name",
+          "owner_name"
+         ],
+         "type": "object"
+        },
         "type": "array"
        },
        "status": {
@@ -19776,6 +19808,7 @@
        "proofs",
        "devices_list",
        "owner_contact",
+       "similar_owners",
        "branches",
        "users",
        "storage",
@@ -48335,6 +48368,10 @@
         },
         "type": "array"
        },
+       "similar_owners": {
+        "items": {},
+        "type": "array"
+       },
        "status": {
         "type": "string"
        },
@@ -48543,6 +48580,7 @@
        "proofs",
        "devices_list",
        "owner_contact",
+       "similar_owners",
        "branches",
        "users",
        "storage",

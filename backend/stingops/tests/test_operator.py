@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any
 
 import pytest
@@ -838,3 +839,36 @@ def test_operator_session_survives_reload_8h_cap_and_logout() -> None:
             "logout",
         }
     assert c.post("/api/platform/resume").status_code == 401
+
+
+def test_similar_owner_names_are_shown_to_the_operator(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٦١: الاسم لا يمنع التسجيل، فيُعرض تشابهه للمشغّل — مالك بحساب آخر واسم مطابق بعد
+    التطبيع يظهر؛ ومالك مختلف الاسم لا يظهر."""
+    from core.auth.memberships import create_tenant
+    from core.models import Tenant
+
+    c = Client()
+    oh = _operator_headers("ops_similar", "هدى — تشغيل")
+    with platform_context():
+        owner = User.unscoped.get(tenant=ctx["tenant"], is_owner=True)
+        owner_name = (owner.account.display_name if owner.account else "") or owner.display_name
+        twin = create_account("twin@example.com", "x" * 12, f"  {owner_name}  ")
+        other = create_account("other@example.com", "x" * 12, "اسم مختلف تماماً")
+    for acc, name, rid in (
+        (twin, "محل التوأم", "0199bbbb-0000-7000-8000-000000000001"),
+        (other, "محل آخر", "0199bbbb-0000-7000-8000-000000000002"),
+    ):
+        create_tenant(
+            acc,
+            client_request_id=uuid.UUID(rid),
+            name=name,
+            sector="grocery",
+            currency="SDG",
+            first_branch_name="",
+        )
+    d = c.get(f"/api/platform/tenants/{ctx['tenant'].id}", headers=oh).json()["tenant"]
+    assert [s["tenant_name"] for s in d["similar_owners"]] == ["محل التوأم"]
+    with platform_context():
+        twin_tenant = Tenant.unscoped.get(name="محل التوأم")
+    d2 = c.get(f"/api/platform/tenants/{twin_tenant.id}", headers=oh).json()["tenant"]
+    assert [s["tenant_id"] for s in d2["similar_owners"]] == [str(ctx["tenant"].id)]

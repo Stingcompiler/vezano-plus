@@ -17,6 +17,7 @@ import { View } from "react-native";
 
 import { SignedInRedirect } from "@/lib/nav";
 import { API_URL, useSession } from "@/lib/session";
+import { openOnWeb } from "@/lib/web";
 
 const T = "ACC-02";
 type Step = "form" | "verify" | "password";
@@ -35,6 +36,7 @@ const MESSAGES: Record<string, string> = {
   password_short: tx(T, "كلمة المرور ثمانية أحرف على الأقل."),
   password_mismatch: tx(T, "كلمتا المرور غير متطابقتين."),
   account_exists: tx(T, "هذا المعرّف مسجَّل من قبل — ادخل بكلمة مرورك أو استعدها."),
+  already_applied: tx(T, "سبق أن قدّمت على التجربة المجانية بهذا البريد أو رقم الهاتف"),
   ticket_invalid: tx(T, "انتهت صلاحية التحقق — ابدأ من جديد."),
 };
 
@@ -91,7 +93,8 @@ export default function Register() {
     setBusy(true);
     try {
       const { data, error, response } = await api.POST("/api/auth/verify/request", {
-        body: { identifier: identifier.trim(), purpose: "register" },
+        // الرقم مع طلب الرمز: الخادم يقول من أول خطوة إن سبق التقديم (0005 §٢٦١)
+        body: { identifier: identifier.trim(), purpose: "register", contact_phone: phone.trim() },
       });
       if (response.status === 202 && data) {
         setCodeLength(data.policy.code_length);
@@ -102,7 +105,7 @@ export default function Register() {
       }
       const detail = (error as { detail?: string } | undefined)?.detail ?? "";
       setErr(
-        ["identifier_invalid", "email_only", "resend_too_soon"].includes(detail)
+        ["already_applied", "identifier_invalid", "email_only", "resend_too_soon"].includes(detail)
           ? detail
           : "send_failed",
       );
@@ -157,8 +160,12 @@ export default function Register() {
       }
       const detail = (error as { detail?: string } | undefined)?.detail ?? "";
       // الرقم يُصحَّح في خطوته الأولى — لا حقل له في خطوة كلمة المرور
-      if (detail === "phone_invalid") setStep("form");
-      setErr(detail === "account_exists" || detail === "phone_invalid" ? detail : "ticket_invalid");
+      if (detail === "phone_invalid" || detail === "already_applied") setStep("form");
+      setErr(
+        ["account_exists", "already_applied", "phone_invalid"].includes(detail)
+          ? detail
+          : "ticket_invalid",
+      );
     } catch {
       setErr("offline");
     } finally {
@@ -178,7 +185,16 @@ export default function Register() {
       state={err === "offline" ? "offline" : "validation_error"}
       title={MESSAGES[err] ?? err}
     >
-      {err === "account_exists" ? (
+      {err === "already_applied" ? (
+        <>
+          <AppText variant="secondary">{tx(T, "افحص بريدك، أو راسل فريق فيزانو.")}</AppText>
+          <Button
+            label={tx(T, "تواصل مع فريق فيزانو")}
+            onPress={() => void openOnWeb("/#lp-contact")}
+          />
+        </>
+      ) : null}
+      {err === "account_exists" || err === "already_applied" ? (
         <Button
           label={tx(T, "لي حساب — دخول")}
           variant="quiet"
