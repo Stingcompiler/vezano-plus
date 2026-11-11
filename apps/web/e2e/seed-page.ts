@@ -9,10 +9,15 @@ import type { Page } from "@playwright/test";
  */
 export async function openSeedPage(page: Page, path = "/welcome"): Promise<void> {
   await page.goto(path);
-  await page.waitForFunction(async () =>
-    (await indexedDB.databases()).some(
-      // Dexie `version(1)` = الإصدار 10 في IndexedDB
-      (d) => d.name === "sting-bootstrap" && (d.version ?? 0) >= 10,
-    ),
-  );
+  // حلقة داخل الصفحة لا `waitForFunction`: ذاك لا ينتظر وعد دالة غير متزامنة فيعود فوراً
+  await page.evaluate(async () => {
+    for (;;) {
+      const ready = (await indexedDB.databases()).some(
+        // Dexie `version(1)` = الإصدار 10 في IndexedDB
+        (d) => d.name === "sting-bootstrap" && (d.version ?? 0) >= 10,
+      );
+      if (ready) return;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  });
 }
