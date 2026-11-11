@@ -1,7 +1,7 @@
 // صور هوية المثبّتين (0005 §٢٥٨) — تُولَّد من خطوط الهوية وعلامتها، لا تُرسم يدوياً:
 //   src-tauri/installer/sidebar.bmp        164×314  صفحتا الترحيب والإنهاء في مثبّت ويندوز (NSIS)
 //   src-tauri/installer/header.bmp         150×57   ترويسة صفحات مثبّت ويندوز
-//   src-tauri/installer/dmg-background.png 660×400 نقطة (مرسومة ×2) خلفية نافذة DMG في ماك
+//   src-tauri/installer/dmg-background.png 660×432 نقطة (مرسومة ×2) خلفية نافذة DMG في ماك
 // التشغيل: pnpm --filter @sting/desktop exec node scripts/gen-installer-art.mjs
 /* global document, Image -- دوالّ `page.evaluate` تُنفَّذ داخل المتصفح */
 import { Buffer } from "node:buffer";
@@ -64,8 +64,10 @@ const header = `<style>${base}
 
 // نافذة DMG: أيقونة التطبيق عند (180,170) ومجلد التطبيقات عند (480,170) — tauri.conf.json bundle.macOS.dmg.
 // النطاق حول الأيقونتين وتسميتيهما يُترك خالياً؛ السهم بينهما والتعليمات تحتهما.
+// ارتفاع النافذة في الإعداد (432) يشمل شريط عنوانها (~32 نقطة): المحتوى المرئي 400 فما دونها، فكل نصّ
+// يُوضع بإحداثي من الأعلى ضمن 400، والصورة أطول قليلاً حتى لا يظهر شريط بلا خلفية إن قصر شريط العنوان.
 const dmg = `<style>${base}
-  body { width: 660px; height: 400px; position: relative; color: ${NAVY}; background:
+  body { width: 660px; height: 432px; position: relative; color: ${NAVY}; background:
     radial-gradient(420px 260px at 50% -6%, rgb(14 124 134 / .16), transparent 70%), ${PAGE}; }
   .brand { position: absolute; inset-inline: 0; top: 22px; display: flex; align-items: center;
     justify-content: center; gap: 10px; }
@@ -76,7 +78,7 @@ const dmg = `<style>${base}
   .how { position: absolute; inset-inline: 0; top: 284px; text-align: center; }
   .how strong { display: block; font-size: 19px; font-weight: 700; }
   .how .latin { font-size: 12.5px; color: #5b6b7d; margin-top: 4px; }
-  .foot { position: absolute; inset-inline: 0; bottom: 18px; text-align: center; font-size: 12.5px;
+  .foot { position: absolute; inset-inline: 0; top: 362px; text-align: center; font-size: 12.5px;
     font-weight: 500; color: ${TEAL}; }
 </style>
 <div class="brand"><img src="${markUri}" alt=""><div class="word">فيزانو <b>بلص</b></div></div>
@@ -155,8 +157,8 @@ try {
   }
 
   const dmgPath = resolve(out, "dmg-background.png");
-  writeFileSync(dmgPath, await shoot(dmg, 660, 400, 2));
-  // 144 نقطة/بوصة: Finder يعرض الصورة المرسومة ×2 بمقاس 660×400 نقطة حادّةً على شاشات Retina
+  writeFileSync(dmgPath, await shoot(dmg, 660, 432, 2));
+  // 144 نقطة/بوصة: Finder يعرض الصورة المرسومة ×2 بمقاس 660×432 نقطة حادّةً على شاشات Retina
   if (process.platform === "darwin")
     execFileSync("sips", ["-s", "dpiWidth", "144", "-s", "dpiHeight", "144", dmgPath], {
       stdio: "ignore",
