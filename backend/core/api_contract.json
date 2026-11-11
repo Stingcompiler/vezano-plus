@@ -86,6 +86,7 @@
    "403:owner_required"
   ],
   "GET /api/org/devices": [
+   "401:session_revoked",
    "403:owner_or_manager_required"
   ],
   "GET /api/org/subscription": [
@@ -530,6 +531,12 @@
    "400:code_locked",
    "400:default_branch",
    "400:delete_unavailable"
+  ],
+  "POST /api/org/devices/{device_id}/revoke": [
+   "403:owner_required",
+   "404:device_not_found",
+   "409:device_not_active",
+   "409:pending_unseen"
   ],
   "POST /api/org/invitations": [
    "400:email_only",
@@ -13152,6 +13159,9 @@
      "as_of": {
       "type": "string"
      },
+     "can_revoke": {
+      "type": "boolean"
+     },
      "counts": {
       "additionalProperties": false,
       "properties": {
@@ -13190,6 +13200,9 @@
         },
         "id": {
          "type": "string"
+        },
+        "is_current": {
+         "type": "boolean"
         },
         "last_seen_at": {
          "type": "string"
@@ -13235,7 +13248,8 @@
         "pending_at",
         "users",
         "registered_at",
-        "sells"
+        "sells",
+        "is_current"
        ],
        "type": "object"
       },
@@ -13246,6 +13260,7 @@
      "devices",
      "counts",
      "device_limit",
+     "can_revoke",
      "as_of"
     ],
     "type": "object"
@@ -41731,6 +41746,120 @@
      "ledger",
      "devices",
      "staff"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/org/devices/{device_id}/revoke": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "as_of": {
+      "type": "string"
+     },
+     "can_revoke": {
+      "type": "boolean"
+     },
+     "counts": {
+      "additionalProperties": false,
+      "properties": {
+       "active": {
+        "type": "integer"
+       },
+       "pending_total": {
+        "type": "integer"
+       },
+       "total": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "total",
+       "active",
+       "pending_total"
+      ],
+      "type": "object"
+     },
+     "device_limit": {
+      "type": "integer"
+     },
+     "devices": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "branch_id": {
+         "type": "string"
+        },
+        "branch_name": {
+         "type": "string"
+        },
+        "connectivity": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "is_current": {
+         "type": "boolean"
+        },
+        "last_seen_at": {
+         "type": "string"
+        },
+        "name": {
+         "type": "string"
+        },
+        "pending": {
+         "type": "integer"
+        },
+        "pending_at": {
+         "type": "string"
+        },
+        "prefix": {
+         "type": "string"
+        },
+        "registered_at": {
+         "type": "string"
+        },
+        "sells": {
+         "type": "boolean"
+        },
+        "status": {
+         "type": "string"
+        },
+        "users": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "required": [
+        "id",
+        "name",
+        "prefix",
+        "branch_id",
+        "branch_name",
+        "status",
+        "connectivity",
+        "last_seen_at",
+        "pending",
+        "pending_at",
+        "users",
+        "registered_at",
+        "sells",
+        "is_current"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "devices",
+     "counts",
+     "device_limit",
+     "can_revoke",
+     "as_of"
     ],
     "type": "object"
    }

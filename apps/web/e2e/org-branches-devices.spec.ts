@@ -364,4 +364,75 @@ test.describe("ORG-04", () => {
       ]),
     });
   });
+
+  // بلاغ المالك 2026-11-11: «اجعل المالك قادراً على إزالة الأجهزة من الجدول» (0005 §٢٥٣)
+  test("المالك يسحب جهازاً من الجدول: تأكيد يعرض المعلّق، والخادم يرفض إن زاد، ثم يتحرّر مكان", async ({
+    page,
+  }) => {
+    let list = devices();
+    const sent: unknown[] = [];
+    let unseen = true;
+    await page.route("**/api/org/devices", (route) =>
+      route.fulfill(
+        json(200, {
+          ...devicesPayload(list),
+          counts: {
+            total: list.length,
+            active: list.filter((d) => d.status === "active").length,
+            pending_total: 312,
+          },
+          device_limit: 4,
+          can_revoke: true,
+        }),
+      ),
+    );
+    await page.route("**/api/org/devices/d3/revoke", (route) => {
+      sent.push(route.request().postDataJSON());
+      if (unseen) {
+        unseen = false;
+        return route.fulfill(json(409, { detail: "pending_unseen", extra: { pending: 315 } }));
+      }
+      list = list.map((d) =>
+        d.id === "d3" ? { ...d, status: "revoked", connectivity: "revoked" as const } : d,
+      );
+      return route.fulfill(
+        json(200, {
+          ...devicesPayload(list),
+          counts: { total: 4, active: 3, pending_total: 0 },
+          device_limit: 4,
+          can_revoke: true,
+        }),
+      );
+    });
+    await login(page, "/org/devices");
+    const root = page.locator('[data-screen="ORG-04"]');
+    await expect(root).toContainText("الأجهزة — 4 من حدّ الباقة 4");
+    const row = root.locator("tr", { hasText: "مكتب المخزن — سطح" });
+    await row.getByRole("button", { name: "اسحب الجهاز" }).click();
+    await expect(root).toContainText("سحب الجهاز «مكتب المخزن — سطح»");
+    await expect(root).toContainText("عليه 312 عمليات محفوظة محلياً لم تُرفع.");
+    const confirm = page.getByRole("button", {
+      name: "اسحب الآن — ويبقى المعلّق محفوظاً للاسترداد لاحقاً",
+    });
+    await confirm.click();
+    // المعلّق زاد عمّا عُرض: العدد الجديد يُعرض والقرار يبقى للمالك
+    await expect(root).toContainText("زاد ما لم يُرفع على هذا الجهاز — راجع العدد ثم أكّد.");
+    await expect(root).toContainText("عليه 315 عمليات محفوظة محلياً لم تُرفع.");
+    await confirm.click();
+    await expect(root).toContainText("سُحب الجهاز «مكتب المخزن — سطح».");
+    await expect(root).toContainText("الأجهزة — 3 من حدّ الباقة 4");
+    await expect(row).toContainText("مسحوب");
+    await expect(row.getByRole("button", { name: "اسحب الجهاز" })).toHaveCount(0);
+    expect(sent).toEqual([{ pending_seen: 312 }, { pending_seen: 315 }]);
+  });
+
+  test("غير المالك لا يرى زرّ السحب، وكذلك بلا اتصال", async ({ page }) => {
+    await page.route("**/api/org/devices", (route) =>
+      route.fulfill(json(200, { ...devicesPayload(), can_revoke: false })),
+    );
+    await login(page, "/org/devices");
+    const root = page.locator('[data-screen="ORG-04"]');
+    await expect(root).toContainText("كاشير 1 — لوحي");
+    await expect(root.getByRole("button", { name: "اسحب الجهاز" })).toHaveCount(0);
+  });
 });

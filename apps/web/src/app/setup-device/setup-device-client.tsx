@@ -11,7 +11,29 @@ import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 
 type State =
-  "loading" | "partial" | "stale" | "server_error" | "success" | "offline" | "phase_locked";
+  | "loading"
+  | "partial"
+  | "stale"
+  | "server_error"
+  | "success"
+  | "offline"
+  | "phase_locked"
+  | "permission_denied";
+
+/**
+ * رفض الخادم لتسجيل الجهاز بسببه (0005 §٢٥١). نصّ حدّ الأجهزة من `ORG-06`، والاشتراك الموقوف من
+ * `ORG-06`/`PLT-13`؛ عنوان حدّ الأجهزة نصّ جديد ينتظر اعتماد المالك. ما عدا ذلك «صلاحية مرفوضة».
+ */
+const REFUSAL: Record<string, { title: string; body?: string }> = {
+  device_limit: {
+    title: "بلغت المنشأة حدّ أجهزة الباقة",
+    body: "عند بلوغ الحدّ لا نمنع البيع. نمنع إضافة جهاز جديد ونشرح البديل: ترقية الباقة أو سحب جهاز قديم.",
+  },
+  subscription_suspended: {
+    title: "الاشتراك موقوف من مشغّل المنصة",
+    body: "الاشتراك موقوف — تواصل مع الدعم أولاً.",
+  },
+};
 
 /** أسماء النطاقات المسمّاة كما في 34-D26 loading: الكتالوج، الأطراف، الأرصدة، الإعدادات. */
 const GROUP_LABEL: Record<string, string> = {
@@ -43,15 +65,17 @@ export function SetupDeviceClient() {
       ? "success"
       : b.stop === "approval"
         ? "phase_locked"
-        : b.stop === "expired"
-          ? "stale"
-          : b.stop === "error"
-            ? caps.sell || caps.inventory
-              ? "partial"
-              : "server_error"
-            : b.stop === "offline"
-              ? "offline"
-              : "loading";
+        : b.stop === "refused"
+          ? "permission_denied"
+          : b.stop === "expired"
+            ? "stale"
+            : b.stop === "error"
+              ? caps.sell || caps.inventory
+                ? "partial"
+                : "server_error"
+              : b.stop === "offline"
+                ? "offline"
+                : "loading";
 
   const pct = p ? percentDone(p) : 0;
   const counts = {
@@ -164,6 +188,17 @@ export function SetupDeviceClient() {
             {state === "server_error" ? (
               <Notice kind="error" title="انقطع التنزيل بخطأ">
                 <p className="acc-lead">المُنزَّل سليم والباقي لا. ما نزل يبقى.</p>
+                <div className="acc-links">
+                  <Button onClick={b.retry}>أعد المحاولة</Button>
+                </div>
+              </Notice>
+            ) : null}
+
+            {state === "permission_denied" ? (
+              <Notice kind="warning" title={REFUSAL[b.refusal ?? ""]?.title ?? "صلاحية مرفوضة"}>
+                {REFUSAL[b.refusal ?? ""]?.body ? (
+                  <p className="acc-lead">{REFUSAL[b.refusal ?? ""]?.body}</p>
+                ) : null}
                 <div className="acc-links">
                   <Button onClick={b.retry}>أعد المحاولة</Button>
                 </div>
