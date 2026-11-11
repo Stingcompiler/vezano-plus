@@ -66,4 +66,62 @@ test.describe("ACC-02 · التسجيل", () => {
     await expect(root).toContainText("اكتب رقم واتساب صحيحاً");
     expect(registered.at(-1)).toMatchObject({ verified_ticket: "t1", phone: "0912 345 678" });
   });
+
+  // أمر المالك 2026-11-11 (0005 §٢٦١): لا تقديم ثانٍ على التجربة المجانية بالبريد أو الرقم نفسه —
+  // رسالة تقول إنه قدّم سابقاً وتوجّهه إلى بريده وإلى التواصل مع فريق فيزانو
+  test("سبق التقديم: يُقال من أول خطوة — افحص بريدك أو راسل الفريق، مع رابط التواصل", async ({
+    page,
+  }) => {
+    const asked: Record<string, unknown>[] = [];
+    await page.route("**/api/auth/verify/request", (route) => {
+      asked.push(route.request().postDataJSON() as Record<string, unknown>);
+      return route.fulfill(json(409, { detail: "already_applied" }));
+    });
+    const root = await fillForm(page, "owner@example.com", "0912 345 678");
+    await expect(root).toContainText("سبق أن قدّمت على التجربة المجانية بهذا البريد أو رقم الهاتف");
+    await expect(root).toContainText("افحص بريدك، أو راسل فريق فيزانو.");
+    // الرقم يُرسل مع طلب الرمز ليُفحص قبل الإرسال
+    expect(asked).toEqual([
+      { identifier: "owner@example.com", purpose: "register", contact_phone: "0912 345 678" },
+    ]);
+    // لم ننتقل إلى خطوة الرمز
+    await expect(page.locator(".acc-code__box")).toHaveCount(0);
+    // رابط الدخول القائم أسفل النموذج يبقى واحداً
+    await expect(root.getByRole("link", { name: "لي حساب — دخول" })).toHaveCount(1);
+    const contact = root.getByRole("link", { name: "تواصل مع فريق فيزانو" });
+    await expect(contact).toHaveAttribute("href", "/#lp-contact");
+    await contact.click();
+    await expect(page).toHaveURL(/\/#lp-contact$/);
+    await expect(page.locator("#lp-contact")).toBeVisible();
+  });
+
+  test("سبق التقديم برقم الهاتف في آخر خطوة (عميل قديم): يعود إلى الخطوة الأولى بالرسالة نفسها", async ({
+    page,
+  }) => {
+    await page.route("**/api/auth/verify/request", (route) =>
+      route.fulfill(
+        json(202, { policy: { code_length: 6, resend_after_seconds: 60, resends_left: 2 } }),
+      ),
+    );
+    await page.route("**/api/scenario/verification-code**", (route) =>
+      route.fulfill(json(404, {})),
+    );
+    await page.route("**/api/auth/verify/confirm", (route) =>
+      route.fulfill(json(200, { verified_ticket: "t1" })),
+    );
+    await page.route("**/api/auth/account/register", (route) =>
+      route.fulfill(json(409, { detail: "already_applied" })),
+    );
+    const root = await fillForm(page, "second@example.com", "0912 345 678");
+    const boxes = page.locator(".acc-code__box");
+    await expect(boxes).toHaveCount(6);
+    for (const [i, d] of [..."123456"].entries()) await boxes.nth(i).fill(d);
+    await root.getByRole("button", { name: "تأكيد الرمز" }).click();
+    await root.getByRole("textbox", { name: "كلمة المرور", exact: true }).fill("long-enough-1");
+    await root.getByRole("textbox", { name: "تأكيد كلمة المرور" }).fill("long-enough-1");
+    await root.getByRole("button", { name: "أنشئ الحساب وتابع إلى المنشأة" }).click();
+    await expect(root.getByLabel("رقم واتساب")).toBeVisible();
+    await expect(root).toContainText("سبق أن قدّمت على التجربة المجانية بهذا البريد أو رقم الهاتف");
+    await expect(root.getByRole("link", { name: "تواصل مع فريق فيزانو" })).toBeVisible();
+  });
 });

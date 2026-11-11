@@ -132,7 +132,8 @@ describe("ACC-02 — حساب جديد (0005 §١٧٦)", () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/create-org"));
     expect(screen.getByTestId("status").props.children).toBe("selecting");
     expect(s.calls.map((c) => c.body)).toEqual([
-      { identifier: "s@x.sd", purpose: "register" },
+      // الرقم يُرسل مع طلب الرمز: الخادم يفحص سبق التقديم قبل الإرسال (0005 §٢٦١)
+      { identifier: "s@x.sd", purpose: "register", contact_phone: "0912345678" },
       { identifier: "s@x.sd", purpose: "register", code: "123456" },
       {
         verified_ticket: "vt",
@@ -141,6 +142,26 @@ describe("ACC-02 — حساب جديد (0005 §١٧٦)", () => {
         phone: "0912345678",
       },
     ]);
+  });
+
+  it("سبق التقديم (0005 §٢٦١): الرسالة من أول خطوة — افحص بريدك أو راسل الفريق، ولا خطوة رمز", async () => {
+    const s = server({
+      "POST /api/auth/verify/request": () => json(409, { detail: "already_applied" }),
+    });
+    await renderWith(<Register />, s.fetch, ANONYMOUS);
+    await fireEvent.changeText(screen.getByLabelText(tx(A2, "اسمك")), "سميرة");
+    await fireEvent.changeText(screen.getByLabelText(tx(A2, "بريدك")), "s@x.sd");
+    await fireEvent.changeText(screen.getByLabelText(tx(A2, "رقم واتساب")), "0912345678");
+    await fireEvent.press(screen.getByRole("button", { name: tx(A2, "أرسل رمز التحقق") }));
+    expect(
+      await screen.findByText(
+        tx(A2, "سبق أن قدّمت على التجربة المجانية بهذا البريد أو رقم الهاتف"),
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(tx(A2, "افحص بريدك، أو راسل فريق فيزانو."))).toBeTruthy();
+    expect(screen.getByRole("button", { name: tx(A2, "تواصل مع فريق فيزانو") })).toBeTruthy();
+    expect(screen.queryByLabelText(tx(A2, "رمز التحقق"))).toBeNull();
+    expect(s.calls).toHaveLength(1);
   });
 });
 

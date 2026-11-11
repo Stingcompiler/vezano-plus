@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (217 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (218 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -11,6 +11,7 @@ export const API_ERROR_CODES = [
   "alias_taken",
   "all_channels_off",
   "allocation_mismatch",
+  "already_applied",
   "already_cancelled",
   "already_decided",
   "already_handled",
@@ -728,6 +729,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       status: 409,
       code: "account_exists",
     },
+    {
+      status: 409,
+      code: "already_applied",
+    },
   ],
   "POST /api/auth/device-refresh": [
     {
@@ -787,6 +792,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "identifier_invalid",
+    },
+    {
+      status: 409,
+      code: "already_applied",
     },
     {
       status: 429,

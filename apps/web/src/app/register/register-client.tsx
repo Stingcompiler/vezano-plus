@@ -71,7 +71,8 @@ export function RegisterClient() {
     setBusy(true);
     try {
       const { data, error, response } = await api().POST("/api/auth/verify/request", {
-        body: { identifier: identifier.trim(), purpose: "register" },
+        // الرقم مع طلب الرمز: الخادم يقول من أول خطوة إن سبق التقديم بهذا البريد أو الرقم (0005 §٢٦١)
+        body: { identifier: identifier.trim(), purpose: "register", contact_phone: phone.trim() },
       });
       if (response.status === 202 && data) {
         setCodeLength(data.policy.code_length);
@@ -81,13 +82,15 @@ export function RegisterClient() {
       }
       const detail = (error as { detail?: string } | undefined)?.detail ?? "";
       setErr(
-        detail === "identifier_invalid"
-          ? "identifier_invalid"
-          : detail === "email_only"
-            ? "email_only"
-            : detail === "resend_too_soon"
-              ? "resend_too_soon"
-              : "send_failed",
+        detail === "already_applied"
+          ? "already_applied"
+          : detail === "identifier_invalid"
+            ? "identifier_invalid"
+            : detail === "email_only"
+              ? "email_only"
+              : detail === "resend_too_soon"
+                ? "resend_too_soon"
+                : "send_failed",
       );
     } catch {
       setErr("offline");
@@ -138,13 +141,15 @@ export function RegisterClient() {
       }
       const detail = (error as { detail?: string } | undefined)?.detail ?? "";
       // الرقم يُصحَّح في خطوته الأولى — لا حقل له في خطوة كلمة المرور
-      if (detail === "phone_invalid") setStep("form");
+      if (detail === "phone_invalid" || detail === "already_applied") setStep("form");
       setErr(
-        detail === "account_exists"
-          ? "account_exists"
-          : detail === "phone_invalid"
-            ? "phone_invalid"
-            : "ticket_invalid",
+        detail === "already_applied"
+          ? "already_applied"
+          : detail === "account_exists"
+            ? "account_exists"
+            : detail === "phone_invalid"
+              ? "phone_invalid"
+              : "ticket_invalid",
       );
     } catch {
       setErr("offline");
@@ -167,6 +172,7 @@ export function RegisterClient() {
     password_short: "كلمة المرور ثمانية أحرف على الأقل.",
     password_mismatch: "كلمتا المرور غير متطابقتين.",
     account_exists: "هذا المعرّف مسجَّل من قبل — ادخل بكلمة مرورك أو استعدها.",
+    already_applied: "سبق أن قدّمت على التجربة المجانية بهذا البريد أو رقم الهاتف",
     ticket_invalid: "انتهت صلاحية التحقق — ابدأ من جديد.",
   };
 
@@ -201,7 +207,21 @@ export function RegisterClient() {
                 حساباً هنا.
               </p>
               {err ? (
-                <Notice kind="error" title={MESSAGES[err] ?? err}>
+                <Notice
+                  kind={err === "already_applied" ? "warning" : "error"}
+                  title={MESSAGES[err] ?? err}
+                >
+                  {err === "already_applied" ? (
+                    <>
+                      <p className="acc-lead">افحص بريدك، أو راسل فريق فيزانو.</p>
+                      <div className="acc-links">
+                        {/* رابط الدخول أسفل النموذج أصلاً — لا يُكرَّر هنا */}
+                        <Link href="/#lp-contact" className="c-btn">
+                          تواصل مع فريق فيزانو
+                        </Link>
+                      </div>
+                    </>
+                  ) : null}
                   {err === "account_exists" ? (
                     <div className="acc-links">
                       <Link href="/login" className="c-btn c-btn--quiet">

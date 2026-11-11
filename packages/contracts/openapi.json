@@ -686,6 +686,16 @@
             },
             "description": ""
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyError"
+                }
+              }
+            },
+            "description": ""
+          },
           "429": {
             "content": {
               "application/json": {
@@ -14434,6 +14444,7 @@
         "enum": [
           "identifier_invalid",
           "email_only",
+          "already_applied",
           "resend_too_soon",
           "resend_limit",
           "send_failed",
@@ -14441,7 +14452,7 @@
           "code_invalid"
         ],
         "type": "string",
-        "description": "* `identifier_invalid` - identifier_invalid\n* `email_only` - email_only\n* `resend_too_soon` - resend_too_soon\n* `resend_limit` - resend_limit\n* `send_failed` - send_failed\n* `code_expired` - code_expired\n* `code_invalid` - code_invalid"
+        "description": "* `identifier_invalid` - identifier_invalid\n* `email_only` - email_only\n* `already_applied` - already_applied\n* `resend_too_soon` - resend_too_soon\n* `resend_limit` - resend_limit\n* `send_failed` - send_failed\n* `code_expired` - code_expired\n* `code_invalid` - code_invalid"
       },
       "VerifyPolicy": {
         "type": "object",
@@ -14483,6 +14494,10 @@
           },
           "purpose": {
             "$ref": "#/components/schemas/PurposeEnum"
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 40
           }
         },
         "required": ["identifier", "purpose"]
@@ -52435,7 +52450,14 @@
                 "type": "integer"
               },
               "days_left": {
-                "type": "null"
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "devices": {
                 "type": "integer"
@@ -52577,6 +52599,25 @@
               },
               "proofs": {
                 "items": {},
+                "type": "array"
+              },
+              "similar_owners": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "owner_name": {
+                      "type": "string"
+                    },
+                    "tenant_id": {
+                      "type": "string"
+                    },
+                    "tenant_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["tenant_id", "tenant_name", "owner_name"],
+                  "type": "object"
+                },
                 "type": "array"
               },
               "status": {
@@ -52821,6 +52862,7 @@
               "proofs",
               "devices_list",
               "owner_contact",
+              "similar_owners",
               "branches",
               "users",
               "storage",
@@ -53080,6 +53122,10 @@
                 },
                 "type": "array"
               },
+              "similar_owners": {
+                "items": {},
+                "type": "array"
+              },
               "status": {
                 "type": "string"
               },
@@ -53264,6 +53310,7 @@
               "proofs",
               "devices_list",
               "owner_contact",
+              "similar_owners",
               "branches",
               "users",
               "storage",
