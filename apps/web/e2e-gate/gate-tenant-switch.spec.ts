@@ -63,10 +63,12 @@ async function inspect(page: Page, database: string, needle: string) {
  * نبلغ صفحة الدخول.
  */
 async function logout(page: Page) {
-  await goHome(page);
   const confirm = page.getByRole("button", { name: "اخرج", exact: true });
   await expect(async () => {
     if (/\/login/.test(page.url())) return;
+    // داخل الإعادة: تنقّل تأخّر وصوله قد ينقل الصفحة بعد أن حسبناها «الرئيسية» — وشاشات وضع البيع
+    // بلا زر خروج، فكان الاختبار ينتظره إلى نهاية مهلته (فشل gate على ‎#277)
+    await goHome(page);
     if (!(await confirm.isVisible()))
       await page.getByRole("button", { name: "تسجيل الخروج" }).first().click({ timeout: 5_000 });
     await confirm.click({ timeout: 5_000 });
@@ -117,6 +119,8 @@ test("منشأة ثانية على الجهاز نفسه لا ترى بيانا�
   ] as const) {
     const link = await revealLink(page, label);
     if (await link.count()) await link.click({ timeout: 15_000 }).catch(() => undefined);
+    // ننتظر وصول التنقّل إن كان سيصل: الفحص على الشاشة المقصودة لا على الرئيسية قبل مغادرتها
+    await page.waitForURL((u) => u.pathname !== "/", { timeout: 5_000 }).catch(() => undefined);
     await page.waitForLoadState("networkidle").catch(() => undefined);
     await expect(page.locator("body")).not.toContainText(text);
     await expect(page.locator("body")).not.toContainText("عمليات معلّقة");
