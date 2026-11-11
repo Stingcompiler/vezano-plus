@@ -17,6 +17,7 @@ import {
   readOpenShift,
   rowByBarcode,
   stepCartLine,
+  storeBalances,
   unitDisplay,
   writeCartDraft,
   type CartDiscount,
@@ -47,6 +48,7 @@ import { Pressable, TextInput, View } from "react-native";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { UnitSheet } from "@/components/unit-sheet";
 import { newId } from "@/lib/crypto";
+import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 const T = "POS-01";
@@ -73,6 +75,7 @@ interface Sheet {
 export default function Pos() {
   const router = useRouter();
   const c = useColors();
+  const { api } = useSession();
   const [items, setItems] = useState<LocalItem[] | null>(null);
   const [balances, setBalances] = useState<Map<string, LocalBalance>>(new Map());
   const [matchedAt, setMatchedAt] = useState<string | null>(null);
@@ -91,6 +94,7 @@ export default function Pos() {
   // عند كل عودة إلى الشاشة (من الدفع أو الخصم أو العميل) تُقرأ المسودة من جديد
   useFocusEffect(
     useCallback(() => {
+      let alive = true;
       void (async () => {
         const storage = await getStorage();
         const [its, draft, bal, at, s] = await Promise.all([
@@ -107,8 +111,30 @@ export default function Pos() {
         setBalances(bal);
         setMatchedAt(at);
         setShift(s);
+        // مطابقة الأرصدة مع الخادم حين يوجد اتصال — البيع لا ينتظرها. كانت الأرصدة تبقى على لقطة
+        // التجهيز فلا يرى الهاتف ما باعه جهاز آخر في فرعه (مراجعة 2026-11-10). بلا `branch_id`:
+        // الخادم يأخذ فرع الجهاز المصادَق، وما لم يُرفع من هذا الهاتف يبقى مخصوماً (`storeBalances`).
+        try {
+          const { data, response } = await api.GET("/api/catalog/balances", {
+            params: { query: {} },
+          });
+          // العقد لا يصف الجسم (responses: None)
+          const body = data as unknown as
+            { as_of: string; balances: { item_id: string; qty_milli: string }[] } | undefined;
+          if (!alive || !response.ok || !body) return;
+          await storeBalances(storage, body.as_of, body.balances);
+          const fresh = await readLocalBalances(storage);
+          if (!alive) return;
+          setBalances(fresh);
+          setMatchedAt(body.as_of);
+        } catch {
+          // بلا اتصال: الرصيد المحلي بوسم آخر مطابقة كما هو
+        }
       })();
-    }, []),
+      return () => {
+        alive = false;
+      };
+    }, [api]),
   );
 
   const persist = (next: readonly CartDraftLine[]) => {
