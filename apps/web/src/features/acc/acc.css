@@ -903,3 +903,39 @@ a.c-btn {
     display: none;
   }
 }
+
+/* ACC-09 (0005 §٢٥٤): البطاقة بعرض المحتوى لا 760، وخانة الأثر نصّ يليه الزرّ في طرف السطر */
+.acc-card.acc-sessions {
+  inline-size: min(100%, 1080px);
+}
+.acc-sessions > .acc-card__head {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.acc-sessions__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.acc-sessions__effect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.acc-sessions__effect > .acc-choice__note {
+  flex: 1 1 220px;
+  min-inline-size: 0;
+  margin: 0;
+}
+@media (min-width: 834px) {
+  .acc-sessions .c-table__table th:first-child,
+  .acc-sessions .c-table__table td:first-child {
+    inline-size: 32%;
+  }
+  .acc-sessions .c-table__table th:nth-child(2),
+  .acc-sessions .c-table__table td:nth-child(2) {
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+}
