@@ -16,6 +16,7 @@ import { useApp } from "@/lib/app-context";
 import {
   currentPushSubscription,
   onPwaChange,
+  pushHost,
   type PushPermission,
   pushPermission,
   requestPushPermission,
@@ -166,12 +167,20 @@ export function NotifyClient() {
     }
   };
 
+  // تطبيق الحاسوب: لا Web Push داخله أصلاً — ليس رفضاً من المستخدم ولا «متصفحاً داخل تطبيق» (§٢٥٦)
+  const desktopApp = perm === "unsupported" && pushHost() === "desktop_app";
+
   const configuredReason =
     status && !status.configured ? "مفاتيح الإشعارات غير مضبوطة في النشر" : undefined;
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="notify" />} footer={null}>
-      <div className="sys sys--wide sys--cols" data-screen="WEB-02" data-state={state}>
+      <div
+        className="sys sys--wide sys--cols"
+        data-screen="WEB-02"
+        data-state={state}
+        data-host={desktopApp ? "desktop_app" : undefined}
+      >
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">إذن Web Push وحالاته</h2>
@@ -204,7 +213,20 @@ export function NotifyClient() {
               </Notice>
             ) : null}
 
-            {state === "permission_denied" ? (
+            {state === "permission_denied" && desktopApp ? (
+              <Notice
+                kind="info"
+                title="تطبيق الحاسوب لا يرسل إشعارات فورية بعد"
+                action={<Button onClick={() => router.push("/notify/inbox")}>الوارد</Button>}
+              >
+                <p className="acc-lead">كل ما يصلك موجود في «الوارد» داخل التطبيق.</p>
+                <p className="acc-choice__note">
+                  الإشعار الفوري والتطبيق مغلق يعمل من المتصفح والهاتف.
+                </p>
+              </Notice>
+            ) : null}
+
+            {state === "permission_denied" && !desktopApp ? (
               <Notice kind="warning" title="صلاحية مرفوضة">
                 <p className="acc-choice__note">
                   {perm === "unsupported"

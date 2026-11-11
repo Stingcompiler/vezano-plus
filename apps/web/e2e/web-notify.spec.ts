@@ -63,6 +63,7 @@ async function login(page: Page, next: string) {
 }
 
 interface Fake {
+  host?: "browser" | "desktop_app";
   permission?: "default" | "granted" | "denied" | "unsupported";
   request?: "granted" | "denied";
   subscription?: { endpoint: string; p256dh: string; auth: string } | null;
@@ -238,6 +239,46 @@ test.describe("WEB-02", () => {
       });
       await expect(page.getByRole("button", { name: "تفعيل الإشعارات" })).toHaveCount(0);
     });
+  });
+
+  // بلاغ المالك 2026-11-11: «فشل تفعيل الإشعارات على تطبيق سطح المكتب» — لا Web Push داخل Tauri،
+  // والشاشة كانت تقول «صلاحية مرفوضة · متصفح داخل تطبيق» وأن التثبيت والعمل بلا اتصال لا يعملان (§٢٥٦)
+  test("تطبيق الحاسوب: لا «صلاحية مرفوضة» — نقول إنه لا يرسل إشعارات فورية بعد ونقود إلى الوارد", async ({
+    page,
+  }) => {
+    await mockServer(page);
+    await fakePush(page, { host: "desktop_app", permission: "unsupported" });
+    await page.route("**/api/notifications**", (route) =>
+      route.fulfill(json(200, { items: [], unread: 0, category: "" })),
+    );
+    await login(page, "/notify");
+    const root = page.locator('[data-screen="WEB-02"][data-host="desktop_app"]');
+    await expect(root).toContainText("تطبيق الحاسوب لا يرسل إشعارات فورية بعد");
+    await expect(root).toContainText("كل ما يصلك موجود في «الوارد» داخل التطبيق.");
+    await expect(root).not.toContainText("صلاحية مرفوضة");
+    await expect(root).not.toContainText("عدا التثبيت والإشعار والعمل بلا اتصال");
+    await expect(page.getByRole("button", { name: "تفعيل الإشعارات" })).toHaveCount(0);
+    await root.getByRole("button", { name: "الوارد" }).click();
+    await expect(page).toHaveURL(/\/notify\/inbox$/);
+  });
+
+  // أمر المالك 2026-11-11: «الإشعارات محصورة في التواصل مع الزبائن — نظّمها وخصّص لها صفحة» (§٢٥٦)
+  test("القائمة: «الإشعارات» قسم وحده أوله الوارد، و«التواصل مع الزبائن» للحملات", async ({
+    page,
+  }) => {
+    await mockServer(page);
+    await seed(page);
+    await login(page, "/notify");
+    const section = (name: string) =>
+      page.locator(".c-nav__section").filter({
+        has: page.locator(".c-nav__group-label", { hasText: new RegExp(`^${name}$`) }),
+      });
+    const links = async (name: string) =>
+      (await section(name).getByRole("link", { includeHidden: true }).allInnerTexts()).map((t) =>
+        t.trim(),
+      );
+    expect(await links("الإشعارات")).toEqual(["الوارد", "إشعارات هذا الجهاز", "تفضيلات التنبيه"]);
+    expect(await links("التواصل مع الزبائن")).toEqual(["الحملات"]);
   });
 
   test("expired → success: الإذن قائم فالتجديد صامت بلا سؤال — ثم إشعار تجريبي", async ({

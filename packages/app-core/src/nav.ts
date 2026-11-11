@@ -15,6 +15,8 @@ export const NAV_GROUPS = {
   reports: "التقارير",
   buy: "السوق — الشراء",
   sellMarket: "السوق — البيع",
+  // 0005 §٢٥٦: ما يصلك أنت (الوارد وإذنه وتفضيلاته) قسمٌ وحده؛ ما ترسله للزبائن (الحملات) قسمٌ آخر
+  alerts: "الإشعارات",
   notify: "التواصل مع الزبائن",
   org: "المنشأة",
   device: "الأجهزة والمزامنة",
@@ -106,11 +108,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: NAV_GROUPS.sellMarket,
   },
   { id: "market-reports", label: "بلاغاتي", href: "/market/reports", group: NAV_GROUPS.sellMarket },
-  // التواصل: ما يصلك وما ترسله
-  { id: "notify", label: "الإشعارات", href: "/notify", group: NAV_GROUPS.notify },
-  { id: "inbox", label: "الوارد", href: "/notify/inbox", group: NAV_GROUPS.notify },
+  // الإشعارات: كل ما يصلك في صفحة واحدة، ثم إذن هذا الجهاز، ثم ما تريد أن يصلك
+  { id: "inbox", label: "الوارد", href: "/notify/inbox", group: NAV_GROUPS.alerts },
+  { id: "notify", label: "إشعارات هذا الجهاز", href: "/notify", group: NAV_GROUPS.alerts },
+  { id: "prefs", label: "تفضيلات التنبيه", href: "/notify/preferences", group: NAV_GROUPS.alerts },
+  // التواصل مع الزبائن: ما ترسله أنت
   { id: "campaigns", label: "الحملات", href: "/notify/campaigns", group: NAV_GROUPS.notify },
-  { id: "prefs", label: "تفضيلات التنبيه", href: "/notify/preferences", group: NAV_GROUPS.notify },
   // المنشأة: الناس وصلاحياتهم ثم الفروع ثم الاشتراك والإعدادات والتدقيق
   { id: "org-users", label: "المستخدمون", href: "/org/users", group: NAV_GROUPS.org },
   { id: "org-roles", label: "الأدوار", href: "/org/roles", group: NAV_GROUPS.org },
