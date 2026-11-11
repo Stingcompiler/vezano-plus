@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.34 — SYS-01 مركز الاتصال والمزامنة (6) + SYS-02 تفاصيل عملية متعثرة (5). الجواب أولاً: هل عملي
@@ -53,7 +54,7 @@ const sale = (
 });
 
 async function seed(page: Page, ops: readonly OpSeed[], meta: Record<string, string> = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ ops, meta }) => {
       const req = indexedDB.open("sting-bootstrap");

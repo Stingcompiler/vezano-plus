@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.28 — INV-01 أرصدة المخزون (7) + INV-02 سجل حركة الصنف (5). السالب يُعرض بلونه لا يُصفَّر ولا
@@ -116,7 +117,7 @@ interface Seed {
 }
 
 async function seed(page: Page, s: Seed = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, pending, cache, movementsCache, items, asOf }) => {
       const req = indexedDB.open("sting-bootstrap");

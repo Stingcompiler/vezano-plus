@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.23 — PTY-03 (6) + PTY-04 (4). البطاقة: الشخص عميل ومورد معاً برصيدين منفصلين بلا مقاصة
@@ -46,7 +47,7 @@ const card = (over: Record<string, unknown> = {}) => ({
 });
 
 async function seed(page: Page) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(async () => {
     const req = indexedDB.open("sting-bootstrap");
     const db = await new Promise<IDBDatabase>((res, rej) => {

@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.24 — PTY-05 (7). الكشف المتتابع يبدأ بسطر «رصيد افتتاحي»؛ البيع الآجل من POS-07 يظهر بوسم
@@ -82,7 +83,7 @@ const statement = (extra: Record<string, unknown> = {}) => ({
 });
 
 async function seed(page: Page, opts: { pending?: boolean; cache?: unknown } = {}) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ pending, cache, party, now }) => {
       const req = indexedDB.open("sting-bootstrap");

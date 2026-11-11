@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.30 — INV-05 جلسة جرد (6) + INV-06 مراجعة الفروق وتسوية (4). المتوقَّع محجوب حتى يُدخل المعدود
@@ -40,7 +41,7 @@ const ITEMS = [
 const BALANCES: Record<string, string> = { i1: "1842000", i2: "340000", i3: "88000" };
 
 async function seed(page: Page, role: "owner" | "storekeeper" = "owner", open?: unknown) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, items, balances, open }) => {
       const req = indexedDB.open("sting-bootstrap");

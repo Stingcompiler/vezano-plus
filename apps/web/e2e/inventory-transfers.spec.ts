@@ -3,6 +3,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
 import { expectPrintDoc } from "./print-doc";
+import { openSeedPage } from "./seed-page";
 
 /**
  * T1.32 — INV-08 قائمة التحويلات (5) + INV-09 إنشاء وإرسال تحويل (6). خرج وصل، لا حركة واحدة: الإرسال
@@ -58,7 +59,7 @@ const BRANCHES = [
 ];
 
 async function seed(page: Page, role: "owner" | "storekeeper" = "owner") {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ role, items, balances }) => {
       const req = indexedDB.open("sting-bootstrap");

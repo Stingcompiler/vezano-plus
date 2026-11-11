@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { fromFrame } from "./frame-provenance";
+import { openSeedPage } from "./seed-page";
 
 /** T1.8 — CAT-01 (5) + CAT-06 (4). بيانات الإطار 05-D2 كما هي؛ الخادم يُحاكى على مستوى الشبكة. */
 const json = (status: number, body: unknown) => ({ status, json: body });
@@ -251,7 +252,7 @@ test.describe("CAT-01", () => {
 
   test("stale: أسعار قد تكون قديمة — السعر بوقته لا تحذير عام", async ({ page }, info) => {
     // نسخة محلية موجودة (إسقاطات) ثم يفشل التحديث
-    await page.goto("/welcome");
+    await openSeedPage(page);
     await page.evaluate(async (items) => {
       const req = indexedDB.open("sting-bootstrap");
       const db = await new Promise<IDBDatabase>((res, rej) => {

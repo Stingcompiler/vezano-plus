@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { openSeedPage } from "./seed-page";
 
 /** مشترك بين pos-invoices.spec وmotion.spec: تجهيز الجهاز والجلسة وصفوف الفواتير الخادمية. */
 export const json = (status: number, body: unknown) => ({ status, json: body });
@@ -20,7 +21,7 @@ export interface LocalSeed {
 }
 
 export async function seed(page: Page, sales: readonly LocalSeed[], cache?: unknown) {
-  await page.goto("/welcome");
+  await openSeedPage(page);
   await page.evaluate(
     async ({ sales, cache, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");
