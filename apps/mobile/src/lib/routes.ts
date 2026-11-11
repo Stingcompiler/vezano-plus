@@ -172,6 +172,9 @@ export const ROUTES: readonly Row[] = [
   exact("/purchasing/orders"),
   exact("/purchasing/orders/new"),
   param("/purchasing/returns/:id", (id) => `/purchasing/returns/${id}`),
+  // تقرير المبيعات تبويبٌ مبني (`(tabs)/reports`) — غاب صفّه فكانت القائمة والرئيسية تفتحانه في المتصفح
+  // (بلاغ المالك 2026-11-11، 0005 §٢٦٠)
+  exact("/reports"),
   exact("/reports/cash"),
   exact("/reports/export"),
   exact("/reports/margin"),
