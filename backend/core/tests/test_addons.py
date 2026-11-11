@@ -176,3 +176,29 @@ def test_change_blocked_when_target_lacks_owned_addon(ctx: dict[str, Any]) -> No
         {"reference": "TRX-UPB", "plan_code": "dual", "kind": "upgrade"},
     )
     assert r.status_code == 400 and r.json()["detail"] == "limits_exceeded"
+
+
+def test_trial_sees_base_addon_prices_but_cannot_buy(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٥٢: التجريبية كانت تعرض أسعار إضافات صفراً فيختفي قسم «الإضافات» كله من ORG-06، ومعه
+    الجملة التي تشرح الشرط. الأسعار الآن من الباقة الأساس؛ والشراء يبقى لاشتراك مدفوع سارٍ."""
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    with tenant_context(ctx["tenant"].id):
+        assert subscription.ensure_subscription().plan_code == "trial"
+    base = subscription.PLANS["single"]
+    assert base.addon_device_minor > 0 and base.addon_user_minor > 0
+    assert subscription.PLANS["trial"].addon_device_minor == base.addon_device_minor
+    ent = c.get("/api/org/subscription", headers=owner).json()
+    lines = {a["kind"]: a for a in ent["addons"]}
+    assert lines["devices"]["offered"] is True
+    assert lines["devices"]["unit_monthly_minor"] == str(base.addon_device_minor)
+    assert lines["users"]["unit_monthly_minor"] == str(base.addon_user_minor)
+    assert lines["branches"]["offered"] is (base.addon_branch_minor > 0)
+    assert ent["can_buy_addons"] is False
+    r = c.get(f"{ADDON}?kind=devices&qty=1", headers=owner)
+    assert r.status_code == 409 and r.json()["detail"] == "paid_plan_required"
+    # لوحة المشغّل تعرض لصفّ التجريبية ما ترثه فعلاً
+    oh = _operator_headers("ops_trial_addons", "هدى — تشغيل")
+    cat = c.get("/api/platform/plans", headers=oh).json()
+    trial = next(p for p in cat["plans"] if p["code"] == "trial")
+    assert trial["addon_device_minor"] == str(base.addon_device_minor)

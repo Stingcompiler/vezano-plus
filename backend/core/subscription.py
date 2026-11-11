@@ -170,7 +170,11 @@ def trial_blurb(base_name: str, days: int) -> str:
 
 
 def _derive_trial(trial: Plan, base: Plan) -> Plan:
-    """التجريبية = ميزات الباقة الأساس وحدودها وحصّتها، بلا سعر، بمدّتها هي."""
+    """التجريبية = ميزات الباقة الأساس وحدودها وحصّتها، بلا سعر، بمدّتها هي.
+
+    أسعار الإضافات من الأساس كذلك (0005 §٢٥٢): صاحب التجريبية يرى ما تكلّفه زيادة جهاز أو مستخدم
+    وشرط شرائها، والشراء نفسه يبقى لاشتراك مدفوع سارٍ (`addon_quote` · `can_buy_addons`).
+    """
     from dataclasses import replace
 
     return replace(
@@ -184,6 +188,9 @@ def _derive_trial(trial: Plan, base: Plan) -> Plan:
         price_minor=0,
         price_quarterly_minor=0,
         price_yearly_minor=0,
+        addon_device_minor=base.addon_device_minor,
+        addon_user_minor=base.addon_user_minor,
+        addon_branch_minor=base.addon_branch_minor,
         trial_base_code=base.code,
         trial_base_name=base.name,
     )
