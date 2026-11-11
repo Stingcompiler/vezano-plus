@@ -90,9 +90,9 @@ def _row(p: PlanCatalog, subscribers: dict[str, int]) -> dict[str, Any]:
         "price_monthly_minor": str(p.price_monthly_minor),
         "price_quarterly_minor": str(p.price_quarterly_minor),
         "price_yearly_minor": str(p.price_yearly_minor),
-        "addon_device_minor": str(p.addon_device_minor),
-        "addon_user_minor": str(p.addon_user_minor),
-        "addon_branch_minor": str(p.addon_branch_minor),
+        "addon_device_minor": str(derived.addon_device_minor if derived else p.addon_device_minor),
+        "addon_user_minor": str(derived.addon_user_minor if derived else p.addon_user_minor),
+        "addon_branch_minor": str(derived.addon_branch_minor if derived else p.addon_branch_minor),
         "next_price": (
             {
                 "monthly_minor": str(p.next_price_monthly_minor)
