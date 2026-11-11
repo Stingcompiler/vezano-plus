@@ -224,8 +224,24 @@ def close_branch(branch: Branch, *, actor: User | None = None) -> Branch:
     return branch
 
 
-def devices_payload(*, scope: Branch | None) -> dict[str, Any]:
+def reported_pending(device: Device) -> int:
+    """المعلّق الذي بلّغت به جلسات الجهاز الحيّة — الرقم نفسه المعروض في صفّه."""
+    return max(
+        (
+            int(s.reported_pending or 0)
+            for s in Session.objects.filter(device=device, revoked_at__isnull=True)
+            if s.reported_pending is not None
+        ),
+        default=0,
+    )
+
+
+def devices_payload(
+    *, scope: Branch | None, current_device_id: Any = None, can_revoke: bool = False
+) -> dict[str, Any]:
     rows = _device_rows(scope.id if scope is not None else None)
+    for r in rows:
+        r["is_current"] = current_device_id is not None and r["id"] == str(current_device_id)
     return {
         "devices": rows,
         "counts": {
@@ -233,8 +249,10 @@ def devices_payload(*, scope: Branch | None) -> dict[str, Any]:
             "active": sum(1 for r in rows if r["status"] == "active"),
             "pending_total": sum(int(r["pending"]) for r in rows),
         },
-        # حدّ الباقة رقم صريح (ORG-06)
+        # حدّ الباقة رقم صريح (ORG-06) — الفعلي: الباقة + ما منحه المشغّل + الإضافات المدفوعة
         "device_limit": device_limit(),
+        # السحب للمالك وحده (0005 §٢٥٣)
+        "can_revoke": can_revoke,
         "as_of": _iso(timezone.now()),
     }
 
@@ -266,5 +284,6 @@ __all__ = [
     "close_branch",
     "create_branch",
     "devices_payload",
+    "reported_pending",
     "update_branch",
 ]

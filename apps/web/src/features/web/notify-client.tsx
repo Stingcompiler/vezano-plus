@@ -16,6 +16,7 @@ import { useApp } from "@/lib/app-context";
 import {
   currentPushSubscription,
   onPwaChange,
+  pushHost,
   type PushPermission,
   pushPermission,
   requestPushPermission,
@@ -166,12 +167,24 @@ export function NotifyClient() {
     }
   };
 
+  // تطبيق الحاسوب: لا Web Push داخله أصلاً — ليس رفضاً من المستخدم ولا «متصفحاً داخل تطبيق». إشعاراته
+  // إشعارات نظام من شاشته DESK-05، فمن وصل هنا يُنقل إليها (0005 §٢٥٦)
+  const desktopApp = perm === "unsupported" && pushHost() === "desktop_app";
+  useEffect(() => {
+    if (desktopApp) router.replace("/desktop/notifications");
+  }, [desktopApp, router]);
+
   const configuredReason =
     status && !status.configured ? "مفاتيح الإشعارات غير مضبوطة في النشر" : undefined;
 
   return (
     <Frame title="الإشعارات" nav={<AppNav currentId="notify" />} footer={null}>
-      <div className="sys sys--wide sys--cols" data-screen="WEB-02" data-state={state}>
+      <div
+        className="sys sys--wide sys--cols"
+        data-screen="WEB-02"
+        data-state={state}
+        data-host={desktopApp ? "desktop_app" : undefined}
+      >
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">إذن Web Push وحالاته</h2>
@@ -204,7 +217,7 @@ export function NotifyClient() {
               </Notice>
             ) : null}
 
-            {state === "permission_denied" ? (
+            {state === "permission_denied" && !desktopApp ? (
               <Notice kind="warning" title="صلاحية مرفوضة">
                 <p className="acc-choice__note">
                   {perm === "unsupported"

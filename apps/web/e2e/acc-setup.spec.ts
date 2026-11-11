@@ -26,6 +26,14 @@ const IMAGE = {
   ],
   balances: [],
 };
+const REGISTERED = {
+  device_id: "33333333-3333-7333-8333-333333333333",
+  prefix: "A2",
+  branch_id: "44444444-4444-7444-8444-444444444444",
+  registration_secret: "secret",
+  access: "da",
+  refresh: "dr",
+};
 const ENT = (entity: string, id: string) => ({ entity, id, payload: { name: id } });
 const PAGES: Record<string, unknown[][]> = {
   catalog: [[ENT("catalog.Item", "a"), ENT("catalog.Item", "b")], [ENT("catalog.Item", "c")]],
@@ -205,6 +213,54 @@ test.describe("ACC-05", () => {
     await page.getByRole("button", { name: "تحقّق الآن" }).click();
     await expect(screen).toContainText("الجهاز جاهز");
   });
+
+  // بلاغ المالك 2026-11-11: جهاز جديد رُفض تسجيله فقالت الشاشة «انقطع التنزيل بخطأ» بعد ثلاث إعادات —
+  // والخادم كان قد قال السبب من أول ردّ (`core/subscription.py` `can_register_device`)
+  test("رفض التسجيل بحدّ أجهزة الباقة: السبب يُقال من أول ردّ — لا «انقطع التنزيل» ولا إعادات", async ({
+    page,
+  }) => {
+    let calls = 0;
+    let freed = false;
+    await page.route("**/api/bootstrap/*/page**", pageRoute(servePage));
+    await loginToSetup(page, (route) => {
+      calls += 1;
+      return freed
+        ? route.fulfill(json(201, REGISTERED))
+        : route.fulfill(json(403, { detail: "device_limit" }));
+    });
+    const screen = page.locator('[data-screen="ACC-05"]');
+    await expect(screen).toHaveAttribute("data-state", "permission_denied");
+    await expect(screen).toContainText("بلغت المنشأة حدّ أجهزة الباقة");
+    await expect(screen).toContainText(
+      "عند بلوغ الحدّ لا نمنع البيع. نمنع إضافة جهاز جديد ونشرح البديل: ترقية الباقة أو سحب جهاز قديم.",
+    );
+    await expect(screen).not.toContainText("انقطع التنزيل بخطأ");
+    expect(calls).toBe(1);
+    // سُحب جهاز قديم من شاشة الأجهزة على جهاز آخر: المحاولة اليدوية تكمل التجهيز
+    freed = true;
+    await page.getByRole("button", { name: "أعد المحاولة" }).click();
+    await expect(screen).toContainText("الجهاز جاهز");
+  });
+
+  for (const [detail, title] of [
+    ["subscription_suspended", "الاشتراك موقوف من مشغّل المنصة"],
+    ["subscription_expired", "صلاحية مرفوضة"],
+    ["branch_forbidden", "صلاحية مرفوضة"],
+  ] as const) {
+    test(`رفض التسجيل (${detail}): «${title}» لا «انقطع التنزيل»`, async ({ page }) => {
+      let calls = 0;
+      await loginToSetup(page, (route) => {
+        calls += 1;
+        return route.fulfill(json(403, { detail }));
+      });
+      const screen = page.locator('[data-screen="ACC-05"]');
+      await expect(screen).toHaveAttribute("data-state", "permission_denied");
+      await expect(screen).toContainText(title);
+      await expect(screen).not.toContainText("انقطع التنزيل بخطأ");
+      await expect(page.getByRole("button", { name: "أعد المحاولة" })).toBeEnabled();
+      expect(calls).toBe(1);
+    });
+  }
 
   test("server_error → partial: ثلاث محاولات متباعدة ثم وقوف يدوي، وما نزل يبقى ويُستأنف", async ({
     page,

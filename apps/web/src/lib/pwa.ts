@@ -185,6 +185,8 @@ export interface PushKeys {
 }
 
 interface PushFake {
+  /** تطبيق الحاسوب في الاختبار: لا Web Push داخله أصلاً (0005 §٢٥٦) */
+  host?: PushHost;
   permission?: PushPermission;
   request?: PushPermission;
   subscription?: PushKeys | null;
@@ -192,6 +194,15 @@ interface PushFake {
 }
 
 let pushFake: PushFake | null = null;
+
+/**
+ * أين تعمل الشاشة: متصفح (Web Push ممكن) أم تطبيق الحاسوب (لا عامل خدمة ولا Web Push داخل Tauri).
+ * بديل الحاسوب `apps/desktop/src/platform/pwa.ts` يجيب عن نفسه.
+ */
+export type PushHost = "browser" | "desktop_app";
+export function pushHost(): PushHost {
+  return pushFake?.host ?? "browser";
+}
 
 /** يدعم الجهاز الإشعارات؟ متصفح داخل تطبيق يُعدّ غير داعم — لا نطلب إذناً سيُرفض تلقائياً. */
 export function pushSupported(): boolean {

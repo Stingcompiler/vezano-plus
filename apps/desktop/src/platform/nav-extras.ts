@@ -7,6 +7,8 @@ import { NAV_GROUPS, type NavItem } from "@sting/app-core";
 import { inTauri } from "./tauri";
 
 const REPLACE: Readonly<Record<string, string>> = {
+  // إذن Web Push لا معنى له داخل Tauri: «إشعارات هذا الجهاز» تفتح شاشة إشعارات الحاسوب (0005 §٢٥٦)
+  notify: "/desktop/notifications",
   print: "/desktop/printers",
   update: "/desktop/setup",
 };

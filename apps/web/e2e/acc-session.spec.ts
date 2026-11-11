@@ -341,4 +341,51 @@ test.describe("ACC-09", () => {
       ]),
     });
   });
+
+  // أمر المالك 2026-11-11: «أضف ترقيماً للجلسات وأصلح الشاشة من حيث توزيع العناصر» (0005 §٢٥٤)
+  test("قائمة طويلة: ثماني جلسات في الصفحة، الحالية أولاً والمُبطَلة آخراً، واسم المتصفح مقروء", async ({
+    page,
+  }) => {
+    const many = Array.from({ length: 19 }, (_, i) => ({
+      ...S.tablet,
+      session_id: `m${i}`,
+      session_label: `كاشير ${i + 10}`,
+      reported_pending: 0,
+      last_seen_at: new Date(Date.now() - (i + 1) * 3_600_000).toISOString(),
+    }));
+    const raw = {
+      ...S.me,
+      session_id: "ua",
+      is_current: false,
+      session_label: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:159.0) Geck",
+      last_seen_at: new Date(Date.now() - 60_000).toISOString(),
+    };
+    // الخادم يرتّب بآخر نشاط: الحالية ليست أول الصفوف، والمُبطَلة في الوسط
+    await openSessions(page, [raw, ...many.slice(0, 5), S.phone, S.me, ...many.slice(5)]);
+    const root = page.locator('[data-screen="ACC-09"]');
+    const names = root.locator(".acc-sessions__name");
+    await expect(names).toHaveCount(8);
+    await expect(names.first()).toHaveText("هذا الجهاز — سطح المكتب");
+    await expect(names.nth(1)).toHaveText("web · Macintosh");
+    await expect(root).not.toContainText("Mozilla/5.0");
+    const pager = root.getByRole("navigation", { name: "ترقيم الصفحات" });
+    await expect(pager).toContainText("1–8 من 22");
+    await pager.getByRole("button", { name: "الصفحة 3" }).click();
+    await expect(pager).toContainText("17–22 من 22");
+    await expect(names).toHaveCount(6);
+    await expect(names.last()).toHaveText("هاتف غير معروف — أُبطلت");
+    // لا تمرير أفقي في أي مقاس
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
+  });
+
+  test("قائمة قصيرة: بلا شريط ترقيم", async ({ page }) => {
+    await openSessions(page, [S.me, S.tablet, S.phone]);
+    const root = page.locator('[data-screen="ACC-09"]');
+    await expect(root.locator(".acc-sessions__name")).toHaveCount(3);
+    await expect(root.getByRole("navigation", { name: "ترقيم الصفحات" })).toHaveCount(0);
+  });
 });

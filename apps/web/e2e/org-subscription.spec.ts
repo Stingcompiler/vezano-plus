@@ -566,4 +566,59 @@ test.describe("ORG-06 · تغيير الباقة", () => {
     await login(page, "/org/subscription/renew");
     await expect(page.getByTestId("renew-addons")).toContainText("يشمل الإضافات: 1 جهاز");
   });
+
+  // بلاغ المالك 2026-11-11: «لم أجد أي حقل لتوسيع الباقة للأجهزة والمستخدمين» — التجريبية كانت بأسعار
+  // إضافات صفر فيختفي القسم كله ومعه جملة الشرط (0005 §٢٥٢)
+  test("التجريبية: قسم الإضافات ظاهر بأسعار الباقة الأساس وشرط الشراء — بلا أزرار شراء", async ({
+    page,
+  }) => {
+    const base = payload();
+    await page.route("**/api/org/subscription", (route) =>
+      route.fulfill(
+        json(200, {
+          ...base,
+          plan: {
+            ...base.plan,
+            code: "trial",
+            name: "تجريبية",
+            trial: true,
+            trial_base_name: "فرع واحد",
+            state: "trial",
+            price_minor: "0",
+          },
+          limits: { ...base.limits, devices: { used: 3, max: 3 } },
+          addons: [
+            {
+              kind: "devices",
+              label: "جهاز",
+              unit_monthly_minor: "10000000",
+              offered: true,
+              qty: 0,
+              monthly_minor: "0",
+            },
+            {
+              kind: "users",
+              label: "مستخدم",
+              unit_monthly_minor: "5000000",
+              offered: true,
+              qty: 0,
+              monthly_minor: "0",
+            },
+          ],
+          can_buy_addons: false,
+        }),
+      ),
+    );
+    await login(page, "/org/subscription");
+    const box = page.locator('[data-screen="ORG-06"]').getByTestId("org-addons");
+    await expect(box.locator('[data-addon="devices"]')).toContainText(
+      "100,000 / شهر للوحدة · لديك 0",
+    );
+    await expect(box.locator('[data-addon="users"]')).toContainText("50,000 / شهر للوحدة");
+    await expect(box).toContainText(
+      "شراء الإضافات لاشتراك مدفوع ساري — من التجريبية أو بعد الانتهاء جدّد أولاً.",
+    );
+    await expect(box.getByRole("button", { name: "أضف" })).toHaveCount(0);
+    await expect(box.getByRole("button", { name: "أزل واحدة" })).toHaveCount(0);
+  });
 });

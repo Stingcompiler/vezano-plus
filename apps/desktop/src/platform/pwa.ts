@@ -7,6 +7,11 @@ import { inTauri } from "./tauri";
 
 export * from "../../../web/src/lib/pwa";
 
+/** داخل Tauri لا Web Push: شاشة الإشعارات تقول ذلك بدل «صلاحية مرفوضة» (0005 §٢٥٦). */
+export function pushHost(): web.PushHost {
+  return inTauri ? "desktop_app" : web.pushHost();
+}
+
 export function registerServiceWorker(force = false): Promise<ServiceWorkerRegistration | null> {
   return inTauri ? Promise.resolve(null) : web.registerServiceWorker(force);
 }

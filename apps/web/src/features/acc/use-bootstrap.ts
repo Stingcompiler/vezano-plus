@@ -5,6 +5,8 @@
  * - الاستئناف من النسخة نفسها؛ الانتهاء (410) يبدأ نسخة جديدة ويقول ذلك (stale).
  * - خطأ في منتصف نطاق: ثلاث محاولات متباعدة ثم وقوف بزرّ يدوي — ما نزل يبقى (server_error/partial).
  * - بلا شبكة: توقّف بلا محو، والتقدّم محفوظ (offline).
+ * - الخادم رفض تسجيل الجهاز (حدّ أجهزة الباقة، اشتراك موقوف، فرع غير مخوَّل): يُقال السبب من أول ردّ
+ *   بلا إعادات — الإعادة لا تغيّر رفضاً، وتسميته «انقطع التنزيل» كانت تخفي ما يلزم فعله (0005 §٢٥١).
  */
 import { requestPersistentStorage, type PersistOutcome } from "@sting/platform/dexie";
 import {
@@ -25,7 +27,7 @@ import { type DeviceTokens, useApp } from "@/lib/app-context";
 import { getStorage } from "@/lib/storage";
 
 export type Phase = "idle" | "registering" | "downloading" | "activating" | "done" | "stopped";
-export type StopReason = "error" | "expired" | "offline" | "approval" | null;
+export type StopReason = "error" | "expired" | "offline" | "approval" | "refused" | null;
 
 const RETRY_DELAYS_MS = [1000, 3000, 7000] as const;
 const DEVICE_META = "device.registration";
@@ -41,6 +43,8 @@ interface StoredDevice {
 export interface BootstrapUi {
   readonly phase: Phase;
   readonly stop: StopReason;
+  /** رمز الرفض كما قاله الخادم (`device_limit`…) حين `stop === "refused"` */
+  readonly refusal: string | null;
   readonly progress: BootstrapProgress | null;
   readonly persist: PersistOutcome | null;
   /** إعادة طلب التخزين الدائم بنقرة (بعض المتصفحات تسأل المستخدم فقط عند نقرة منه) */
@@ -53,6 +57,7 @@ export function useBootstrap(online: boolean): BootstrapUi {
   const app = useApp();
   const [phase, setPhase] = useState<Phase>("idle");
   const [stop, setStop] = useState<StopReason>(null);
+  const [refusal, setRefusal] = useState<string | null>(null);
   const [progress, setProgress] = useState<BootstrapProgress | null>(null);
   const [persist, setPersist] = useState<PersistOutcome | null>(null);
   const [expiredNotice, setExpiredNotice] = useState(false);
@@ -123,6 +128,9 @@ export function useBootstrap(online: boolean): BootstrapUi {
         (error as { detail?: string } | undefined)?.detail === "approval_pending"
       )
         throw new ApprovalPendingError();
+      // رفضٌ له سبب (403) أو فرع غير موجود (404): قرار من الخادم لا عطل — لا يُعاد ولا يُسمّى انقطاعاً
+      if (response.status === 403 || response.status === 404)
+        throw new RefusedError((error as { detail?: string } | undefined)?.detail ?? "");
       if (!response.ok || !data) throw new Error("register_failed");
       await storage.transaction((tx) =>
         tx.putMeta(
@@ -161,7 +169,8 @@ export function useBootstrap(online: boolean): BootstrapUi {
         try {
           return await fn();
         } catch (e) {
-          if (e instanceof ExpiredError || e instanceof OfflineError) throw e;
+          if (e instanceof ExpiredError || e instanceof OfflineError || e instanceof RefusedError)
+            throw e;
           lastError = e;
           const delay = RETRY_DELAYS_MS[attempt];
           if (delay === undefined) break;
@@ -240,6 +249,9 @@ export function useBootstrap(online: boolean): BootstrapUi {
           setStop("expired");
         } else if (e instanceof ApprovalPendingError) {
           setStop("approval");
+        } else if (e instanceof RefusedError) {
+          setRefusal(e.code);
+          setStop("refused");
         } else if (e instanceof OfflineError || !onlineRef.current) {
           setStop("offline");
         } else {
@@ -257,12 +269,17 @@ export function useBootstrap(online: boolean): BootstrapUi {
     // run وonline محفّزا الإعادة عمداً؛ app يُقرأ عند التشغيل لا عند كل تغيير
   }, [app.tokens, app.session.tenantId, run, online]);
 
-  return { phase, stop, progress, persist, retryPersist, expiredNotice, retry };
+  return { phase, stop, refusal, progress, persist, retryPersist, expiredNotice, retry };
 }
 
 class ExpiredError extends Error {}
 class ApprovalPendingError extends Error {}
 class OfflineError extends Error {}
+class RefusedError extends Error {
+  constructor(readonly code: string) {
+    super("refused");
+  }
+}
 
 /** اسم الجهاز كما يراه الخادم — بيانات لا نص واجهة (لاتيني من المتصفح). */
 function deviceName(): string {

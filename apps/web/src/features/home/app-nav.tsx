@@ -34,6 +34,7 @@ const GROUP_ICONS = {
   [G.reports]: NAV_ICONS.reports,
   [G.buy]: NAV_ICONS.buy,
   [G.sellMarket]: NAV_ICONS.sellMarket,
+  [G.alerts]: NAV_ICONS.alerts,
   [G.notify]: NAV_ICONS.notify,
   [G.org]: NAV_ICONS.org,
   [G.device]: NAV_ICONS.device,
