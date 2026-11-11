@@ -337,7 +337,7 @@ export function ReturnClient({ saleId }: { saleId: string }) {
 
   return (
     <Frame title="نقطة البيع" nav={<PosNav currentId="invoices" />} footer={null}>
-      <div className="pos" data-screen="POS-10" data-state={state}>
+      <div className="pos pos--wide" data-screen="POS-10" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

@@ -269,7 +269,7 @@ export function CustomersClient() {
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
-      <div className="pos" data-screen="PTY-01" data-state={state}>
+      <div className="pos pos--wide" data-screen="PTY-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">قائمة العملاء</h2>

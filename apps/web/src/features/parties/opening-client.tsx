@@ -137,7 +137,7 @@ export function OpeningClient({ partyId }: { partyId: string }) {
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
-      <div className="pos" data-screen="PTY-04" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="PTY-04" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">رصيد افتتاحي{card ? <> — {card.name}</> : null}</h2>

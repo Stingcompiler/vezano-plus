@@ -620,7 +620,7 @@ export function PosClient() {
       footer={null}
       notice={state === "offline" ? <Status state="offline" label="بيع بلا اتصال" /> : undefined}
     >
-      <div className="pos" data-screen="POS-01" data-state={state}>
+      <div className="pos pos--fluid" data-screen="POS-01" data-state={state}>
         <div className="pos-head">
           <div className="pos-head__org">
             <strong>{tenantName || "—"}</strong>

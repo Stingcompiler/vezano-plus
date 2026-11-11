@@ -117,7 +117,7 @@ export function ProblemClient({ saleId }: { saleId: string }) {
         ) : undefined
       }
     >
-      <div className="pos" data-screen="POS-11" data-state={state}>
+      <div className="pos pos--wide pos--cols" data-screen="POS-11" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">

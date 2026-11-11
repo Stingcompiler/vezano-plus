@@ -318,6 +318,73 @@
   box-sizing: border-box;
   margin-inline: auto;
 }
+/*
+ * وضع البيع على الشاشة الكبيرة (0005 §٢٥٠؛ على نسق §١٨١ للصفحات الإدارية). `.pos-card` بعرض 720 وُضعت
+ * لنموذج الكاشير الواحد، فصارت كل شاشات «وضع البيع» جزيرة 720 وسط منطقة 1200: جدول مضغوط تنكسر
+ * خلاياه، ونماذج طويلة عمودية، وفراغ 240 على كل جانب وتحتها.
+ *  - `pos--wide`: البطاقة تأخذ عرض المحتوى؛ الحقائق شبكة بلاطات لا شريط لكل رقم؛ خلايا الجدول لا تنكسر.
+ *  - `pos--cols` (النماذج والبطاقات الطويلة): من 1100 فأكثر يتوزّع جسم البطاقة على عمودين متوازنين بترتيب
+ *    القراءة نفسه (عمود ثم الذي يليه)؛ التنبيهات والجداول والمرشِّحات وأزرار الحفظ تبقى بعرض كامل.
+ *  - ما فوق 1440: منطقة المحتوى تتسع مع الشاشة (حدّ الإطار 1240 كان يترك هامشين فارغين عند 1920).
+ * تحت 1100 لا يتغير شيء: عمود واحد كما كان، والهاتف واللوحي بتخطيطهما.
+ */
+.pos--wide > .pos-card {
+  max-inline-size: none;
+}
+.c-frame__main:has(> .pos--wide),
+.c-frame__main:has(> .pos--fluid) {
+  max-inline-size: calc(var(--layout-contentMax) + 360px);
+}
+@media (min-width: 834px) {
+  /* `auto-fit`: ثلاث حقائق تملأ الصف أثلاثاً — `auto-fill` كان يترك مسارات فارغة في آخره */
+  .pos--wide .shift-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .pos--wide .c-table__table th,
+  .pos--wide .c-table__table td {
+    white-space: nowrap;
+  }
+  /* الاسم وملاحظته يلتفّان: هما ما يطول */
+  .pos--wide .c-table__table td:first-child,
+  .pos--wide .c-table__table .acc-choice__note,
+  .pos--wide .c-table__table .pos-cell--wrap {
+    white-space: normal;
+  }
+  .pos--cols > .pos-card > .acc-card__body {
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-6, 24px);
+  }
+  .pos--cols > .pos-card > .acc-card__body > * {
+    break-inside: avoid;
+    margin-block: 0 12px;
+  }
+  .pos--cols > .pos-card > .acc-card__body > :last-child {
+    margin-block-end: 0;
+  }
+  .pos--cols
+    > .pos-card
+    > .acc-card__body
+    > :is(
+      .c-notice,
+      .c-table,
+      .cat-form__actions,
+      .pos-inv__filters,
+      .pos-dup,
+      .cat-head,
+      .pos-pay__required,
+      .pos-pay__change,
+      .shift-facts,
+      .pty-card__head,
+      .pty-balance,
+      .pos-cols__all
+    ) {
+    column-span: all;
+  }
+}
 .pos-parties {
   list-style: none;
   margin: 0;

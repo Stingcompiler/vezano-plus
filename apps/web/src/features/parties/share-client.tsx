@@ -226,7 +226,7 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
-      <div className="pos" data-screen="PTY-08" data-state={state}>
+      <div className="pos pos--wide" data-screen="PTY-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
             <h2 className="cat-head__title">
