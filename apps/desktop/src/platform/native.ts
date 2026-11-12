@@ -1,11 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from "@tauri-apps/plugin-notification";
+import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 import { inTauri } from "./tauri";
@@ -63,10 +59,9 @@ const tauriNative: DesktopNative = {
     return (await isPermissionGranted()) ? "granted" : "default";
   },
   requestNotify: () => requestPermission(),
-  notify(title, body) {
-    sendNotification({ title, body });
-    return Promise.resolve();
-  },
+  // الأمر نفسه الذي تناديه `sendNotification` — لكن منتظَراً: تلك تُطلقه وتُسقط خطأه، فلا يُعرف إن رفض النظام
+  // الإشعار. هنا يصل الخطأ إلى من نادى (زرّ «إرسال إشعار تجريبي» في DESK-05 · 0005 §٢٦٢)
+  notify: (title, body) => invoke<void>("plugin:notification|notify", { options: { title, body } }),
   // المحدِّث الموقَّع (ط٦): latest.json من إصدارات GitHub، والتحقق بالمفتاح العام المبني في التطبيق.
   // بلا محدِّث مسجَّل (بناء بلا مفتاح) أو بلا شبكة: لا تحديث يُعلَن
   async checkUpdate() {
@@ -103,6 +98,8 @@ export interface DeskFake {
   update?: UpdateCheck;
   updateDelayMs?: number;
   notified?: { title: string; body: string }[];
+  /** الإشعار التالي يفشل (نظام رفضه) */
+  notifyFails?: boolean;
   revealed?: string[];
   /** ما أُرسل للطابعة، ونتيجة الإرسال التالي (false = فشل) */
   printed?: { target: PrintTarget; size: number }[];
@@ -140,6 +137,7 @@ const browserNative: DesktopNative = {
   notifyPermission: () => Promise.resolve(fake().permission ?? "granted"),
   requestNotify: () => Promise.resolve(fake().permission ?? "granted"),
   notify(title, body) {
+    if (fake().notifyFails) return Promise.reject(new Error("notify_failed"));
     (fake().notified ??= []).push({ title, body });
     return Promise.resolve();
   },

@@ -39,9 +39,31 @@ const GUARANTEES = [
   },
 ] as const;
 
+/** أين تُفتح إذونات الإشعارات في النظام — حين لا يظهر الإشعار التجريبي (0005 §٢٦٢). */
+const OS_SETTINGS: Readonly<Record<string, string>> = {
+  mac: "إعدادات النظام ← الإشعارات ← Vezano Plus: اسمح بالإشعارات.",
+  win: "الإعدادات ← النظام ← الإشعارات ← Vezano Plus: شغّل الإشعارات.",
+};
+
 export function DeskNotifications() {
   const online = useOnline();
   const [perm, setPerm] = useState<NotifyPermission | null>(null);
+  const [test, setTest] = useState<"sent" | "failed" | null>(null);
+  const [sending, setSending] = useState(false);
+  const osHint = OS_SETTINGS[document.documentElement.dataset.os ?? ""];
+
+  // تجربة القناة بيد المستخدم: إشعار نظام الآن بنصّ الفئة الثابت (بلا أسماء ولا مبالغ)
+  const sendTest = async () => {
+    setSending(true);
+    try {
+      await native.notify("فيزانو بلص — تجربة الإشعارات", "إن رأيت هذا فإشعارات هذا الجهاز تعمل.");
+      setTest("sent");
+    } catch {
+      setTest("failed");
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     // الإذن يُطلب مرة عند أول زيارة — والرفض حالة مرسومة لا تُكرَّر بعدها
@@ -76,7 +98,21 @@ export function DeskNotifications() {
               مفتوحة.
             </p>
           </div>
+          <Button variant="secondary" loading={sending} onClick={() => void sendTest()}>
+            إرسال إشعار تجريبي
+          </Button>
         </div>
+        {test === "sent" ? (
+          <Notice kind="success" title="أُرسل الإشعار التجريبي">
+            إن لم يظهر فوق النوافذ، فالنظام يحجب إشعارات التطبيق.
+            {osHint ? <> {osHint}</> : null}
+          </Notice>
+        ) : null}
+        {test === "failed" ? (
+          <Notice kind="error" title="لم يُرسل الإشعار التجريبي">
+            رفض النظام عرض الإشعار. {osHint ?? ""}
+          </Notice>
+        ) : null}
         <section className="c-card">
           <ul className="desk__rows">
             {GUARANTEES.map((g) => (
