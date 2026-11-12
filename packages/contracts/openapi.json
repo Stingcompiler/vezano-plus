@@ -8696,6 +8696,13 @@
           },
           {
             "in": "query",
+            "name": "source",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "status",
             "schema": {
               "type": "string"
@@ -8752,6 +8759,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostPlatformFeedbackByTenantIdByFeedbackIdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/feedback/public/{feedback_id}": {
+      "post": {
+        "operationId": "platform_feedback_public_create",
+        "description": "حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformFeedbackPublicByFeedbackIdResponse"
                 }
               }
             }
@@ -10592,6 +10641,32 @@
             "description": "No response body"
           },
           "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/public/feedback": {
+      "post": {
+        "operationId": "public_feedback_create",
+        "description": "ملاحظة زائر (0005 §٢٦٦): من الموقع العام أو صفحة محل، بلا حساب — تصل فريق فيزانو وحده.",
+        "tags": ["public"],
+        "security": [{}],
+        "responses": {
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPublicFeedbackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "429": {
             "description": "No response body"
           }
         }
@@ -49445,6 +49520,9 @@
                 "app_version": {
                   "type": "string"
                 },
+                "contact_email": {
+                  "type": "string"
+                },
                 "contact_ok": {
                   "type": "boolean"
                 },
@@ -49475,6 +49553,9 @@
                 "screen": {
                   "type": "string"
                 },
+                "source": {
+                  "type": "string"
+                },
                 "status": {
                   "type": "string"
                 },
@@ -49499,6 +49580,7 @@
               },
               "required": [
                 "id",
+                "source",
                 "tenant_id",
                 "tenant_name",
                 "reference",
@@ -49506,6 +49588,7 @@
                 "kind_label",
                 "text",
                 "contact_ok",
+                "contact_email",
                 "from_name",
                 "screen",
                 "platform",
@@ -49523,6 +49606,19 @@
           },
           "kind": {
             "type": "string"
+          },
+          "new": {
+            "additionalProperties": false,
+            "properties": {
+              "merchant": {
+                "type": "integer"
+              },
+              "public": {
+                "type": "integer"
+              }
+            },
+            "required": ["merchant", "public"],
+            "type": "object"
           },
           "page": {
             "additionalProperties": false,
@@ -49542,15 +49638,21 @@
             },
             "required": ["number", "size", "total", "pages"],
             "type": "object"
+          },
+          "source": {
+            "type": "string"
           }
         },
-        "required": ["filter", "kind", "counts", "items", "page"],
+        "required": ["source", "filter", "kind", "counts", "items", "new", "page"],
         "type": "object"
       },
       "PostPlatformFeedbackByTenantIdByFeedbackIdResponse": {
         "additionalProperties": false,
         "properties": {
           "app_version": {
+            "type": "string"
+          },
+          "contact_email": {
             "type": "string"
           },
           "contact_ok": {
@@ -49583,6 +49685,9 @@
           "screen": {
             "type": "string"
           },
+          "source": {
+            "type": "string"
+          },
           "status": {
             "type": "string"
           },
@@ -49607,6 +49712,7 @@
         },
         "required": [
           "id",
+          "source",
           "tenant_id",
           "tenant_name",
           "reference",
@@ -49614,6 +49720,95 @@
           "kind_label",
           "text",
           "contact_ok",
+          "contact_email",
+          "from_name",
+          "screen",
+          "platform",
+          "app_version",
+          "status",
+          "status_label",
+          "reply",
+          "updated_by_name",
+          "updated_at",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "PostPlatformFeedbackPublicByFeedbackIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "contact_email": {
+            "type": "string"
+          },
+          "contact_ok": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "kind_label": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "tenant_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "tenant_id",
+          "tenant_name",
+          "reference",
+          "kind",
+          "kind_label",
+          "text",
+          "contact_ok",
+          "contact_email",
           "from_name",
           "screen",
           "platform",
@@ -55106,6 +55301,16 @@
           }
         },
         "required": ["token", "request"],
+        "type": "object"
+      },
+      "PostPublicFeedbackResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "reference": {
+            "type": "string"
+          }
+        },
+        "required": ["reference"],
         "type": "object"
       },
       "GetPublicLegalResponse": {

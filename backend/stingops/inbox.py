@@ -17,7 +17,7 @@ from django.utils import timezone
 from core.models import Tenant
 from core.tenancy import platform_context
 from stingops.models import MessageTriage, OperatorNotice
-from sync.models import Feedback, SupportReport
+from sync.models import SupportReport
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +75,10 @@ def _new_messages_count() -> int:
 
 
 def _new_feedback_count() -> int:
-    with platform_context():
-        return Feedback.unscoped.filter(status=Feedback.Status.NEW).count()
+    """التجار والزوار معاً (§٢٦٦) — عدّاد واحد لقسم «الملاحظات»."""
+    from stingops.feedback_ops import new_counts
+
+    return sum(new_counts().values())
 
 
 def notices_payload(*, unread_only: bool = False, limit: int = 50) -> dict[str, Any]:

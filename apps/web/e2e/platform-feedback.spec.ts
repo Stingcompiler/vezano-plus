@@ -143,6 +143,58 @@ test.describe("PLT-21", () => {
     expect(queries.some((q) => q.includes("kind=problem"))).toBe(true);
   });
 
+  test("الزوار (§٢٦٦): مصدر منفصل بعدّاده، بريد الزائر، وملاحظة داخلية", async ({ page }) => {
+    const pub = item({
+      id: "p1",
+      source: "public",
+      tenant_id: "",
+      tenant_name: "بقالة الواحة",
+      reference: "PF-261112-0001",
+      kind: "shop",
+      kind_label: "ملاحظة عن محل",
+      text: "الأسعار غير ظاهرة",
+      contact_ok: true,
+      contact_email: "visitor@example.com",
+      from_name: "",
+      screen: "/portal/wahat",
+      platform: "public",
+      app_version: "",
+    });
+    const updates: unknown[] = [];
+    await page.route(/\/api\/platform\/feedback(\?.*)?$/, (route) => {
+      const src = new URL(route.request().url()).searchParams.get("source") ?? "merchant";
+      return route.fulfill(
+        json(200, {
+          source: src,
+          filter: "open",
+          kind: "",
+          counts: { new: 1, studying: 0, done: 0, declined: 0 },
+          items: src === "public" ? [pub] : [item({})],
+          new: { merchant: 1, public: 1 },
+        }),
+      );
+    });
+    await page.route(/\/api\/platform\/feedback\/public\/p1$/, (route) => {
+      updates.push(route.request().postDataJSON());
+      return route.fulfill(json(200, { ...pub, status: "studying", status_label: "قيد الدراسة" }));
+    });
+    await operatorLogin(page);
+    await goSection(page, "الملاحظات");
+    const root = page.locator('[data-screen="PLT-21"]');
+    await expect(root).toContainText("تقرير مبيعات حسب الساعة");
+    await root.getByRole("button", { name: /^الزوار/ }).click();
+    await expect(root).toContainText("خاصة بالفريق، لا تُنشر ولا تُرسل إلى المحل.");
+    await expect(root.locator("#plt-feedback-list")).toContainText("الأسعار غير ظاهرة");
+    await expect(root.locator("#plt-feedback-list")).toContainText("من زائر");
+    await expect(root.getByRole("button", { name: "ملاحظة عن محل" })).toBeVisible();
+    await root.getByRole("button", { name: "افتح" }).click();
+    await expect(root).toContainText("visitor@example.com");
+    await root.getByLabel("ملاحظة الفريق").fill("تواصلنا مع المحل");
+    await root.getByRole("button", { name: "احفظ", exact: true }).click();
+    await expect(root).toContainText("حُفظ");
+    expect(updates).toEqual([{ status: "studying", reply: "تواصلنا مع المحل" }]);
+  });
+
   test("empty", async ({ page }) => {
     await page.route(/\/api\/platform\/feedback(\?.*)?$/, (route) =>
       route.fulfill(

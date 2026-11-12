@@ -49,6 +49,7 @@ from stingops.views import (
     OperatorPlansView,
     OperatorProofActionView,
     OperatorProofsView,
+    OperatorPublicFeedbackUpdateView,
     OperatorReportActionView,
     OperatorReportsView,
     OperatorResumeView,
@@ -122,6 +123,11 @@ urlpatterns = [
         name="platform-message-handle",
     ),
     path("platform/feedback", OperatorFeedbackView.as_view(), name="platform-feedback"),
+    path(
+        "platform/feedback/public/<uuid:feedback_id>",
+        OperatorPublicFeedbackUpdateView.as_view(),
+        name="platform-feedback-public-update",
+    ),
     path(
         "platform/feedback/<uuid:tenant_id>/<uuid:feedback_id>",
         OperatorFeedbackUpdateView.as_view(),

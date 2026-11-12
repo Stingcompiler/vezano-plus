@@ -595,3 +595,21 @@ class PublicDemoTrackView(APIView):
             return Response(demo_public.track_by_token(str(request.query_params.get("token", ""))))
         except demo_public.DemoPublicRejected as e:
             return _demo_reject(e)
+
+
+class PublicFeedbackView(APIView):
+    """ملاحظة زائر (0005 §٢٦٦): من الموقع العام أو صفحة محل، بلا حساب — تصل فريق فيزانو وحده."""
+
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
+
+    @extend_schema(request=None, responses={201: None, 400: None, 429: None})
+    def post(self, request: Request) -> Response:
+        from stingops import public_feedback
+
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        try:
+            out = public_feedback.submit(body, ip=client_ip(request))
+        except public_feedback.PublicFeedbackRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+        return Response({"reference": out["reference"]}, status=201)

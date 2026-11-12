@@ -665,6 +665,11 @@
    "400:trial_follows_base",
    "403:no_global_override"
   ],
+  "POST /api/platform/feedback/public/{feedback_id}": [
+   "403:operator_required",
+   "404:not_found",
+   "409:unchanged"
+  ],
   "POST /api/platform/feedback/{tenant_id}/{feedback_id}": [
    "400:reply_too_long",
    "400:status_invalid",
@@ -797,6 +802,14 @@
   ],
   "POST /api/public/demo-track/verify": [
    "400:code_invalid"
+  ],
+  "POST /api/public/feedback": [
+   "400:email_invalid",
+   "400:kind_invalid",
+   "400:shop_unknown",
+   "400:text_required",
+   "400:text_too_long",
+   "429:rate_limited"
   ],
   "POST /api/sales/duplicates/decide": [
    "400:validation_error",
@@ -17585,6 +17598,9 @@
         "app_version": {
          "type": "string"
         },
+        "contact_email": {
+         "type": "string"
+        },
         "contact_ok": {
          "type": "boolean"
         },
@@ -17615,6 +17631,9 @@
         "screen": {
          "type": "string"
         },
+        "source": {
+         "type": "string"
+        },
         "status": {
          "type": "string"
         },
@@ -17639,6 +17658,7 @@
        },
        "required": [
         "id",
+        "source",
         "tenant_id",
         "tenant_name",
         "reference",
@@ -17646,6 +17666,7 @@
         "kind_label",
         "text",
         "contact_ok",
+        "contact_email",
         "from_name",
         "screen",
         "platform",
@@ -17663,6 +17684,22 @@
      },
      "kind": {
       "type": "string"
+     },
+     "new": {
+      "additionalProperties": false,
+      "properties": {
+       "merchant": {
+        "type": "integer"
+       },
+       "public": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "merchant",
+       "public"
+      ],
+      "type": "object"
      },
      "page": {
       "additionalProperties": false,
@@ -17687,13 +17724,18 @@
        "pages"
       ],
       "type": "object"
+     },
+     "source": {
+      "type": "string"
      }
     },
     "required": [
+     "source",
      "filter",
      "kind",
      "counts",
      "items",
+     "new",
      "page"
     ],
     "type": "object"
@@ -46389,11 +46431,14 @@
     "type": "object"
    }
   },
-  "POST /api/platform/feedback/{tenant_id}/{feedback_id}": {
+  "POST /api/platform/feedback/public/{feedback_id}": {
    "200": {
     "additionalProperties": false,
     "properties": {
      "app_version": {
+      "type": "string"
+     },
+     "contact_email": {
       "type": "string"
      },
      "contact_ok": {
@@ -46426,6 +46471,9 @@
      "screen": {
       "type": "string"
      },
+     "source": {
+      "type": "string"
+     },
      "status": {
       "type": "string"
      },
@@ -46450,6 +46498,7 @@
     },
     "required": [
      "id",
+     "source",
      "tenant_id",
      "tenant_name",
      "reference",
@@ -46457,6 +46506,97 @@
      "kind_label",
      "text",
      "contact_ok",
+     "contact_email",
+     "from_name",
+     "screen",
+     "platform",
+     "app_version",
+     "status",
+     "status_label",
+     "reply",
+     "updated_by_name",
+     "updated_at",
+     "created_at"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/platform/feedback/{tenant_id}/{feedback_id}": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "app_version": {
+      "type": "string"
+     },
+     "contact_email": {
+      "type": "string"
+     },
+     "contact_ok": {
+      "type": "boolean"
+     },
+     "created_at": {
+      "type": "string"
+     },
+     "from_name": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "kind_label": {
+      "type": "string"
+     },
+     "platform": {
+      "type": "string"
+     },
+     "reference": {
+      "type": "string"
+     },
+     "reply": {
+      "type": "string"
+     },
+     "screen": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "status_label": {
+      "type": "string"
+     },
+     "tenant_id": {
+      "type": "string"
+     },
+     "tenant_name": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "updated_at": {
+      "type": "string"
+     },
+     "updated_by_name": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "source",
+     "tenant_id",
+     "tenant_name",
+     "reference",
+     "kind",
+     "kind_label",
+     "text",
+     "contact_ok",
+     "contact_email",
      "from_name",
      "screen",
      "platform",
@@ -49468,6 +49608,20 @@
     "required": [
      "token",
      "request"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/public/feedback": {
+   "201": {
+    "additionalProperties": false,
+    "properties": {
+     "reference": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "reference"
     ],
     "type": "object"
    }

@@ -3481,6 +3481,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/feedback/public/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل. */
+        post: operations["platform_feedback_public_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/flags": {
         parameters: {
             query?: never;
@@ -4305,6 +4322,23 @@ export interface paths {
         put?: never;
         /** @description تأكيد رمز المتابعة: يعيد حالة الطلب وتعليقات الفريق، ورمز متابعة موقَّعاً (30 دقيقة). */
         post: operations["public_demo_track_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ملاحظة زائر (0005 §٢٦٦): من الموقع العام أو صفحة محل، بلا حساب — تصل فريق فيزانو وحده. */
+        post: operations["public_feedback_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14642,6 +14676,7 @@ export interface components {
             filter: string;
             items: {
                 app_version: string;
+                contact_email: string;
                 contact_ok: boolean;
                 created_at: string;
                 from_name: string;
@@ -14652,6 +14687,7 @@ export interface components {
                 reference: string;
                 reply: string;
                 screen: string;
+                source: string;
                 status: string;
                 status_label: string;
                 tenant_id: string;
@@ -14661,15 +14697,21 @@ export interface components {
                 updated_by_name: string;
             }[];
             kind: string;
+            new: {
+                merchant: number;
+                public: number;
+            };
             page: {
                 number: number;
                 pages: number;
                 size: number;
                 total: number;
             };
+            source: string;
         };
         PostPlatformFeedbackByTenantIdByFeedbackIdResponse: {
             app_version: string;
+            contact_email: string;
             contact_ok: boolean;
             created_at: string;
             from_name: string;
@@ -14680,6 +14722,29 @@ export interface components {
             reference: string;
             reply: string;
             screen: string;
+            source: string;
+            status: string;
+            status_label: string;
+            tenant_id: string;
+            tenant_name: string;
+            text: string;
+            updated_at: string;
+            updated_by_name: string;
+        };
+        PostPlatformFeedbackPublicByFeedbackIdResponse: {
+            app_version: string;
+            contact_email: string;
+            contact_ok: boolean;
+            created_at: string;
+            from_name: string;
+            id: string;
+            kind: string;
+            kind_label: string;
+            platform: string;
+            reference: string;
+            reply: string;
+            screen: string;
+            source: string;
             status: string;
             status_label: string;
             tenant_id: string;
@@ -16087,6 +16152,9 @@ export interface components {
                 updated_at: string;
             };
             token: string;
+        };
+        PostPublicFeedbackResponse: {
+            reference: string;
         };
         GetPublicLegalResponse: {
             blocked_on: string;
@@ -26837,6 +26905,7 @@ export interface operations {
                 kind?: string;
                 page?: number;
                 page_size?: number;
+                source?: string;
                 status?: string;
             };
             header?: never;
@@ -26882,6 +26951,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostPlatformFeedbackByTenantIdByFeedbackIdResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_public_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformFeedbackPublicByFeedbackIdResponse"];
                 };
             };
             /** @description No response body */
@@ -28713,6 +28832,40 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPublicFeedbackResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

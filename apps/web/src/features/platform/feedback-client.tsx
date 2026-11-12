@@ -18,16 +18,19 @@ import { PlatformPager, pageQuery, type PageInfo } from "@/features/platform/pag
 
 type Filter = "open" | "new" | "studying" | "done" | "declined" | "all";
 type FbStatus = "new" | "studying" | "done" | "declined";
+type Source = "merchant" | "public";
 
 interface Item {
   id: string;
+  source: Source;
   tenant_id: string;
   tenant_name: string;
   reference: string;
-  kind: "suggestion" | "problem" | "opinion";
+  kind: string;
   kind_label: string;
   text: string;
   contact_ok: boolean;
+  contact_email: string;
   from_name: string;
   screen: string;
   platform: string;
@@ -45,6 +48,7 @@ interface Payload {
   kind: string;
   counts: Record<FbStatus, number>;
   items: Item[];
+  new: Record<Source, number>;
 }
 
 const FILTERS: readonly (readonly [Filter, string])[] = [
@@ -55,11 +59,24 @@ const FILTERS: readonly (readonly [Filter, string])[] = [
   ["declined", "لن تُنفّذ"],
   ["all", "الكل"],
 ];
-const KINDS: readonly (readonly [string, string])[] = [
-  ["", "كل الأنواع"],
-  ["suggestion", "اقتراح"],
-  ["problem", "مشكلة"],
-  ["opinion", "رأي"],
+const KINDS: Record<Source, readonly (readonly [string, string])[]> = {
+  merchant: [
+    ["", "كل الأنواع"],
+    ["suggestion", "اقتراح"],
+    ["problem", "مشكلة"],
+    ["opinion", "رأي"],
+  ],
+  // 0005 §٢٦٦: ملاحظات الزوار — خاصة بالفريق
+  public: [
+    ["", "كل الأنواع"],
+    ["platform", "اقتراح للمنصة"],
+    ["site", "مشكلة في الموقع"],
+    ["shop", "ملاحظة عن محل"],
+  ],
+};
+const SOURCES: readonly (readonly [Source, string])[] = [
+  ["merchant", "التجار"],
+  ["public", "الزوار"],
 ];
 const STATUS_OPTIONS = [
   { value: "new", label: "جديدة" },
@@ -67,7 +84,12 @@ const STATUS_OPTIONS = [
   { value: "done", label: "نُفّذت" },
   { value: "declined", label: "لن تُنفّذ" },
 ] as const;
-const PLATFORM: Record<string, string> = { web: "الويب", mobile: "الجوال", desktop: "الحاسوب" };
+const PLATFORM: Record<string, string> = {
+  web: "الويب",
+  mobile: "الجوال",
+  desktop: "الحاسوب",
+  public: "الموقع العام",
+};
 
 const ERRORS: Record<string, string> = {
   unchanged: "لم يتغيّر شيء — غيّر الحالة أو اكتب ردّاً.",
@@ -92,6 +114,7 @@ const tone = (s: FbStatus) =>
  */
 export function FeedbackClient() {
   const router = useRouter();
+  const [source, setSource] = useState<Source>("merchant");
   const [filter, setFilter] = useState<Filter>("open");
   const [kind, setKind] = useState("");
   const [data, setData] = useState<Payload | null>(null);
@@ -103,7 +126,11 @@ export function FeedbackClient() {
   const [saved, setSaved] = useState(false);
   const [failed, setFailed] = useState(false);
   const [page, setPage] = useState(1);
-  useEffect(() => setPage(1), [filter, kind]);
+  useEffect(() => setPage(1), [filter, kind, source]);
+  // إشعار ملاحظة زائر يفتح `?source=public`
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("source") === "public") setSource("public");
+  }, []);
 
   const load = useCallback(async () => {
     if (!operatorToken()) {
@@ -112,7 +139,7 @@ export function FeedbackClient() {
     }
     try {
       const { data: d, response } = await platformApi().GET("/api/platform/feedback", {
-        params: { query: { status: filter, kind, ...pageQuery(page) } },
+        params: { query: { status: filter, kind, source, ...pageQuery(page) } },
       });
       if (response.ok && d) {
         setData(d as unknown as Payload);
@@ -121,7 +148,7 @@ export function FeedbackClient() {
     } catch {
       setFailed(true);
     }
-  }, [router, filter, kind, page]);
+  }, [router, filter, kind, source, page]);
 
   useEffect(() => {
     void load();
@@ -141,10 +168,16 @@ export function FeedbackClient() {
     setErr("");
     setSaved(false);
     try {
-      const res = await platformApi().POST("/api/platform/feedback/{tenant_id}/{feedback_id}", {
-        params: { path: { tenant_id: open.tenant_id, feedback_id: open.id } },
-        body: { status, reply } as never,
-      });
+      const res =
+        open.source === "public"
+          ? await platformApi().POST("/api/platform/feedback/public/{feedback_id}", {
+              params: { path: { feedback_id: open.id } },
+              body: { status, reply } as never,
+            })
+          : await platformApi().POST("/api/platform/feedback/{tenant_id}/{feedback_id}", {
+              params: { path: { tenant_id: open.tenant_id, feedback_id: open.id } },
+              body: { status, reply } as never,
+            });
       const b = (res.data ?? res.error) as unknown as (Item & { detail?: string }) | undefined;
       if (res.response.ok && b) {
         setOpen(b);
@@ -180,10 +213,35 @@ export function FeedbackClient() {
           <div className="cat-head">
             <h2 className="cat-head__title">الملاحظات</h2>
             <span className="cat-head__hint">
-              اقتراحات التجار ومشكلاتهم وآراؤهم من تطبيقاتهم — الردّ يصل المرسل في «ملاحظاتي».
+              {source === "public"
+                ? "ملاحظات زوار الموقع وصفحات المحلات — خاصة بالفريق، لا تُنشر ولا تُرسل إلى المحل."
+                : "اقتراحات التجار ومشكلاتهم وآراؤهم من تطبيقاتهم — الردّ يصل المرسل في «ملاحظاتي»."}
             </span>
           </div>
           <div className="acc-card__body">
+            <div className="pos-chips" role="group" aria-label="المصدر">
+              {SOURCES.map(([code, label]) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`pos-chip${source === code ? " pos-chip--on" : ""}`}
+                  aria-pressed={source === code}
+                  onClick={() => {
+                    setSource(code);
+                    setKind("");
+                    setOpen(null);
+                  }}
+                >
+                  {label}
+                  {data?.new ? (
+                    <>
+                      {" "}
+                      · <span className="sting-mono">{data.new[code]}</span>
+                    </>
+                  ) : null}
+                </button>
+              ))}
+            </div>
             <div className="pos-chips" role="group" aria-label="الحالة">
               {FILTERS.map(([code, label]) => {
                 const n = count(code);
@@ -210,7 +268,7 @@ export function FeedbackClient() {
               })}
             </div>
             <div className="pos-chips" role="group" aria-label="النوع">
-              {KINDS.map(([code, label]) => (
+              {KINDS[source].map(([code, label]) => (
                 <button
                   key={code || "all"}
                   type="button"
@@ -236,7 +294,9 @@ export function FeedbackClient() {
             {state === "empty" ? (
               <Notice kind="empty" title="لا ملاحظات هنا">
                 <p className="acc-lead">
-                  تصل هنا الملاحظات حين يرسلها مستخدم منشأة من «ملاحظاتك» في «الدعم والتشخيص».
+                  {source === "public"
+                    ? "تصل هنا ملاحظات الزوار من «أرسل ملاحظة» في الموقع العام وصفحات المحلات."
+                    : "تصل هنا الملاحظات حين يرسلها مستخدم منشأة من «ملاحظاتك» في «الدعم والتشخيص»."}
                 </p>
               </Notice>
             ) : null}
@@ -253,7 +313,8 @@ export function FeedbackClient() {
                       <span className="sting-mono">{f.reference}</span>
                     </div>
                     <div className="acc-choice__note">
-                      من {f.from_name || "—"} · {PLATFORM[f.platform] ?? "—"}
+                      من {f.source === "public" ? "زائر" : f.from_name || "—"} ·{" "}
+                      {PLATFORM[f.platform] ?? "—"}
                       {f.screen ? (
                         <>
                           {" "}
@@ -284,7 +345,8 @@ export function FeedbackClient() {
                 </h3>
                 <p className="acc-lead sys-feedback__text">{open.text}</p>
                 <p className="acc-choice__note">
-                  {open.kind_label} · من {open.from_name || "—"} · {PLATFORM[open.platform] ?? "—"}
+                  {open.kind_label} · من {open.source === "public" ? "زائر" : open.from_name || "—"}{" "}
+                  · {PLATFORM[open.platform] ?? "—"}
                   {open.app_version ? (
                     <>
                       {" "}
@@ -293,7 +355,17 @@ export function FeedbackClient() {
                   ) : null}
                   {open.updated_by_name ? ` · آخر تحديث: ${open.updated_by_name}` : ""}
                 </p>
-                {saved ? <Status state="success" label="حُفظ — يراه المرسل في «ملاحظاتي»" /> : null}
+                {open.contact_email ? (
+                  <p className="acc-choice__note">
+                    بريد الزائر: <span className="sting-mono">{open.contact_email}</span>
+                  </p>
+                ) : null}
+                {saved ? (
+                  <Status
+                    state="success"
+                    label={open.source === "public" ? "حُفظ" : "حُفظ — يراه المرسل في «ملاحظاتي»"}
+                  />
+                ) : null}
                 <RadioGroupField
                   label="الحالة"
                   name="feedback-status"
@@ -302,8 +374,12 @@ export function FeedbackClient() {
                   options={STATUS_OPTIONS}
                 />
                 <TextAreaField
-                  label="ردّ الفريق"
-                  hint="يراه المرسل باسم «فريق فيزانو» — حتى 600 حرف"
+                  label={open.source === "public" ? "ملاحظة الفريق" : "ردّ الفريق"}
+                  hint={
+                    open.source === "public"
+                      ? "داخلية — لا تصل الزائر"
+                      : "يراه المرسل باسم «فريق فيزانو» — حتى 600 حرف"
+                  }
                   rows={3}
                   maxLength={600}
                   value={reply}
@@ -312,7 +388,7 @@ export function FeedbackClient() {
                 {err ? <Status state="validation_error" label={err} /> : null}
                 <div className="acc-links">
                   <Button onClick={() => void save()} loading={busy}>
-                    احفظ وأبلغ المرسل
+                    {open.source === "public" ? "احفظ" : "احفظ وأبلغ المرسل"}
                   </Button>
                   <Button variant="quiet" onClick={() => setOpen(null)}>
                     أغلق

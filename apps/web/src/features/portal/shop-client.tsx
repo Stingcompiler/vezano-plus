@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Frame, Notice, Status } from "@sting/ui-web";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -170,6 +171,15 @@ export function ShopClient({ slug, campaign }: { slug: string; campaign: string 
                   </ul>
                 )}
               </div>
+            </div>
+            {/* 0005 §٢٦٦: ملاحظة الزائر عن المحل تصل فريق فيزانو وحده — لا تُنشر ولا تُرسل إلى المحل */}
+            <div className="acc-actions cus-feedback">
+              <Link
+                href={`/feedback?shop=${encodeURIComponent(slug)}`}
+                className="c-btn c-btn--quiet"
+              >
+                ملاحظة عن هذا المحل؟ أخبر فريق فيزانو
+              </Link>
             </div>
           </>
         ) : null}

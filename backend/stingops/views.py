@@ -1235,6 +1235,7 @@ class OperatorFeedbackView(APIView):
         parameters=[
             OpenApiParameter("status", str, OpenApiParameter.QUERY, required=False),
             OpenApiParameter("kind", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("source", str, OpenApiParameter.QUERY, required=False),
             *PAGE_PARAMS,
         ],
         responses={200: None, 403: None},
@@ -1249,6 +1250,7 @@ class OperatorFeedbackView(APIView):
                 feedback_ops.list_payload(
                     status_filter=str(request.query_params.get("status") or "open"),
                     kind=str(request.query_params.get("kind") or ""),
+                    source=str(request.query_params.get("source") or "merchant"),
                 ),
                 "items",
                 request,
@@ -1272,6 +1274,31 @@ class OperatorFeedbackUpdateView(APIView):
         try:
             out = feedback_ops.update(
                 tenant_id,
+                feedback_id,
+                status=str(body.get("status") or ""),
+                reply=str(body.get("reply") or ""),
+                by_name=auth.user.display_name,
+            )
+        except feedback_ops.FeedbackOpsRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+        return Response(out)
+
+
+class OperatorPublicFeedbackUpdateView(APIView):
+    """حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 400: None, 403: None, 404: None, 409: None})
+    def post(self, request: Request, feedback_id: uuid.UUID) -> Response:
+        from stingops import feedback_ops
+
+        auth = _operator(request)
+        if auth is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        try:
+            out = feedback_ops.update_public(
                 feedback_id,
                 status=str(body.get("status") or ""),
                 reply=str(body.get("reply") or ""),
