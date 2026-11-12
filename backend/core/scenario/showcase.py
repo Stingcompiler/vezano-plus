@@ -37,6 +37,17 @@ from core.tenancy import platform_context, tenant_context
 TAG = "تجريبي"
 PASSWORD = "vezano-demo-2026"  # noqa: S105 — بيئة تجريبية معلنة
 PIN = "123456"
+# رمز لكل مستخدم في المنشأة (0005 §٢٦٥): القفل يقف عند أول رمز مطابق، فرمز واحد للجميع كان يفتح لغير
+# صاحبه. المالك يبقى على `PIN`؛ ومن لا رمز له هنا يأخذ `PIN` (منشأته وحدها).
+PINS = {
+    "shop:owner": PIN,
+    "shop:manager": "234567",
+    "shop:cashier:KRT": "345678",
+    "shop:cashier:BHR": "456789",
+    "shop:storekeeper": "567890",
+    "dist:owner": PIN,
+    "dist:manager": "234567",
+}
 DAYS = 30
 
 FIXED = {
@@ -389,7 +400,7 @@ def seed_devices_and_pins(ctx: Ctx) -> None:
         )
         for k, u in ctx.users.items():
             if k.startswith("shop:"):
-                set_user_pin(u, PIN)
+                set_user_pin(u, PINS.get(k, PIN))
         ctx.bump("devices", Device.objects.count())
     with tenant_context(ctx.dist.id):
         register_device(
@@ -397,7 +408,7 @@ def seed_devices_and_pins(ctx: Ctx) -> None:
         )
         for k, u in ctx.users.items():
             if k.startswith("dist:"):
-                set_user_pin(u, PIN)
+                set_user_pin(u, PINS.get(k, PIN))
     ctx.bump("devices", 1)
 
 
