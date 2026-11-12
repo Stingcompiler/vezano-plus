@@ -523,3 +523,53 @@ test.describe("CAT-03", () => {
     await expect(root).toContainText("6291000000166");
   });
 });
+
+/** 0005 §٢٧٢ — رمز الوصول الأول («a») انتهى عمره؛ الاستئناف من الـCookie يعطي «a2». */
+async function expiredStoreToken(page: Page) {
+  const seen = { resumed: 0 };
+  await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+  await page.route("**/api/auth/resume", (route) => {
+    seen.resumed += 1;
+    return route.fulfill(
+      json(200, { access: "a2", refresh: "r2", session_id: "s", user_id: "u1", tenant_id: "t1" }),
+    );
+  });
+  return seen;
+}
+
+test("CAT-02 — رفع الصورة برمز انتهى عمره يُستأنف ويُعاد الرفع نفسه (0005 §٢٧٢)", async ({
+  page,
+}) => {
+  const seen = await expiredStoreToken(page);
+  await login(page, "/catalog/new");
+  await page.route("**/api/catalog/barcode?**", (route) =>
+    route.fulfill(json(200, { barcode: "6291041500213", taken: false })),
+  );
+  await page.route("**/api/catalog/items", (route) =>
+    route.request().method() === "POST" ? route.fulfill(json(201, card())) : route.fallback(),
+  );
+  const auths: string[] = [];
+  await page.route("**/api/catalog/items/i-new/image", (route) => {
+    const auth = route.request().headers()["authorization"] ?? "";
+    auths.push(auth);
+    return auth === "Bearer a2"
+      ? route.fulfill(
+          json(200, card({ image_present: true, image_data_url: "data:image/png;base64,x" })),
+        )
+      : route.fulfill(json(401, { detail: "token_not_valid" }));
+  });
+  await fillSugar(page);
+  await page.locator('input[type="file"][aria-label="صورة الصنف"]').setInputFiles({
+    name: "sugar.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+  await page.getByRole("button", { name: "احفظ الصنف" }).click();
+  await expect(page.locator('[data-screen="CAT-02"][data-state="success"]')).toBeVisible();
+  expect(auths).toEqual(["Bearer a", "Bearer a2"]);
+  expect(seen.resumed).toBe(1);
+  await expect(page).not.toHaveURL(/session-expired/);
+});

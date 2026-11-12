@@ -28,7 +28,7 @@ import {
   renewOperatorAfter401,
 } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
-import { apiBaseUrl, getAccessToken } from "@/lib/api";
+import { apiBaseUrl, apiFetch } from "@/lib/api";
 
 import { LINK_ICONS, LinkIconMark } from "./link-icon";
 import { PlatformIcon, type Platform } from "./platform-icon";
@@ -96,7 +96,8 @@ async function getJson(path: string, token: string | null): Promise<Response> {
 }
 
 const getPublicJson = (path: string) => getJson(path, null);
-const getOrgJson = (path: string) => getJson(path, getAccessToken());
+// 0005 §٢٧٢ — 401 يُستأنف ويُعاد؛ انتهاء الجلسة فعلاً يمرّ بمعالج ACC-08 المشترك
+const getOrgJson = (path: string) => apiFetch(path, { cache: "no-store" });
 const getOperatorJson = (path: string) => operatorFetch(path, { cache: "no-store" });
 
 function useCatalog(
@@ -293,9 +294,7 @@ export function PublicAppsSection() {
 
 /** ORG-11 — متجر التطبيقات للتاجر. */
 export function MerchantAppsClient() {
-  const router = useRouter();
-  const goLogin = useCallback(() => router.replace("/login?next=/org/apps"), [router]);
-  const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson, goLogin);
+  const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson);
   const [filter, setFilter] = useState<Platform | "">("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -304,11 +303,8 @@ export function MerchantAppsClient() {
     setBusyId(r.id);
     setMessage("");
     try {
-      const res = await fetch(`${apiBaseUrl()}/api/org/apps/${r.id}/link`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-      });
-      if (res.status === 401) return goLogin();
+      const res = await apiFetch(`/api/org/apps/${r.id}/link`, { method: "POST" });
+      if (res.status === 401) return;
       if (!res.ok) throw new Error(String(res.status));
       const { url } = (await res.json()) as { url: string };
       // مدير تنزيلات المتصفح يتولّى الملف: لا يُحمَّل في ذاكرة الصفحة

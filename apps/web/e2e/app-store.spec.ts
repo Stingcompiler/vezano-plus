@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { expectFrame } from "./frame-match";
 import { navTo } from "./nav";
@@ -301,4 +301,37 @@ test.describe("متجر التطبيقات", () => {
     await expect(section.locator('.vz-app__icon [data-link-icon="google_play"]')).toHaveCount(1);
     await expect(section.getByRole("link", { name: "سجّل الدخول للتنزيل" })).toHaveCount(1);
   });
+});
+
+/** 0005 §٢٧٢ — رمز الوصول الأول («a») انتهى عمره؛ الاستئناف من الـCookie يعطي «a2». */
+async function expiredStoreToken(page: Page) {
+  const seen = { resumed: 0 };
+  await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+  await page.route("**/api/auth/resume", (route) => {
+    seen.resumed += 1;
+    return route.fulfill(
+      json(200, { access: "a2", refresh: "r2", session_id: "s", user_id: "u1", tenant_id: "t1" }),
+    );
+  });
+  return seen;
+}
+
+test("ORG-11 — القائمة برمز انتهى عمره تُستأنف وتُعاد بدل التحويل إلى الدخول (0005 §٢٧٢)", async ({
+  page,
+}) => {
+  const seen = await expiredStoreToken(page);
+  const auths: string[] = [];
+  await page.route("**/api/org/apps", (route) => {
+    const auth = route.request().headers()["authorization"] ?? "";
+    auths.push(auth);
+    return auth === "Bearer a2"
+      ? route.fulfill(json(200, { releases: MERCHANT }))
+      : route.fulfill(json(401, { detail: "token_not_valid" }));
+  });
+  await login(page, "/org/apps");
+  await expect(page.locator('[data-screen="ORG-11"][data-state="ready"]')).toBeVisible();
+  await expect(page).toHaveURL(/\/org\/apps$/);
+  expect(auths[0]).toBe("Bearer a");
+  expect(auths.at(-1)).toBe("Bearer a2");
+  expect(seen.resumed).toBeGreaterThanOrEqual(1);
 });

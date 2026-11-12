@@ -8,7 +8,7 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import { AppNav } from "@/features/home/app-nav";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 
 type State = "ready" | "loading" | "validation_error" | "partial" | "success" | "server_error";
@@ -156,9 +156,8 @@ export function ImportClient() {
 
   const downloadRejected = async () => {
     if (!batch) return;
-    const res = await fetch(`${apiBaseUrl()}/api/catalog/prices/import/${batch.id}/rejected.csv`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    });
+    const res = await apiFetch(`/api/catalog/prices/import/${batch.id}/rejected.csv`);
+    if (!res.ok) return;
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
