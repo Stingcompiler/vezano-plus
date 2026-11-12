@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (218 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (227 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -24,6 +24,7 @@ export const API_ERROR_CODES = [
   "ambiguous_name",
   "amount_mismatch",
   "approval_pending",
+  "attachment_invalid",
   "audience_or_duration_required",
   "audience_out_of_tenant",
   "audience_value_invalid",
@@ -168,6 +169,7 @@ export const API_ERROR_CODES = [
   "publish_suspended",
   "qty_invalid",
   "range_too_wide",
+  "rate_limited",
   "reason_required",
   "reasons_required",
   "reconciling",
@@ -175,6 +177,8 @@ export const API_ERROR_CODES = [
   "reference_used",
   "reject_reason_required",
   "release_exists",
+  "reply_required",
+  "reply_too_long",
   "resend_limit",
   "resend_too_soon",
   "retry_after",
@@ -191,13 +195,17 @@ export const API_ERROR_CODES = [
   "session_expired",
   "session_revoked",
   "shift_open",
+  "shop_unknown",
   "similar_party",
+  "status_invalid",
   "storage_full",
   "tenant_account",
   "tenant_account_email",
   "tenant_not_found",
   "tenant_only_when_converted",
   "tenant_session_required",
+  "text_required",
+  "text_too_long",
   "tier_gap",
   "token_invalid",
   "too_wide",
@@ -209,6 +217,7 @@ export const API_ERROR_CODES = [
   "trial_only",
   "trial_single",
   "unauthenticated",
+  "unchanged",
   "undo_expired",
   "unit_not_found",
   "unknown_action",
@@ -464,6 +473,22 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "operator_required",
+    },
+  ],
+  "GET /api/platform/feedback": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+  ],
+  "GET /api/platform/feedback/{tenant_id}/{feedback_id}/attachment": [
+    {
+      status: 403,
+      code: "operator_required",
+    },
+    {
+      status: 404,
+      code: "not_found",
     },
   ],
   "GET /api/platform/messages": [
@@ -1740,6 +1765,46 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "no_global_override",
     },
   ],
+  "POST /api/platform/feedback/public/{feedback_id}": [
+    {
+      status: 400,
+      code: "no_email",
+    },
+    {
+      status: 400,
+      code: "reply_required",
+    },
+    {
+      status: 403,
+      code: "operator_required",
+    },
+    {
+      status: 404,
+      code: "not_found",
+    },
+    {
+      status: 409,
+      code: "unchanged",
+    },
+  ],
+  "POST /api/platform/feedback/{tenant_id}/{feedback_id}": [
+    {
+      status: 400,
+      code: "reply_too_long",
+    },
+    {
+      status: 400,
+      code: "status_invalid",
+    },
+    {
+      status: 404,
+      code: "not_found",
+    },
+    {
+      status: 409,
+      code: "unchanged",
+    },
+  ],
   "POST /api/platform/flags": [
     {
       status: 400,
@@ -2092,6 +2157,32 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "code_invalid",
     },
   ],
+  "POST /api/public/feedback": [
+    {
+      status: 400,
+      code: "email_invalid",
+    },
+    {
+      status: 400,
+      code: "kind_invalid",
+    },
+    {
+      status: 400,
+      code: "shop_unknown",
+    },
+    {
+      status: 400,
+      code: "text_required",
+    },
+    {
+      status: 400,
+      code: "text_too_long",
+    },
+    {
+      status: 429,
+      code: "rate_limited",
+    },
+  ],
   "POST /api/sales/duplicates/decide": [
     {
       status: 400,
@@ -2130,6 +2221,28 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 400,
       code: "invalid_envelope",
+    },
+  ],
+  "POST /api/support/feedback": [
+    {
+      status: 400,
+      code: "attachment_invalid",
+    },
+    {
+      status: 400,
+      code: "kind_invalid",
+    },
+    {
+      status: 400,
+      code: "text_required",
+    },
+    {
+      status: 400,
+      code: "text_too_long",
+    },
+    {
+      status: 429,
+      code: "rate_limited",
     },
   ],
   "POST /api/support/reports": [
