@@ -69,3 +69,27 @@ export function ean13Modules(code: string): string {
   for (let i = 7; i <= 12; i++) out += R[Number(code[i])] ?? "";
   return out + "101";
 }
+
+/** شريط واحد متصل في النمط: بدايته وعرضه بوحدات النمط (0…95). */
+export interface BarRun {
+  readonly x: number;
+  readonly w: number;
+}
+
+/** خطوط EAN-13 أشرطةً متصلة — يرسمها الملصق (SVG في الويب والجوال) والإيصال الحراري (لوحة raster). */
+export function ean13Bars(code: string): BarRun[] {
+  const m = ean13Modules(code);
+  const bars: BarRun[] = [];
+  let i = 0;
+  while (i < m.length) {
+    if (m[i] !== "1") {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < m.length && m[j] === "1") j++;
+    bars.push({ x: i, w: j - i });
+    i = j;
+  }
+  return bars;
+}

@@ -276,6 +276,9 @@ export function CatalogClient() {
           <Link href="/catalog/groups" className="c-btn c-btn--secondary">
             المجموعات
           </Link>
+          <Link href="/catalog/labels" className="c-btn c-btn--secondary">
+            اطبع ملصقات
+          </Link>
         </div>
 
         {canAssign && missing > 0 && online ? (

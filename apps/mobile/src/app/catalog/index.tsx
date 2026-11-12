@@ -257,6 +257,13 @@ export default function CatalogIndex() {
           />
         </View>
       </View>
+      <View style={{ marginBottom: SPACE["4"] }}>
+        <Button
+          label={tx(T, "اطبع ملصقات")}
+          variant="secondary"
+          onPress={() => router.push("/catalog/labels")}
+        />
+      </View>
       {canAssign && missing > 0 && state !== "offline" ? (
         <View style={{ gap: SPACE["2"], marginBottom: SPACE["4"] }}>
           <AppText variant="note" muted>

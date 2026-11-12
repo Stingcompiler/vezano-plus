@@ -3,7 +3,13 @@
  * الإيصالات المختارة في DESK-02 — بلا حوار — والفشل يدخل طابور الطباعة بحالته وأثره (لا أثر على
  * الدفتر). بلا طابعة مختارة يبقى سلوك الويب: «system» فيطبع بحوار النظام. خارج Tauri: الويب كما هو.
  */
-import { renderCanvas, toEscPos } from "@/lib/print/raster";
+import {
+  type LabelPrint,
+  labelsEscPos,
+  type PaperWidth,
+  renderCanvas,
+  toEscPos,
+} from "@/lib/print/raster";
 
 import * as web from "../../../web/src/lib/print/printers";
 import { native, type PrintTarget } from "./native";
@@ -54,6 +60,40 @@ export async function printReceiptOnDevice(
       ref: doc.number,
       copy: doc.copy,
       source: doc.dateLabel,
+      at: new Date().toISOString(),
+      state: "failed",
+      effect: "لا أثر على الدفتر.",
+      bytes: toBase64(bytes),
+      target,
+    });
+    return "failed";
+  }
+}
+
+/** ملصقات CAT-07 (0005 §٢٧٠): ESC/POS خام إلى طابعة الإيصالات المختارة بلا حوار؛ الفشل إلى الطابور. */
+export async function printLabelsOnDevice(
+  labels: readonly LabelPrint[],
+  width: PaperWidth,
+): Promise<"printed" | "failed" | "unknown" | "system"> {
+  if (!active()) return web.printLabelsOnDevice(labels, width);
+  const choice = await loadChoice();
+  const target: PrintTarget | null = choice?.receipts
+    ? { printer: choice.receipts }
+    : choice?.networkIp
+      ? { address: choice.networkIp }
+      : null;
+  if (!target) return web.printLabelsOnDevice(labels, width);
+  const bytes = labelsEscPos(labels, width);
+  try {
+    await native.printRaw(target, bytes);
+    return "printed";
+  } catch {
+    await addJob({
+      id: `labels-${Date.now()}`,
+      name: "ملصقات الأصناف",
+      ref: String(labels.length),
+      copy: false,
+      source: "الكتالوج",
       at: new Date().toISOString(),
       state: "failed",
       effect: "لا أثر على الدفتر.",

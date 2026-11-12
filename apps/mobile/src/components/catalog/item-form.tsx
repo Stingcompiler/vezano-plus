@@ -280,6 +280,15 @@ export function ItemForm({
                   router.push({ pathname: "/catalog/[id]/price", params: { id: initial.id } })
                 }
               />
+              {initial.barcode || initial.units.some((u) => u.barcode) ? (
+                <Button
+                  label={tx(F, "اطبع ملصقات")}
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({ pathname: "/catalog/labels", params: { item: initial.id } })
+                  }
+                />
+              ) : null}
             </>
           ) : null}
         </View>

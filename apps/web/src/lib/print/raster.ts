@@ -7,6 +7,8 @@
  * يظهر في أحدها لا في كلّها (ACC-83).
  */
 
+import { ean13Bars } from "@sting/domain";
+
 export type PaperWidth = 58 | 80;
 
 /** عرض النقاط الشائع لرؤوس 203dpi — يُقاس فعلياً على الطراز ولا يُفترض (§١٢.٣). */
@@ -20,6 +22,10 @@ export interface RasterLine {
   /** سطر بعمودين: النص في البداية والقيمة في النهاية (أرقام لاتينية). */
   readonly value?: string;
   readonly barcode?: string;
+  /** EAN-13 بخطوطه وأرقامه تحته (ملصقات CAT-07؛ 0005 §٢٧٠). */
+  readonly ean13?: string;
+  /** سطر يُضغط ليتّسع لعرض الورقة بدل أن يُقصّ (اسم صنف طويل على ملصق). */
+  readonly fit?: boolean;
 }
 
 export interface RasterDoc {
@@ -93,6 +99,35 @@ function drawBarcode(
   }
 }
 
+const EAN_BAR_H = 72;
+const EAN_DIGITS_H = 26;
+
+/** خطوط EAN-13 بعرض وحدة ثابت (2–4 نقاط) ومنطقة هادئة 10 وحدات كل جانب، والأرقام تحتها. */
+function drawEan13(
+  ctx: CanvasRenderingContext2D,
+  code: string,
+  x0: number,
+  y: number,
+  w: number,
+  mono: string,
+) {
+  const unit = Math.max(2, Math.min(4, Math.floor(w / 115)));
+  const left = x0 + Math.floor((w - 95 * unit) / 2);
+  ctx.fillStyle = "#000";
+  for (const b of ean13Bars(code)) ctx.fillRect(left + b.x * unit, y, b.w * unit, EAN_BAR_H);
+  ctx.font = `500 20px ${mono}`;
+  ctx.textAlign = "center";
+  ctx.direction = "ltr";
+  ctx.fillText(code, x0 + w / 2, y + EAN_BAR_H + 4);
+  ctx.direction = "rtl";
+}
+
+function monoFont(): string {
+  if (typeof document === "undefined") return "monospace";
+  const f = getComputedStyle(document.body).getPropertyValue("--font-mono").trim();
+  return f || "monospace";
+}
+
 function uiFont(): string {
   if (typeof document === "undefined") return "sans-serif";
   const f = getComputedStyle(document.body).getPropertyValue("--font-ui").trim();
@@ -112,7 +147,11 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
   const rows: { line: RasterLine; y: number; h: number }[] = [];
   for (const line of doc.lines) {
     const size = line.size ?? 22;
-    const h = line.barcode ? 60 + 12 : Math.round(size * 1.5);
+    const h = line.barcode
+      ? 60 + 12
+      : line.ean13
+        ? EAN_BAR_H + EAN_DIGITS_H + 10
+        : Math.round(size * 1.5);
     rows.push({ line, y: height, h });
     height += h;
   }
@@ -130,6 +169,10 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
       drawBarcode(ctx, line.barcode, pad, y + 6, width - pad * 2);
       continue;
     }
+    if (line.ean13) {
+      drawEan13(ctx, line.ean13, pad, y + 4, width - pad * 2, monoFont());
+      continue;
+    }
     const size = line.size ?? 22;
     ctx.font = `${line.bold ? "700" : "400"} ${size}px ${font}`;
     if (line.value !== undefined) {
@@ -144,7 +187,8 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
     const align = line.align ?? "start";
     ctx.textAlign = align === "center" ? "center" : align === "end" ? "left" : "right";
     const x = align === "center" ? width / 2 : align === "end" ? pad : width - pad;
-    ctx.fillText(line.text, x, y);
+    if (line.fit) ctx.fillText(line.text, x, y, width - pad * 2);
+    else ctx.fillText(line.text, x, y);
   }
   return canvas;
 }
@@ -181,5 +225,36 @@ export function toEscPos(canvas: HTMLCanvasElement): Uint8Array {
   out.set(head, 0);
   out.set(bitmap, head.length);
   out.set(tail, head.length + bitmap.length);
+  return out;
+}
+
+/** ملصق واحد على ورق الإيصال (CAT-07): الاسم، ثم الخطوط والأرقام، ثم السعر إن طُلب — قصّة لكل ملصق. */
+export interface LabelPrint {
+  readonly label: string;
+  readonly barcode: string;
+  /** السعر منسَّقاً بأرقام لاتينية — غائب = ملصق بلا سعر (الافتراض). */
+  readonly price?: string | undefined;
+}
+
+export function labelDoc(l: LabelPrint, width: PaperWidth): RasterDoc {
+  return {
+    width,
+    lines: [
+      { text: l.label, align: "center", size: 24, bold: true, fit: true },
+      { text: "", ean13: l.barcode },
+      ...(l.price ? [{ text: l.price, align: "center" as const, size: 24, bold: true }] : []),
+    ],
+  };
+}
+
+/** كل الملصقات بايتات ESC/POS متتالية — كل ملصق صورة بقصّته. */
+export function labelsEscPos(labels: readonly LabelPrint[], width: PaperWidth): Uint8Array {
+  const parts = labels.map((l) => toEscPos(renderCanvas(labelDoc(l, width))));
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
   return out;
 }
