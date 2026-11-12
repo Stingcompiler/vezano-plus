@@ -128,6 +128,29 @@ test.describe("بقاء الجلسة", () => {
     await expect.poll(() => remembered).toBe("r2"); // الرمز المدوَّر يُحفظ من جديد
   });
 
+  test("رمز صاحب الجلسة يطابق رمز مستخدم آخر قبله في القائمة: يُستأنف صاحب الجلسة لا الدخول", async ({
+    page,
+  }) => {
+    // البذر يعطي المالك والكاشير الرمز نفسه، وترتيب المتحققات من الخادم غير مضمون: كان الرمز يقع على
+    // الأول (الكاشير) فلا يطابق السياق المحفوظ (المالك) ويُرسَل إلى الدخول
+    await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+    let resumes = 0;
+    await page.route("**/api/auth/resume", (route) => {
+      resumes += 1;
+      return route.fulfill(json(200, RESUMED));
+    });
+    await liveSession(page, "/org/subscription");
+    await seedDevice(page, [row("u2", "أحمد ياسين"), row("u1", "سميّة عبد الله")]);
+    await page.reload();
+    await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/);
+    // القفل يعرض صاحب السياق المحفوظ لا أول القائمة
+    await expect(page.locator('[data-screen="ACC-07"]')).toContainText("سميّة عبد الله");
+    await expect(page.locator('[data-screen="ACC-07"]')).not.toContainText("أحمد ياسين");
+    await typePin(page, "123456");
+    await expect(page).toHaveURL(/\/org\/subscription$/);
+    expect(resumes).toBe(1);
+  });
+
   test("مراجعة 2026-10-19 B1: جهاز مُجهَّز ومستخدم بلا PIN — إعادة التحميل تُستأنف ولا تمرّ بقفل مسدود", async ({
     page,
   }) => {

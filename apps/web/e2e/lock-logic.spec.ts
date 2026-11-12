@@ -114,6 +114,17 @@ test.describe("القفل — مراجعة المنطق", () => {
     await expect(page).toHaveURL(/\/org\/subscription$/);
   });
 
+  test("رمز صاحب الجلسة يطابق رمز مستخدم قبله في القائمة: يُفتح لصاحب الجلسة", async ({ page }) => {
+    await page.clock.install();
+    await liveSession(page, "/org/subscription");
+    // الرمز نفسه لمستخدمين (البذر يعطيه للمالك والكاشير) والآخر أولاً في القائمة
+    await seedDevice(page, [row("u2", "أحمد ياسين"), row("u1", "سميّة عبد الله")]);
+    await page.clock.fastForward("21:00");
+    await expect(page).toHaveURL(/\/lock\?next=%2Forg%2Fsubscription$/);
+    await typePin(page, "123456");
+    await expect(page).toHaveURL(/\/org\/subscription$/);
+  });
+
   test("رمز مستخدم آخر لا يفتح جلسة غيره", async ({ page }) => {
     await page.clock.install();
     await liveSession(page, "/org/subscription");
