@@ -21,7 +21,12 @@ import "@/features/sys/sys.css";
 import "@/features/platform/platform.css";
 import "./store.css";
 import { AppNav } from "@/features/home/app-nav";
-import { operatorRole, operatorToken } from "@/features/platform/operator-session";
+import {
+  operatorFetch,
+  operatorRole,
+  operatorToken,
+  renewOperatorAfter401,
+} from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
 import { apiBaseUrl, getAccessToken } from "@/lib/api";
 
@@ -90,14 +95,22 @@ async function getJson(path: string, token: string | null): Promise<Response> {
   });
 }
 
-function useCatalog(path: string, token: () => string | null, onUnauthorized?: () => void) {
+const getPublicJson = (path: string) => getJson(path, null);
+const getOrgJson = (path: string) => getJson(path, getAccessToken());
+const getOperatorJson = (path: string) => operatorFetch(path, { cache: "no-store" });
+
+function useCatalog(
+  path: string,
+  get: (path: string) => Promise<Response>,
+  onUnauthorized?: () => void,
+) {
   const [rows, setRows] = useState<Release[] | null>(null);
   const [failed, setFailed] = useState(false);
   const load = useCallback(async () => {
     try {
-      const r = await getJson(path, token());
-      if (r.status === 401 && onUnauthorized) {
-        onUnauthorized();
+      const r = await get(path);
+      if (r.status === 401) {
+        onUnauthorized?.();
         return;
       }
       if (!r.ok) throw new Error(String(r.status));
@@ -107,7 +120,7 @@ function useCatalog(path: string, token: () => string | null, onUnauthorized?: (
     } catch {
       setFailed(true);
     }
-  }, [path, token, onUnauthorized]);
+  }, [path, get, onUnauthorized]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -226,8 +239,7 @@ function List({
  * العام يقود إليه (§٢٢٤): بلا إصدارات أو مع تعذّر التحميل يقول ذلك بدل أن يختفي.
  */
 export function PublicAppsSection() {
-  const token = useCallback(() => null, []);
-  const { rows, failed } = useCatalog("/api/public/apps", token);
+  const { rows, failed } = useCatalog("/api/public/apps", getPublicJson);
   const [filter, setFilter] = useState<Platform | "">("");
   return (
     <section id="lp-apps" className="lp__section" aria-labelledby="lp-apps-title">
@@ -283,7 +295,7 @@ export function PublicAppsSection() {
 export function MerchantAppsClient() {
   const router = useRouter();
   const goLogin = useCallback(() => router.replace("/login?next=/org/apps"), [router]);
-  const { rows, failed, load } = useCatalog("/api/org/apps", getAccessToken, goLogin);
+  const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson, goLogin);
   const [filter, setFilter] = useState<Platform | "">("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -376,7 +388,8 @@ export function MerchantAppsClient() {
 export function OperatorAppsClient() {
   const router = useRouter();
   const goLogin = useCallback(() => router.replace("/platform/login"), [router]);
-  const { rows, setRows, failed, load } = useCatalog("/api/platform/apps", operatorToken, goLogin);
+  // 0005 §٢٧١ — 401 يُستأنف ويُعاد؛ انتهاء الجلسة فعلاً يقود إلى الدخول بوجهة العودة (الحاجز)
+  const { rows, setRows, failed, load } = useCatalog("/api/platform/apps", getOperatorJson);
   const [filter, setFilter] = useState<Platform | "">("");
   const [platform, setPlatform] = useState<Platform>("android");
   const [name, setName] = useState("Vezano Plus");
@@ -426,13 +439,30 @@ export function OperatorAppsClient() {
     } else if (file) body.set("file", file);
     setBusy(true);
     // XHR لا fetch: تقدّم رفع ملف كبير على شبكة بطيئة
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${apiBaseUrl()}/api/platform/apps`);
-    xhr.setRequestHeader("Authorization", `Bearer ${operatorToken() ?? ""}`);
-    xhr.upload.onprogress = (ev) => {
-      if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
+    const send = (access: string, retry: boolean) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${apiBaseUrl()}/api/platform/apps`);
+      xhr.setRequestHeader("Authorization", `Bearer ${access}`);
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
+      };
+      xhr.onloadend = () => {
+        // 0005 §٢٧١ — رمز انتهى عمره أثناء ملء النموذج: يُستأنف مرة ويُعاد الرفع نفسه
+        if (xhr.status === 401 && retry) {
+          void renewOperatorAfter401().then((fresh) => {
+            if (fresh) send(fresh, false);
+            else {
+              setBusy(false);
+              setProgress(undefined);
+            }
+          });
+          return;
+        }
+        done(xhr);
+      };
+      xhr.send(body);
     };
-    xhr.onloadend = () => {
+    const done = (xhr: XMLHttpRequest) => {
       setBusy(false);
       setProgress(undefined);
       let detail = "";
@@ -450,7 +480,7 @@ export function OperatorAppsClient() {
       } else if (xhr.status === 401) goLogin();
       else setError(ERRORS[detail] ?? "تعذّر النشر. تحقّق من الاتصال وأعد المحاولة.");
     };
-    xhr.send(body);
+    send(operatorToken() ?? "", true);
   };
 
   const remove = async (r: Release) => {
@@ -460,10 +490,7 @@ export function OperatorAppsClient() {
       )
     )
       return;
-    const res = await fetch(`${apiBaseUrl()}/api/platform/apps/${r.id}/remove`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${operatorToken() ?? ""}` },
-    });
+    const res = await operatorFetch(`/api/platform/apps/${r.id}/remove`, { method: "POST" });
     if (res.ok) {
       setRows(((await res.json()) as { releases: Release[] }).releases);
       setMessage("سُحب الإصدار.");
