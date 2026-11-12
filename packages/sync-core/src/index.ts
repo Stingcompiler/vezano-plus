@@ -33,3 +33,4 @@ export * from "./transfer-local";
 export * from "./transfer-receipt-local";
 export * from "./sync-log";
 export * from "./backup";
+export * from "./labels-local";

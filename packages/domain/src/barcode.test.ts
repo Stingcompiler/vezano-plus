@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { ean13CheckDigit, ean13Modules, isStoreInternalBarcode, isValidEan13 } from "./barcode";
+import {
+  ean13Bars,
+  ean13CheckDigit,
+  ean13Modules,
+  isStoreInternalBarcode,
+  isValidEan13,
+} from "./barcode";
 
 /** قارئ مستقل للنمط: يعيد الخانات الثلاث عشرة من 95 وحدة — يثبت أن الرسم يُقرأ كما كُتب. */
 const L = [
@@ -83,5 +89,14 @@ describe("EAN-13 (0005 §٢٦٩)", () => {
       expect(decode(ean13Modules(code))).toBe(code);
     }
     expect(() => ean13Modules("2000000000016")).toThrow();
+  });
+
+  it("الأشرطة المتصلة تعيد النمط نفسه", () => {
+    const code = "2000000000015";
+    const m = ean13Modules(code);
+    const rebuilt = Array.from({ length: 95 }, () => "0");
+    for (const b of ean13Bars(code)) for (let k = 0; k < b.w; k++) rebuilt[b.x + k] = "1";
+    expect(rebuilt.join("")).toBe(m);
+    expect(ean13Bars(code)[0]).toEqual({ x: 0, w: 1 });
   });
 });
