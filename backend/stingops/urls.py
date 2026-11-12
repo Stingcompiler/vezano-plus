@@ -28,6 +28,8 @@ from stingops.views import (
     OperatorDisputeActionView,
     OperatorDisputesView,
     OperatorEntitlementsView,
+    OperatorFeedbackUpdateView,
+    OperatorFeedbackView,
     OperatorFlagsView,
     OperatorHealthView,
     OperatorLoginView,
@@ -118,6 +120,12 @@ urlpatterns = [
         "platform/messages/<uuid:report_id>/handle",
         OperatorMessageHandleView.as_view(),
         name="platform-message-handle",
+    ),
+    path("platform/feedback", OperatorFeedbackView.as_view(), name="platform-feedback"),
+    path(
+        "platform/feedback/<uuid:tenant_id>/<uuid:feedback_id>",
+        OperatorFeedbackUpdateView.as_view(),
+        name="platform-feedback-update",
     ),
     path("platform/proofs", OperatorProofsView.as_view(), name="platform-proofs"),
     path(

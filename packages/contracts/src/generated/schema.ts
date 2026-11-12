@@ -3444,6 +3444,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description «الملاحظات» (0005 §٢٦٣): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
+         *     وتصفية بالنوع.
+         */
+        get: operations["platform_feedback_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/feedback/{tenant_id}/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description تغيير الحالة وكتابة الردّ — باسم المشغّل ووقته؛ يصل المرسلَ في «ملاحظاتي». */
+        post: operations["platform_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/flags": {
         parameters: {
             query?: never;
@@ -4855,6 +4892,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/support/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description «ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
+         */
+        get: operations["support_feedback_retrieve"];
+        put?: never;
+        /**
+         * @description «ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
+         */
+        post: operations["support_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/feedback/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description فتح «ملاحظاتي» يعلّم ردود الفريق مقروءة. */
+        post: operations["support_feedback_seen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/support/reports": {
         parameters: {
             query?: never;
@@ -5401,6 +5479,20 @@ export interface components {
          * @enum {string}
          */
         ExportKindEnum: "pdf" | "link";
+        FeedbackSubmit: {
+            /** Format: uuid */
+            client_id: string;
+            kind: string;
+            text: string;
+            /** @default false */
+            contact_ok: boolean;
+            /** @default  */
+            screen: string;
+            /** @default  */
+            platform: string;
+            /** @default  */
+            app_version: string;
+        };
         GroupList: {
             total_items: number;
         };
@@ -26615,6 +26707,85 @@ export interface operations {
             };
         };
     };
+    platform_feedback_retrieve: {
+        parameters: {
+            query?: {
+                kind?: string;
+                page?: number;
+                page_size?: number;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     platform_flags_create: {
         parameters: {
             query?: never;
@@ -29512,6 +29683,99 @@ export interface operations {
             };
             /** @description No response body */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackSubmit"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_seen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

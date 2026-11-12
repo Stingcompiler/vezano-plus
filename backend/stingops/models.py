@@ -446,9 +446,9 @@ class SubscriptionEvent(models.Model):
 
 
 class OperatorNotice(models.Model):
-    """0005 §١٩٠ — إشعار لفريق المنصة: حدثٌ وصل من تاجر ويحتاج نظراً (منشأة جديدة بانتظار الاعتماد،
-    إيصال دفع، رسالة دعم، طلب جولة، تحقّق، بلاغ سوق). صندوق مشترك للفريق: أول من يقرأ يعلّمه مقروءاً
-    باسمه. لا يحمل بيانات دفتر؛ يحمل عنواناً قصيراً ورابطاً إلى شاشة الأصل."""
+    """0005 §١٩٠ — إشعار لفريق المنصة: حدثٌ وصل من تاجر ويحتاج نظراً (منشأة جديدة بانتظار
+    الاعتماد، إيصال دفع، رسالة دعم، طلب جولة، تحقّق، بلاغ سوق، ملاحظة تاجر). صندوق مشترك للفريق:
+    أول من يقرأ يعلّمه مقروءاً باسمه. لا يحمل بيانات دفتر؛ يحمل عنواناً قصيراً ورابطاً إلى شاشة الأصل."""
 
     class Kind(models.TextChoices):
         TENANT_PENDING = "tenant_pending", "منشأة بانتظار الاعتماد"
@@ -457,6 +457,7 @@ class OperatorNotice(models.Model):
         DEMO = "demo", "طلب جولة"
         VERIFICATION = "verification", "طلب تحقّق"
         MARKET_REPORT = "market_report", "بلاغ سوق"
+        FEEDBACK = "feedback", "ملاحظة تاجر"
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     kind = models.CharField(max_length=16, choices=Kind.choices)

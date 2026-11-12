@@ -375,6 +375,97 @@ class SupportReportView(APIView):
         )
 
 
+class FeedbackSubmitSerializer(serializers.Serializer[dict[str, Any]]):
+    client_id = serializers.UUIDField()
+    kind = serializers.CharField(max_length=12)
+    text = serializers.CharField(max_length=2000, allow_blank=True)
+    contact_ok = serializers.BooleanField(required=False, default=False)
+    screen = serializers.CharField(max_length=80, allow_blank=True, required=False, default="")
+    platform = serializers.CharField(max_length=20, allow_blank=True, required=False, default="")
+    app_version = serializers.CharField(max_length=80, allow_blank=True, required=False, default="")
+
+
+def _tenant_auth(request: Request) -> AuthContext | None:
+    auth = request.auth
+    if not isinstance(auth, AuthContext) or auth.tenant_id is None:
+        return None
+    return auth
+
+
+class FeedbackView(APIView):
+    """«ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+    الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None})
+    def get(self, request: Request) -> Response:
+        from sync import feedback
+
+        auth = _tenant_auth(request)
+        if auth is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(auth.tenant_id):  # type: ignore[arg-type]
+            return Response(feedback.mine(auth.user.id))
+
+    @extend_schema(
+        request=FeedbackSubmitSerializer, responses={200: None, 201: None, 400: None, 429: None}
+    )
+    def post(self, request: Request) -> Response:
+        from stingops.inbox import emit
+        from sync import feedback
+
+        auth = _tenant_auth(request)
+        if auth is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        s = FeedbackSubmitSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        v = s.validated_data
+        try:
+            with tenant_context(auth.tenant_id):  # type: ignore[arg-type]
+                f, created = feedback.submit(
+                    tenant_id=auth.tenant_id,  # type: ignore[arg-type]
+                    user_id=auth.user.id,
+                    user_name=auth.user.display_name,
+                    device_id=auth.device.id if auth.device else None,
+                    client_id=v["client_id"],
+                    kind=v["kind"],
+                    text=v["text"],
+                    contact_ok=bool(v.get("contact_ok")),
+                    screen=v.get("screen", ""),
+                    platform=v.get("platform", ""),
+                    app_version=v.get("app_version", ""),
+                )
+                out = feedback.row(f)
+        except feedback.FeedbackRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+        if created:
+            emit(
+                "feedback",
+                f"ملاحظة تاجر {f.reference} · {out['kind_label']}",
+                body=f.text[:200],
+                href="/platform/feedback",
+                tenant_id=auth.tenant_id,
+            )
+        return Response(out, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class FeedbackSeenView(APIView):
+    """فتح «ملاحظاتي» يعلّم ردود الفريق مقروءة."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 403: None})
+    def post(self, request: Request) -> Response:
+        from sync import feedback
+
+        auth = _tenant_auth(request)
+        if auth is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(auth.tenant_id):  # type: ignore[arg-type]
+            return Response(feedback.mark_seen(auth.user.id))
+
+
 BACKUP_MAX_BYTES = 15 * 1024 * 1024
 
 

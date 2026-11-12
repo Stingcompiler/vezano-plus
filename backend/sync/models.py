@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from django.db import models
+from django.utils import timezone
 
 from core.models import Tenant, TenantScoped
 from core.tenancy import TenantManager
@@ -137,6 +138,53 @@ class SupportReport(TenantScoped):
                 fields=["tenant", "reference"], name="sync_supportreport_reference"
             ),
         ]
+
+    def __str__(self) -> str:
+        return self.reference
+
+
+class Feedback(TenantScoped):
+    """ملاحظة من مستخدم المنشأة إلى فريق فيزانو (0005 §٢٦٣): اقتراح أو مشكلة أو رأي. يرسلها أي دور —
+    لا تحمل بيانات دفتر؛ النص يُخفى منه ما يشبه رقم هاتف قبل الحفظ. الحالة والردّ يكتبهما المشغّل
+    ويراهما المرسل في «ملاحظاتي». `client_id` يجعل إعادة الإرسال من الطابور المحلي آمنة."""
+
+    class Kind(models.TextChoices):
+        SUGGESTION = "suggestion", "اقتراح"
+        PROBLEM = "problem", "مشكلة"
+        OPINION = "opinion", "رأي"
+
+    class Status(models.TextChoices):
+        NEW = "new", "جديدة"
+        STUDYING = "studying", "قيد الدراسة"
+        DONE = "done", "نُفّذت"
+        DECLINED = "declined", "لن تُنفّذ"
+
+    reference = models.CharField(max_length=32)
+    client_id = models.UUIDField()
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    text = models.TextField()
+    contact_ok = models.BooleanField(default=False)
+    screen = models.CharField(max_length=40, blank=True, default="")
+    platform = models.CharField(max_length=10, blank=True, default="")
+    app_version = models.CharField(max_length=40, blank=True, default="")
+    user = models.UUIDField()
+    user_name = models.CharField(max_length=200, blank=True, default="")
+    device = models.UUIDField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
+    reply = models.TextField(blank=True, default="")
+    updated_by_name = models.CharField(max_length=200, blank=True, default="")
+    updated_at = models.DateTimeField(null=True, blank=True)
+    #: متى رأى المرسل آخر تحديث من الفريق — ما بعده «ردّ جديد»
+    seen_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "id"], name="sync_feedback_tenant_id"),
+            models.UniqueConstraint(fields=["tenant", "reference"], name="sync_feedback_reference"),
+            models.UniqueConstraint(fields=["tenant", "client_id"], name="sync_feedback_client_id"),
+        ]
+        indexes = [models.Index(fields=["status", "created_at"], name="sync_feedback_status")]
 
     def __str__(self) -> str:
         return self.reference

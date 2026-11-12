@@ -147,6 +147,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
     from core.models import PinVerifier, Session
     from sync.models import (
         BackupCopy,
+        Feedback,
         Member,
         Operation,
         QuarantinedOperation,
@@ -170,6 +171,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
             AccessManifest,
             SyncState,
             SupportReport,
+            Feedback,
             BackupCopy,
         ):
             model.unscoped.filter(tenant_id__in=ids).delete()

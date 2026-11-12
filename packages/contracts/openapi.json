@@ -8668,6 +8668,95 @@
         }
       }
     },
+    "/api/platform/feedback": {
+      "get": {
+        "operationId": "platform_feedback_retrieve",
+        "description": "«الملاحظات» (0005 §٢٦٣): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،\nوتصفية بالنوع.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/feedback/{tenant_id}/{feedback_id}": {
+      "post": {
+        "operationId": "platform_feedback_create",
+        "description": "تغيير الحالة وكتابة الردّ — باسم المشغّل ووقته؛ يصل المرسلَ في «ملاحظاتي».",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/flags": {
       "post": {
         "operationId": "platform_flags_create",
@@ -11719,6 +11808,65 @@
         }
       }
     },
+    "/api/support/feedback": {
+      "get": {
+        "operationId": "support_feedback_retrieve",
+        "description": "«ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ\nالفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.",
+        "tags": ["support"],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      },
+      "post": {
+        "operationId": "support_feedback_create",
+        "description": "«ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ\nالفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.",
+        "tags": ["support"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSubmit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "201": {
+            "description": "No response body"
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "429": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/support/feedback/seen": {
+      "post": {
+        "operationId": "support_feedback_seen_create",
+        "description": "فتح «ملاحظاتي» يعلّم ردود الفريق مقروءة.",
+        "tags": ["support"],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/support/reports": {
       "post": {
         "operationId": "support_reports_create",
@@ -12913,6 +13061,43 @@
         "enum": ["pdf", "link"],
         "type": "string",
         "description": "* `pdf` - pdf\n* `link` - link"
+      },
+      "FeedbackSubmit": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "contact_ok": {
+            "type": "boolean",
+            "default": false
+          },
+          "screen": {
+            "type": "string",
+            "default": "",
+            "maxLength": 80
+          },
+          "platform": {
+            "type": "string",
+            "default": "",
+            "maxLength": 20
+          },
+          "app_version": {
+            "type": "string",
+            "default": "",
+            "maxLength": 80
+          }
+        },
+        "required": ["client_id", "kind", "text"]
       },
       "GroupList": {
         "type": "object",
