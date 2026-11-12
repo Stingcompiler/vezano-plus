@@ -98,3 +98,19 @@ def test_showcase_seeds_consistent_content_and_wipes_cleanly() -> None:
     with platform_context():
         assert not Tenant.unscoped.filter(id__in=list(FIXED.values())).exists()
         assert not Account.unscoped.filter(identifier__in=[a[0] for a in ACCOUNTS]).exists()
+
+
+def test_showcase_pins_differ_within_each_tenant() -> None:
+    """0005 §٢٦٥: لكل مستخدم في المنشأة رمزه — القفل يقف عند أول رمز مطابق على الجهاز."""
+    from core.scenario.showcase import PIN, PINS
+
+    keys = {
+        f"{tkey}:{role}" + (f":{codes[0]}" if role == "cashier" else "")
+        for _, _, tkey, role, codes in ACCOUNTS
+    }
+    assert keys == set(PINS)
+    for tenant in ("shop", "dist"):
+        pins = [p for k, p in PINS.items() if k.startswith(f"{tenant}:")]
+        assert len(pins) == len(set(pins))
+        assert all(len(p) == 6 and p.isdigit() for p in pins)
+    assert PINS["shop:owner"] == PINS["dist:owner"] == PIN
