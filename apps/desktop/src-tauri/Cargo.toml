@@ -1,6 +1,6 @@
 [package]
 name = "vezano-plus-desktop"
-version = "0.1.5"
+version = "0.1.6"
 description = "فيزانو بلص — تطبيق الحاسوب (ويندوز وماك)"
 edition = "2021"
 publish = false

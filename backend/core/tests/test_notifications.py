@@ -174,3 +174,59 @@ def test_preferences_locked_operational_and_channel_destination(ctx: dict[str, A
         i["category"] != "marketing" or i["expired"]
         for i in c.get("/api/notifications", headers=h).json()["items"]
     )
+
+
+def test_stock_below_alert_threshold_notifies_and_resolves(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٦٨ (بلاغ المالك 2026-11-12: «الإشعارات لا تصل»): شاشة الإشعارات تعد بـ«تنبيهات
+    المخزون» ولم يكن شيء يُطلقها. صنف تحت حدّه في فرع = إشعار تشغيلي واحد يراه الفرع والمالك،
+    ويزول حين يعود الرصيد فوق الحدّ؛ والصنف بلا حدّ لا يُنبَّه به."""
+    from catalog.models import Item
+    from core.models import Unit
+    from inventory.models import StockMovement
+
+    c, h = Client(), _h(ctx["tokens"]["owner"])
+    with tenant_context(ctx["tenant"].id):
+        unit = Unit.objects.create(
+            tenant=ctx["tenant"], code="pc", name="حبة", is_base=True, decimal_places=0
+        )
+
+        def item(name: str, threshold: int | None) -> Item:
+            it: Item = Item.objects.create(
+                tenant=ctx["tenant"],
+                name=name,
+                name_normalized=name,
+                base_unit=unit,
+                alert_threshold_milli=threshold,
+            )
+            return it
+
+        sugar, tea, salt = item("سكر", 5000), item("شاي", 2000), item("ملح", None)
+
+        def move(it: Item, qty: int) -> None:
+            StockMovement.objects.create(
+                tenant=ctx["tenant"],
+                branch=ctx["branch"],
+                item_id=it.id,
+                delta_base_qty_milli=qty,
+                reason="adjust",
+            )
+
+        move(sugar, 3000)  # 3 < 5 — تحت الحدّ
+        move(tea, 4000)  # 4 ≥ 2 — فوقه
+        move(salt, 1000)  # بلا حدّ
+
+    items = c.get("/api/notifications", headers=h).json()["items"]
+    low = [i for i in items if i["kind"] == "stock_low"]
+    assert [i["title"] for i in low] == [f"«سكر» تحت حدّ التنبيه في {ctx['branch'].name}"]
+    assert low[0]["category"] == "operational" and low[0]["href"] == "/inventory"
+
+    # الشاي ينزل تحت حدّه، والسكر يعود فوقه
+    with tenant_context(ctx["tenant"].id):
+        move(tea, -3000)
+        move(sugar, 4000)
+    items = c.get("/api/notifications", headers=h).json()["items"]
+    live = [i["title"] for i in items if i["kind"] == "stock_low" and not i["resolved"]]
+    assert live == [f"«شاي» تحت حدّ التنبيه في {ctx['branch'].name}"]
+    with tenant_context(ctx["tenant"].id):
+        assert Notification.objects.filter(kind="stock_low").count() == 2
+        assert Notification.objects.get(dedupe_key__endswith=str(sugar.id)).resolved_at

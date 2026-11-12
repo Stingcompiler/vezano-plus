@@ -35,7 +35,7 @@ export function InboxNotifier() {
         });
         if (stopped || !response.ok || !data) return;
         const items = (data as unknown as { items?: InboxItem[] }).items ?? [];
-        const round = nextRound(items, readSeen(tenantId), { focused: document.hasFocus() });
+        const round = nextRound(items, readSeen(tenantId));
         writeSeen(tenantId, round.seen);
         for (const n of round.notify) await native.notify(n.title, n.body);
       } catch {
