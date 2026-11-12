@@ -244,22 +244,28 @@ test.describe("WEB-02", () => {
   // بلاغ المالك 2026-11-11: «فشل تفعيل الإشعارات على تطبيق سطح المكتب» — لا Web Push داخل Tauri،
   // والشاشة كانت تقول «صلاحية مرفوضة · متصفح داخل تطبيق» وأن التثبيت والعمل بلا اتصال لا يعملان.
   // إشعارات الحاسوب إشعارات نظام من شاشته DESK-05، فمن وصل هنا يُنقل إليها (§٢٥٦)
-  test("تطبيق الحاسوب: لا «صلاحية مرفوضة» — ينتقل إلى شاشة إشعارات الحاسوب", async ({ page }) => {
-    await mockServer(page);
-    await fakePush(page, { host: "desktop_app", permission: "unsupported" });
-    await seed(page);
-    await page.route("**/api/auth/account/login", (route) =>
-      route.fulfill(
-        json(200, { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" }),
-      ),
-    );
-    await page.goto("/login?next=%2Fnotify");
-    await page.getByLabel("رقم الهاتف أو البريد").fill("owner@sting.example");
-    await page.getByLabel("كلمة المرور").fill("sting-demo-2026");
-    await page.getByRole("button", { name: "دخول" }).click();
-    await expect(page).toHaveURL(/\/desktop\/notifications$/);
-    await expect(page.locator("body")).not.toContainText("صلاحية مرفوضة");
-  });
+  // ماك (WKWebView) لا يعلن واجهات Web Push فتصل «غير مدعوم»؛ ويندوز (WebView2/Chromium) يعلنها فتصل
+  // «default» — وكانت الشاشة تعرض «تفعيل الإشعارات» ثم «تعذّر الاشتراك عند المزوّد» (بلاغ المالك 2026-11-12، §٢٦٢)
+  for (const permission of ["unsupported", "default"] as const)
+    test(`تطبيق الحاسوب (${permission === "default" ? "ويندوز" : "ماك"}): لا «صلاحية مرفوضة» ولا زرّ تفعيل — ينتقل إلى إشعارات الحاسوب`, async ({
+      page,
+    }) => {
+      await mockServer(page);
+      await fakePush(page, { host: "desktop_app", permission });
+      await seed(page);
+      await page.route("**/api/auth/account/login", (route) =>
+        route.fulfill(
+          json(200, { access: "a", refresh: "r", session_id: "s", tenant_id: "t1", user_id: "u1" }),
+        ),
+      );
+      await page.goto("/login?next=%2Fnotify");
+      await page.getByLabel("رقم الهاتف أو البريد").fill("owner@sting.example");
+      await page.getByLabel("كلمة المرور").fill("sting-demo-2026");
+      await page.getByRole("button", { name: "دخول" }).click();
+      await expect(page).toHaveURL(/\/desktop\/notifications$/);
+      await expect(page.locator("body")).not.toContainText("صلاحية مرفوضة");
+      await expect(page.locator("body")).not.toContainText("تعذّر الاشتراك عند المزوّد");
+    });
 
   // أمر المالك 2026-11-11: «الإشعارات محصورة في التواصل مع الزبائن — نظّمها وخصّص لها صفحة» (§٢٥٦)
   test("القائمة: «الإشعارات» قسم وحده أوله الوارد، و«التواصل مع الزبائن» للحملات", async ({

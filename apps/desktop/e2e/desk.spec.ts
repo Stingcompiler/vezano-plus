@@ -393,6 +393,34 @@ test.describe("DESK-05", () => {
     await context.setOffline(false);
   });
 
+  // بلاغ المالك 2026-11-12 (0005 §٢٦٢): التحقق من القناة بيد المستخدم — وفشل النظام يُقال لا يُبلع
+  test("«إرسال إشعار تجريبي»: إشعار نظام بنص عام، وإن رفضه النظام قيل ذلك مع طريق الإعدادات", async ({
+    page,
+  }) => {
+    await open(page, "/desktop/notifications", { notified: [] });
+    const root = page.locator('[data-screen="DESK-05"]');
+    await root.getByRole("button", { name: "إرسال إشعار تجريبي" }).click();
+    await expect(root).toContainText("أُرسل الإشعار التجريبي");
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __stingDesk: { notified: unknown[] } }).__stingDesk.notified,
+      ),
+    ).toEqual([
+      {
+        title: "فيزانو بلص — تجربة الإشعارات",
+        body: "إن رأيت هذا فإشعارات هذا الجهاز تعمل.",
+      },
+    ]);
+    await page.evaluate(() => {
+      (window as unknown as { __stingDesk: { notifyFails: boolean } }).__stingDesk.notifyFails =
+        true;
+      document.documentElement.dataset.os = "win";
+    });
+    await root.getByRole("button", { name: "إرسال إشعار تجريبي" }).click();
+    await expect(root).toContainText("لم يُرسل الإشعار التجريبي");
+    await expect(root).toContainText("الإعدادات ← النظام ← الإشعارات ← Vezano Plus");
+  });
+
   // بلاغ المالك 2026-11-11 (0005 §٢٥٦): الشاشة تعد بإشعار نظام «مفتوح في الخلفية» ولا شيء كان يرسله
   test("متابعة الوارد: جديد غير مقروء والنافذة في الخلفية → إشعار نظام بعنوان الفئة مرة واحدة", async ({
     page,
