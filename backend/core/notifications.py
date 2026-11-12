@@ -193,6 +193,10 @@ def refresh() -> None:
     # ٤) الاشتراك والحدود — 0005 §١١٥ (تذكيرات متدرّجة، مهلة، إيقاف، سعر مقبل، حدود)
     sub = ensure_subscription()
     _subscription_alerts(sub, now)
+    # ٦) صنف تحت حدّ التنبيه في فرع — INV-01 (0005 §٢٦٨): وعدُ شاشة الإشعارات «تنبيهات
+    #    المخزون» ولم يكن شيءٌ يُطلقه. إشعار لكل صنف في كل فرع، يزول حين يعود الرصيد فوق الحدّ.
+    #    وقته آخر حركة على الصنف، فما انخفض قديماً يظهر في الوارد ولا يُدفع فورياً (MAX_AGE)
+    _stock_alerts()
     # ٥) تسويقي: باقة الفروع المتعددة — قابل للإيقاف، لا يُنبَّه به بعد انتهاء العرض (ACC-110)
     # 0005 §١٧٠ — بالميزة لا برمز الباقة: التجريبية قد تُبنى على باقة الفروع المتعددة نفسها
     if "multi_branch" not in plan_of(sub).features:
@@ -213,6 +217,52 @@ RENEWAL_STAGES: tuple[int, ...] = (1, 3, 7, 10)
 LIMIT_NEAR_PCT = 80
 PRICE_NOTICE_DAYS = 30
 _LIMIT_WORDS = {"devices": "الأجهزة", "users": "المستخدمين", "branches": "الفروع"}
+
+
+def _stock_alerts() -> None:
+    from django.db.models import Max, Sum
+
+    from catalog.models import Item
+    from core.models import Branch
+    from inventory.models import StockMovement
+
+    thresholds = dict(
+        Item.objects.filter(alert_threshold_milli__isnull=False).values_list(
+            "id", "alert_threshold_milli"
+        )
+    )
+    live: set[str] = set()
+    if thresholds:
+        rows = (
+            StockMovement.objects.filter(item_id__in=list(thresholds))
+            .values("branch_id", "item_id")
+            .annotate(total=Sum("delta_base_qty_milli"), last=Max("occurred_at"))
+        )
+        low = [r for r in rows if int(r["total"] or 0) < int(thresholds[r["item_id"]])]
+        names = dict(
+            Item.objects.filter(id__in={r["item_id"] for r in low}).values_list("id", "name")
+        )
+        branches = dict(
+            Branch.objects.filter(id__in={r["branch_id"] for r in low}).values_list("id", "name")
+        )
+        for r in low:
+            key = f"stock_low:{r['branch_id']}:{r['item_id']}"
+            live.add(key)
+            emit(
+                kind="stock_low",
+                category="operational",
+                title=(
+                    f"«{names.get(r['item_id'], '')}» تحت حدّ التنبيه في "
+                    f"{branches.get(r['branch_id'], '')}"
+                ),
+                body="اطلب منه قبل أن ينفد.",
+                href="/inventory",
+                screen="INV-01",
+                branch_id=r["branch_id"],
+                dedupe_key=key,
+                occurred_at=r["last"],
+            )
+    _resolve_stale("stock_low", live)
 
 
 def _count_days(n: int) -> str:

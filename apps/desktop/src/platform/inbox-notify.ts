@@ -47,19 +47,15 @@ export interface Round {
 /**
  * جولة متابعة: ما الجديد غير المقروء منذ آخر جولة؟
  * - `seen === null`: أول جولة لهذه المنشأة على هذا الجهاز — خطّ أساس بلا إشعار (لا نُفرغ الوارد القديم).
- * - النافذة في المقدمة: المستخدم داخل التطبيق ويرى الوارد — يُحفظ ما وصل بلا إشعار نظام.
+ * - النافذة في المقدمة تُشعَر أيضاً (0005 §٢٦٨): كان الإشعار يُحجب حينها، فلم يرَ من يعمل داخل التطبيق
+ *   شيئاً — ووعدُ DESK-05 «التطبيق مفتوح: إشعار فوراً» لم يكن له تنبيه آخر.
  */
-export function nextRound(
-  items: readonly InboxItem[],
-  seen: readonly string[] | null,
-  opts: { readonly focused: boolean },
-): Round {
+export function nextRound(items: readonly InboxItem[], seen: readonly string[] | null): Round {
   const ids = items.map((i) => i.id);
   if (seen === null) return { notify: [], seen: ids.slice(-SEEN_CAP) };
   const known = new Set(seen);
   const fresh = items.filter((i) => !known.has(i.id));
   const nextSeen = [...seen, ...fresh.map((i) => i.id)].slice(-SEEN_CAP);
-  if (opts.focused) return { notify: [], seen: nextSeen };
   const notify: NotifyText[] = [];
   for (const item of fresh) {
     if (item.read) continue;
