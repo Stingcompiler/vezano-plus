@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (227 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (228 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -31,6 +31,7 @@ export const API_ERROR_CODES = [
   "backup_unusable",
   "bad_registration_secret",
   "bad_transition",
+  "barcode_owner_or_manager",
   "below_cost",
   "blocked",
   "branch_forbidden",
@@ -865,6 +866,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "permission_denied",
+    },
+  ],
+  "POST /api/catalog/barcode/assign-missing": [
+    {
+      status: 403,
+      code: "barcode_owner_or_manager",
     },
   ],
   "POST /api/catalog/groups": [
