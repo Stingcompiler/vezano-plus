@@ -11,6 +11,7 @@ import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/sys/sys.css";
 import { AppNav } from "@/features/home/app-nav";
+import { FeedbackSection } from "@/features/sys/feedback-section";
 import { hhmm } from "@/features/home/format";
 import { DayLabel } from "@/features/pos/invoices-client";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
@@ -273,6 +274,7 @@ export function SupportClient() {
             </div>
           </div>
         </div>
+        <FeedbackSection />
       </div>
     </Frame>
   );

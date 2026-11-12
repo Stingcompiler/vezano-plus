@@ -473,6 +473,96 @@ describe("SYS-11 — الدعم", () => {
   });
 });
 
+describe("SYS-11 — ملاحظاتك (0005 §٢٦٤)", () => {
+  const K = "shared:features/sys/feedback-section.tsx";
+  it("الكاشير يرسل ملاحظة ويرى المرجع وردّ الفريق السابق", async () => {
+    await asRole("cashier");
+    const posted: Record<string, unknown>[] = [];
+    const base = server({
+      "GET /api/support/feedback": [
+        200,
+        {
+          unseen: 1,
+          items: [
+            {
+              id: "f1",
+              reference: "FB-261112-0001",
+              kind_label: "اقتراح",
+              text: "وضع ليلي",
+              status: "studying",
+              status_label: "قيد الدراسة",
+              reply: "قيد التنفيذ",
+              created_at: new Date().toISOString(),
+              unseen: true,
+            },
+          ],
+        },
+      ],
+      "POST /api/support/feedback/seen": [200, { items: [], unseen: 0 }],
+    });
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input as Request;
+      const url = new URL(typeof input === "string" ? input : req.url);
+      const method = (init?.method ?? req.method ?? "GET").toUpperCase();
+      if (method === "POST" && url.pathname === "/api/support/feedback") {
+        return req
+          .clone()
+          .json()
+          .then((b: Record<string, unknown>) => {
+            posted.push(b);
+            return new Response(
+              JSON.stringify({
+                id: "f2",
+                reference: "FB-261112-0002",
+                kind_label: "مشكلة",
+                text: b["text"],
+                status: "new",
+                status_label: "جديدة",
+                reply: "",
+                created_at: new Date().toISOString(),
+                unseen: false,
+              }),
+              { status: 201, headers: { "content-type": "application/json" } },
+            );
+          });
+      }
+      return base(input, init);
+    }) as typeof fetch;
+    await renderWith(<SupportScreen />, fetchImpl);
+    await waitFor(() => expect(screen.getByText("قيد التنفيذ")).toBeTruthy());
+    expect(screen.getByText(tx(K, "ردّ فريق فيزانو"))).toBeTruthy();
+    await fireEvent.press(btn(tx(K, "أرسل الملاحظة")));
+    await waitFor(() => expect(screen.getByText(tx(K, "اكتب ملاحظتك أولاً."))).toBeTruthy());
+    expect(posted).toHaveLength(0);
+    await fireEvent.press(btn(tx("shared:features/sys/feedback.ts", "مشكلة")));
+    await fireEvent.changeText(screen.getByLabelText(tx(K, "ملاحظتك")), "الطابعة لا تتصل");
+    await fireEvent.press(btn(tx(K, "أرسل الملاحظة")));
+    await waitFor(() => expect(screen.getByText(tx(K, "وصلت ملاحظتك"))).toBeTruthy());
+    expect(screen.getByText("FB-261112-0002")).toBeTruthy();
+    expect(posted[0]).toMatchObject({
+      kind: "problem",
+      text: "الطابعة لا تتصل",
+      platform: "mobile",
+      screen: "SYS-11",
+      contact_ok: false,
+    });
+  });
+  it("بلا اتصال: تُحفظ على الجهاز في الطابور", async () => {
+    await asRole("owner");
+    await renderWith(<SupportScreen />);
+    await fireEvent.changeText(screen.getByLabelText(tx(K, "ملاحظتك")), "أريد تقريراً بالساعة");
+    await fireEvent.press(btn(tx(K, "أرسل الملاحظة")));
+    await waitFor(() =>
+      expect(
+        screen.getByText(tx(K, "حُفظت الملاحظة على الجهاز — تُرسل عند عودة الاتصال")),
+      ).toBeTruthy(),
+    );
+    const raw = await storage.read((t) => t.getMeta("feedback.outbox"));
+    const queue = JSON.parse(raw ?? "[]") as { text: string }[];
+    expect(queue.map((q) => q.text)).toEqual(["أريد تقريراً بالساعة"]);
+  });
+});
+
 describe("NAT-03 — إذن الإشعارات", () => {
   it("حالة «غير مفعّلة بعد» صادقة بلا وحدة أصلية", async () => {
     await render(

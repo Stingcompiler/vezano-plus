@@ -10,6 +10,8 @@ from sync.bootstrap_views import (
 )
 from sync.views import (
     BackupCopyView,
+    FeedbackSeenView,
+    FeedbackView,
     PullView,
     PushView,
     QuarantineDecideView,
@@ -38,6 +40,8 @@ urlpatterns = [
     ),
     path("support/reports", SupportReportView.as_view(), name="support-reports"),
     path("support/backups", BackupCopyView.as_view(), name="support-backups"),
+    path("support/feedback", FeedbackView.as_view(), name="support-feedback"),
+    path("support/feedback/seen", FeedbackSeenView.as_view(), name="support-feedback-seen"),
     path(
         "sync/quarantine/<uuid:item_id>",
         QuarantineDetailView.as_view(),

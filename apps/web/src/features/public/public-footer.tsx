@@ -44,6 +44,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/status", label: "حالة الخدمة" },
       { href: "/legal", label: "الشروط وسياسة الخصوصية" },
       { href: "/#lp-promises", label: "بياناتك ملكك" },
+      { href: "/feedback", label: "أرسل ملاحظة" },
     ],
   },
 ];

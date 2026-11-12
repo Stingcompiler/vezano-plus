@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Share, View } from "react-native";
 
 import { DayLabel, N, Row, Strong } from "@/components/ops/ui";
+import { FeedbackSection } from "@/features/ops/feedback";
 import { call } from "@/features/ops/net";
 import { buildSupportPayload, errorLog, type SupportPayload } from "@/features/ops/diagnostics";
 import { useShiftContext } from "@/lib/pos";
@@ -264,6 +265,9 @@ export function SupportScreen() {
           ) : null}
         </>
       ) : null}
+      <View style={{ marginTop: SPACE["4"] }}>
+        <FeedbackSection />
+      </View>
       <View style={{ marginTop: SPACE["3"] }}>
         <Button
           variant="quiet"

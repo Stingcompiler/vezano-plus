@@ -341,6 +341,48 @@ class OpsFlag(models.Model):
         return f"{self.key}@{self.scope_kind}:{self.scope}={self.enabled}"
 
 
+class PublicFeedback(models.Model):
+    """0005 §٢٦٦ — ملاحظة من زائر الموقع العام أو صفحة محل (بلا حساب). **خاصة بالفريق**: لا تُنشر ولا
+    تُحوَّل إلى المحل. لا يُحفظ عنوان الزائر — بصمته المجزّأة فقط للحدّ. ما يشبه رقم هاتف يُخفى والروابط
+    تُحذف قبل الحفظ."""
+
+    class Kind(models.TextChoices):
+        PLATFORM = "platform", "اقتراح للمنصة"
+        SITE = "site", "مشكلة في الموقع"
+        SHOP = "shop", "ملاحظة عن محل"
+
+    class Status(models.TextChoices):
+        NEW = "new", "جديدة"
+        STUDYING = "studying", "قيد الدراسة"
+        DONE = "done", "نُفّذت"
+        DECLINED = "declined", "لن تُنفّذ"
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    reference = models.CharField(max_length=32, unique=True)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    text = models.TextField()
+    contact_email = models.CharField(max_length=254, blank=True, default="")
+    page = models.CharField(max_length=200, blank=True, default="")
+    shop_slug = models.CharField(max_length=24, blank=True, default="")
+    shop_name = models.CharField(max_length=200, blank=True, default="")
+    visitor_key = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
+    reply = models.TextField(blank=True, default="")
+    updated_by_name = models.CharField(max_length=200, blank=True, default="")
+    updated_at = models.DateTimeField(null=True, blank=True)
+    #: 0005 §٢٦٧: متى أُرسل ردّ الفريق إلى بريد الزائر (مرة لكل حفظ يطلبه)
+    emailed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    objects: ClassVar[models.Manager[PublicFeedback]] = models.Manager()
+
+    class Meta:
+        indexes = [models.Index(fields=["status", "created_at"], name="stingops_pubfb_status")]
+
+    def __str__(self) -> str:
+        return self.reference
+
+
 class DemoRequest(models.Model):
     """قسم «تواصل» في صفحة الهبوط (PUB-01): طلب جولة قصيرة — يُحفظ على مستوى المنصة (لا مستأجر)
     ويقرأه المشغّل؛ لا وعد بموعد ولا إرسال آلي (لا مزوّد رسائل بعد — G-02)."""
@@ -446,9 +488,9 @@ class SubscriptionEvent(models.Model):
 
 
 class OperatorNotice(models.Model):
-    """0005 §١٩٠ — إشعار لفريق المنصة: حدثٌ وصل من تاجر ويحتاج نظراً (منشأة جديدة بانتظار الاعتماد،
-    إيصال دفع، رسالة دعم، طلب جولة، تحقّق، بلاغ سوق). صندوق مشترك للفريق: أول من يقرأ يعلّمه مقروءاً
-    باسمه. لا يحمل بيانات دفتر؛ يحمل عنواناً قصيراً ورابطاً إلى شاشة الأصل."""
+    """0005 §١٩٠ — إشعار لفريق المنصة: حدثٌ وصل من تاجر ويحتاج نظراً (منشأة جديدة بانتظار
+    الاعتماد، إيصال دفع، رسالة دعم، طلب جولة، تحقّق، بلاغ سوق، ملاحظة تاجر). صندوق مشترك للفريق:
+    أول من يقرأ يعلّمه مقروءاً باسمه. لا يحمل بيانات دفتر؛ يحمل عنواناً قصيراً ورابطاً إلى شاشة الأصل."""
 
     class Kind(models.TextChoices):
         TENANT_PENDING = "tenant_pending", "منشأة بانتظار الاعتماد"
@@ -457,6 +499,7 @@ class OperatorNotice(models.Model):
         DEMO = "demo", "طلب جولة"
         VERIFICATION = "verification", "طلب تحقّق"
         MARKET_REPORT = "market_report", "بلاغ سوق"
+        FEEDBACK = "feedback", "ملاحظة تاجر"
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     kind = models.CharField(max_length=16, choices=Kind.choices)
