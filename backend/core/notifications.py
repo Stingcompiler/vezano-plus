@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from typing import Any
 
 from django.utils import timezone
@@ -197,6 +197,9 @@ def refresh() -> None:
     #    المخزون» ولم يكن شيءٌ يُطلقه. إشعار لكل صنف في كل فرع، يزول حين يعود الرصيد فوق الحدّ.
     #    وقته آخر حركة على الصنف، فما انخفض قديماً يظهر في الوارد ولا يُدفع فورياً (MAX_AGE)
     _stock_alerts()
+    # ٧) آجلٌ استحق — PTY-05 (0005 §٢٦٨، اختيار المالك «الآجلة حين تستحق» بمدة 30 يوماً): لا
+    #    موعد استحقاق للفاتورة في النظام، فالمستحق = أقدم دين غير مسدَّد مضى عليه CREDIT_DUE_DAYS
+    _credit_due_alerts(now)
     # ٥) تسويقي: باقة الفروع المتعددة — قابل للإيقاف، لا يُنبَّه به بعد انتهاء العرض (ACC-110)
     # 0005 §١٧٠ — بالميزة لا برمز الباقة: التجريبية قد تُبنى على باقة الفروع المتعددة نفسها
     if "multi_branch" not in plan_of(sub).features:
@@ -263,6 +266,67 @@ def _stock_alerts() -> None:
                 occurred_at=r["last"],
             )
     _resolve_stale("stock_low", live)
+
+
+#: مدة السماح قبل أن يُعدّ الآجل مستحقاً (اختيار المالك 2026-11-12) — للمتجر كله، لا لكل عميل
+CREDIT_DUE_DAYS = 30
+
+
+def _credit_due_alerts(now: Any) -> None:
+    """إشعار للمالك لكل عميل أقدمُ فاتورةٍ آجلة غير مسدَّدة عليه أقدم من CREDIT_DUE_DAYS؛ يزول حين يسدّد.
+
+    «غير مسدَّدة» كما يحسبها تقرير الذمم: فاتورة آجلة بعد آخر سداد. الرصيد الافتتاحي لا يدخل أعمار
+    الديون (PTY-04) فلا يُنبَّه به. الاسم والمبلغ في الوارد للمالك وحده (الكاشير لا يرى قائمة
+    الذمم)؛ والدفع الفوري بعنوان الفئة العام."""
+    from parties.models import Party
+    from parties.services import balance_minor, statement_lines
+
+    today = now.date()
+    live: set[str] = set()
+    for party in Party.objects.filter(is_customer=True, merged_into__isnull=True):
+        balance = balance_minor(party)
+        if balance <= 0:
+            continue
+        lines = [ln for ln in statement_lines(party) if not ln.info]
+        paid = [
+            ln.business_date or ln.occurred_at.date()
+            for ln in lines
+            if ln.kind in {"payment", "refund"} and ln.credit_minor > 0
+        ]
+        last_payment = max(paid, default=None)
+        unpaid = [
+            d
+            for ln in lines
+            if ln.kind == "sale" and ln.debit_minor > 0
+            for d in [ln.business_date or ln.occurred_at.date()]
+            if last_payment is None or d > last_payment
+        ]
+        if not unpaid:
+            continue
+        oldest = min(unpaid)
+        days = (today - oldest).days
+        if days < CREDIT_DUE_DAYS:
+            continue
+        key = f"credit_due:{party.id}"
+        live.add(key)
+        emit(
+            kind="credit_due",
+            category="operational",
+            title=f"على {party.name} {_money(balance)} مستحقة",
+            body=(
+                f"أقدم فاتورة آجلة غير مسدَّدة منذ {days} {_days_word(days)} — "
+                f"تجاوزت {CREDIT_DUE_DAYS} يوماً."
+            ),
+            href=f"/parties/{party.id}/statement",
+            screen="PTY-05",
+            owner_only=True,
+            dedupe_key=key,
+            # وقت الاستحقاق نفسه: ما استحق قديماً يظهر في الوارد ولا يُدفع فورياً (MAX_AGE)
+            occurred_at=timezone.make_aware(
+                datetime.combine(oldest + timedelta(days=CREDIT_DUE_DAYS), time(9))
+            ),
+        )
+    _resolve_stale("credit_due", live)
 
 
 def _count_days(n: int) -> str:
