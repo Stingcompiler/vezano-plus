@@ -12,7 +12,7 @@ import { getStorage } from "@/lib/storage";
 
 import { FEEDBACK_TEXT_MAX, type FeedbackDraft, type FeedbackRow, feedbackKinds } from "./feedback";
 
-/** الطابور المحلي: ما كُتب بلا اتصال يُرسل حين يعود (0005 §٢٦٣). */
+/** الطابور المحلي: ما كُتب بلا اتصال يُرسل حين يعود (0005 §٢٦٤). */
 export const FEEDBACK_OUTBOX_META = "feedback.outbox";
 
 type SectionState =
@@ -59,7 +59,7 @@ const ERRORS: Record<string, string> = {
 };
 
 /**
- * «ملاحظاتك» في SYS-11 (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً إلى فريق فيزانو، ويرى
+ * «ملاحظاتك» في SYS-11 (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً إلى فريق فيزانو، ويرى
  * في «ملاحظاتي» حالتها وردّ الفريق. لا بيانات منشأة؛ الخادم يُخفي ما يشبه رقم هاتف. بلا اتصال تُحفظ
  * على الجهاز (`saved_local`) وتُرسل عند عودته.
  */

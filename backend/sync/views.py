@@ -393,7 +393,7 @@ def _tenant_auth(request: Request) -> AuthContext | None:
 
 
 class FeedbackView(APIView):
-    """«ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+    """«ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى."""
 
     permission_classes = (IsAuthenticated,)

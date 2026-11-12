@@ -17,7 +17,7 @@ from django.utils import timezone
 from core.models import Tenant
 from core.tenancy import platform_context
 from stingops.models import MessageTriage, OperatorNotice
-from sync.models import SupportReport
+from sync.models import Feedback, SupportReport
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +74,11 @@ def _new_messages_count() -> int:
         return SupportReport.unscoped.exclude(id__in=done).count()
 
 
+def _new_feedback_count() -> int:
+    with platform_context():
+        return Feedback.unscoped.filter(status=Feedback.Status.NEW).count()
+
+
 def notices_payload(*, unread_only: bool = False, limit: int = 50) -> dict[str, Any]:
     limit = max(1, min(limit, NOTICE_LIMIT))
     with platform_context():
@@ -89,6 +94,8 @@ def notices_payload(*, unread_only: bool = False, limit: int = 50) -> dict[str, 
     return {
         "unread": unread,
         "new_messages": _new_messages_count(),
+        # 0005 §٢٦٤: ملاحظات التجار الجديدة — عدّاد «الملاحظات» في القائمة
+        "new_feedback": _new_feedback_count(),
         "notices": [_notice_row(r, names) for r in rows],
     }
 

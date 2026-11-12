@@ -3452,7 +3452,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description «الملاحظات» (0005 §٢٦٣): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
+         * @description «الملاحظات» (0005 §٢٦٤): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
          *     وتصفية بالنوع.
          */
         get: operations["platform_feedback_retrieve"];
@@ -4900,13 +4900,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description «ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         * @description «ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
          *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
          */
         get: operations["support_feedback_retrieve"];
         put?: never;
         /**
-         * @description «ملاحظاتك» (0005 §٢٦٣): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         * @description «ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
          *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
          */
         post: operations["support_feedback_create"];
@@ -14632,6 +14632,62 @@ export interface components {
             };
             trial_base_name: string;
         };
+        GetPlatformFeedbackResponse: {
+            counts: {
+                declined: number;
+                done: number;
+                new: number;
+                studying: number;
+            };
+            filter: string;
+            items: {
+                app_version: string;
+                contact_ok: boolean;
+                created_at: string;
+                from_name: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                platform: string;
+                reference: string;
+                reply: string;
+                screen: string;
+                status: string;
+                status_label: string;
+                tenant_id: string;
+                tenant_name: string;
+                text: string;
+                updated_at: string;
+                updated_by_name: string;
+            }[];
+            kind: string;
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
+        };
+        PostPlatformFeedbackByTenantIdByFeedbackIdResponse: {
+            app_version: string;
+            contact_ok: boolean;
+            created_at: string;
+            from_name: string;
+            id: string;
+            kind: string;
+            kind_label: string;
+            platform: string;
+            reference: string;
+            reply: string;
+            screen: string;
+            status: string;
+            status_label: string;
+            tenant_id: string;
+            tenant_name: string;
+            text: string;
+            updated_at: string;
+            updated_by_name: string;
+        };
         PostPlatformFlagsResponse: {
             flags: {
                 changed_at: string;
@@ -14832,6 +14888,7 @@ export interface components {
             tenant_name: string;
         };
         GetPlatformNoticesResponse: {
+            new_feedback: number;
             new_messages: number;
             notices: {
                 body: string;
@@ -14848,6 +14905,7 @@ export interface components {
             unread: number;
         };
         PostPlatformNoticesReadResponse: {
+            new_feedback: number;
             new_messages: number;
             notices: {
                 body: string;
@@ -17129,6 +17187,72 @@ export interface components {
         PostSupportBackupsResponse: {
             created_at: string;
             id: string;
+        };
+        GetSupportFeedbackResponse: {
+            items: {
+                client_id: string;
+                contact_ok: boolean;
+                created_at: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                reference: string;
+                reply: string;
+                status: string;
+                status_label: string;
+                text: string;
+                unseen: boolean;
+                updated_at: string;
+            }[];
+            unseen: number;
+        };
+        PostSupportFeedbackResponse200: {
+            client_id: string;
+            contact_ok: boolean;
+            created_at: string;
+            id: string;
+            kind: string;
+            kind_label: string;
+            reference: string;
+            reply: string;
+            status: string;
+            status_label: string;
+            text: string;
+            unseen: boolean;
+            updated_at: string;
+        };
+        PostSupportFeedbackResponse201: {
+            client_id: string;
+            contact_ok: boolean;
+            created_at: string;
+            id: string;
+            kind: string;
+            kind_label: string;
+            reference: string;
+            reply: string;
+            status: string;
+            status_label: string;
+            text: string;
+            unseen: boolean;
+            updated_at: string;
+        };
+        PostSupportFeedbackSeenResponse: {
+            items: {
+                client_id: string;
+                contact_ok: boolean;
+                created_at: string;
+                id: string;
+                kind: string;
+                kind_label: string;
+                reference: string;
+                reply: string;
+                status: string;
+                status_label: string;
+                text: string;
+                unseen: boolean;
+                updated_at: string;
+            }[];
+            unseen: number;
         };
         PostSupportReportsResponse: {
             created_at: string;
@@ -26726,7 +26850,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetPlatformFeedbackResponse"];
+                };
             };
             /** @description No response body */
             403: {
@@ -26754,7 +26880,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostPlatformFeedbackByTenantIdByFeedbackIdResponse"];
+                };
             };
             /** @description No response body */
             400: {
@@ -29704,7 +29832,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSupportFeedbackResponse"];
+                };
             };
             /** @description No response body */
             403: {
@@ -29733,14 +29863,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackResponse200"];
+                };
             };
             /** @description No response body */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackResponse201"];
+                };
             };
             /** @description No response body */
             400: {
@@ -29772,7 +29906,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackSeenResponse"];
+                };
             };
             /** @description No response body */
             403: {

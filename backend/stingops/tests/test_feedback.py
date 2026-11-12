@@ -1,4 +1,4 @@
-"""0005 §٢٦٣: ملاحظات التجار — أي دور يرسل، الأرقام تُخفى، الحدود، إعادة الإرسال الآمنة، و«الملاحظات»
+"""0005 §٢٦٤: ملاحظات التجار — أي دور يرسل، الأرقام تُخفى، الحدود، إعادة الإرسال الآمنة، و«الملاحظات»
 في وارد المنصة بالحالة والردّ الذي يراه المرسل."""
 
 from __future__ import annotations
@@ -93,6 +93,7 @@ def test_operator_lists_updates_and_sender_sees_reply(ctx: dict[str, Any]) -> No
     sup = _support_headers()
     # المالك لا يرى وارد المنصة
     assert c.get("/api/platform/feedback", headers=owner).status_code == 403
+    assert c.get("/api/platform/notices", headers=sup).json()["new_feedback"] == 2
     body = c.get("/api/platform/feedback", headers=sup).json()
     assert body["filter"] == "open" and body["counts"]["new"] == 2 and len(body["items"]) == 2
     assert body["items"][0]["tenant_name"] == ctx["tenant"].name

@@ -19,7 +19,7 @@ import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 /**
- * «ملاحظاتك» في SYS-11 على الجوال (نظير `apps/web/src/features/sys/feedback-section.tsx`، 0005 §٢٦٣):
+ * «ملاحظاتك» في SYS-11 على الجوال (نظير `apps/web/src/features/sys/feedback-section.tsx`، 0005 §٢٦٤):
  * أي دور يرسل اقتراحاً أو مشكلة أو رأياً إلى فريق فيزانو ويرى في «ملاحظاتي» الحالة وردّ الفريق. بلا
  * اتصال تُحفظ على الجهاز وتُرسل عند العودة إلى التطبيق. النصوص نصوص الويب نفسها (المفتاح المشترك).
  */

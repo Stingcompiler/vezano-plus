@@ -473,7 +473,7 @@ describe("SYS-11 — الدعم", () => {
   });
 });
 
-describe("SYS-11 — ملاحظاتك (0005 §٢٦٣)", () => {
+describe("SYS-11 — ملاحظاتك (0005 §٢٦٤)", () => {
   const K = "shared:features/sys/feedback-section.tsx";
   it("الكاشير يرسل ملاحظة ويرى المرجع وردّ الفريق السابق", async () => {
     await asRole("cashier");

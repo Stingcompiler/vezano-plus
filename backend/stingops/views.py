@@ -1226,7 +1226,7 @@ class OperatorMessageHandleView(APIView):
 
 
 class OperatorFeedbackView(APIView):
-    """«الملاحظات» (0005 §٢٦٣): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
+    """«الملاحظات» (0005 §٢٦٤): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
     وتصفية بالنوع."""
 
     permission_classes = (IsAuthenticated,)
