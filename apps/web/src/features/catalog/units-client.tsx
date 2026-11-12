@@ -21,6 +21,7 @@ import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 
+import { GenerateBarcodeButton, InternalBarcodeNote } from "./internal-barcode";
 import { describeError, type ItemFieldError, type ServerFieldError } from "./item-errors";
 
 type State = "ready" | "validation_error" | "success";
@@ -397,6 +398,13 @@ export function UnitsClient({ itemId }: { itemId: string }) {
               error={errorFor("barcode")}
             />
           </div>
+          <InternalBarcodeNote value={addBarcode} />
+          {addBarcode.trim() ? null : (
+            <GenerateBarcodeButton
+              onCode={setAddBarcode}
+              disabledReason={busy ? "جارٍ الحفظ" : undefined}
+            />
+          )}
           {errors
             .filter((e) => e.key === "barcode" && e.why)
             .map((e) => (

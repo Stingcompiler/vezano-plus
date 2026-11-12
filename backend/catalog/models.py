@@ -134,6 +134,25 @@ class ItemUnitFactorChange(TenantScoped):
         return f"{self.item_unit_id}:{self.old_factor_milli}->{self.new_factor_milli}"
 
 
+class InternalBarcodeCounter(TenantScoped):
+    """عدّاد الباركود الداخلي (0005 §٢٦٩): EAN-13 بالبادئة 20 + تسلسل المنشأة + خانة تحقق. صفّ واحد
+    لكل منشأة يُقفل عند التوليد، فلا يعطي الخادم رقماً مرتين ولو لم يُحفظ الأول — الفجوات مقبولة."""
+
+    last_value = models.BigIntegerField(default=0)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "id"], name="catalog_internalbarcodecounter_tenant_id"
+            ),
+            models.UniqueConstraint(fields=["tenant"], name="catalog_internalbarcodecounter_one"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.last_value}"
+
+
 class ItemAlias(TenantScoped):
     """اسم بديل للبحث لا صنف: «ببسي» و«بيبسي» و«pepsi» مداخل لصنف واحد (CAT-06)."""
 

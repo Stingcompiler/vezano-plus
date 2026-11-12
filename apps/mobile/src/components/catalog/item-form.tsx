@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { BarcodeScanner } from "@/components/barcode-scanner";
+import { GenerateBarcodeButton, InternalBarcodeNote } from "@/components/catalog/internal-barcode";
 import { M, Parts } from "@/components/catalog/parts";
 import { SelectField } from "@/components/catalog/select-field";
 import {
@@ -293,6 +294,10 @@ export function ItemForm({
         error={errorFor("barcode")}
         editable={!busy}
       />
+      <InternalBarcodeNote value={barcode} />
+      {barcode.trim() ? null : (
+        <GenerateBarcodeButton onCode={setBarcode} disabledReason={disabledReason} />
+      )}
       <View style={{ marginBottom: SPACE["3"] }}>
         <Button
           label={mtx("scanTitle")}

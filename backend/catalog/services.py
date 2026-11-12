@@ -31,6 +31,7 @@ from catalog.limits import (
     check_text,
 )
 from catalog.models import (
+    InternalBarcodeCounter,
     Item,
     ItemAlias,
     ItemGroup,
@@ -246,6 +247,75 @@ def barcode_owner(
     if iu is not None:
         return BarcodeOwner(iu.item, iu.unit.name)
     return None
+
+
+#: GS1 «للتداول داخل المتجر» (20–29): لا يحمله منتج حقيقي، ولا يصلح خارج المنشأة (0005 §٢٦٩). 21–29
+#: تبقى لباركود الميزان (المرحلة ٣ المقفلة)؛ الداخلي يأخذ 20 وحدها.
+INTERNAL_BARCODE_PREFIX = "20"
+INTERNAL_BARCODE_MAX = 9_999_999_999  # عشر خانات تسلسل بعد البادئة
+#: التوليد الجماعي على دفعات — الواجهة تعيد الطلب حتى `remaining == 0` فلا تطول معاملة واحدة
+ASSIGN_BATCH = 300
+
+
+class InternalBarcodesExhausted(Exception):
+    pass
+
+
+def ean13_check_digit(twelve: str) -> int:
+    """خانة التحقق لـ EAN-13: الأوزان 1 و3 بالتناوب من اليسار."""
+    total = sum(int(d) * (3 if i % 2 else 1) for i, d in enumerate(twelve))
+    return (10 - total % 10) % 10
+
+
+def internal_barcode(n: int) -> str:
+    body = f"{INTERNAL_BARCODE_PREFIX}{n:010d}"
+    return body + str(ean13_check_digit(body))
+
+
+def is_store_internal_barcode(code: str) -> bool:
+    """باركود داخل المتجر (20–29، 13 خانة): لا يُطابَق به صنفٌ بين منشأتين أبداً (0005 §٢٦٩)."""
+    c = code.strip()
+    return len(c) == 13 and c.isdigit() and c[0] == "2"
+
+
+def next_internal_barcode() -> str:
+    """الرقم التالي من عدّاد المنشأة تحت قفل الصفّ؛ يتخطى ما يحمله صنف أو وحدة (كُتب يدوياً)."""
+    tid = require_tenant()
+    with transaction.atomic():
+        InternalBarcodeCounter.objects.bulk_create(
+            [InternalBarcodeCounter(tenant_id=tid)], ignore_conflicts=True
+        )
+        counter = InternalBarcodeCounter.objects.select_for_update().get(tenant_id=tid)
+        n = counter.last_value
+        while True:
+            n += 1
+            if n > INTERNAL_BARCODE_MAX:
+                raise InternalBarcodesExhausted
+            code = internal_barcode(n)
+            if barcode_owner(code) is None:
+                break
+        counter.last_value = n
+        counter.updated_at = timezone.now()
+        counter.save(update_fields=["last_value", "updated_at"])
+        return code
+
+
+def missing_barcode_count() -> int:
+    return Item.objects.filter(is_active=True, barcode="").count()
+
+
+def assign_missing_barcodes(*, changed_by: User | None = None) -> tuple[int, int]:
+    """دفعة من الأصناف النشطة بلا باركود تأخذ باركوداً داخلياً كلٌّ — الأقدم أولاً. يعيد
+    (ما أُسند، ما بقي)؛ وحدات الصنف لا تُمسّ (لكل وحدة زرّها في CAT-03)."""
+    with transaction.atomic():
+        batch = list(
+            Item.objects.select_for_update()
+            .filter(is_active=True, barcode="")
+            .order_by("created_at", "id")[:ASSIGN_BATCH]
+        )
+        for item in batch:
+            update_item(item, barcode=next_internal_barcode(), changed_by=changed_by)
+        return len(batch), missing_barcode_count()
 
 
 def _barcode_errors(

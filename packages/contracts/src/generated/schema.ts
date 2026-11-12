@@ -516,6 +516,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/barcode/assign-missing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description CAT-01 «أنشئ باركوداً للأصناف التي بلا باركود»: المالك ومدير الفرع. دفعة في كل طلب؛
+         *     الواجهة تعيده حتى `remaining == 0`.
+         */
+        post: operations["catalog_barcode_assign_missing_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/barcode/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description «أنشئ باركوداً داخلياً» (CAT-02/CAT-03؛ 0005 §٢٦٩): الرقم التالي من عدّاد المنشأة — EAN-13
+         *     بالبادئة 20. يُعاد للحقل ولا يُربط بصنف هنا؛ الحفظ يتحقق من تفرّده كأي باركود.
+         */
+        post: operations["catalog_barcode_generate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/groups": {
         parameters: {
             query?: never;
@@ -6270,6 +6310,13 @@ export interface components {
             owner_unit_name: string;
             taken: boolean;
         };
+        PostCatalogBarcodeAssignMissingResponse: {
+            assigned: number;
+            remaining: number;
+        };
+        PostCatalogBarcodeGenerateResponse: {
+            barcode: string;
+        };
         GetCatalogGroupsResponse: {
             group_count: number;
             groups: {
@@ -6296,6 +6343,7 @@ export interface components {
         };
         GetCatalogItemsResponse: {
             all_total: number;
+            can_assign_barcodes: boolean;
             groups: {
                 id: string;
                 name: string;
@@ -6331,6 +6379,7 @@ export interface components {
                 }[];
                 updated_at: string;
             }[];
+            missing_barcode_count: number;
             offset: number;
             total: number;
         };
@@ -18487,6 +18536,74 @@ export interface operations {
             };
             /** @description No response body */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_barcode_assign_missing_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostCatalogBarcodeAssignMissingResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_barcode_generate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostCatalogBarcodeGenerateResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -308,6 +308,9 @@
    "400:blocked",
    "403:permission_denied"
   ],
+  "POST /api/catalog/barcode/assign-missing": [
+   "403:barcode_owner_or_manager"
+  ],
   "POST /api/catalog/groups": [
    "409:group_exists"
   ],
@@ -1828,6 +1831,9 @@
      "all_total": {
       "type": "integer"
      },
+     "can_assign_barcodes": {
+      "type": "boolean"
+     },
      "groups": {
       "items": {
        "additionalProperties": false,
@@ -1981,6 +1987,9 @@
       },
       "type": "array"
      },
+     "missing_barcode_count": {
+      "type": "integer"
+     },
      "offset": {
       "type": "integer"
      },
@@ -1993,7 +2002,9 @@
      "total",
      "all_total",
      "groups",
-     "offset"
+     "offset",
+     "can_assign_barcodes",
+     "missing_barcode_count"
     ],
     "type": "object"
    }
@@ -27608,6 +27619,38 @@
     },
     "required": [
      "campaign"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/catalog/barcode/assign-missing": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "assigned": {
+      "type": "integer"
+     },
+     "remaining": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "assigned",
+     "remaining"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/catalog/barcode/generate": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "barcode": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "barcode"
     ],
     "type": "object"
    }
