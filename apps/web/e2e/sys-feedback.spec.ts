@@ -251,7 +251,8 @@ test.describe("SYS-11 · ملاحظاتك", () => {
     await section.getByLabel("ملاحظتك").fill("الشاشة تظهر هكذا");
     await section.getByRole("button", { name: "أرسل الملاحظة" }).click();
     await expect(section).toHaveAttribute("data-state", "success");
-    expect(String(sent[0]!["attachment"])).toMatch(/^data:image\/png;base64,/);
+    const shot = sent[0]!["attachment"];
+    expect(typeof shot === "string" ? shot : "").toMatch(/^data:image\/png;base64,/);
     expect(sent[0]!["attachment_name"]).toBe("screen.png");
   });
 
