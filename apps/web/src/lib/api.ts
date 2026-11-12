@@ -62,3 +62,34 @@ export function api(): ContractsClient {
   });
   return client;
 }
+
+/**
+ * 0005 §٢٧٢ — للرفع بـXMLHttpRequest (تقدّم): بعد 401 يُستأنف مرة ويُعاد رمز الوصول الجديد لإعادة
+ * الطلب نفسه؛ `null` = الجلسة انتهت فعلاً (يُستدعى معالج ACC-08).
+ */
+export async function renewAccessAfter401(path: string): Promise<string | null> {
+  const fresh = resumer ? await resumer() : null;
+  if (fresh) return fresh.access;
+  onUnauthorized?.(path);
+  return null;
+}
+
+/**
+ * 0005 §٢٧٢ — `fetch` لمسار مُصادَق خارج العقد المكتوب (تصدير CSV، ملف، معامل لا يصفه OpenAPI): الرمز
+ * الحالي، وعند 401 استئناف مرة وإعادة الطلب نفسه — السلوك الذي يعطيه `api()`. كانت هذه الطلبات ترسل
+ * رمزاً انتهى عمره (15 دقيقة) فيفشل التصدير بصمت.
+ */
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const send = (access: string | null) => {
+    const headers = new Headers(init.headers);
+    if (access) headers.set("Authorization", `Bearer ${access}`);
+    return fetch(`${apiBaseUrl()}${path}`, { ...init, headers });
+  };
+  const first = await send(accessToken);
+  if (first.status !== 401 || !accessToken) return first;
+  const fresh = await renewAccessAfter401(path);
+  if (!fresh) return first;
+  const retried = await send(fresh);
+  if (retried.status === 401) onUnauthorized?.(path);
+  return retried;
+}

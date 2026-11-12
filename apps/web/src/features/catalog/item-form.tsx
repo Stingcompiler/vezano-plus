@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiBaseUrl, getAccessToken, renewAccessAfter401 } from "@/lib/api";
 
 import {
   describeError,
@@ -91,13 +91,28 @@ function readAsDataUrl(f: File): Promise<string> {
   });
 }
 
-/** رفع الصورة بتقدّم معلن (XMLHttpRequest) — بعد حفظ الصنف لا قبله. */
-function uploadImage(itemId: string, dataUrl: string, onProgress: (pct: number) => void) {
+/**
+ * رفع الصورة بتقدّم معلن (XMLHttpRequest) — بعد حفظ الصنف لا قبله. 0005 §٢٧٢: رمز انتهى عمره ⇒
+ * استئناف مرة وإعادة الرفع نفسه.
+ */
+async function uploadImage(itemId: string, dataUrl: string, onProgress: (pct: number) => void) {
+  const path = `/api/catalog/items/${itemId}/image`;
+  const first = await sendImage(path, dataUrl, getAccessToken(), onProgress);
+  if (first.status !== 401 || !getAccessToken()) return first;
+  const fresh = await renewAccessAfter401(path);
+  return fresh ? sendImage(path, dataUrl, fresh, onProgress) : first;
+}
+
+function sendImage(
+  path: string,
+  dataUrl: string,
+  token: string | null,
+  onProgress: (pct: number) => void,
+) {
   return new Promise<{ status: number; body: unknown }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${apiBaseUrl()}/api/catalog/items/${itemId}/image`);
+    xhr.open("POST", `${apiBaseUrl()}${path}`);
     xhr.setRequestHeader("Content-Type", "application/json");
-    const token = getAccessToken();
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));

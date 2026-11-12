@@ -8718,6 +8718,203 @@
         }
       }
     },
+    "/api/platform/feedback": {
+      "get": {
+        "operationId": "platform_feedback_retrieve",
+        "description": "«الملاحظات» (0005 §٢٦٤): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،\nوتصفية بالنوع.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformFeedbackResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/feedback/{tenant_id}/{feedback_id}": {
+      "post": {
+        "operationId": "platform_feedback_create",
+        "description": "تغيير الحالة وكتابة الردّ — باسم المشغّل ووقته؛ يصل المرسلَ في «ملاحظاتي».",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformFeedbackByTenantIdByFeedbackIdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/feedback/{tenant_id}/{feedback_id}/attachment": {
+      "get": {
+        "operationId": "platform_feedback_attachment_retrieve",
+        "description": "لقطة شاشة ملاحظة تاجر (§٢٦٧) — للفريق وحده.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/platform/feedback/public/{feedback_id}": {
+      "post": {
+        "operationId": "platform_feedback_public_create",
+        "description": "حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPlatformFeedbackPublicByFeedbackIdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/flags": {
       "post": {
         "operationId": "platform_flags_create",
@@ -10544,6 +10741,32 @@
         }
       }
     },
+    "/api/public/feedback": {
+      "post": {
+        "operationId": "public_feedback_create",
+        "description": "ملاحظة زائر (0005 §٢٦٦): من الموقع العام أو صفحة محل، بلا حساب — تصل فريق فيزانو وحده.",
+        "tags": ["public"],
+        "security": [{}],
+        "responses": {
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPublicFeedbackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "429": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/public/legal": {
       "get": {
         "operationId": "public_legal_retrieve",
@@ -11769,6 +11992,93 @@
         }
       }
     },
+    "/api/support/feedback": {
+      "get": {
+        "operationId": "support_feedback_retrieve",
+        "description": "«ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ\nالفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.",
+        "tags": ["support"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSupportFeedbackResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      },
+      "post": {
+        "operationId": "support_feedback_create",
+        "description": "«ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ\nالفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.",
+        "tags": ["support"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSubmit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostSupportFeedbackResponse200"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostSupportFeedbackResponse201"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "429": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/support/feedback/seen": {
+      "post": {
+        "operationId": "support_feedback_seen_create",
+        "description": "فتح «ملاحظاتي» يعلّم ردود الفريق مقروءة.",
+        "tags": ["support"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostSupportFeedbackSeenResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/support/reports": {
       "post": {
         "operationId": "support_reports_create",
@@ -12963,6 +13273,52 @@
         "enum": ["pdf", "link"],
         "type": "string",
         "description": "* `pdf` - pdf\n* `link` - link"
+      },
+      "FeedbackSubmit": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 12
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "contact_ok": {
+            "type": "boolean",
+            "default": false
+          },
+          "screen": {
+            "type": "string",
+            "default": "",
+            "maxLength": 80
+          },
+          "platform": {
+            "type": "string",
+            "default": "",
+            "maxLength": 20
+          },
+          "app_version": {
+            "type": "string",
+            "default": "",
+            "maxLength": 80
+          },
+          "attachment": {
+            "type": "string",
+            "default": ""
+          },
+          "attachment_name": {
+            "type": "string",
+            "default": "",
+            "maxLength": 200
+          }
+        },
+        "required": ["client_id", "kind", "text"]
       },
       "GroupList": {
         "type": "object",
@@ -49273,6 +49629,432 @@
         "required": ["saved", "rows", "plans", "trial_base_name", "flags"],
         "type": "object"
       },
+      "GetPlatformFeedbackResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "counts": {
+            "additionalProperties": false,
+            "properties": {
+              "declined": {
+                "type": "integer"
+              },
+              "done": {
+                "type": "integer"
+              },
+              "new": {
+                "type": "integer"
+              },
+              "studying": {
+                "type": "integer"
+              }
+            },
+            "required": ["new", "studying", "done", "declined"],
+            "type": "object"
+          },
+          "filter": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "app_version": {
+                  "type": "string"
+                },
+                "attachment_name": {
+                  "type": "string"
+                },
+                "contact_email": {
+                  "type": "string"
+                },
+                "contact_ok": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "emailed_at": {
+                  "type": "string"
+                },
+                "from_name": {
+                  "type": "string"
+                },
+                "has_attachment": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "platform": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "reply": {
+                  "type": "string"
+                },
+                "screen": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "status_label": {
+                  "type": "string"
+                },
+                "tenant_id": {
+                  "type": "string"
+                },
+                "tenant_name": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                },
+                "updated_by_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "source",
+                "tenant_id",
+                "tenant_name",
+                "reference",
+                "kind",
+                "kind_label",
+                "text",
+                "contact_ok",
+                "contact_email",
+                "from_name",
+                "screen",
+                "platform",
+                "app_version",
+                "status",
+                "status_label",
+                "reply",
+                "updated_by_name",
+                "updated_at",
+                "created_at",
+                "has_attachment",
+                "attachment_name",
+                "emailed_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "new": {
+            "additionalProperties": false,
+            "properties": {
+              "merchant": {
+                "type": "integer"
+              },
+              "public": {
+                "type": "integer"
+              }
+            },
+            "required": ["merchant", "public"],
+            "type": "object"
+          },
+          "page": {
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": ["number", "size", "total", "pages"],
+            "type": "object"
+          },
+          "source": {
+            "type": "string"
+          },
+          "summary": {
+            "additionalProperties": false,
+            "properties": {
+              "merchant": {
+                "additionalProperties": false,
+                "properties": {
+                  "opinion": {
+                    "type": "integer"
+                  },
+                  "problem": {
+                    "type": "integer"
+                  },
+                  "suggestion": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["suggestion", "problem", "opinion"],
+                "type": "object"
+              },
+              "public": {
+                "additionalProperties": false,
+                "properties": {
+                  "platform": {
+                    "type": "integer"
+                  },
+                  "shop": {
+                    "type": "integer"
+                  },
+                  "site": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["platform", "site", "shop"],
+                "type": "object"
+              }
+            },
+            "required": ["merchant", "public"],
+            "type": "object"
+          }
+        },
+        "required": ["source", "filter", "kind", "counts", "items", "new", "summary", "page"],
+        "type": "object"
+      },
+      "PostPlatformFeedbackByTenantIdByFeedbackIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "attachment_name": {
+            "type": "string"
+          },
+          "contact_email": {
+            "type": "string"
+          },
+          "contact_ok": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "emailed_at": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "kind_label": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "tenant_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "tenant_id",
+          "tenant_name",
+          "reference",
+          "kind",
+          "kind_label",
+          "text",
+          "contact_ok",
+          "contact_email",
+          "from_name",
+          "screen",
+          "platform",
+          "app_version",
+          "status",
+          "status_label",
+          "reply",
+          "updated_by_name",
+          "updated_at",
+          "created_at",
+          "has_attachment",
+          "attachment_name",
+          "emailed_at"
+        ],
+        "type": "object"
+      },
+      "GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data_url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["data_url", "name"],
+        "type": "object"
+      },
+      "PostPlatformFeedbackPublicByFeedbackIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "attachment_name": {
+            "type": "string"
+          },
+          "contact_email": {
+            "type": "string"
+          },
+          "contact_ok": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailed_at": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "kind_label": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "screen": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "tenant_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "tenant_id",
+          "tenant_name",
+          "reference",
+          "kind",
+          "kind_label",
+          "text",
+          "contact_ok",
+          "contact_email",
+          "from_name",
+          "screen",
+          "platform",
+          "app_version",
+          "status",
+          "status_label",
+          "reply",
+          "updated_by_name",
+          "updated_at",
+          "created_at",
+          "has_attachment",
+          "attachment_name",
+          "emailed_at",
+          "email"
+        ],
+        "type": "object"
+      },
       "PostPlatformFlagsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -50057,6 +50839,9 @@
       "GetPlatformNoticesResponse": {
         "additionalProperties": false,
         "properties": {
+          "new_feedback": {
+            "type": "integer"
+          },
           "new_messages": {
             "type": "integer"
           },
@@ -50115,12 +50900,15 @@
             "type": "integer"
           }
         },
-        "required": ["unread", "new_messages", "notices"],
+        "required": ["unread", "new_messages", "notices", "new_feedback"],
         "type": "object"
       },
       "PostPlatformNoticesReadResponse": {
         "additionalProperties": false,
         "properties": {
+          "new_feedback": {
+            "type": "integer"
+          },
           "new_messages": {
             "type": "integer"
           },
@@ -50179,7 +50967,7 @@
             "type": "integer"
           }
         },
-        "required": ["unread", "new_messages", "notices"],
+        "required": ["unread", "new_messages", "notices", "new_feedback"],
         "type": "object"
       },
       "GetPlatformOperatorsResponse": {
@@ -54748,6 +55536,16 @@
         "required": ["token", "request"],
         "type": "object"
       },
+      "PostPublicFeedbackResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "reference": {
+            "type": "string"
+          }
+        },
+        "required": ["reference"],
+        "type": "object"
+      },
       "GetPublicLegalResponse": {
         "additionalProperties": false,
         "properties": {
@@ -59230,6 +60028,288 @@
           }
         },
         "required": ["id", "created_at"],
+        "type": "object"
+      },
+      "GetSupportFeedbackResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "client_id": {
+                  "type": "string"
+                },
+                "contact_ok": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "has_attachment": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "reply": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "status_label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "unseen": {
+                  "type": "boolean"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "client_id",
+                "reference",
+                "kind",
+                "kind_label",
+                "text",
+                "contact_ok",
+                "status",
+                "status_label",
+                "reply",
+                "created_at",
+                "updated_at",
+                "unseen",
+                "has_attachment"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "unseen": {
+            "type": "integer"
+          }
+        },
+        "required": ["items", "unseen"],
+        "type": "object"
+      },
+      "PostSupportFeedbackResponse200": {
+        "additionalProperties": false,
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "contact_ok": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "kind_label": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "unseen": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "client_id",
+          "reference",
+          "kind",
+          "kind_label",
+          "text",
+          "contact_ok",
+          "status",
+          "status_label",
+          "reply",
+          "created_at",
+          "updated_at",
+          "unseen",
+          "has_attachment"
+        ],
+        "type": "object"
+      },
+      "PostSupportFeedbackResponse201": {
+        "additionalProperties": false,
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "contact_ok": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "kind_label": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "unseen": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "client_id",
+          "reference",
+          "kind",
+          "kind_label",
+          "text",
+          "contact_ok",
+          "status",
+          "status_label",
+          "reply",
+          "created_at",
+          "updated_at",
+          "unseen",
+          "has_attachment"
+        ],
+        "type": "object"
+      },
+      "PostSupportFeedbackSeenResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "client_id": {
+                  "type": "string"
+                },
+                "contact_ok": {
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "has_attachment": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "kind_label": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "reply": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "status_label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "unseen": {
+                  "type": "boolean"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "client_id",
+                "reference",
+                "kind",
+                "kind_label",
+                "text",
+                "contact_ok",
+                "status",
+                "status_label",
+                "reply",
+                "created_at",
+                "updated_at",
+                "unseen",
+                "has_attachment"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "unseen": {
+            "type": "integer"
+          }
+        },
+        "required": ["items", "unseen"],
         "type": "object"
       },
       "PostSupportReportsResponse": {

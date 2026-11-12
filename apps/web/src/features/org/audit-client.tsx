@@ -14,7 +14,7 @@ import { AppNav } from "@/features/home/app-nav";
 import { hhmm } from "@/features/home/format";
 import { Ago } from "@/features/org/ago";
 import { MonoText } from "@/features/org/mono";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 
 type State = "ready" | "loading" | "empty" | "permission_denied";
@@ -100,9 +100,7 @@ export function AuditClient() {
       ...(branch ? { branch_id: branch } : {}),
       ...(sensitive ? { sensitive: "1" } : {}),
     });
-    const r = await fetch(`${apiBaseUrl()}/api/org/audit?${q.toString()}`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    });
+    const r = await apiFetch(`/api/org/audit?${q.toString()}`);
     if (!r.ok) return;
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);

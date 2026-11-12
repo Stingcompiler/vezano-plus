@@ -11,7 +11,7 @@ import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/sys/sys.css";
 import { AppNav } from "@/features/home/app-nav";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 
 type State = "ready" | "loading" | "validation_error" | "partial" | "success" | "server_error";
@@ -176,10 +176,8 @@ export function ImportClient() {
 
   const downloadRejected = () => {
     if (!batch) return;
-    void fetch(`${apiBaseUrl()}/api/imports/${batch.id}/rejected.csv`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    })
-      .then((r) => r.blob())
+    void apiFetch(`/api/imports/${batch.id}/rejected.csv`)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -187,7 +185,8 @@ export function ImportClient() {
         a.download = `rejected-${batch.file_name}`;
         a.click();
         URL.revokeObjectURL(url);
-      });
+      })
+      .catch(() => undefined);
   };
 
   const interrupted = batch?.status === "applying";

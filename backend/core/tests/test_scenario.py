@@ -176,3 +176,22 @@ def test_endpoints_absent_when_faults_disabled(monkeypatch: pytest.MonkeyPatch) 
         clear_url_caches()
         reload(urls)
     os.environ.setdefault("STING_FAULTS_ENABLED", "1")
+
+
+def test_seed_gives_owner_and_cashier_different_pins() -> None:
+    """0005 §٢٦٥: القفل يقف عند أول رمز مطابق على الجهاز — رمز واحد لهما كان يفتح لغير صاحبه."""
+    from core.auth.pin import Verifier, check_pin
+    from core.models import PinVerifier
+    from core.scenario.seed import DEMO_CASHIER_PIN, DEMO_PIN
+
+    r = seed_scenario()
+    s = r.summary()
+    owner_s, cashier_s = s["owner_a"], s["cashier_a"]
+    assert isinstance(owner_s, dict) and isinstance(cashier_s, dict)
+    assert owner_s["pin"] == DEMO_PIN
+    assert cashier_s["pin"] == DEMO_CASHIER_PIN != DEMO_PIN
+    with tenant_context(FIXED["tenant_a"]):
+        owner = Verifier.decode(PinVerifier.objects.get(user=r.owner_a).encoded)
+        cashier = Verifier.decode(PinVerifier.objects.get(user=r.cashier_a).encoded)
+    assert check_pin(DEMO_PIN, owner) and not check_pin(DEMO_PIN, cashier)
+    assert check_pin(DEMO_CASHIER_PIN, cashier)

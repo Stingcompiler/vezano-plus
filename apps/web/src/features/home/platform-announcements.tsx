@@ -4,7 +4,7 @@ import { Button, Notice } from "@sting/ui-web";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { apiBaseUrl, getAccessToken } from "@/lib/api";
+import { apiFetch, getAccessToken } from "@/lib/api";
 
 import { dayMonth, hhmm } from "./format";
 
@@ -52,13 +52,9 @@ export function PlatformAnnouncements() {
 
   useEffect(() => {
     setHidden(readHidden());
-    const token = getAccessToken();
-    if (!token) return;
+    if (!getAccessToken()) return;
     let gone = false;
-    void fetch(`${apiBaseUrl()}/api/org/announcements`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    })
+    void apiFetch("/api/org/announcements", { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<{ announcements: Ann[] }>) : null))
       .then((b) => {
         if (!gone && b) setRows(b.announcements);

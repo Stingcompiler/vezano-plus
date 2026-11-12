@@ -21,6 +21,7 @@ export type PlatformSection =
   | "overview"
   | "notices"
   | "messages"
+  | "feedback"
   | "tenants"
   | "login"
   | "proofs"
@@ -45,7 +46,11 @@ export type PlatformSection =
 /** شاشات بلا قائمة أقسام: الدخول وتغيير كلمة مرور مؤقتة (0005 §١٣٨). */
 type Bare = "login" | "password";
 
-type NavItem = { id: Exclude<PlatformSection, Bare>; label: string; badge?: "unread" | "messages" };
+type NavItem = {
+  id: Exclude<PlatformSection, Bare>;
+  label: string;
+  badge?: "unread" | "messages" | "feedback";
+};
 
 /**
  * أقسام المشغّل بعلاقة موضوعاتها (0005 §١٣٥): النظرة العامة أعلى القائمة بلا مجموعة، ثم ما يخصّ
@@ -60,6 +65,8 @@ const GROUPS: readonly { readonly title: string; readonly items: readonly NavIte
     items: [
       { id: "notices", label: "الإشعارات", badge: "unread" },
       { id: "messages", label: "الرسائل", badge: "messages" },
+      // 0005 §٢٦٤: اقتراحات التجار ومشكلاتهم وآراؤهم — بالحالة والردّ
+      { id: "feedback", label: "الملاحظات", badge: "feedback" },
     ],
   },
   {
@@ -113,6 +120,7 @@ const HREF: Record<Exclude<PlatformSection, Bare>, string> = {
   overview: "/platform",
   notices: "/platform/notices",
   messages: "/platform/messages",
+  feedback: "/platform/feedback",
   tenants: "/platform/tenants",
   proofs: "/platform/proofs",
   entitlements: "/platform/entitlements",
@@ -164,9 +172,10 @@ export function PlatformNav({ current }: { current: PlatformSection }) {
     });
   };
   // عدّادا الوارد: إشعارات غير مقروءة ورسائل جديدة — يُحدَّثان كل دقيقة وعند تغيير القسم
-  const [counts, setCounts] = useState<{ unread: number; messages: number }>({
+  const [counts, setCounts] = useState<{ unread: number; messages: number; feedback: number }>({
     unread: 0,
     messages: 0,
+    feedback: 0,
   });
   const currentGroup = GROUPS.find((g) => g.items.some((i) => i.id === current))?.title ?? "";
   const [open, setOpen] = useState<ReadonlySet<string>>(
@@ -209,9 +218,14 @@ export function PlatformNav({ current }: { current: PlatformSection }) {
         const { data, response } = await platformApi().GET("/api/platform/notices", {
           params: { query: { limit: 1 } },
         });
-        const b = data as unknown as { unread?: number; new_messages?: number } | undefined;
+        const b = data as unknown as
+          { unread?: number; new_messages?: number; new_feedback?: number } | undefined;
         if (alive && response.ok && b)
-          setCounts({ unread: b.unread ?? 0, messages: b.new_messages ?? 0 });
+          setCounts({
+            unread: b.unread ?? 0,
+            messages: b.new_messages ?? 0,
+            feedback: b.new_feedback ?? 0,
+          });
       } catch {
         /* بلا اتصال: العدّاد يبقى كما كان */
       }

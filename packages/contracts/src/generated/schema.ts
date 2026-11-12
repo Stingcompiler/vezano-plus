@@ -3484,6 +3484,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description «الملاحظات» (0005 §٢٦٤): ملاحظات التجار عبر كل المنشآت — مفتوحة/حسب الحالة/الكل،
+         *     وتصفية بالنوع.
+         */
+        get: operations["platform_feedback_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/feedback/{tenant_id}/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description تغيير الحالة وكتابة الردّ — باسم المشغّل ووقته؛ يصل المرسلَ في «ملاحظاتي». */
+        post: operations["platform_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/feedback/{tenant_id}/{feedback_id}/attachment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description لقطة شاشة ملاحظة تاجر (§٢٦٧) — للفريق وحده. */
+        get: operations["platform_feedback_attachment_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/feedback/public/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل. */
+        post: operations["platform_feedback_public_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/flags": {
         parameters: {
             query?: never;
@@ -4314,6 +4385,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ملاحظة زائر (0005 §٢٦٦): من الموقع العام أو صفحة محل، بلا حساب — تصل فريق فيزانو وحده. */
+        post: operations["public_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/public/legal": {
         parameters: {
             query?: never;
@@ -4895,6 +4983,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/support/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description «ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
+         */
+        get: operations["support_feedback_retrieve"];
+        put?: never;
+        /**
+         * @description «ملاحظاتك» (0005 §٢٦٤): أي دور يرسل اقتراحاً أو مشكلة أو رأياً؛ GET = «ملاحظاتي» بحالتها وردّ
+         *     الفريق. لا بيانات منشأة؛ ما يشبه رقم هاتف يُخفى.
+         */
+        post: operations["support_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support/feedback/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description فتح «ملاحظاتي» يعلّم ردود الفريق مقروءة. */
+        post: operations["support_feedback_seen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/support/reports": {
         parameters: {
             query?: never;
@@ -5441,6 +5570,24 @@ export interface components {
          * @enum {string}
          */
         ExportKindEnum: "pdf" | "link";
+        FeedbackSubmit: {
+            /** Format: uuid */
+            client_id: string;
+            kind: string;
+            text: string;
+            /** @default false */
+            contact_ok: boolean;
+            /** @default  */
+            screen: string;
+            /** @default  */
+            platform: string;
+            /** @default  */
+            app_version: string;
+            /** @default  */
+            attachment: string;
+            /** @default  */
+            attachment_name: string;
+        };
         GroupList: {
             total_items: number;
         };
@@ -14589,6 +14736,119 @@ export interface components {
             };
             trial_base_name: string;
         };
+        GetPlatformFeedbackResponse: {
+            counts: {
+                declined: number;
+                done: number;
+                new: number;
+                studying: number;
+            };
+            filter: string;
+            items: {
+                app_version: string;
+                attachment_name: string;
+                contact_email: string;
+                contact_ok: boolean;
+                created_at: string;
+                emailed_at: string;
+                from_name: string;
+                has_attachment: boolean;
+                id: string;
+                kind: string;
+                kind_label: string;
+                platform: string;
+                reference: string;
+                reply: string;
+                screen: string;
+                source: string;
+                status: string;
+                status_label: string;
+                tenant_id: string;
+                tenant_name: string;
+                text: string;
+                updated_at: string;
+                updated_by_name: string;
+            }[];
+            kind: string;
+            new: {
+                merchant: number;
+                public: number;
+            };
+            page: {
+                number: number;
+                pages: number;
+                size: number;
+                total: number;
+            };
+            source: string;
+            summary: {
+                merchant: {
+                    opinion: number;
+                    problem: number;
+                    suggestion: number;
+                };
+                public: {
+                    platform: number;
+                    shop: number;
+                    site: number;
+                };
+            };
+        };
+        PostPlatformFeedbackByTenantIdByFeedbackIdResponse: {
+            app_version: string;
+            attachment_name: string;
+            contact_email: string;
+            contact_ok: boolean;
+            created_at: string;
+            emailed_at: string;
+            from_name: string;
+            has_attachment: boolean;
+            id: string;
+            kind: string;
+            kind_label: string;
+            platform: string;
+            reference: string;
+            reply: string;
+            screen: string;
+            source: string;
+            status: string;
+            status_label: string;
+            tenant_id: string;
+            tenant_name: string;
+            text: string;
+            updated_at: string;
+            updated_by_name: string;
+        };
+        GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse: {
+            data_url: string;
+            name: string;
+        };
+        PostPlatformFeedbackPublicByFeedbackIdResponse: {
+            app_version: string;
+            attachment_name: string;
+            contact_email: string;
+            contact_ok: boolean;
+            created_at: string;
+            email: string;
+            emailed_at: string;
+            from_name: string;
+            has_attachment: boolean;
+            id: string;
+            kind: string;
+            kind_label: string;
+            platform: string;
+            reference: string;
+            reply: string;
+            screen: string;
+            source: string;
+            status: string;
+            status_label: string;
+            tenant_id: string;
+            tenant_name: string;
+            text: string;
+            updated_at: string;
+            updated_by_name: string;
+        };
         PostPlatformFlagsResponse: {
             flags: {
                 changed_at: string;
@@ -14789,6 +15049,7 @@ export interface components {
             tenant_name: string;
         };
         GetPlatformNoticesResponse: {
+            new_feedback: number;
             new_messages: number;
             notices: {
                 body: string;
@@ -14805,6 +15066,7 @@ export interface components {
             unread: number;
         };
         PostPlatformNoticesReadResponse: {
+            new_feedback: number;
             new_messages: number;
             notices: {
                 body: string;
@@ -15987,6 +16249,9 @@ export interface components {
             };
             token: string;
         };
+        PostPublicFeedbackResponse: {
+            reference: string;
+        };
         GetPublicLegalResponse: {
             blocked_on: string;
             market_open: boolean;
@@ -17086,6 +17351,76 @@ export interface components {
         PostSupportBackupsResponse: {
             created_at: string;
             id: string;
+        };
+        GetSupportFeedbackResponse: {
+            items: {
+                client_id: string;
+                contact_ok: boolean;
+                created_at: string;
+                has_attachment: boolean;
+                id: string;
+                kind: string;
+                kind_label: string;
+                reference: string;
+                reply: string;
+                status: string;
+                status_label: string;
+                text: string;
+                unseen: boolean;
+                updated_at: string;
+            }[];
+            unseen: number;
+        };
+        PostSupportFeedbackResponse200: {
+            client_id: string;
+            contact_ok: boolean;
+            created_at: string;
+            has_attachment: boolean;
+            id: string;
+            kind: string;
+            kind_label: string;
+            reference: string;
+            reply: string;
+            status: string;
+            status_label: string;
+            text: string;
+            unseen: boolean;
+            updated_at: string;
+        };
+        PostSupportFeedbackResponse201: {
+            client_id: string;
+            contact_ok: boolean;
+            created_at: string;
+            has_attachment: boolean;
+            id: string;
+            kind: string;
+            kind_label: string;
+            reference: string;
+            reply: string;
+            status: string;
+            status_label: string;
+            text: string;
+            unseen: boolean;
+            updated_at: string;
+        };
+        PostSupportFeedbackSeenResponse: {
+            items: {
+                client_id: string;
+                contact_ok: boolean;
+                created_at: string;
+                has_attachment: boolean;
+                id: string;
+                kind: string;
+                kind_label: string;
+                reference: string;
+                reply: string;
+                status: string;
+                status_label: string;
+                text: string;
+                unseen: boolean;
+                updated_at: string;
+            }[];
+            unseen: number;
         };
         PostSupportReportsResponse: {
             created_at: string;
@@ -26732,6 +27067,177 @@ export interface operations {
             };
         };
     };
+    platform_feedback_retrieve: {
+        parameters: {
+            query?: {
+                kind?: string;
+                page?: number;
+                page_size?: number;
+                source?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformFeedbackResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformFeedbackByTenantIdByFeedbackIdResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_attachment_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_public_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPlatformFeedbackPublicByFeedbackIdResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     platform_flags_create: {
         parameters: {
             query?: never;
@@ -28538,6 +29044,40 @@ export interface operations {
             };
         };
     };
+    public_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPublicFeedbackResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     public_legal_retrieve: {
         parameters: {
             query?: never;
@@ -29629,6 +30169,107 @@ export interface operations {
             };
             /** @description No response body */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetSupportFeedbackResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackSubmit"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackResponse200"];
+                };
+            };
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackResponse201"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_feedback_seen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostSupportFeedbackSeenResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

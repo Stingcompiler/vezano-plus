@@ -14,7 +14,7 @@ import "./reports.css";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { Ago } from "@/features/org/ago";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
@@ -149,9 +149,7 @@ export function ReceivablesReportClient() {
           : "ready";
 
   const exportCsv = async () => {
-    const r = await fetch(`${apiBaseUrl()}/api/reports/receivables?side=${side}&export=csv`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    });
+    const r = await apiFetch(`/api/reports/receivables?side=${side}&export=csv`);
     if (!r.ok) return;
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);

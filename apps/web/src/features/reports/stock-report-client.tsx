@@ -16,7 +16,7 @@ import "./reports.css";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { Ago } from "@/features/org/ago";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
@@ -217,9 +217,7 @@ export function StockReportClient() {
       q.set("end", p.range.end);
     }
     if (branch) q.set("branch_id", branch);
-    const r = await fetch(`${apiBaseUrl()}/api/reports/stock?${q.toString()}`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    });
+    const r = await apiFetch(`/api/reports/stock?${q.toString()}`);
     if (!r.ok) return;
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);

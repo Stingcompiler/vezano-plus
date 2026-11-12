@@ -121,3 +121,73 @@
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 }
+
+/* «ملاحظاتك» في SYS-11 (0005 §٢٦٤): بطاقة C-CARD ثانية تحت بطاقة التشخيص؛ كل ملاحظة بطاقة صغيرة،
+   وردّ الفريق فقاعة كلام (بلا شريط جانبي — §١٥٨). */
+.sys-feedback {
+  margin-block-start: var(--space-4, 16px);
+  padding: var(--space-4, 16px);
+}
+.sys-feedback > .acc-card__body {
+  display: grid;
+  gap: var(--space-3, 12px);
+}
+.sys-feedback__list {
+  display: grid;
+  gap: var(--space-2, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sys-feedback__item {
+  display: grid;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
+}
+.sys-feedback__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.sys-feedback__kind {
+  font-weight: 600;
+}
+.sys-feedback__new {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  color: var(--color-brand-strong);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+.sys-feedback__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sys-feedback__reply {
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: 14px;
+  border-start-start-radius: 4px;
+  background: var(--color-surface-sunken, color-mix(in srgb, var(--color-ink) 5%, transparent));
+}
+.sys-feedback__reply > p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sys-feedback__form,
+.sys-feedback__mine {
+  display: grid;
+  gap: var(--space-3, 12px);
+  align-content: start;
+  min-inline-size: 0;
+}
+@media (min-width: 1100px) {
+  .sys-feedback > .acc-card__body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-4, 16px);
+    align-items: start;
+  }
+}

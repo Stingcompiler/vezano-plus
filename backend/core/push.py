@@ -26,6 +26,12 @@ NOTIFICATION_KINDS: dict[str, dict[str, str]] = {
     "invoice": {"title": "فاتورة جديدة", "body": "وصلت فاتورة تحتاج نظرك.", "url": "/pos/invoices"},
     "stock_low": {"title": "مخزون منخفض", "body": "صنف بلغ حدّ التنبيه.", "url": "/inventory"},
     "sync": {"title": "المزامنة تحتاجك", "body": "بند محجوز ينتظر قرارك.", "url": "/sync/review"},
+    # 0005 §٢٦٤: الفريق ردّ على ملاحظة أو غيّر حالتها — بلا نصّ الملاحظة
+    "feedback_reply": {
+        "title": "ردّ على ملاحظتك",
+        "body": "فريق فيزانو ردّ على ملاحظة أرسلتها.",
+        "url": "/support#feedback",
+    },
 }
 
 

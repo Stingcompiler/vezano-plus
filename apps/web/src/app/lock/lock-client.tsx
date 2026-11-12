@@ -51,17 +51,22 @@ export function LockClient() {
   // الرمز صحيح بلا جلسة وبلا اتصال: لا شيء يُفتح — يُقال ذلك بدل الانتقال إلى صفحة لا تُحمَّل
   const [needsLogin, setNeedsLogin] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // صاحب السياق المحفوظ (بلا جلسة بعد إعادة التحميل): الاستئناف له وحده، فهو المعروض ورمزه يُجرَّب أولاً
+  const [savedUserId, setSavedUserId] = useState<string | null>(null);
   const lock = useCountdown();
   // صاحب الجلسة الحيّة إن وُجدت — الفتح له وحده
   const sessionUserId = app.tokens ? app.session.userId : null;
+  // من يُنتظر رمزه: صاحب الجلسة الحيّة، وإلا صاحب السياق المحفوظ
+  const expectedUserId = sessionUserId ?? savedUserId;
 
   // المتحققات: المحلية أولاً (تعمل بلا شبكة)، ثم تحديث خادمي عند الاتصال بجلسة جهاز
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const storage = getStorage();
-      const local = await readVerifiers(storage);
+      const [local, ctx] = await Promise.all([readVerifiers(storage), loadContext()]);
       if (!cancelled && local) setDevice(local);
+      if (!cancelled) setSavedUserId(ctx?.userId ?? null);
       if (!cancelled) setLoaded(true);
       const state = await readPinLock(storage);
       if (!cancelled && state.lockedUntil) {
@@ -86,11 +91,13 @@ export function LockClient() {
   }, [online, app.device]);
 
   const pinLength = device?.pin_length ?? 6;
-  // المستخدم المعروض: صاحب الجلسة الحيّة، وبلا جلسة الأول؛ المسحوب يبقى ظاهراً ليُعلَن له السحب.
-  // جلسة حيّة بلا رمز لصاحبها لا تعرض غيره (كان يقع على الأول — 0005 §١٧٩)
+  // المستخدم المعروض: صاحب الجلسة الحيّة، وبلا جلسة صاحب السياق المحفوظ ثم الأول؛ المسحوب يبقى
+  // ظاهراً ليُعلَن له السحب. جلسة حيّة بلا رمز لصاحبها لا تعرض غيره (كان يقع على الأول — 0005 §١٧٩)
   const user = sessionUserId
     ? (device?.verifiers.find((v) => v.user_id === sessionUserId) ?? null)
-    : (device?.verifiers[0] ?? null);
+    : ((savedUserId ? device?.verifiers.find((v) => v.user_id === savedUserId) : undefined) ??
+      device?.verifiers[0] ??
+      null);
   const noOwnPin = Boolean(sessionUserId && device?.verifiers.length && !user);
   const next = () =>
     safeNext(
@@ -102,7 +109,12 @@ export function LockClient() {
       if (busy || lock.remaining > 0) return;
       setBusy(true);
       try {
-        const r = await attemptUnlock(getStorage(), candidate);
+        // رمز صاحب الجلسة/السياق يُجرَّب أولاً: رمزان متطابقان لمستخدمين (البذر يعطي المالك والكاشير
+        // الرمز نفسه) كانا يقعان على الأول في القائمة — وترتيبها من الخادم غير مضمون — فيُرسَل صاحب
+        // السياق إلى الدخول، أو يُقال لصاحب الجلسة إن الرمز لغيره (كما يفعل الجوال)
+        const r = await attemptUnlock(getStorage(), candidate, undefined, {
+          preferUserId: expectedUserId,
+        });
         if (r.kind === "unlocked") {
           if (app.tokens) {
             // جلسة حيّة: لا يفتحها رمز مستخدم آخر
@@ -152,7 +164,7 @@ export function LockClient() {
         setBusy(false);
       }
     },
-    [app, busy, lock, router],
+    [app, busy, expectedUserId, lock, router],
   );
 
   const press = (d: string) => {

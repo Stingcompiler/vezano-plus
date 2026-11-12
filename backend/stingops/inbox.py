@@ -74,6 +74,13 @@ def _new_messages_count() -> int:
         return SupportReport.unscoped.exclude(id__in=done).count()
 
 
+def _new_feedback_count() -> int:
+    """التجار والزوار معاً (§٢٦٦) — عدّاد واحد لقسم «الملاحظات»."""
+    from stingops.feedback_ops import new_counts
+
+    return sum(new_counts().values())
+
+
 def notices_payload(*, unread_only: bool = False, limit: int = 50) -> dict[str, Any]:
     limit = max(1, min(limit, NOTICE_LIMIT))
     with platform_context():
@@ -89,6 +96,8 @@ def notices_payload(*, unread_only: bool = False, limit: int = 50) -> dict[str, 
     return {
         "unread": unread,
         "new_messages": _new_messages_count(),
+        # 0005 §٢٦٤: ملاحظات التجار الجديدة — عدّاد «الملاحظات» في القائمة
+        "new_feedback": _new_feedback_count(),
         "notices": [_notice_row(r, names) for r in rows],
     }
 

@@ -10,6 +10,7 @@ const PAGES: { path: string; priority: number; changeFrequency: "weekly" | "mont
   { path: "/market", priority: 0.6, changeFrequency: "weekly" },
   { path: "/status", priority: 0.5, changeFrequency: "weekly" },
   { path: "/demo/track", priority: 0.4, changeFrequency: "monthly" },
+  { path: "/feedback", priority: 0.3, changeFrequency: "monthly" },
   { path: "/legal", priority: 0.4, changeFrequency: "monthly" },
 ];
 

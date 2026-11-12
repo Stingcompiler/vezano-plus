@@ -14,7 +14,7 @@ import "./reports.css";
 import { AppNav } from "@/features/home/app-nav";
 import { dayMonth, hhmm } from "@/features/home/format";
 import { Ago } from "@/features/org/ago";
-import { api, apiBaseUrl, getAccessToken } from "@/lib/api";
+import { api, apiFetch } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
 import { CompletenessBadge, DevicesSynced } from "@/features/reports/completeness";
@@ -201,9 +201,7 @@ export function CashReportClient() {
     if (!p) return;
     const q = new URLSearchParams({ export: "csv", range: p.range.key });
     if (branch) q.set("branch_id", branch);
-    const r = await fetch(`${apiBaseUrl()}/api/reports/cash?${q.toString()}`, {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
-    });
+    const r = await apiFetch(`/api/reports/cash?${q.toString()}`);
     if (!r.ok) return;
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);

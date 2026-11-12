@@ -43,6 +43,8 @@ from sync.counter import ensure_state
 SCENARIO_TAG = "تجريبي"
 DEMO_PASSWORD = "sting-demo-2026"  # noqa: S105 — بيئة تجريبية معلنة
 DEMO_PIN = "123456"
+# رمز الكاشير غير رمز المالك (0005 §٢٦٥): القفل يقف عند أول رمز مطابق على الجهاز
+DEMO_CASHIER_PIN = "654321"
 #: معرّفات حسابات المنصة (ACC-02): المالك بهاتف وعضويتين (منشأتا السيناريو)، الكاشير ببريد وعضوية
 DEMO_OWNER_IDENTIFIER = "+249912447001"
 DEMO_CASHIER_IDENTIFIER = "cashier@sting.example"
@@ -102,7 +104,7 @@ class SeedResult:
                 "username": self.cashier_a.username,
                 "identifier": DEMO_CASHIER_IDENTIFIER,
                 "password": DEMO_PASSWORD,
-                "pin": DEMO_PIN,
+                "pin": DEMO_CASHIER_PIN,
             },
             "devices": [
                 {
@@ -147,6 +149,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
     from core.models import PinVerifier, Session
     from sync.models import (
         BackupCopy,
+        Feedback,
         Member,
         Operation,
         QuarantinedOperation,
@@ -170,6 +173,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
             AccessManifest,
             SyncState,
             SupportReport,
+            Feedback,
             BackupCopy,
         ):
             model.unscoped.filter(tenant_id__in=ids).delete()
@@ -554,7 +558,7 @@ def seed_scenario() -> SeedResult:
         seed_catalog(a)
         seed_initial_state(branch_a, owner_a)
         set_user_pin(owner_a, DEMO_PIN)
-        set_user_pin(cashier_a, DEMO_PIN)
+        set_user_pin(cashier_a, DEMO_CASHIER_PIN)
         for name, prefix in (("تابلت الكاشير", "A2"), ("هاتف المالك", "B3")):
             reg = register_device(user=owner_a, branch=branch_a, name=f"{name} — {SCENARIO_TAG}")
             # بادئة ثابتة للسيناريو حتى تتطابق أرقام الفواتير مع الوثيقة (INV-KRT-A2-…)
