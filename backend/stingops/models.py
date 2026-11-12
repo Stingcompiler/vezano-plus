@@ -370,6 +370,8 @@ class PublicFeedback(models.Model):
     reply = models.TextField(blank=True, default="")
     updated_by_name = models.CharField(max_length=200, blank=True, default="")
     updated_at = models.DateTimeField(null=True, blank=True)
+    #: 0005 §٢٦٧: متى أُرسل ردّ الفريق إلى بريد الزائر (مرة لكل حفظ يطلبه)
+    emailed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     objects: ClassVar[models.Manager[PublicFeedback]] = models.Manager()

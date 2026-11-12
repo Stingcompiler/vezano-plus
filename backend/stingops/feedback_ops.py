@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import timedelta
 from typing import Any
 
 from django.utils import timezone
@@ -54,6 +55,9 @@ def _row(f: Feedback, tenants: dict[Any, str]) -> dict[str, Any]:
         "updated_by_name": f.updated_by_name,
         "updated_at": _iso(f.updated_at),
         "created_at": _iso(f.created_at),
+        "has_attachment": bool(f.attachment),
+        "attachment_name": f.attachment_name,
+        "emailed_at": "",
     }
 
 
@@ -80,6 +84,9 @@ def _public_row(f: PublicFeedback) -> dict[str, Any]:
         "updated_by_name": f.updated_by_name,
         "updated_at": _iso(f.updated_at),
         "created_at": _iso(f.created_at),
+        "has_attachment": False,
+        "attachment_name": "",
+        "emailed_at": _iso(f.emailed_at),
     }
 
 
@@ -103,6 +110,24 @@ def _public_list(status_filter: str, kind: str) -> dict[str, Any]:
     }
 
 
+SUMMARY_DAYS = 30
+
+
+def summary() -> dict[str, dict[str, int]]:
+    """0005 §٢٦٧: ما وصل في آخر 30 يوماً بالنوع — لكل مصدر. لا درجة ولا متوسط."""
+    since = timezone.now() - timedelta(days=SUMMARY_DAYS)
+    with platform_context():
+        merchant = {
+            k: Feedback.unscoped.filter(kind=k, created_at__gte=since).count()
+            for k in Feedback.Kind.values
+        }
+        public = {
+            k: PublicFeedback.objects.filter(kind=k, created_at__gte=since).count()
+            for k in PublicFeedback.Kind.values
+        }
+    return {"merchant": merchant, "public": public}
+
+
 def new_counts() -> dict[str, int]:
     with platform_context():
         return {
@@ -118,7 +143,7 @@ def list_payload(
     if status_filter not in FILTERS:
         status_filter = "open"
     if source == "public":
-        return {**_public_list(status_filter, kind), "new": new_counts()}
+        return {**_public_list(status_filter, kind), "new": new_counts(), "summary": summary()}
     with platform_context():
         qs = Feedback.unscoped.all()
         counts = {s: qs.filter(status=s).count() for s in Feedback.Status.values}
@@ -137,6 +162,7 @@ def list_payload(
         "counts": counts,
         "items": [_row(r, tenants) for r in rows],
         "new": new_counts(),
+        "summary": summary(),
     }
 
 
@@ -176,10 +202,49 @@ def _notify(tenant_id: uuid.UUID, device_id: uuid.UUID) -> None:
         log.exception("feedback push failed")
 
 
+def attachment(tenant_id: uuid.UUID, feedback_id: uuid.UUID) -> dict[str, Any]:
+    """لقطة الشاشة المرفقة (§٢٦٧) — تُطلب عند الفتح لا مع القائمة."""
+    with platform_context():
+        f = Feedback.unscoped.filter(tenant_id=tenant_id, id=feedback_id).first()
+    if f is None or not f.attachment:
+        raise FeedbackOpsRejected("not_found", 404)
+    return {"data_url": f.attachment, "name": f.attachment_name}
+
+
+def _email_reply(f: PublicFeedback) -> str:
+    """الردّ إلى بريد الزائر (§٢٦٧): نصّ بسيط — المرجع وردّ الفريق، بلا نصّ ملاحظته ولا روابط.
+    يعيد `sent` أو `not_configured` أو `failed`."""
+    import os
+
+    sender = os.environ.get("STING_EMAIL_FROM", "")
+    if not sender:
+        return "not_configured"
+    from django.core.mail import EmailMessage
+
+    body = (
+        f"شكراً لملاحظتك ({f.reference}).\n\n{f.reply}\n\n— فريق فيزانو بلص\n"
+        "وصلتك هذه الرسالة لأنك تركت بريدك مع ملاحظتك في موقع فيزانو بلص."
+    )
+    try:
+        EmailMessage(
+            f"فيزانو بلص — ردّ على ملاحظتك {f.reference}", body, sender, [f.contact_email]
+        ).send(fail_silently=False)
+    except Exception:  # noqa: BLE001 — فشل البريد لا يُسقط حفظ الحالة
+        log.warning("public feedback email failed", exc_info=True)
+        return "failed"
+    return "sent"
+
+
 def update_public(
-    feedback_id: uuid.UUID, *, status: str, reply: str, by_name: str
+    feedback_id: uuid.UUID,
+    *,
+    status: str,
+    reply: str,
+    by_name: str,
+    email_reply: bool = False,
 ) -> dict[str, Any]:
-    """الحالة وملاحظة الفريق على ملاحظة زائر — لا تصل الزائر هنا (الردّ بالبريد في §٢٦٧)."""
+    """الحالة وردّ الفريق على ملاحظة زائر. `email_reply` يرسل الردّ إلى بريده إن تركه (§٢٦٧)؛ بدونه
+    يبقى الردّ ملاحظة داخلية."""
     if status not in PublicFeedback.Status.values:
         raise FeedbackOpsRejected("status_invalid")
     reply = reply.strip()
@@ -189,11 +254,22 @@ def update_public(
         f = PublicFeedback.objects.filter(id=feedback_id).first()
         if f is None:
             raise FeedbackOpsRejected("not_found", 404)
-        if f.status == status and f.reply == reply:
+        if email_reply and not f.contact_email:
+            raise FeedbackOpsRejected("no_email")
+        if email_reply and not reply:
+            raise FeedbackOpsRejected("reply_required")
+        if f.status == status and f.reply == reply and not email_reply:
             raise FeedbackOpsRejected("unchanged", 409)
         f.status = status
         f.reply = reply
         f.updated_by_name = by_name[:200]
         f.updated_at = timezone.now()
         f.save(update_fields=["status", "reply", "updated_by_name", "updated_at"])
-    return _public_row(f)
+    email = ""
+    if email_reply:
+        email = _email_reply(f)
+        if email == "sent":
+            with platform_context():
+                f.emailed_at = timezone.now()
+                f.save(update_fields=["emailed_at"])
+    return {**_public_row(f), "email": email}

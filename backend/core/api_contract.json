@@ -135,6 +135,10 @@
   "GET /api/platform/feedback": [
    "403:operator_required"
   ],
+  "GET /api/platform/feedback/{tenant_id}/{feedback_id}/attachment": [
+   "403:operator_required",
+   "404:not_found"
+  ],
   "GET /api/platform/messages": [
    "403:operator_required"
   ],
@@ -666,6 +670,8 @@
    "403:no_global_override"
   ],
   "POST /api/platform/feedback/public/{feedback_id}": [
+   "400:no_email",
+   "400:reply_required",
    "403:operator_required",
    "404:not_found",
    "409:unchanged"
@@ -828,6 +834,7 @@
    "400:invalid_envelope"
   ],
   "POST /api/support/feedback": [
+   "400:attachment_invalid",
    "400:kind_invalid",
    "400:text_required",
    "400:text_too_long",
@@ -17598,6 +17605,9 @@
         "app_version": {
          "type": "string"
         },
+        "attachment_name": {
+         "type": "string"
+        },
         "contact_email": {
          "type": "string"
         },
@@ -17607,8 +17617,14 @@
         "created_at": {
          "type": "string"
         },
+        "emailed_at": {
+         "type": "string"
+        },
         "from_name": {
          "type": "string"
+        },
+        "has_attachment": {
+         "type": "boolean"
         },
         "id": {
          "type": "string"
@@ -17676,7 +17692,10 @@
         "reply",
         "updated_by_name",
         "updated_at",
-        "created_at"
+        "created_at",
+        "has_attachment",
+        "attachment_name",
+        "emailed_at"
        ],
        "type": "object"
       },
@@ -17727,6 +17746,56 @@
      },
      "source": {
       "type": "string"
+     },
+     "summary": {
+      "additionalProperties": false,
+      "properties": {
+       "merchant": {
+        "additionalProperties": false,
+        "properties": {
+         "opinion": {
+          "type": "integer"
+         },
+         "problem": {
+          "type": "integer"
+         },
+         "suggestion": {
+          "type": "integer"
+         }
+        },
+        "required": [
+         "suggestion",
+         "problem",
+         "opinion"
+        ],
+        "type": "object"
+       },
+       "public": {
+        "additionalProperties": false,
+        "properties": {
+         "platform": {
+          "type": "integer"
+         },
+         "shop": {
+          "type": "integer"
+         },
+         "site": {
+          "type": "integer"
+         }
+        },
+        "required": [
+         "platform",
+         "site",
+         "shop"
+        ],
+        "type": "object"
+       }
+      },
+      "required": [
+       "merchant",
+       "public"
+      ],
+      "type": "object"
      }
     },
     "required": [
@@ -17736,7 +17805,26 @@
      "counts",
      "items",
      "new",
+     "summary",
      "page"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/platform/feedback/{tenant_id}/{feedback_id}/attachment": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "data_url": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "data_url",
+     "name"
     ],
     "type": "object"
    }
@@ -24780,6 +24868,9 @@
         "created_at": {
          "type": "string"
         },
+        "has_attachment": {
+         "type": "boolean"
+        },
         "id": {
          "type": "string"
         },
@@ -24824,7 +24915,8 @@
         "reply",
         "created_at",
         "updated_at",
-        "unseen"
+        "unseen",
+        "has_attachment"
        ],
        "type": "object"
       },
@@ -46438,6 +46530,9 @@
      "app_version": {
       "type": "string"
      },
+     "attachment_name": {
+      "type": "string"
+     },
      "contact_email": {
       "type": "string"
      },
@@ -46447,8 +46542,17 @@
      "created_at": {
       "type": "string"
      },
+     "email": {
+      "type": "string"
+     },
+     "emailed_at": {
+      "type": "string"
+     },
      "from_name": {
       "type": "string"
+     },
+     "has_attachment": {
+      "type": "boolean"
      },
      "id": {
       "type": "string"
@@ -46516,7 +46620,11 @@
      "reply",
      "updated_by_name",
      "updated_at",
-     "created_at"
+     "created_at",
+     "has_attachment",
+     "attachment_name",
+     "emailed_at",
+     "email"
     ],
     "type": "object"
    }
@@ -46528,6 +46636,9 @@
      "app_version": {
       "type": "string"
      },
+     "attachment_name": {
+      "type": "string"
+     },
      "contact_email": {
       "type": "string"
      },
@@ -46537,8 +46648,14 @@
      "created_at": {
       "type": "string"
      },
+     "emailed_at": {
+      "type": "string"
+     },
      "from_name": {
       "type": "string"
+     },
+     "has_attachment": {
+      "type": "boolean"
      },
      "id": {
       "type": "string"
@@ -46606,7 +46723,10 @@
      "reply",
      "updated_by_name",
      "updated_at",
-     "created_at"
+     "created_at",
+     "has_attachment",
+     "attachment_name",
+     "emailed_at"
     ],
     "type": "object"
    }
@@ -50347,6 +50467,9 @@
      "created_at": {
       "type": "string"
      },
+     "has_attachment": {
+      "type": "boolean"
+     },
      "id": {
       "type": "string"
      },
@@ -50391,7 +50514,8 @@
      "reply",
      "created_at",
      "updated_at",
-     "unseen"
+     "unseen",
+     "has_attachment"
     ],
     "type": "object"
    },
@@ -50407,6 +50531,9 @@
      "created_at": {
       "type": "string"
      },
+     "has_attachment": {
+      "type": "boolean"
+     },
      "id": {
       "type": "string"
      },
@@ -50451,7 +50578,8 @@
      "reply",
      "created_at",
      "updated_at",
-     "unseen"
+     "unseen",
+     "has_attachment"
     ],
     "type": "object"
    }
@@ -50472,6 +50600,9 @@
         },
         "created_at": {
          "type": "string"
+        },
+        "has_attachment": {
+         "type": "boolean"
         },
         "id": {
          "type": "string"
@@ -50517,7 +50648,8 @@
         "reply",
         "created_at",
         "updated_at",
-        "unseen"
+        "unseen",
+        "has_attachment"
        ],
        "type": "object"
       },

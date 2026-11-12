@@ -25,6 +25,9 @@ PER_USER_PER_DAY = 5
 PER_TENANT_PER_DAY = 20
 PLATFORMS = {"web", "mobile", "desktop"}
 MASK = "•••"
+#: 0005 §٢٦٧: لقطة الشاشة — صورة فقط، حتى 1.5 ميغابايت (طول base64 ≈ 4/3 الحجم)
+ATTACHMENT_MAX_CHARS = 2_000_000
+_ATTACHMENT_RE = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$")
 
 _DIGIT = "[0-9٠-٩۰-۹]"
 # تسعة أرقام فأكثر، تفصلها مسافة أو شرطة أو نقطة اختيارياً، وقد تبدأ بـ«+»
@@ -62,6 +65,7 @@ def row(f: Feedback) -> dict[str, Any]:
         "created_at": _iso(f.created_at),
         "updated_at": _iso(f.updated_at),
         "unseen": bool(f.updated_at and (f.seen_at is None or f.seen_at < f.updated_at)),
+        "has_attachment": bool(f.attachment),
     }
 
 
@@ -78,6 +82,8 @@ def submit(
     screen: str,
     platform: str,
     app_version: str,
+    attachment: str = "",
+    attachment_name: str = "",
 ) -> tuple[Feedback, bool]:
     """يُنادى داخل `tenant_context`. يعيد (الملاحظة، أُنشئت الآن؟)."""
     existing = Feedback.objects.filter(client_id=client_id).first()
@@ -90,6 +96,10 @@ def submit(
         raise FeedbackRejected("text_required")
     if len(text) > TEXT_MAX:
         raise FeedbackRejected("text_too_long")
+    if attachment and (
+        len(attachment) > ATTACHMENT_MAX_CHARS or not _ATTACHMENT_RE.match(attachment)
+    ):
+        raise FeedbackRejected("attachment_invalid")
     since = timezone.now() - timedelta(days=1)
     recent = Feedback.objects.filter(created_at__gte=since)
     if recent.filter(user=user_id).count() >= PER_USER_PER_DAY:
@@ -113,6 +123,8 @@ def submit(
                 user=user_id,
                 user_name=user_name[:200],
                 device=device_id,
+                attachment=attachment,
+                attachment_name=attachment_name.strip()[:120] if attachment else "",
                 created_at=now,
             )
     except IntegrityError:

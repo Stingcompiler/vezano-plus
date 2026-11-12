@@ -8778,6 +8778,51 @@
         }
       }
     },
+    "/api/platform/feedback/{tenant_id}/{feedback_id}/attachment": {
+      "get": {
+        "operationId": "platform_feedback_attachment_retrieve",
+        "description": "لقطة شاشة ملاحظة تاجر (§٢٦٧) — للفريق وحده.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["platform"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/platform/feedback/public/{feedback_id}": {
       "post": {
         "operationId": "platform_feedback_public_create",
@@ -13212,6 +13257,15 @@
             "type": "string",
             "default": "",
             "maxLength": 80
+          },
+          "attachment": {
+            "type": "string",
+            "default": ""
+          },
+          "attachment_name": {
+            "type": "string",
+            "default": "",
+            "maxLength": 200
           }
         },
         "required": ["client_id", "kind", "text"]
@@ -49520,6 +49574,9 @@
                 "app_version": {
                   "type": "string"
                 },
+                "attachment_name": {
+                  "type": "string"
+                },
                 "contact_email": {
                   "type": "string"
                 },
@@ -49529,8 +49586,14 @@
                 "created_at": {
                   "type": "string"
                 },
+                "emailed_at": {
+                  "type": "string"
+                },
                 "from_name": {
                   "type": "string"
+                },
+                "has_attachment": {
+                  "type": "boolean"
                 },
                 "id": {
                   "type": "string"
@@ -49598,7 +49661,10 @@
                 "reply",
                 "updated_by_name",
                 "updated_at",
-                "created_at"
+                "created_at",
+                "has_attachment",
+                "attachment_name",
+                "emailed_at"
               ],
               "type": "object"
             },
@@ -49641,9 +49707,48 @@
           },
           "source": {
             "type": "string"
+          },
+          "summary": {
+            "additionalProperties": false,
+            "properties": {
+              "merchant": {
+                "additionalProperties": false,
+                "properties": {
+                  "opinion": {
+                    "type": "integer"
+                  },
+                  "problem": {
+                    "type": "integer"
+                  },
+                  "suggestion": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["suggestion", "problem", "opinion"],
+                "type": "object"
+              },
+              "public": {
+                "additionalProperties": false,
+                "properties": {
+                  "platform": {
+                    "type": "integer"
+                  },
+                  "shop": {
+                    "type": "integer"
+                  },
+                  "site": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["platform", "site", "shop"],
+                "type": "object"
+              }
+            },
+            "required": ["merchant", "public"],
+            "type": "object"
           }
         },
-        "required": ["source", "filter", "kind", "counts", "items", "new", "page"],
+        "required": ["source", "filter", "kind", "counts", "items", "new", "summary", "page"],
         "type": "object"
       },
       "PostPlatformFeedbackByTenantIdByFeedbackIdResponse": {
@@ -49652,6 +49757,9 @@
           "app_version": {
             "type": "string"
           },
+          "attachment_name": {
+            "type": "string"
+          },
           "contact_email": {
             "type": "string"
           },
@@ -49661,8 +49769,14 @@
           "created_at": {
             "type": "string"
           },
+          "emailed_at": {
+            "type": "string"
+          },
           "from_name": {
             "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
           },
           "id": {
             "type": "string"
@@ -49730,8 +49844,24 @@
           "reply",
           "updated_by_name",
           "updated_at",
-          "created_at"
+          "created_at",
+          "has_attachment",
+          "attachment_name",
+          "emailed_at"
         ],
+        "type": "object"
+      },
+      "GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "data_url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["data_url", "name"],
         "type": "object"
       },
       "PostPlatformFeedbackPublicByFeedbackIdResponse": {
@@ -49740,6 +49870,9 @@
           "app_version": {
             "type": "string"
           },
+          "attachment_name": {
+            "type": "string"
+          },
           "contact_email": {
             "type": "string"
           },
@@ -49749,8 +49882,17 @@
           "created_at": {
             "type": "string"
           },
+          "email": {
+            "type": "string"
+          },
+          "emailed_at": {
+            "type": "string"
+          },
           "from_name": {
             "type": "string"
+          },
+          "has_attachment": {
+            "type": "boolean"
           },
           "id": {
             "type": "string"
@@ -49818,7 +49960,11 @@
           "reply",
           "updated_by_name",
           "updated_at",
-          "created_at"
+          "created_at",
+          "has_attachment",
+          "attachment_name",
+          "emailed_at",
+          "email"
         ],
         "type": "object"
       },
@@ -59813,6 +59959,9 @@
                 "created_at": {
                   "type": "string"
                 },
+                "has_attachment": {
+                  "type": "boolean"
+                },
                 "id": {
                   "type": "string"
                 },
@@ -59857,7 +60006,8 @@
                 "reply",
                 "created_at",
                 "updated_at",
-                "unseen"
+                "unseen",
+                "has_attachment"
               ],
               "type": "object"
             },
@@ -59882,6 +60032,9 @@
           "created_at": {
             "type": "string"
           },
+          "has_attachment": {
+            "type": "boolean"
+          },
           "id": {
             "type": "string"
           },
@@ -59926,7 +60079,8 @@
           "reply",
           "created_at",
           "updated_at",
-          "unseen"
+          "unseen",
+          "has_attachment"
         ],
         "type": "object"
       },
@@ -59942,6 +60096,9 @@
           "created_at": {
             "type": "string"
           },
+          "has_attachment": {
+            "type": "boolean"
+          },
           "id": {
             "type": "string"
           },
@@ -59986,7 +60143,8 @@
           "reply",
           "created_at",
           "updated_at",
-          "unseen"
+          "unseen",
+          "has_attachment"
         ],
         "type": "object"
       },
@@ -60005,6 +60163,9 @@
                 },
                 "created_at": {
                   "type": "string"
+                },
+                "has_attachment": {
+                  "type": "boolean"
                 },
                 "id": {
                   "type": "string"
@@ -60050,7 +60211,8 @@
                 "reply",
                 "created_at",
                 "updated_at",
-                "unseen"
+                "unseen",
+                "has_attachment"
               ],
               "type": "object"
             },

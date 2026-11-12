@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Notice, RadioGroupField, Status, TextAreaField } from "@sting/ui-web";
+import { Button, Notice, RadioGroupField, Status, SwitchField, TextAreaField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -41,6 +41,9 @@ interface Item {
   updated_by_name: string;
   updated_at: string;
   created_at: string;
+  has_attachment?: boolean;
+  attachment_name?: string;
+  emailed_at?: string;
 }
 interface Payload {
   page?: PageInfo;
@@ -49,6 +52,7 @@ interface Payload {
   counts: Record<FbStatus, number>;
   items: Item[];
   new: Record<Source, number>;
+  summary?: Record<Source, Record<string, number>>;
 }
 
 const FILTERS: readonly (readonly [Filter, string])[] = [
@@ -93,6 +97,8 @@ const PLATFORM: Record<string, string> = {
 
 const ERRORS: Record<string, string> = {
   unchanged: "لم يتغيّر شيء — غيّر الحالة أو اكتب ردّاً.",
+  no_email: "لم يترك الزائر بريداً.",
+  reply_required: "اكتب الردّ قبل إرساله إلى البريد.",
   reply_too_long: "الردّ أطول من 600 حرف.",
   not_found: "الملاحظة لم تعد موجودة.",
   status_invalid: "اختر الحالة.",
@@ -124,6 +130,10 @@ export function FeedbackClient() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [saved, setSaved] = useState(false);
+  // 0005 §٢٦٧: الردّ إلى بريد الزائر، ونتيجة الإرسال، ولقطة شاشة التاجر
+  const [emailReply, setEmailReply] = useState(false);
+  const [emailResult, setEmailResult] = useState("");
+  const [shot, setShot] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [filter, kind, source]);
@@ -160,6 +170,20 @@ export function FeedbackClient() {
     setReply(f.reply);
     setErr("");
     setSaved(false);
+    setEmailReply(false);
+    setEmailResult("");
+    setShot(null);
+    if (f.source === "merchant" && f.has_attachment) {
+      void platformApi()
+        .GET("/api/platform/feedback/{tenant_id}/{feedback_id}/attachment", {
+          params: { path: { tenant_id: f.tenant_id, feedback_id: f.id } },
+        })
+        .then(({ data: a, response }) => {
+          const url = (a as { data_url?: string } | undefined)?.data_url;
+          if (response.ok && url?.startsWith("data:image/")) setShot(url);
+        })
+        .catch(() => undefined);
+    }
   };
 
   const save = async () => {
@@ -172,16 +196,19 @@ export function FeedbackClient() {
         open.source === "public"
           ? await platformApi().POST("/api/platform/feedback/public/{feedback_id}", {
               params: { path: { feedback_id: open.id } },
-              body: { status, reply } as never,
+              body: { status, reply, email_reply: emailReply } as never,
             })
           : await platformApi().POST("/api/platform/feedback/{tenant_id}/{feedback_id}", {
               params: { path: { tenant_id: open.tenant_id, feedback_id: open.id } },
               body: { status, reply } as never,
             });
-      const b = (res.data ?? res.error) as unknown as (Item & { detail?: string }) | undefined;
+      const b = (res.data ?? res.error) as unknown as
+        (Item & { detail?: string; email?: string }) | undefined;
       if (res.response.ok && b) {
         setOpen(b);
         setSaved(true);
+        setEmailResult(b.email ?? "");
+        setEmailReply(false);
         await load();
       } else setErr(ERRORS[b?.detail ?? ""] ?? "تعذّر الحفظ. أعد المحاولة.");
     } catch {
@@ -242,6 +269,20 @@ export function FeedbackClient() {
                 </button>
               ))}
             </div>
+            {data?.summary ? (
+              <p className="acc-choice__note plt-fb-summary">
+                آخر 30 يوماً:{" "}
+                {KINDS[source]
+                  .filter(([code]) => code)
+                  .map(([code, label], i) => (
+                    <span key={code}>
+                      {i ? " · " : ""}
+                      {label}{" "}
+                      <span className="sting-mono">{data.summary?.[source]?.[code] ?? 0}</span>
+                    </span>
+                  ))}
+              </p>
+            ) : null}
             <div className="pos-chips" role="group" aria-label="الحالة">
               {FILTERS.map(([code, label]) => {
                 const n = count(code);
@@ -358,12 +399,28 @@ export function FeedbackClient() {
                 {open.contact_email ? (
                   <p className="acc-choice__note">
                     بريد الزائر: <span className="sting-mono">{open.contact_email}</span>
+                    {open.emailed_at ? " · أُرسل إليه ردّ" : ""}
                   </p>
+                ) : null}
+                {shot ? (
+                  <a href={shot} target="_blank" rel="noreferrer" className="plt-fb-shot">
+                    <img src={shot} alt="لقطة الشاشة المرفقة" />
+                  </a>
                 ) : null}
                 {saved ? (
                   <Status
                     state="success"
-                    label={open.source === "public" ? "حُفظ" : "حُفظ — يراه المرسل في «ملاحظاتي»"}
+                    label={
+                      open.source === "public"
+                        ? emailResult === "sent"
+                          ? "حُفظ وأُرسل الردّ إلى بريد الزائر"
+                          : emailResult === "not_configured"
+                            ? "حُفظ — البريد غير مُعدّ على الخادم فلم يُرسل"
+                            : emailResult === "failed"
+                              ? "حُفظ — تعذّر إرسال البريد"
+                              : "حُفظ"
+                        : "حُفظ — يراه المرسل في «ملاحظاتي»"
+                    }
                   />
                 ) : null}
                 <RadioGroupField
@@ -377,7 +434,7 @@ export function FeedbackClient() {
                   label={open.source === "public" ? "ملاحظة الفريق" : "ردّ الفريق"}
                   hint={
                     open.source === "public"
-                      ? "داخلية — لا تصل الزائر"
+                      ? "داخلية ما لم تُرسلها إلى بريد الزائر"
                       : "يراه المرسل باسم «فريق فيزانو» — حتى 600 حرف"
                   }
                   rows={3}
@@ -385,6 +442,13 @@ export function FeedbackClient() {
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                 />
+                {open.source === "public" && open.contact_email ? (
+                  <SwitchField
+                    label="أرسل الردّ إلى بريد الزائر"
+                    checked={emailReply}
+                    onChange={setEmailReply}
+                  />
+                ) : null}
                 {err ? <Status state="validation_error" label={err} /> : null}
                 <div className="acc-links">
                   <Button onClick={() => void save()} loading={busy}>

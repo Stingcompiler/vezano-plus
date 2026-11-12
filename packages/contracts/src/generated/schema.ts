@@ -3481,6 +3481,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/feedback/{tenant_id}/{feedback_id}/attachment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description لقطة شاشة ملاحظة تاجر (§٢٦٧) — للفريق وحده. */
+        get: operations["platform_feedback_attachment_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/feedback/public/{feedback_id}": {
         parameters: {
             query?: never;
@@ -5526,6 +5543,10 @@ export interface components {
             platform: string;
             /** @default  */
             app_version: string;
+            /** @default  */
+            attachment: string;
+            /** @default  */
+            attachment_name: string;
         };
         GroupList: {
             total_items: number;
@@ -14676,10 +14697,13 @@ export interface components {
             filter: string;
             items: {
                 app_version: string;
+                attachment_name: string;
                 contact_email: string;
                 contact_ok: boolean;
                 created_at: string;
+                emailed_at: string;
                 from_name: string;
+                has_attachment: boolean;
                 id: string;
                 kind: string;
                 kind_label: string;
@@ -14708,13 +14732,28 @@ export interface components {
                 total: number;
             };
             source: string;
+            summary: {
+                merchant: {
+                    opinion: number;
+                    problem: number;
+                    suggestion: number;
+                };
+                public: {
+                    platform: number;
+                    shop: number;
+                    site: number;
+                };
+            };
         };
         PostPlatformFeedbackByTenantIdByFeedbackIdResponse: {
             app_version: string;
+            attachment_name: string;
             contact_email: string;
             contact_ok: boolean;
             created_at: string;
+            emailed_at: string;
             from_name: string;
+            has_attachment: boolean;
             id: string;
             kind: string;
             kind_label: string;
@@ -14731,12 +14770,20 @@ export interface components {
             updated_at: string;
             updated_by_name: string;
         };
+        GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse: {
+            data_url: string;
+            name: string;
+        };
         PostPlatformFeedbackPublicByFeedbackIdResponse: {
             app_version: string;
+            attachment_name: string;
             contact_email: string;
             contact_ok: boolean;
             created_at: string;
+            email: string;
+            emailed_at: string;
             from_name: string;
+            has_attachment: boolean;
             id: string;
             kind: string;
             kind_label: string;
@@ -17261,6 +17308,7 @@ export interface components {
                 client_id: string;
                 contact_ok: boolean;
                 created_at: string;
+                has_attachment: boolean;
                 id: string;
                 kind: string;
                 kind_label: string;
@@ -17278,6 +17326,7 @@ export interface components {
             client_id: string;
             contact_ok: boolean;
             created_at: string;
+            has_attachment: boolean;
             id: string;
             kind: string;
             kind_label: string;
@@ -17293,6 +17342,7 @@ export interface components {
             client_id: string;
             contact_ok: boolean;
             created_at: string;
+            has_attachment: boolean;
             id: string;
             kind: string;
             kind_label: string;
@@ -17309,6 +17359,7 @@ export interface components {
                 client_id: string;
                 contact_ok: boolean;
                 created_at: string;
+                has_attachment: boolean;
                 id: string;
                 kind: string;
                 kind_label: string;
@@ -26976,6 +27027,43 @@ export interface operations {
             };
             /** @description No response body */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    platform_feedback_attachment_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feedback_id: string;
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPlatformFeedbackByTenantIdByFeedbackIdAttachmentResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

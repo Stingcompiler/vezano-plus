@@ -43,6 +43,9 @@ interface Draft {
   readonly platform: string;
   readonly app_version: string;
   readonly created_at: string;
+  /** 0005 §٢٦٧: اللقطة من الويب والحاسوب فقط — الجوال يرسلها فارغة. */
+  readonly attachment: string;
+  readonly attachment_name: string;
 }
 
 interface Row {
@@ -160,6 +163,8 @@ export function FeedbackSection() {
       platform: "mobile",
       app_version: Constants.expoConfig?.version ?? "dev",
       created_at: new Date().toISOString(),
+      attachment: "",
+      attachment_name: "",
     };
     try {
       const r = await send(draft);

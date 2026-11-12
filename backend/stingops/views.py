@@ -1284,6 +1284,23 @@ class OperatorFeedbackUpdateView(APIView):
         return Response(out)
 
 
+class OperatorFeedbackAttachmentView(APIView):
+    """لقطة شاشة ملاحظة تاجر (§٢٦٧) — للفريق وحده."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None, 404: None})
+    def get(self, request: Request, tenant_id: uuid.UUID, feedback_id: uuid.UUID) -> Response:
+        from stingops import feedback_ops
+
+        if _operator(request) is None:
+            return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            return Response(feedback_ops.attachment(tenant_id, feedback_id))
+        except feedback_ops.FeedbackOpsRejected as e:
+            return Response({"detail": e.code}, status=e.status)
+
+
 class OperatorPublicFeedbackUpdateView(APIView):
     """حالة ملاحظة زائر وملاحظة الفريق عليها (§٢٦٦) — باسم المشغّل."""
 
@@ -1303,6 +1320,7 @@ class OperatorPublicFeedbackUpdateView(APIView):
                 status=str(body.get("status") or ""),
                 reply=str(body.get("reply") or ""),
                 by_name=auth.user.display_name,
+                email_reply=body.get("email_reply") is True,
             )
         except feedback_ops.FeedbackOpsRejected as e:
             return Response({"detail": e.code}, status=e.status)

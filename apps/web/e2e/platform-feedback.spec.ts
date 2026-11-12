@@ -43,6 +43,10 @@ async function operatorLogin(page: Page, newFeedback = 0) {
 
 const item = (o: Record<string, unknown>) => ({
   id: "f1",
+  source: "merchant",
+  has_attachment: true,
+  attachment_name: "screen.png",
+  contact_email: "",
   tenant_id: "t1",
   tenant_name: "بقالة الواحة",
   reference: "FB-261112-0001",
@@ -110,6 +114,15 @@ test.describe("PLT-21", () => {
       );
       return route.fulfill(json(200, items[0]));
     });
+    await page.route(/\/api\/platform\/feedback\/t1\/f1\/attachment$/, (route) =>
+      route.fulfill(
+        json(200, {
+          data_url:
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+          name: "screen.png",
+        }),
+      ),
+    );
     await operatorLogin(page, 2);
     const nav = page.getByRole("navigation", { name: "أقسام المشغّل" });
     await expect(nav.getByRole("link", { name: /الملاحظات/, includeHidden: true })).toContainText(
@@ -131,6 +144,7 @@ test.describe("PLT-21", () => {
       .locator("li", { hasText: "FB-261112-0001" })
       .getByRole("button", { name: "افتح" })
       .click();
+    await expect(root.getByRole("img", { name: "لقطة الشاشة المرفقة" })).toBeVisible();
     await root.getByLabel("ردّ الفريق").fill("سنضيفه في الإصدار القادم");
     await root.getByRole("radio", { name: "نُفّذت" }).check();
     await root.getByRole("button", { name: "احفظ وأبلغ المرسل" }).click();
@@ -171,18 +185,34 @@ test.describe("PLT-21", () => {
           counts: { new: 1, studying: 0, done: 0, declined: 0 },
           items: src === "public" ? [pub] : [item({})],
           new: { merchant: 1, public: 1 },
+          summary: {
+            merchant: { suggestion: 3, problem: 1, opinion: 0 },
+            public: { platform: 0, site: 2, shop: 1 },
+          },
         }),
       );
     });
     await page.route(/\/api\/platform\/feedback\/public\/p1$/, (route) => {
       updates.push(route.request().postDataJSON());
-      return route.fulfill(json(200, { ...pub, status: "studying", status_label: "قيد الدراسة" }));
+      return route.fulfill(
+        json(200, {
+          ...pub,
+          status: "studying",
+          status_label: "قيد الدراسة",
+          emailed_at: new Date().toISOString(),
+          email: "sent",
+        }),
+      );
     });
     await operatorLogin(page);
     await goSection(page, "الملاحظات");
     const root = page.locator('[data-screen="PLT-21"]');
     await expect(root).toContainText("تقرير مبيعات حسب الساعة");
+    await expect(root).toContainText("آخر 30 يوماً: اقتراح 3 · مشكلة 1 · رأي 0");
     await root.getByRole("button", { name: /^الزوار/ }).click();
+    await expect(root).toContainText(
+      "آخر 30 يوماً: اقتراح للمنصة 0 · مشكلة في الموقع 2 · ملاحظة عن محل 1",
+    );
     await expect(root).toContainText("خاصة بالفريق، لا تُنشر ولا تُرسل إلى المحل.");
     await expect(root.locator("#plt-feedback-list")).toContainText("الأسعار غير ظاهرة");
     await expect(root.locator("#plt-feedback-list")).toContainText("من زائر");
@@ -190,9 +220,10 @@ test.describe("PLT-21", () => {
     await root.getByRole("button", { name: "افتح" }).click();
     await expect(root).toContainText("visitor@example.com");
     await root.getByLabel("ملاحظة الفريق").fill("تواصلنا مع المحل");
+    await root.getByRole("switch", { name: "أرسل الردّ إلى بريد الزائر" }).click();
     await root.getByRole("button", { name: "احفظ", exact: true }).click();
-    await expect(root).toContainText("حُفظ");
-    expect(updates).toEqual([{ status: "studying", reply: "تواصلنا مع المحل" }]);
+    await expect(root).toContainText("حُفظ وأُرسل الردّ إلى بريد الزائر");
+    expect(updates).toEqual([{ status: "studying", reply: "تواصلنا مع المحل", email_reply: true }]);
   });
 
   test("empty", async ({ page }) => {

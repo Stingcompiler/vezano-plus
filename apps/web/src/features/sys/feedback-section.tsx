@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Notice, RadioGroupField, Status, SwitchField, TextAreaField } from "@sting/ui-web";
+import {
+  Button,
+  Notice,
+  RadioGroupField,
+  Status,
+  SwitchField,
+  TextAreaField,
+  Upload,
+} from "@sting/ui-web";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DayLabel } from "@/features/pos/invoices-client";
@@ -51,7 +59,21 @@ async function sendOne(d: FeedbackDraft): Promise<SendResult> {
   }
 }
 
+/** 0005 §٢٦٧: لقطة شاشة اختيارية — صورة حتى 1.5 ميغابايت. */
+const SHOT_MAX = 1.5 * 1024 * 1024;
+const SHOT_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+function readDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
+    r.onerror = () => reject(new Error("read"));
+    r.readAsDataURL(file);
+  });
+}
+
 const ERRORS: Record<string, string> = {
+  attachment_invalid: "اللقطة صورة PNG أو JPEG أو WebP حتى 1.5 ميغابايت.",
   text_required: "اكتب ملاحظتك أولاً.",
   text_too_long: "النص أطول من 1000 حرف.",
   rate_limited: "بلغت حدّ الملاحظات اليوم — جرّب غداً.",
@@ -68,6 +90,8 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
   const [kind, setKind] = useState("suggestion");
   const [text, setText] = useState("");
   const [contactOk, setContactOk] = useState(false);
+  const [shot, setShot] = useState<{ name: string; size: number; dataUrl: string } | null>(null);
+  const [shotError, setShotError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<FeedbackRow | null>(null);
@@ -144,12 +168,15 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
       platform: pushHost() === "desktop_app" ? "desktop" : "web",
       app_version: APP_VERSION,
       created_at: new Date().toISOString(),
+      attachment: shot?.dataUrl ?? "",
+      attachment_name: shot?.name ?? "",
     };
     try {
       const r = await sendOne(draft);
       if (r.ok) {
         setSent(r.row);
         setText("");
+        setShot(null);
         await load();
         return;
       }
@@ -159,6 +186,7 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
         setPending(queue);
         setSavedLocal(true);
         setText("");
+        setShot(null);
         return;
       }
       setError(ERRORS[r.code] ?? "لم تُقبل الملاحظة — راجع النص وأعد الإرسال.");
@@ -230,6 +258,37 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
               if (error) setError(null);
             }}
           />
+          <Upload
+            label="لقطة شاشة (اختياري)"
+            accept={SHOT_TYPES.join(",")}
+            constraintsText="صورة PNG أو JPEG أو WebP حتى 1.5 ميغابايت — قد تُظهر أسماء أو مبالغ، فراجعها قبل الإرسال؛ يراها فريق فيزانو وحده."
+            items={
+              shot
+                ? [
+                    {
+                      id: "shot",
+                      name: shot.name,
+                      sizeLabel: `${Math.ceil(shot.size / 1024)} KB`,
+                    },
+                  ]
+                : []
+            }
+            onFiles={(fs) => {
+              const f = fs[0];
+              if (!f) return;
+              if (!SHOT_TYPES.includes(f.type) || f.size > SHOT_MAX) {
+                setShot(null);
+                setShotError(ERRORS.attachment_invalid ?? null);
+                return;
+              }
+              setShotError(null);
+              void readDataUrl(f).then((dataUrl) =>
+                setShot({ name: f.name.slice(0, 120), size: f.size, dataUrl }),
+              );
+            }}
+            onRemove={() => setShot(null)}
+            error={shotError ?? undefined}
+          />
           <SwitchField
             label="يمكن للفريق التواصل معي"
             checked={contactOk}
@@ -273,6 +332,7 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
                   </span>
                 </div>
                 <p className="sys-feedback__text">{f.text}</p>
+                {f.has_attachment ? <span className="acc-choice__note">مع لقطة شاشة</span> : null}
                 {f.reply ? (
                   <div className="sys-feedback__reply">
                     <span className="sys-explain__k">ردّ فريق فيزانو</span>

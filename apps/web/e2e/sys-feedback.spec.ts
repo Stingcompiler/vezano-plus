@@ -85,7 +85,7 @@ const row = (over: Record<string, unknown> = {}) => ({
 async function checkLayout(page: Page) {
   const section = page.locator("#feedback");
   const small = await section
-    .locator("button:visible, input:visible, textarea:visible")
+    .locator("button:visible, input:not([type=file]):visible, textarea:visible")
     .evaluateAll((els) =>
       els.map((e) => e.getBoundingClientRect().height).filter((h) => h > 0 && h < 44),
     );
@@ -169,6 +169,8 @@ test.describe("SYS-11 · ملاحظاتك", () => {
     expect(sent).toHaveLength(1);
     expect(Object.keys(sent[0]!).sort()).toEqual([
       "app_version",
+      "attachment",
+      "attachment_name",
       "client_id",
       "contact_ok",
       "created_at",
@@ -214,6 +216,43 @@ test.describe("SYS-11 · ملاحظاتك", () => {
     await context.setOffline(false);
     await expect.poll(() => posted.length).toBe(1);
     await expect(section).not.toContainText("بانتظار الإرسال");
+  });
+
+  test("لقطة شاشة (§٢٦٧): صورة تُرفق، وغير الصورة تُرفض قبل الإرسال", async ({ page }) => {
+    await seed(page, "owner");
+    const sent: Record<string, unknown>[] = [];
+    await page.route(/\/api\/support\/feedback(\?.*)?$/, (route) => {
+      if (route.request().method() === "GET")
+        return route.fulfill(json(200, { items: [], unseen: 0 }));
+      const body = JSON.parse(route.request().postData() ?? "{}") as Record<string, unknown>;
+      sent.push(body);
+      return route.fulfill(
+        json(
+          201,
+          row({ client_id: body["client_id"], reply: "", unseen: false, has_attachment: true }),
+        ),
+      );
+    });
+    await login(page);
+    const section = page.locator("#feedback");
+    const input = section.locator('input[type="file"]').first();
+    await input.setInputFiles({
+      name: "notes.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("x"),
+    });
+    await expect(section).toContainText("اللقطة صورة PNG أو JPEG أو WebP حتى 1.5 ميغابايت.");
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await input.setInputFiles({ name: "screen.png", mimeType: "image/png", buffer: png });
+    await expect(section).toContainText("screen.png");
+    await section.getByLabel("ملاحظتك").fill("الشاشة تظهر هكذا");
+    await section.getByRole("button", { name: "أرسل الملاحظة" }).click();
+    await expect(section).toHaveAttribute("data-state", "success");
+    expect(String(sent[0]!["attachment"])).toMatch(/^data:image\/png;base64,/);
+    expect(sent[0]!["attachment_name"]).toBe("screen.png");
   });
 
   test("390: القسم يتسع للهاتف بلا تمرير أفقي، empty بلا ملاحظات", async ({ page }) => {

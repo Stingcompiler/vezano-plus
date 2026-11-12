@@ -17,6 +17,9 @@ export interface FeedbackDraft {
   readonly platform: string;
   readonly app_version: string;
   readonly created_at: string;
+  /** 0005 §٢٦٧: لقطة شاشة اختيارية (data URL). */
+  readonly attachment: string;
+  readonly attachment_name: string;
 }
 
 export interface FeedbackRow {
@@ -33,4 +36,5 @@ export interface FeedbackRow {
   readonly created_at: string;
   readonly updated_at: string;
   readonly unseen: boolean;
+  readonly has_attachment?: boolean | undefined;
 }

@@ -176,6 +176,9 @@ class Feedback(TenantScoped):
     updated_at = models.DateTimeField(null=True, blank=True)
     #: متى رأى المرسل آخر تحديث من الفريق — ما بعده «ردّ جديد»
     seen_at = models.DateTimeField(null=True, blank=True)
+    #: 0005 §٢٦٧: لقطة شاشة اختيارية (data URL لصورة، حتى 1.5 ميغابايت) — يراها الفريق وحده
+    attachment = models.TextField(blank=True, default="")
+    attachment_name = models.CharField(max_length=120, blank=True, default="")
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

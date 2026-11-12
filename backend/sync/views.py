@@ -383,6 +383,11 @@ class FeedbackSubmitSerializer(serializers.Serializer[dict[str, Any]]):
     screen = serializers.CharField(max_length=80, allow_blank=True, required=False, default="")
     platform = serializers.CharField(max_length=20, allow_blank=True, required=False, default="")
     app_version = serializers.CharField(max_length=80, allow_blank=True, required=False, default="")
+    # 0005 §٢٦٧: لقطة شاشة اختيارية (يُفحص نوعها وحجمها في الخدمة)
+    attachment = serializers.CharField(allow_blank=True, required=False, default="")
+    attachment_name = serializers.CharField(
+        max_length=200, allow_blank=True, required=False, default=""
+    )
 
 
 def _tenant_auth(request: Request) -> AuthContext | None:
@@ -435,6 +440,8 @@ class FeedbackView(APIView):
                     screen=v.get("screen", ""),
                     platform=v.get("platform", ""),
                     app_version=v.get("app_version", ""),
+                    attachment=v.get("attachment", ""),
+                    attachment_name=v.get("attachment_name", ""),
                 )
                 out = feedback.row(f)
         except feedback.FeedbackRejected as e:
