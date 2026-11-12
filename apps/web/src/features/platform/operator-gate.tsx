@@ -3,7 +3,11 @@
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
-import { operatorToken, resumeOperator } from "@/features/platform/operator-session";
+import {
+  operatorToken,
+  resumeOperator,
+  setOperatorExpiredHandler,
+} from "@/features/platform/operator-session";
 
 /**
  * حاجز مساحة المشغّل (0005 §١٦٨ — فحص 2026-10-17 VP01): بلا رمز في الذاكرة (إعادة تحميل أو رابط
@@ -14,6 +18,13 @@ export function OperatorGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const isLogin = pathname === "/platform/login";
   const [ready, setReady] = useState(() => isLogin || Boolean(operatorToken()));
+  // 0005 §٢٦٣ — انتهاء الجلسة أثناء العمل (فشل الاستئناف بعد 401): إلى الدخول بوجهة العودة
+  useEffect(() => {
+    setOperatorExpiredHandler((next) =>
+      router.replace(`/platform/login?next=${encodeURIComponent(next)}`),
+    );
+    return () => setOperatorExpiredHandler(null);
+  }, [router]);
   useEffect(() => {
     if (ready || isLogin) return;
     let alive = true;
