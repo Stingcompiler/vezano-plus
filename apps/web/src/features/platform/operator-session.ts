@@ -5,7 +5,8 @@
  * بعد إعادة التحميل أو الرابط المباشر من Cookie `HttpOnly` بسقف ثماني ساعات من الدخول (0005 §١٦٨ —
  * كان كل تحديث يعيد إلى الدخول، فحص 2026-10-17 VP01). كل دخول واستئناف وخروج يُسجَّل في الخادم.
  */
-import { type ContractsClient, createContractsClient } from "@sting/contracts";
+import { createApiClient } from "@sting/app-core";
+import type { ContractsClient } from "@sting/contracts";
 
 import { apiBaseUrl } from "@/lib/api";
 
@@ -57,9 +58,33 @@ export function operatorName(): string {
   return name;
 }
 
+let onExpired: ((next: string) => void) | null = null;
+
+/** ما يحدث حين تنتهي جلسة المشغّل فعلاً (فشل الاستئناف): يضعه حاجز المساحة بموجّه Next. */
+export function setOperatorExpiredHandler(handler: ((next: string) => void) | null): void {
+  onExpired = handler;
+}
+
+/**
+ * 0005 §٢٦٣ — رمز وصول المشغّل يعيش 15 دقيقة في الذاكرة، والعميل كان يُنشأ من `@sting/contracts`
+ * مباشرة بلا تجديد، فكل طلب بعد ربع ساعة على الشاشة (حفظ إعلان كُتب على مهل) يُرفض 401
+ * `token_not_valid`. الآن العميل نفسه الذي يستعمله المتجر (§١٢١): عند 401 يُستأنف من الـCookie مرة
+ * ويُعاد الطلب نفسه، وفشل الاستئناف وحده (سقف الثماني ساعات أو جلسة مُبطَلة) يمسح الجلسة ويقود إلى
+ * الدخول بوجهة العودة.
+ */
 export function platformApi(): ContractsClient {
-  if (!client)
-    client = createContractsClient({ baseUrl: apiBaseUrl(), getAccessToken: () => token });
+  client ??= createApiClient({
+    baseUrl: apiBaseUrl(),
+    getAccessToken: () => token,
+    resume: async () => ((await resumeOperator()) && token ? { access: token } : null),
+    onUnauthorized: () => {
+      clearOperatorSession();
+      if (typeof window === "undefined") return;
+      const here = `${location.pathname}${location.search}`;
+      if (!here.startsWith("/platform") || here.startsWith("/platform/login")) return;
+      onExpired?.(here);
+    },
+  });
   return client;
 }
 

@@ -79,7 +79,16 @@ const ERRORS: Record<string, string> = {
   cta_url_invalid: "وجهة الزرّ مسار داخل التطبيق يبدأ بـ / أو رابط يبدأ بـ https://",
   kind_invalid: "اختر نوع الإعلان من القائمة.",
   audience_invalid: "اختر الجمهور من القائمة.",
+  // 0005 §٢٦٣ — لا يظهر نصّ الخادم الخام (الإنجليزي) للمشغّل أبداً
+  session_expired: "انتهت جلسة المشغّل — ادخل مرة أخرى ثم أعد الحفظ.",
+  server_error: "تعذّر الحفظ — حاول مرة أخرى بعد لحظات.",
 };
+
+/** رمز الخطأ المعروض: 401 بعد فشل الاستئناف = جلسة منتهية؛ وما لا تعرفه الشاشة = خطأ عام. */
+function errorCode(status: number, detail: string | undefined): string {
+  if (status === 401) return "session_expired";
+  return detail && detail in ERRORS ? detail : "server_error";
+}
 
 interface Preview {
   targeted: number;
@@ -215,7 +224,7 @@ export function AnnouncementsClient() {
       setDraftId(b.announcement.id);
       return b.announcement;
     }
-    setErr(b?.detail ?? "server_error");
+    setErr(errorCode(r.response.status, b?.detail));
     return null;
   };
 
@@ -254,7 +263,7 @@ export function AnnouncementsClient() {
       if (r.response.ok && b?.announcement) {
         setScheduled(b.announcement);
         await load();
-      } else setErr(b?.detail ?? "server_error");
+      } else setErr(errorCode(r.response.status, b?.detail));
     } finally {
       setBusy("");
     }
@@ -350,7 +359,7 @@ export function AnnouncementsClient() {
             ) : null}
             {err && err !== "promise_outside_plan" ? (
               <Notice kind="warning" title="لم يُحفظ">
-                <p className="acc-lead">{ERRORS[err] ?? err}</p>
+                <p className="acc-lead">{ERRORS[err] ?? ERRORS.server_error}</p>
               </Notice>
             ) : null}
 
