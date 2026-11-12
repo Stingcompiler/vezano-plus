@@ -17,6 +17,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 
+import { GenerateBarcodeButton, InternalBarcodeNote } from "@/components/catalog/internal-barcode";
 import { M } from "@/components/catalog/parts";
 import { CatRow, Line } from "@/components/catalog/row";
 import { SelectField } from "@/components/catalog/select-field";
@@ -386,6 +387,13 @@ export default function UnitsScreen() {
           onChangeText={setAddBarcode}
           error={errorFor("barcode")}
         />
+        <InternalBarcodeNote value={addBarcode} />
+        {addBarcode.trim() ? null : (
+          <GenerateBarcodeButton
+            onCode={setAddBarcode}
+            disabledReason={busy ? tx(T, "جارٍ الحفظ") : undefined}
+          />
+        )}
         {errors
           .filter((e) => e.key === "barcode" && e.why.length)
           .map((e) => (

@@ -1086,6 +1086,56 @@
         }
       }
     },
+    "/api/catalog/barcode/assign-missing": {
+      "post": {
+        "operationId": "catalog_barcode_assign_missing_create",
+        "description": "CAT-01 «أنشئ باركوداً للأصناف التي بلا باركود»: المالك ومدير الفرع. دفعة في كل طلب؛\nالواجهة تعيده حتى `remaining == 0`.",
+        "tags": ["catalog"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCatalogBarcodeAssignMissingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/catalog/barcode/generate": {
+      "post": {
+        "operationId": "catalog_barcode_generate_create",
+        "description": "«أنشئ باركوداً داخلياً» (CAT-02/CAT-03؛ 0005 §٢٦٩): الرقم التالي من عدّاد المنشأة — EAN-13\nبالبادئة 20. يُعاد للحقل ولا يُربط بصنف هنا؛ الحفظ يتحقق من تفرّده كأي باركود.",
+        "tags": ["catalog"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostCatalogBarcodeGenerateResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/catalog/groups": {
       "get": {
         "operationId": "catalog_groups_retrieve",
@@ -15537,6 +15587,29 @@
         "required": ["barcode", "taken", "owner_item_id", "owner_item_name", "owner_unit_name"],
         "type": "object"
       },
+      "PostCatalogBarcodeAssignMissingResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "assigned": {
+            "type": "integer"
+          },
+          "remaining": {
+            "type": "integer"
+          }
+        },
+        "required": ["assigned", "remaining"],
+        "type": "object"
+      },
+      "PostCatalogBarcodeGenerateResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "barcode": {
+            "type": "string"
+          }
+        },
+        "required": ["barcode"],
+        "type": "object"
+      },
       "GetCatalogGroupsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -15633,6 +15706,9 @@
         "properties": {
           "all_total": {
             "type": "integer"
+          },
+          "can_assign_barcodes": {
+            "type": "boolean"
           },
           "groups": {
             "items": {
@@ -15784,6 +15860,9 @@
             },
             "type": "array"
           },
+          "missing_barcode_count": {
+            "type": "integer"
+          },
           "offset": {
             "type": "integer"
           },
@@ -15791,7 +15870,15 @@
             "type": "integer"
           }
         },
-        "required": ["items", "total", "all_total", "groups", "offset"],
+        "required": [
+          "items",
+          "total",
+          "all_total",
+          "groups",
+          "offset",
+          "can_assign_barcodes",
+          "missing_barcode_count"
+        ],
         "type": "object"
       },
       "PostCatalogItemsResponse": {

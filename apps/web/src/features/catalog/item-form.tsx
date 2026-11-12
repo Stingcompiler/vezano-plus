@@ -20,6 +20,7 @@ import {
   type ItemFieldError,
   type ServerFieldError,
 } from "./item-errors";
+import { GenerateBarcodeButton, InternalBarcodeNote } from "./internal-barcode";
 
 export type ItemFormState = "ready" | "validation_error" | "saving" | "success";
 
@@ -505,6 +506,17 @@ export function ItemForm({
                   <Link href={`/catalog/${initial.id}/price`} className="c-btn c-btn--secondary">
                     تاريخ السعر
                   </Link>
+                  {initial.barcode || initial.units.some((u) => u.barcode) ? (
+                    <>
+                      {" "}
+                      <Link
+                        href={`/catalog/labels?item=${initial.id}`}
+                        className="c-btn c-btn--secondary"
+                      >
+                        اطبع ملصقات
+                      </Link>
+                    </>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -519,6 +531,10 @@ export function ItemForm({
               error={errorFor("barcode")}
               disabledReason={disabledReason}
             />
+            <InternalBarcodeNote value={barcode} />
+            {barcode.trim() ? null : (
+              <GenerateBarcodeButton onCode={setBarcode} disabledReason={disabledReason} />
+            )}
           </div>
           <div data-field="sale_price_minor">
             <TextField

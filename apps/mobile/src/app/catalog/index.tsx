@@ -76,6 +76,12 @@ export default function CatalogIndex() {
   const [limit, setLimit] = useState(PAGE);
   const [scanning, setScanning] = useState(false);
   const [tick, setTick] = useState(0);
+  // 0005 §٢٦٩: التوليد الجماعي للمالك ومدير الفرع — مرآة الويب
+  const [canAssign, setCanAssign] = useState(false);
+  const [missing, setMissing] = useState(0);
+  const [assigning, setAssigning] = useState(false);
+  const [assigned, setAssigned] = useState(0);
+  const [assignFailed, setAssignFailed] = useState(false);
   const seq = useRef(0);
   const sourceRef = useRef<"local" | "server">("local");
 
@@ -116,8 +122,12 @@ export default function CatalogIndex() {
             items: LocalItem[];
             all_total: number;
             groups: { id: string; name: string }[];
+            can_assign_barcodes?: boolean;
+            missing_barcode_count?: number;
           };
           setItems(d.items);
+          setCanAssign(Boolean(d.can_assign_barcodes));
+          setMissing(d.missing_barcode_count ?? 0);
           setGroups(
             d.groups.map((g) => ({
               id: g.id,
@@ -145,6 +155,29 @@ export default function CatalogIndex() {
     }, 250);
     return () => clearTimeout(timer);
   }, [api, q, groupId, includeInactive, tick]);
+
+  /** دفعة بعد دفعة حتى لا يبقى صنف نشط بلا باركود؛ ثم تُعاد القائمة من الخادم. */
+  const assignMissing = async () => {
+    setAssigning(true);
+    setAssignFailed(false);
+    setAssigned(0);
+    let total = 0;
+    try {
+      for (;;) {
+        const { data, response } = await api.POST("/api/catalog/barcode/assign-missing");
+        const d = data as { assigned?: number; remaining?: number } | undefined;
+        if (!response.ok || !d) throw new Error("assign_failed");
+        total += d.assigned ?? 0;
+        if (!d.remaining || !d.assigned) break;
+      }
+    } catch {
+      setAssignFailed(true);
+    } finally {
+      setAssigned(total);
+      setAssigning(false);
+      setTick((t) => t + 1);
+    }
+  };
 
   const shown =
     source === "server" ? items : filterLocalItems(items, { q, groupId, includeInactive });
@@ -224,6 +257,38 @@ export default function CatalogIndex() {
           />
         </View>
       </View>
+      <View style={{ marginBottom: SPACE["4"] }}>
+        <Button
+          label={tx(T, "اطبع ملصقات")}
+          variant="secondary"
+          onPress={() => router.push("/catalog/labels")}
+        />
+      </View>
+      {canAssign && missing > 0 && state !== "offline" ? (
+        <View style={{ gap: SPACE["2"], marginBottom: SPACE["4"] }}>
+          <AppText variant="note" muted>
+            <M>{missing}</M> {tx(T, "صنف بلا باركود")}
+          </AppText>
+          <Button
+            label={tx(T, "أنشئ باركوداً للأصناف التي بلا باركود")}
+            variant="secondary"
+            onPress={() => void assignMissing()}
+            loading={assigning}
+          />
+        </View>
+      ) : null}
+      {assigned > 0 ? (
+        <StateView state="success" title={tx(T, "الباركود الداخلي")}>
+          <AppText variant="secondary">
+            {tx(T, "أُنشئ باركود داخلي لـ")} <M>{assigned}</M> {tx(T, "صنف")}
+          </AppText>
+        </StateView>
+      ) : null}
+      {assignFailed ? (
+        <AppText variant="note" accessibilityRole="alert" style={{ marginBottom: SPACE["3"] }}>
+          {tx(T, "تعذّر إنشاء الباركود — حاول مرة أخرى")}
+        </AppText>
+      ) : null}
 
       {state === "offline" ? (
         <StateView state="offline" title={tx(T, "كتالوج محلي")}>

@@ -7,7 +7,14 @@
 import { getStorage } from "@/lib/storage";
 
 import { type PairedDevice, loadModels, printBle } from "./ble";
-import { type PaperWidth, renderCanvas, testPage, toEscPos } from "./raster";
+import {
+  type LabelPrint,
+  labelsEscPos,
+  type PaperWidth,
+  renderCanvas,
+  testPage,
+  toEscPos,
+} from "./raster";
 
 export type Conn = "ble" | "usb" | "network";
 export type TestMode = "text" | "image";
@@ -116,4 +123,21 @@ export async function printReceiptOnDevice(
     }),
   );
   return printBle(p.ble, profile, bytes);
+}
+
+/**
+ * ملصقات CAT-07 على طابعة الإيصالات (0005 §٢٧٠): طابعة BLE أثبتت تجربتها العربية → raster عبر
+ * Bluetooth، ملصق في كل قصّة؛ وإلا «system» فيطبع المتصفح الملصقات بعرض الورقة بحواره.
+ */
+export async function printLabelsOnDevice(
+  labels: readonly LabelPrint[],
+  width: PaperWidth,
+): Promise<"printed" | "failed" | "unknown" | "system"> {
+  const list = await listPrinters();
+  const p = list.find((x) => x.conn === "ble" && x.ble && x.lastTest?.result === "ok");
+  if (!p?.ble || p.width === "a4") return "system";
+  const models = await loadModels();
+  const profile = models?.profiles.find((x) => x.id === p.ble?.profileId);
+  if (!profile) return "system";
+  return printBle(p.ble, profile, labelsEscPos(labels, width));
 }
