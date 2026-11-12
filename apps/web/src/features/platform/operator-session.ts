@@ -77,15 +77,48 @@ export function platformApi(): ContractsClient {
     baseUrl: apiBaseUrl(),
     getAccessToken: () => token,
     resume: async () => ((await resumeOperator()) && token ? { access: token } : null),
-    onUnauthorized: () => {
-      clearOperatorSession();
-      if (typeof window === "undefined") return;
-      const here = `${location.pathname}${location.search}`;
-      if (!here.startsWith("/platform") || here.startsWith("/platform/login")) return;
-      onExpired?.(here);
-    },
+    onUnauthorized: () => expireOperator(),
   });
   return client;
+}
+
+/** انتهت الجلسة فعلاً (فشل الاستئناف بعد 401): تُمسح ويقود الحاجز إلى الدخول بوجهة العودة. */
+function expireOperator(): void {
+  clearOperatorSession();
+  if (typeof window === "undefined") return;
+  const here = `${location.pathname}${location.search}`;
+  if (!here.startsWith("/platform") || here.startsWith("/platform/login")) return;
+  onExpired?.(here);
+}
+
+/**
+ * 0005 §٢٧١ — للطلبات خارج `platformApi()` (XMLHttpRequest لتقدّم الرفع): بعد 401 يُستأنف من الـCookie
+ * مرة ويعيد رمز الوصول الجديد لإعادة الطلب نفسه؛ `null` = الجلسة انتهت فعلاً (مُسحت، والحاجز يقود إلى
+ * الدخول).
+ */
+export async function renewOperatorAfter401(): Promise<string | null> {
+  if ((await resumeOperator()) && token) return token;
+  expireOperator();
+  return null;
+}
+
+/**
+ * 0005 §٢٧١ — `fetch` لمسار مشغّل خارج العقد المكتوب (معاملات لا يصفها OpenAPI): الرمز الحالي، وعند
+ * 401 استئناف مرة وإعادة الطلب نفسه — السلوك نفسه الذي يعطيه `platformApi()`.
+ */
+export async function operatorFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const send = (access: string | null) => {
+    const headers = new Headers(init.headers);
+    if (access) headers.set("Authorization", `Bearer ${access}`);
+    return fetch(`${apiBaseUrl()}${path}`, { ...init, headers });
+  };
+  const first = await send(token);
+  if (first.status !== 401 || !token) return first;
+  const fresh = await renewOperatorAfter401();
+  if (!fresh) return first;
+  const retried = await send(fresh);
+  if (retried.status === 401) expireOperator();
+  return retried;
 }
 
 let resumeInflight: Promise<boolean> | null = null;

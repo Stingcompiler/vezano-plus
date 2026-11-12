@@ -505,3 +505,39 @@ test.describe("REP-02", () => {
     await expect(page.getByRole("button", { name: "تصدير" })).toHaveCount(0);
   });
 });
+
+/** 0005 §٢٧٢ — رمز الوصول الأول («a») انتهى عمره؛ الاستئناف من الـCookie يعطي «a2». */
+async function expiredStoreToken(page: Page) {
+  const seen = { resumed: 0 };
+  await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+  await page.route("**/api/auth/resume", (route) => {
+    seen.resumed += 1;
+    return route.fulfill(
+      json(200, { access: "a2", refresh: "r2", session_id: "s", user_id: "u1", tenant_id: "t1" }),
+    );
+  });
+  return seen;
+}
+
+test("REP-02 — التصدير برمز انتهى عمره يُستأنف ويُعاد فيُنزَّل الملف (0005 §٢٧٢)", async ({
+  page,
+}) => {
+  await expiredStoreToken(page);
+  const exports: string[] = [];
+  await page.route("**/api/reports/receivables?**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("export") !== "csv") return route.fulfill(json(200, receivables()));
+    const auth = route.request().headers()["authorization"] ?? "";
+    exports.push(auth);
+    return auth === "Bearer a2"
+      ? route.fulfill({ status: 200, contentType: "text/csv", body: "name,balance\n" })
+      : route.fulfill(json(401, { detail: "token_not_valid" }));
+  });
+  await login(page, "/reports/receivables");
+  await expect(page.locator('[data-screen="REP-02"][data-state="ready"]')).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "تصدير" }).click();
+  expect((await download).suggestedFilename()).toBe("receivables-customers.csv");
+  expect(exports).toEqual(["Bearer a", "Bearer a2"]);
+  await expect(page).not.toHaveURL(/session-expired/);
+});

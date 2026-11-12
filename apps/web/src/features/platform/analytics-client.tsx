@@ -10,9 +10,8 @@ import "@/features/pos/pos.css";
 import "@/features/sys/sys.css";
 import "./platform.css";
 import "./analytics.css";
-import { operatorToken } from "@/features/platform/operator-session";
+import { operatorFetch, operatorToken } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
-import { apiBaseUrl } from "@/lib/api";
 
 interface Row {
   key: string;
@@ -125,21 +124,16 @@ export function AnalyticsClient() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const token = operatorToken();
-    if (!token) {
+    if (!operatorToken()) {
       router.replace("/platform/login");
       return;
     }
     setLoading(true);
     setFailed(false);
     try {
-      const res = await fetch(`${apiBaseUrl()}/api/platform/analytics?days=${days}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 401) {
-        router.replace("/platform/login");
-        return;
-      }
+      // 0005 §٢٧١ — 401 يُستأنف ويُعاد؛ انتهاء الجلسة فعلاً يقود إلى الدخول بوجهة العودة (الحاجز)
+      const res = await operatorFetch(`/api/platform/analytics?days=${days}`);
+      if (res.status === 401) return;
       if (!res.ok) throw new Error(String(res.status));
       setData((await res.json()) as Report);
     } catch {

@@ -150,3 +150,107 @@ test.describe("PLT-04 — جلسة المشغّل بعد ربع ساعة", () =>
     await expect(root).not.toContainText("A server error occurred.");
   });
 });
+
+/**
+ * 0005 §٢٧١ — طلبات المشغّل خارج `platformApi()`: تحليلات الزوار (fetch بمعامل لا يصفه العقد) ورفع
+ * إصدار في متجر التطبيقات (XMLHttpRequest لتقدّم الرفع) وسحبه. كانت تقود إلى الدخول عند أول 401.
+ */
+const REPORT = {
+  range: { days: 7, from: "2026-11-05", to: "2026-11-11" },
+  totals: { views: 64, visitors: 30, prev_views: 40, prev_visitors: 20 },
+  daily: [{ day: "2026-11-11", views: 64, visitors: 30 }],
+  countries: [{ key: "SD", visitors: 22, views: 50 }],
+  pages: [{ key: "/", visitors: 25, views: 40 }],
+  sources: [{ key: "", visitors: 18, views: 40 }],
+  devices: [{ key: "mobile", visitors: 24, views: 50 }],
+  funnel: [{ key: "visitors", label: "زاروا الموقع", value: 30 }],
+  geo_ready: true,
+  retention_days: 400,
+};
+const RELEASE = {
+  id: "r1",
+  name: "Vezano Plus",
+  platform: "android",
+  platform_label: "أندرويد",
+  version: "1.4.2",
+  published_at: "2026-11-07T10:00:00Z",
+};
+
+/** الرمز الأول («op») انتهى عمره؛ الاستئناف يعطي «op2». يعيد العدّاد ليُفحص. */
+async function expiredFirstToken(page: Page) {
+  const seen = { resumed: 0 };
+  await page.route("**/api/platform/resume", (route) => {
+    seen.resumed += 1;
+    return route.fulfill(json(200, { access: "op2", display_name: "طيب — تشغيل" }));
+  });
+  return seen;
+}
+const fresh = (route: { request(): { headers(): Record<string, string> } }) =>
+  route.request().headers()["authorization"] === "Bearer op2";
+
+test.describe("طلبات المشغّل خارج العقد المكتوب — جلسة بعد ربع ساعة", () => {
+  test("PLT-19: تحليلات الزوار تُستأنف وتُعاد بدل التحويل إلى الدخول", async ({ page }) => {
+    const seen = await expiredFirstToken(page);
+    const auths: string[] = [];
+    await page.route("**/api/platform/analytics?*", (route) => {
+      auths.push(route.request().headers()["authorization"] ?? "");
+      return route.fulfill(fresh(route) ? json(200, REPORT) : json(401, EXPIRED));
+    });
+    await operatorLogin(page);
+    await goSection(page, "تحليلات الزوار");
+    const root = page.locator('[data-screen="PLT-19"]');
+    await expect(root).toHaveAttribute("data-state", "ready");
+    await expect(page).toHaveURL(/\/platform\/analytics$/);
+    // React في التطوير يشغّل أثر التحميل مرتين: الترتيب هو المفحوص — المنتهي أولاً ثم الجديد
+    expect(auths[0]).toBe("Bearer op");
+    expect(auths.at(-1)).toBe("Bearer op2");
+    expect(auths.indexOf("Bearer op2")).toBeGreaterThan(auths.lastIndexOf("Bearer op"));
+    expect(seen.resumed).toBeGreaterThanOrEqual(1);
+  });
+
+  test("PLT-18: رفع إصدار بعد انتهاء الرمز يُستأنف ويُعاد الرفع نفسه، والسحب كذلك", async ({
+    page,
+  }) => {
+    const seen = await expiredFirstToken(page);
+    let rows: unknown[] = [];
+    const posts: string[] = [];
+    await page.route("**/api/platform/apps", (route) => {
+      if (route.request().method() === "GET") return route.fulfill(json(200, { releases: rows }));
+      posts.push(route.request().headers()["authorization"] ?? "");
+      if (!fresh(route)) return route.fulfill(json(401, EXPIRED));
+      rows = [RELEASE];
+      return route.fulfill(json(201, { release: RELEASE }));
+    });
+    const removes: string[] = [];
+    await page.route("**/api/platform/apps/r1/remove", (route) => {
+      removes.push(route.request().headers()["authorization"] ?? "");
+      rows = [];
+      return route.fulfill(json(200, { releases: [] }));
+    });
+    await operatorLogin(page);
+    await goSection(page, "متجر التطبيقات");
+    await expect(page).toHaveURL(/\/platform\/apps$/);
+    const root = page.locator('[data-screen="PLT-18"]');
+    await expect(root).toHaveAttribute("data-state", "empty");
+    await root.getByLabel("رقم الإصدار").fill("1.4.2");
+    await root
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({
+        name: "vezano-1.4.2.apk",
+        mimeType: "application/vnd.android.package-archive",
+        buffer: Buffer.from("apk"),
+      });
+    await root.getByRole("button", { name: "نشر للتجار" }).click();
+    await expect(root.getByText("نُشر الإصدار وصار متاحاً للتجار.")).toBeVisible();
+    await expect(page).toHaveURL(/\/platform\/apps$/);
+    expect(posts).toEqual(["Bearer op", "Bearer op2"]);
+    expect(seen.resumed).toBe(1);
+
+    // السحب بالرمز الجديد مباشرة (لا 401 ثانٍ)
+    page.once("dialog", (d) => void d.accept());
+    await root.getByRole("button", { name: "سحب الإصدار" }).first().click();
+    await expect(root.getByText("سُحب الإصدار.")).toBeVisible();
+    expect(removes).toEqual(["Bearer op2"]);
+  });
+});
