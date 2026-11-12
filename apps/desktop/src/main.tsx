@@ -7,7 +7,7 @@ import "./desktop.css";
 
 import { StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, Outlet, RouterProvider, useLocation } from "react-router";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from "react-router";
 
 import { Providers } from "@/app/providers";
 
@@ -60,7 +60,15 @@ const router = createBrowserRouter([
     children: [
       ...ROUTES.map((r) => ({
         path: r.path,
-        element: r.path === "/" && inTauri ? <DesktopRoot /> : <PageHost mod={r.mod} />,
+        element:
+          r.path === "/" && inTauri ? (
+            <DesktopRoot />
+          ) : r.path === "/notify" && inTauri ? (
+            // إذن Web Push لا معنى له داخل التطبيق: أي رابط إليه يفتح إشعارات الحاسوب (0005 §٢٦٢)
+            <Navigate to="/desktop/notifications" replace />
+          ) : (
+            <PageHost mod={r.mod} />
+          ),
       })),
       // شاشات الحاسوب وحده (DESK-01…05) — لا مقابل لها في الويب
       { path: "/desktop/welcome", element: <DeskWelcome /> },

@@ -169,7 +169,8 @@ export function NotifyClient() {
 
   // تطبيق الحاسوب: لا Web Push داخله أصلاً — ليس رفضاً من المستخدم ولا «متصفحاً داخل تطبيق». إشعاراته
   // إشعارات نظام من شاشته DESK-05، فمن وصل هنا يُنقل إليها (0005 §٢٥٦)
-  const desktopApp = perm === "unsupported" && pushHost() === "desktop_app";
+  // لا يُشترط «غير مدعوم»: WebView2 في ويندوز يعلن واجهات Web Push كالمتصفح ولا تعمل داخل التطبيق (§٢٦٢)
+  const desktopApp = pushHost() === "desktop_app";
   useEffect(() => {
     if (desktopApp) router.replace("/desktop/notifications");
   }, [desktopApp, router]);
