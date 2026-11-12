@@ -481,12 +481,14 @@ test.describe("DESK-05", () => {
     // الجولات التالية لا تكرّره
     await rounds(2);
     expect(await notified()).toHaveLength(1);
-    // النافذة في المقدمة: المستخدم داخل التطبيق — لا إشعار نظام
+    // النافذة في المقدمة تُشعَر أيضاً (0005 §٢٦٨) — من يعمل داخل التطبيق يرى الجديد فوراً
     await page.evaluate(() => {
       document.hasFocus = () => true;
     });
     items = [row("n3", { category: "account" }), ...items];
-    await rounds(2);
-    expect(await notified()).toHaveLength(1);
+    await expect
+      .poll(notified)
+      .toContainEqual({ title: "فيزانو بلص — حسابك", body: "تحديث في اشتراكك أو حسابك." });
+    expect(await notified()).toHaveLength(2);
   });
 });
