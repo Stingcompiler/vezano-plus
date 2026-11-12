@@ -139,6 +139,64 @@ class BarcodeCheckView(APIView):
             )
 
 
+def _can_assign_barcodes(request: Request) -> bool:
+    auth = request.auth
+    if not isinstance(auth, AuthContext):
+        return False
+    v = home.viewer_for(auth.user, auth.device)
+    return v.is_owner or v.role_code == "manager"
+
+
+class BarcodeGenerateView(APIView):
+    """«أنشئ باركوداً داخلياً» (CAT-02/CAT-03؛ 0005 §٢٦٩): الرقم التالي من عدّاد المنشأة — EAN-13
+    بالبادئة 20. يُعاد للحقل ولا يُربط بصنف هنا؛ الحفظ يتحقق من تفرّده كأي باركود."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 403: None, 409: None})
+    def post(self, request: Request) -> Response:
+        tid = _tenant(request.auth)
+        if tid is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(tid):
+            try:
+                code = services.next_internal_barcode()
+            except services.InternalBarcodesExhausted:
+                return Response(
+                    {"detail": "internal_barcodes_exhausted"}, status=status.HTTP_409_CONFLICT
+                )
+            return Response({"barcode": code})
+
+
+class BarcodeAssignMissingView(APIView):
+    """CAT-01 «أنشئ باركوداً للأصناف التي بلا باركود»: المالك ومدير الفرع. دفعة في كل طلب؛
+    الواجهة تعيده حتى `remaining == 0`."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 403: None, 409: None})
+    def post(self, request: Request) -> Response:
+        tid = _tenant(request.auth)
+        if tid is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        auth = request.auth
+        assert isinstance(auth, AuthContext)
+        with tenant_context(tid):
+            if not _can_assign_barcodes(request):
+                v = home.viewer_for(auth.user, auth.device)
+                return Response(
+                    {"detail": "barcode_owner_or_manager", "role_name": v.role_name},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            try:
+                assigned, remaining = services.assign_missing_barcodes(changed_by=auth.user)
+            except services.InternalBarcodesExhausted:
+                return Response(
+                    {"detail": "internal_barcodes_exhausted"}, status=status.HTTP_409_CONFLICT
+                )
+            return Response({"assigned": assigned, "remaining": remaining})
+
+
 class ItemsView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -181,6 +239,9 @@ class ItemsView(APIView):
                     "all_total": Item.objects.count(),
                     "groups": groups,
                     "offset": offset,
+                    # 0005 §٢٦٩: زرّ التوليد الجماعي في CAT-01 وعدده
+                    "can_assign_barcodes": _can_assign_barcodes(request),
+                    "missing_barcode_count": services.missing_barcode_count(),
                 }
             )
 

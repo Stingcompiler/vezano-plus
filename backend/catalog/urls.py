@@ -20,7 +20,9 @@ from catalog.price_views import (
 from catalog.views import (
     AliasesView,
     BalancesView,
+    BarcodeAssignMissingView,
     BarcodeCheckView,
+    BarcodeGenerateView,
     GroupsView,
     ItemActiveView,
     ItemDetailView,
@@ -84,6 +86,14 @@ urlpatterns = [
     ),
     path("catalog/units", UnitsView.as_view(), name="catalog-units"),
     path("catalog/barcode", BarcodeCheckView.as_view(), name="catalog-barcode"),
+    path(
+        "catalog/barcode/generate", BarcodeGenerateView.as_view(), name="catalog-barcode-generate"
+    ),
+    path(
+        "catalog/barcode/assign-missing",
+        BarcodeAssignMissingView.as_view(),
+        name="catalog-barcode-assign-missing",
+    ),
     path("catalog/balances", BalancesView.as_view(), name="catalog-balances"),
     path("catalog/groups", GroupsView.as_view(), name="catalog-groups"),
 ]

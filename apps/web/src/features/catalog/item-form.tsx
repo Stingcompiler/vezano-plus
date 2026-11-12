@@ -20,6 +20,7 @@ import {
   type ItemFieldError,
   type ServerFieldError,
 } from "./item-errors";
+import { GenerateBarcodeButton, InternalBarcodeNote } from "./internal-barcode";
 
 export type ItemFormState = "ready" | "validation_error" | "saving" | "success";
 
@@ -519,6 +520,10 @@ export function ItemForm({
               error={errorFor("barcode")}
               disabledReason={disabledReason}
             />
+            <InternalBarcodeNote value={barcode} />
+            {barcode.trim() ? null : (
+              <GenerateBarcodeButton onCode={setBarcode} disabledReason={disabledReason} />
+            )}
           </div>
           <div data-field="sale_price_minor">
             <TextField

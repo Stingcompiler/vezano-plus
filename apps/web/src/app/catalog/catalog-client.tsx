@@ -7,7 +7,16 @@ import {
   readLocalGroups,
   readLocalItems,
 } from "@sting/sync-core";
-import { formatMinor, Frame, Notice, SelectField, Status, Table, TextField } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  Frame,
+  Notice,
+  SelectField,
+  Status,
+  Table,
+  TextField,
+} from "@sting/ui-web";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -59,6 +68,12 @@ export function CatalogClient() {
   const [localAt, setLocalAt] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [skeletons, setSkeletons] = useState(7);
+  // 0005 §٢٦٩: التوليد الجماعي للمالك ومدير الفرع — الخادم يقول من يملكه وكم صنفاً بلا باركود
+  const [canAssign, setCanAssign] = useState(false);
+  const [missing, setMissing] = useState(0);
+  const [assigning, setAssigning] = useState(false);
+  const [assigned, setAssigned] = useState<number | null>(null);
+  const [assignFailed, setAssignFailed] = useState(false);
   const seq = useRef(0);
 
   useEffect(() => {
@@ -99,8 +114,12 @@ export function CatalogClient() {
         total: number;
         all_total: number;
         groups: { id: string; name: string }[];
+        can_assign_barcodes?: boolean;
+        missing_barcode_count?: number;
       };
       setItems(d.items);
+      setCanAssign(Boolean(d.can_assign_barcodes));
+      setMissing(d.missing_barcode_count ?? 0);
       setGroups(
         d.groups.map((g) => ({
           id: g.id,
@@ -122,6 +141,30 @@ export function CatalogClient() {
   useEffect(() => {
     void fetchServer();
   }, [fetchServer]);
+
+  /** دفعة بعد دفعة حتى لا يبقى صنف نشط بلا باركود؛ ثم تُعاد القائمة من الخادم. */
+  const assignMissing = async () => {
+    setAssigning(true);
+    setAssignFailed(false);
+    setAssigned(null);
+    let total = 0;
+    try {
+      for (;;) {
+        const { data, response } = await api().POST("/api/catalog/barcode/assign-missing");
+        const d = data as { assigned?: number; remaining?: number } | undefined;
+        if (!response.ok || !d) throw new Error("assign_failed");
+        total += d.assigned ?? 0;
+        if (!d.remaining || !d.assigned) break;
+      }
+      setAssigned(total);
+    } catch {
+      setAssignFailed(true);
+      if (total) setAssigned(total);
+    } finally {
+      setAssigning(false);
+      void fetchServer();
+    }
+  };
 
   const shown = items
     ? source === "server"
@@ -234,6 +277,30 @@ export function CatalogClient() {
             المجموعات
           </Link>
         </div>
+
+        {canAssign && missing > 0 && online ? (
+          <div className="cat-barcode-gen">
+            <p className="acc-choice__note">
+              <span className="sting-mono">{missing}</span> صنف بلا باركود
+            </p>
+            <Button variant="secondary" onClick={() => void assignMissing()} loading={assigning}>
+              أنشئ باركوداً للأصناف التي بلا باركود
+            </Button>
+          </div>
+        ) : null}
+
+        {assigned !== null && assigned > 0 ? (
+          <Notice kind="success" title="الباركود الداخلي">
+            <p className="acc-lead">
+              أُنشئ باركود داخلي لـ <span className="sting-mono">{assigned}</span> صنف
+            </p>
+          </Notice>
+        ) : null}
+        {assignFailed ? (
+          <p className="acc-choice__note" role="alert">
+            تعذّر إنشاء الباركود — حاول مرة أخرى
+          </p>
+        ) : null}
 
         {state === "offline" ? (
           <Notice kind="offline" title="كتالوج محلي">
