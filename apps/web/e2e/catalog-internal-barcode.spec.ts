@@ -6,7 +6,7 @@ import { fromFrame } from "./frame-provenance";
 /**
  * 0005 §٢٦٩ — الباركود الداخلي (المرحلة ١): زرّ «أنشئ باركوداً داخلياً» في CAT-02/CAT-03 يملأ الحقل
  * من عدّاد الخادم (EAN-13 بالبادئة 20)، والتوليد الجماعي في CAT-01 للمالك ومدير الفرع. النصوص غير
- * مرسومة (بانتظار الاعتماد) فتُفحص بـ`toContainText` لا `fromFrame`.
+ * مرسومة (اعتمدها المالك) فتُفحص بـ`toContainText` لا `fromFrame`.
  */
 const json = (status: number, body: unknown) => ({ status, json: body });
 
