@@ -348,3 +348,24 @@ test("ORG-11 — فتح الصفحة بلا جلسة يقود إلى الدخو�
   await page.goto("/org/apps");
   await expect(page).toHaveURL(/\/login\?next=(%2F|\/)org(%2F|\/)apps$/);
 });
+
+test("ORG-11 — جلسة انتهت فعلاً (فشل الاستئناف) تقود إلى «انتهت الجلسة» لا إلى الدخول (0005 §٢٧٤)", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/remember", (route) => route.fulfill({ status: 204 }));
+  await page.route("**/api/auth/resume", (route) =>
+    route.fulfill(json(401, { detail: "no_session" })),
+  );
+  await page.route("**/api/org/apps", (route) => route.fulfill(json(200, { releases: MERCHANT })));
+  // الجلسة تنتهي بعد فتح الصفحة: طلب رابط التنزيل يُرفض والاستئناف يفشل
+  await page.route("**/api/org/apps/r1/link", (route) =>
+    route.fulfill(json(401, { detail: "token_not_valid" })),
+  );
+  await login(page, "/org/apps");
+  const root = page.locator('[data-screen="ORG-11"][data-state="ready"]');
+  await root.getByRole("button", { name: "تنزيل ملف التثبيت" }).first().click();
+  await expect(page).toHaveURL(/\/session-expired\?return=/);
+  // لا تحويل لاحق إلى الدخول يطغى على ACC-08
+  await page.waitForTimeout(500);
+  await expect(page).toHaveURL(/\/session-expired\?return=/);
+});

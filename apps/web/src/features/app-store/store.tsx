@@ -97,13 +97,26 @@ async function getJson(path: string, token: string | null): Promise<Response> {
 
 const getPublicJson = (path: string) => getJson(path, null);
 // 0005 §٢٧٢ — 401 يُستأنف ويُعاد؛ انتهاء الجلسة فعلاً يمرّ بمعالج ACC-08 المشترك
-const getOrgJson = (path: string) => apiFetch(path, { cache: "no-store" });
+const getOrgJson = (path: string) => orgFetch(path, { cache: "no-store" });
+
+/**
+ * 0005 §٢٧٤ — 401 لطلب أُرسل بلا رمز = لا جلسة أصلاً (`apiFetch` لا يستأنف ولا يستدعي ACC-08).
+ * يُحكم عليه عند الإرسال لا بعد الردّ: معالج ACC-08 يمسح الرمز حين تنتهي جلسة فعلاً، فالسؤال «هل
+ * يوجد رمز الآن؟» كان يحوّل تلك الحالة إلى الدخول فوق «انتهت الجلسة».
+ */
+const SENT_WITHOUT_SESSION = new WeakSet<Response>();
+async function orgFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const anonymous = !getAccessToken();
+  const res = await apiFetch(path, init);
+  if (anonymous && res.status === 401) SENT_WITHOUT_SESSION.add(res);
+  return res;
+}
 const getOperatorJson = (path: string) => operatorFetch(path, { cache: "no-store" });
 
 function useCatalog(
   path: string,
   get: (path: string) => Promise<Response>,
-  onUnauthorized?: () => void,
+  onUnauthorized?: (res: Response) => void,
 ) {
   const [rows, setRows] = useState<Release[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -111,7 +124,7 @@ function useCatalog(
     try {
       const r = await get(path);
       if (r.status === 401) {
-        onUnauthorized?.();
+        onUnauthorized?.(r);
         return;
       }
       if (!r.ok) throw new Error(String(r.status));
@@ -295,11 +308,14 @@ export function PublicAppsSection() {
 /** ORG-11 — متجر التطبيقات للتاجر. */
 export function MerchantAppsClient() {
   const router = useRouter();
-  // 0005 §٢٧٣ — 401 بلا رمز في الذاكرة = لا جلسة أصلاً (`apiFetch` لا يستأنف ولا يستدعي ACC-08):
-  // الدخول بوجهة العودة بدل «جارٍ التحميل» إلى الأبد. جلسة انتهت فعلاً يتولاها معالج ACC-08.
-  const goLogin = useCallback(() => {
-    if (!getAccessToken()) router.replace("/login?next=/org/apps");
-  }, [router]);
+  // 0005 §٢٧٣ — بلا جلسة أصلاً: الدخول بوجهة العودة بدل «جارٍ التحميل» إلى الأبد. جلسة انتهت فعلاً
+  // يتولاها معالج ACC-08 («انتهت الجلسة») ولا تُحوَّل إلى الدخول (§٢٧٤).
+  const goLogin = useCallback(
+    (res: Response) => {
+      if (SENT_WITHOUT_SESSION.has(res)) router.replace("/login?next=/org/apps");
+    },
+    [router],
+  );
   const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson, goLogin);
   const [filter, setFilter] = useState<Platform | "">("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -309,8 +325,8 @@ export function MerchantAppsClient() {
     setBusyId(r.id);
     setMessage("");
     try {
-      const res = await apiFetch(`/api/org/apps/${r.id}/link`, { method: "POST" });
-      if (res.status === 401) return goLogin();
+      const res = await orgFetch(`/api/org/apps/${r.id}/link`, { method: "POST" });
+      if (res.status === 401) return goLogin(res);
       if (!res.ok) throw new Error(String(res.status));
       const { url } = (await res.json()) as { url: string };
       // مدير تنزيلات المتصفح يتولّى الملف: لا يُحمَّل في ذاكرة الصفحة

@@ -620,6 +620,79 @@ describe("SYS-11 — ملاحظاتك (0005 §٢٦٤)", () => {
     expect(screen.queryByText("ملاحظة الكاشير")).toBeNull();
   });
 
+  it("مسودة تُحفظ أثناء إرسال جارٍ لا تُمحى حين ينتهي الإرسال (0005 §٢٧٤)", async () => {
+    await asRole("owner");
+    await storage.transaction((t) =>
+      t.putMeta(
+        "feedback.outbox",
+        JSON.stringify([draft({ user_id: "u1", text: "الأولى في الطابور", client_id: "c-first" })]),
+      ),
+    );
+    let release: (r: Response) => void = () => undefined;
+    const slow = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    let posts = 0;
+    const base = server({ "GET /api/support/feedback": [200, { items: [], unseen: 0 }] });
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input as Request;
+      const url = new URL(typeof input === "string" ? input : req.url);
+      const method = (init?.method ?? req.method ?? "GET").toUpperCase();
+      if (method === "POST" && url.pathname === "/api/support/feedback") {
+        posts += 1;
+        // الأولى معلّقة على الشبكة؛ الثانية يرفضها الخادم بخطأ مؤقت فتدخل الطابور
+        return posts === 1
+          ? slow
+          : Promise.resolve(
+              new Response(JSON.stringify({ detail: "x" }), {
+                status: 503,
+                headers: { "content-type": "application/json" },
+              }),
+            );
+      }
+      return base(input, init);
+    }) as typeof fetch;
+    await renderWith(<SupportScreen />, fetchImpl);
+    await waitFor(() => expect(posts).toBe(1));
+    await fireEvent.changeText(screen.getByLabelText(tx(K, "ملاحظتك")), "كُتبت أثناء الإرسال");
+    await fireEvent.press(btn(tx(K, "أرسل الملاحظة")));
+    await waitFor(async () => expect((await queued()).map((q) => q.text)).toHaveLength(2));
+    release(
+      new Response(JSON.stringify({ id: "f1", reference: "FB-1", text: "الأولى في الطابور" }), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    await waitFor(async () =>
+      expect((await queued()).map((q) => q.text)).toEqual(["كُتبت أثناء الإرسال"]),
+    );
+  });
+
+  it("قائمة «ملاحظاتي» بردّ فاشل: خطأ مع «أعد المحاولة» لا «لا ملاحظات بعد» (0005 §٢٧٤)", async () => {
+    await asRole("owner");
+    let broken = true;
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input as Request;
+      const url = new URL(typeof input === "string" ? input : req.url);
+      const method = (init?.method ?? req.method ?? "GET").toUpperCase();
+      if (method === "GET" && url.pathname === "/api/support/feedback") {
+        return Promise.resolve(
+          new Response(JSON.stringify(broken ? { detail: "x" } : { items: [], unseen: 0 }), {
+            status: broken ? 500 : 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      return Promise.reject(new TypeError("Network request failed"));
+    }) as typeof fetch;
+    await renderWith(<SupportScreen />, fetchImpl);
+    await waitFor(() => expect(btn(tx(K, "أعد المحاولة"))).toBeTruthy());
+    expect(screen.queryByText(tx(K, "لا ملاحظات بعد"))).toBeNull();
+    broken = false;
+    await fireEvent.press(btn(tx(K, "أعد المحاولة")));
+    await waitFor(() => expect(screen.getByText(tx(K, "لا ملاحظات بعد"))).toBeTruthy());
+  });
+
   it.each([401, 429])(
     "إعادة الإرسال بردّ %i: المسودة تبقى في الطابور ولا تُحذف بصمت (0005 §٢٧٣)",
     async (status) => {
