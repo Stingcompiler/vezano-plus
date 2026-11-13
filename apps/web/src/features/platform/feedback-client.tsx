@@ -2,7 +2,7 @@
 
 import { Button, Notice, RadioGroupField, Status, SwitchField, TextAreaField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "@/features/home/home.css";
@@ -104,6 +104,23 @@ const ERRORS: Record<string, string> = {
   status_invalid: "اختر الحالة.",
 };
 
+/**
+ * 0005 §٢٧٣ — المتصفحات تمنع فتح رابط `data:` في تبويب (يظهر فارغاً): اللقطة تُفتح من رابط `blob:`
+ * بنوعها نفسه. `null` إن لم تكن صورة base64 سليمة — تُعرض حينها بلا رابط.
+ */
+function blobUrlOf(dataUrl: string): string | null {
+  const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+  if (!m?.[1] || !m[2]) return null;
+  try {
+    const bin = atob(m[2]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: m[1] }));
+  } catch {
+    return null;
+  }
+}
+
 const tone = (s: FbStatus) =>
   s === "done"
     ? "success"
@@ -134,6 +151,19 @@ export function FeedbackClient() {
   const [emailReply, setEmailReply] = useState(false);
   const [emailResult, setEmailResult] = useState("");
   const [shot, setShot] = useState<string | null>(null);
+  const [shotLink, setShotLink] = useState<string | null>(null);
+  // الملاحظة المفتوحة الآن — ردّ لقطة ملاحظة سابقة لا يُعرض تحت غيرها (0005 §٢٧٣)
+  const openId = useRef<string | null>(null);
+  useEffect(() => {
+    openId.current = open?.id ?? null;
+  }, [open]);
+  useEffect(() => {
+    const url = shot ? blobUrlOf(shot) : null;
+    setShotLink(url);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [shot]);
   const [failed, setFailed] = useState(false);
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [filter, kind, source]);
@@ -173,6 +203,7 @@ export function FeedbackClient() {
     setEmailReply(false);
     setEmailResult("");
     setShot(null);
+    openId.current = f.id;
     if (f.source === "merchant" && f.has_attachment) {
       void platformApi()
         .GET("/api/platform/feedback/{tenant_id}/{feedback_id}/attachment", {
@@ -180,6 +211,7 @@ export function FeedbackClient() {
         })
         .then(({ data: a, response }) => {
           const url = (a as { data_url?: string } | undefined)?.data_url;
+          if (openId.current !== f.id) return;
           if (response.ok && url?.startsWith("data:image/")) setShot(url);
         })
         .catch(() => undefined);
@@ -402,10 +434,14 @@ export function FeedbackClient() {
                     {open.emailed_at ? " · أُرسل إليه ردّ" : ""}
                   </p>
                 ) : null}
-                {shot ? (
-                  <a href={shot} target="_blank" rel="noreferrer" className="plt-fb-shot">
+                {shot && shotLink ? (
+                  <a href={shotLink} target="_blank" rel="noreferrer" className="plt-fb-shot">
                     <img src={shot} alt="لقطة الشاشة المرفقة" />
                   </a>
+                ) : shot ? (
+                  <span className="plt-fb-shot">
+                    <img src={shot} alt="لقطة الشاشة المرفقة" />
+                  </span>
                 ) : null}
                 {saved ? (
                   <Status

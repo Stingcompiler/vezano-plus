@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DayLabel } from "@/features/pos/invoices-client";
 import { api } from "@/lib/api";
+import { useApp } from "@/lib/app-context";
 import { APP_VERSION } from "@/lib/diagnostics";
 import { useOnline } from "@/lib/online";
 import { pushHost } from "@/lib/pwa";
@@ -24,7 +25,14 @@ import { FEEDBACK_TEXT_MAX, type FeedbackDraft, type FeedbackRow, feedbackKinds 
 export const FEEDBACK_OUTBOX_META = "feedback.outbox";
 
 type SectionState =
-  "loading" | "ready" | "empty" | "validation_error" | "saved_local" | "success" | "offline";
+  | "loading"
+  | "ready"
+  | "empty"
+  | "validation_error"
+  | "saved_local"
+  | "success"
+  | "offline"
+  | "server_error";
 
 async function readOutbox(): Promise<FeedbackDraft[]> {
   const raw = await getStorage().read((tx) => tx.getMeta(FEEDBACK_OUTBOX_META));
@@ -41,21 +49,38 @@ async function writeOutbox(items: readonly FeedbackDraft[]): Promise<void> {
   await getStorage().transaction((tx) => tx.putMeta(FEEDBACK_OUTBOX_META, JSON.stringify(items)));
 }
 
-type SendResult = { ok: true; row: FeedbackRow } | { ok: false; code: string; retry: boolean };
+/**
+ * `retry`: تُحفظ في الطابور عند الإرسال (بلا اتصال، 5xx، جلسة انتهت). `hold`: تبقى في الطابور عند
+ * إعادة المحاولة — ومعها 429 (حدّ اليوم يزول غداً). ما عداهما رفض نهائي (0005 §٢٧٣).
+ */
+type SendResult =
+  | { ok: true; row: FeedbackRow }
+  | { ok: false; code: string; retry: boolean; hold: boolean; auth: boolean };
+
+const AUTH = [401, 403];
+
+/** الطابور للجهاز كله؛ كل مسودة تحمل صاحبها فلا تُرسل ولا تُعرض إلا له (0005 §٢٧٣). */
+const ownedBy = (d: FeedbackDraft, userId: string | null) => !d.user_id || d.user_id === userId;
 
 async function sendOne(d: FeedbackDraft): Promise<SendResult> {
   try {
-    const { data, error, response } = await api().POST("/api/support/feedback", { body: d });
+    // صاحب المسودة للطابور المحلي وحده — لا يخرج من الجهاز
+    const { user_id: _owner, ...body } = d;
+    void _owner;
+    const { data, error, response } = await api().POST("/api/support/feedback", { body });
     if (response.ok && data) return { ok: true, row: data as unknown as FeedbackRow };
     const code = (error as { detail?: unknown } | undefined)?.detail;
-    // 400/429: الخادم رفضها نهائياً — لا تُعاد. 5xx: تبقى في الطابور.
+    const auth = AUTH.includes(response.status);
+    const retry = response.status >= 500 || response.status === 408 || auth;
     return {
       ok: false,
       code: typeof code === "string" ? code : "server_error",
-      retry: response.status >= 500,
+      retry,
+      hold: retry || response.status === 429,
+      auth,
     };
   } catch {
-    return { ok: false, code: "offline", retry: true };
+    return { ok: false, code: "offline", retry: true, hold: true, auth: false };
   }
 }
 
@@ -87,6 +112,7 @@ const ERRORS: Record<string, string> = {
  */
 export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: string }) {
   const online = useOnline();
+  const userId = useApp().session.userId;
   const [kind, setKind] = useState("suggestion");
   const [text, setText] = useState("");
   const [contactOk, setContactOk] = useState(false);
@@ -98,12 +124,19 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
   const [savedLocal, setSavedLocal] = useState(false);
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
   const [pending, setPending] = useState<FeedbackDraft[]>([]);
+  const [failed, setFailed] = useState(false);
   const flushing = useRef(false);
 
   const load = useCallback(async () => {
     try {
       const { data, response } = await api().GET("/api/support/feedback");
-      if (!response.ok || !data) return;
+      if (!response.ok || !data) {
+        // ردّ فاشل من الخادم: لا يبقى القسم «جارٍ التحميل» إلى الأبد
+        setFailed(true);
+        setItems((prev) => prev ?? []);
+        return;
+      }
+      setFailed(false);
       const body = data as unknown as { items: FeedbackRow[]; unseen: number };
       setItems(body.items);
       if (body.unseen > 0) void api().POST("/api/support/feedback/seen");
@@ -119,26 +152,35 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
       const queue = await readOutbox();
       const keep: FeedbackDraft[] = [];
       let delivered = false;
+      let stopped = false;
       for (const d of queue) {
+        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها؛ وبعد رفض الجلسة لا يُرسل ما بعدها
+        if (stopped || !ownedBy(d, userId)) {
+          keep.push(d);
+          continue;
+        }
         const r = await sendOne(d);
         if (r.ok) delivered = true;
-        else if (r.retry) keep.push(d);
+        else if (r.hold) {
+          keep.push(d);
+          if (r.auth) stopped = true;
+        }
       }
       if (keep.length !== queue.length) await writeOutbox(keep);
-      setPending(keep);
+      setPending(keep.filter((d) => ownedBy(d, userId)));
       if (delivered) await load();
     } finally {
       flushing.current = false;
     }
-  }, [load]);
+  }, [load, userId]);
 
   useEffect(() => {
     void (async () => {
-      setPending(await readOutbox());
+      setPending((await readOutbox()).filter((d) => ownedBy(d, userId)));
       await load();
       await flush();
     })();
-  }, [load, flush]);
+  }, [load, flush, userId]);
 
   useEffect(() => {
     if (online) void flush();
@@ -170,6 +212,7 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
       created_at: new Date().toISOString(),
       attachment: shot?.dataUrl ?? "",
       attachment_name: shot?.name ?? "",
+      ...(userId ? { user_id: userId } : {}),
     };
     try {
       const r = await sendOne(draft);
@@ -183,7 +226,7 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
       if (r.retry) {
         const queue = [...(await readOutbox()), draft];
         await writeOutbox(queue);
-        setPending(queue);
+        setPending(queue.filter((d) => ownedBy(d, userId)));
         setSavedLocal(true);
         setText("");
         setShot(null);
@@ -206,9 +249,11 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
             ? "success"
             : !online
               ? "offline"
-              : (items?.length ?? 0) + pending.length === 0
-                ? "empty"
-                : "ready";
+              : failed
+                ? "server_error"
+                : (items?.length ?? 0) + pending.length === 0
+                  ? "empty"
+                  : "ready";
 
   return (
     <section
@@ -303,6 +348,14 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
         <div className="sys-feedback__mine">
           <h3 className="cat-head__title">ملاحظاتي</h3>
           {state === "loading" ? <Status state="loading" /> : null}
+          {failed && online ? (
+            <div className="acc-links">
+              <Status state="server_error" />
+              <Button variant="quiet" onClick={() => void load()}>
+                أعد المحاولة
+              </Button>
+            </div>
+          ) : null}
           {state === "empty" ? (
             <Notice kind="empty" title="لا ملاحظات بعد">
               <p className="acc-lead">ما ترسله يظهر هنا مع حالته وردّ الفريق.</p>

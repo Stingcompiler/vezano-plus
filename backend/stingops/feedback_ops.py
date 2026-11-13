@@ -13,6 +13,7 @@ from django.utils import timezone
 from core.models import Tenant
 from core.tenancy import platform_context, tenant_context
 from stingops.models import PublicFeedback
+from sync.feedback import has_attachment, light
 from sync.models import Feedback
 
 log = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def _row(f: Feedback, tenants: dict[Any, str]) -> dict[str, Any]:
         "updated_by_name": f.updated_by_name,
         "updated_at": _iso(f.updated_at),
         "created_at": _iso(f.created_at),
-        "has_attachment": bool(f.attachment),
+        "has_attachment": has_attachment(f),
         "attachment_name": f.attachment_name,
         "emailed_at": "",
     }
@@ -145,7 +146,8 @@ def list_payload(
     if source == "public":
         return {**_public_list(status_filter, kind), "new": new_counts(), "summary": summary()}
     with platform_context():
-        qs = Feedback.unscoped.all()
+        # 0005 §٢٧٣: القائمة بلا عمود اللقطة — تُطلب عند الفتح (`attachment`)
+        qs = light(Feedback.unscoped.all())
         counts = {s: qs.filter(status=s).count() for s in Feedback.Status.values}
         if status_filter == "open":
             qs = qs.filter(status__in=[Feedback.Status.NEW, Feedback.Status.STUDYING])
@@ -175,7 +177,7 @@ def update(
     if len(reply) > REPLY_MAX:
         raise FeedbackOpsRejected("reply_too_long")
     with platform_context():
-        f = Feedback.unscoped.filter(tenant_id=tenant_id, id=feedback_id).first()
+        f = light(Feedback.unscoped.filter(tenant_id=tenant_id, id=feedback_id)).first()
         if f is None:
             raise FeedbackOpsRejected("not_found", 404)
         if f.status == status and f.reply == reply:

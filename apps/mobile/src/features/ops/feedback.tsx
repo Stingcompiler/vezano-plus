@@ -46,7 +46,16 @@ interface Draft {
   /** 0005 §٢٦٧: اللقطة من الويب والحاسوب فقط — الجوال يرسلها فارغة. */
   readonly attachment: string;
   readonly attachment_name: string;
+  /** صاحب المسودة على جهاز مشترك (0005 §٢٧٣) — للطابور المحلي وحده، الخادم يتجاهله. */
+  readonly user_id?: string;
 }
+
+/** الطابور للجهاز كله؛ كل مسودة تحمل صاحبها فلا تُرسل ولا تُعرض إلا له. */
+const ownedBy = (d: Draft, userId: string | null) => !d.user_id || d.user_id === userId;
+/** تُحفظ في الطابور عند الإرسال: بلا اتصال، خطأ خادم، أو جلسة انتهت — لا تُحذف بصمت (0005 §٢٧٣). */
+const AUTH = [401, 403];
+const queueable = (r: { offline: boolean; status: number }) =>
+  r.offline || r.status >= 500 || r.status === 408 || AUTH.includes(r.status);
 
 interface Row {
   readonly id: string;
@@ -85,7 +94,8 @@ async function writeOutbox(items: readonly Draft[]): Promise<void> {
 }
 
 export function FeedbackSection() {
-  const { api } = useSession();
+  const { api, state: session } = useSession();
+  const userId = session.userId;
   const c = useColors();
   const [kind, setKind] = useState("suggestion");
   const [text, setText] = useState("");
@@ -99,7 +109,12 @@ export function FeedbackSection() {
   const flushing = useRef(false);
 
   const send = useCallback(
-    (d: Draft) => call<Row>(() => api.POST("/api/support/feedback", { body: d })),
+    (d: Draft) => {
+      // صاحب المسودة للطابور المحلي وحده — لا يخرج من الجهاز
+      const { user_id: _owner, ...body } = d;
+      void _owner;
+      return call<Row>(() => api.POST("/api/support/feedback", { body }));
+    },
     [api],
   );
 
@@ -120,22 +135,32 @@ export function FeedbackSection() {
       const queue = await readOutbox();
       const keep: Draft[] = [];
       let delivered = false;
+      let stopped = false;
       for (const d of queue) {
+        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها؛ وبعد رفض الجلسة لا يُرسل ما بعدها
+        if (stopped || !ownedBy(d, userId)) {
+          keep.push(d);
+          continue;
+        }
         const r = await send(d);
         if (r.ok) delivered = true;
-        else if (r.offline || r.status >= 500) keep.push(d);
+        // 429: حدّ اليوم يزول غداً — تبقى في الطابور
+        else if (queueable(r) || r.status === 429) {
+          keep.push(d);
+          if (AUTH.includes(r.status)) stopped = true;
+        }
       }
       if (keep.length !== queue.length) await writeOutbox(keep);
-      setPending(keep);
+      setPending(keep.filter((d) => ownedBy(d, userId)));
       if (delivered) await load();
     } finally {
       flushing.current = false;
     }
-  }, [send, load]);
+  }, [send, load, userId]);
 
   useEffect(() => {
     void (async () => {
-      setPending(await readOutbox());
+      setPending((await readOutbox()).filter((d) => ownedBy(d, userId)));
       await load();
       await flush();
     })();
@@ -143,7 +168,7 @@ export function FeedbackSection() {
       if (s === "active") void flush();
     });
     return () => sub.remove();
-  }, [load, flush]);
+  }, [load, flush, userId]);
 
   const submit = async () => {
     if (busy) return;
@@ -165,6 +190,7 @@ export function FeedbackSection() {
       created_at: new Date().toISOString(),
       attachment: "",
       attachment_name: "",
+      ...(userId ? { user_id: userId } : {}),
     };
     try {
       const r = await send(draft);
@@ -174,10 +200,10 @@ export function FeedbackSection() {
         await load();
         return;
       }
-      if (r.offline || r.status >= 500) {
+      if (queueable(r)) {
         const queue = [...(await readOutbox()), draft];
         await writeOutbox(queue);
-        setPending(queue);
+        setPending(queue.filter((d) => ownedBy(d, userId)));
         setSavedLocal(true);
         setText("");
         return;

@@ -132,3 +132,40 @@ def test_feedback_is_tenant_isolated(ctx: dict[str, Any], two_tenants: Any) -> N
     _post(c, _h(ctx["tokens"]["owner"]), URL, _body())
     with tenant_context(two_tenants.b.id):
         assert Feedback.objects.count() == 0
+
+
+def test_duplicate_reference_takes_next_number(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٧٣: ملاحظتان في اللحظة نفسها تحسبان الرقم نفسه — الخاسرة تأخذ التالي لا خطأ خادم."""
+    c = Client()
+    cash = _h(ctx["tokens"]["cashier"])
+    first = _post(c, cash, URL, _body()).json()
+    # كأنّ ملاحظة أخرى سبقت إلى الرقم التالي قبل أن تُحصى
+    taken = first["reference"][:-4] + "0002"
+    with tenant_context(ctx["tenant"].id):
+        Feedback.objects.filter(id=first["id"]).update(reference=taken)
+    r = _post(c, cash, URL, _body(text="ملاحظة ثانية"))
+    assert r.status_code == 201, r.content
+    assert r.json()["reference"] == first["reference"][:-4] + "0003"
+
+
+def test_lists_do_not_load_the_screenshot_column(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٧٣: القائمتان تعرفان وجود اللقطة بلا تحميل عمودها (حتى 2 ميغابايت للصف)."""
+    from stingops import feedback_ops
+    from sync import feedback
+
+    png = "data:image/png;base64,iVBORw0KGgo="
+    c = Client()
+    cash = _h(ctx["tokens"]["cashier"])
+    with_shot = _post(c, cash, URL, _body(attachment=png, attachment_name="s.png")).json()
+    plain = _post(c, cash, URL, _body(text="بلا لقطة")).json()
+    with tenant_context(ctx["tenant"].id):
+        rows = list(feedback.light(Feedback.objects.all()))
+        assert all("attachment" in f.get_deferred_fields() for f in rows)
+        assert {str(f.id): feedback.has_attachment(f) for f in rows} == {
+            with_shot["id"]: True,
+            plain["id"]: False,
+        }
+    mine = {i["id"]: i["has_attachment"] for i in c.get(URL, headers=cash).json()["items"]}
+    assert mine == {with_shot["id"]: True, plain["id"]: False}
+    listed = {i["id"]: i["has_attachment"] for i in feedback_ops.list_payload()["items"]}
+    assert listed == {with_shot["id"]: True, plain["id"]: False}

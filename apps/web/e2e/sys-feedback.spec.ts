@@ -268,4 +268,61 @@ test.describe("SYS-11 · ملاحظاتك", () => {
     await expect(section).toContainText("ما ترسله يظهر هنا مع حالته وردّ الفريق.");
     await checkLayout(page);
   });
+
+  test("ردّ فاشل لقائمة «ملاحظاتي»: server_error مع «أعد المحاولة» لا تحميل بلا نهاية (§٢٧٣)", async ({
+    page,
+  }) => {
+    await seed(page, "owner");
+    let broken = true;
+    await page.route(/\/api\/support\/feedback(\?.*)?$/, (route) =>
+      broken
+        ? route.fulfill(json(500, { detail: "server_error" }))
+        : route.fulfill(json(200, { items: [row()], unseen: 0 })),
+    );
+    await login(page);
+    const section = page.locator("#feedback");
+    await expect(section).toHaveAttribute("data-state", "server_error");
+    broken = false;
+    await section.getByRole("button", { name: "أعد المحاولة" }).click();
+    await expect(section).toHaveAttribute("data-state", "ready");
+  });
+
+  test("الطابور لا يُحذف بصمت: 429 عند إعادة الإرسال تُبقي المسودة «بانتظار الإرسال» (§٢٧٣)", async ({
+    page,
+    context,
+  }) => {
+    await seed(page, "owner");
+    let mode: "offline" | "limited" | "open" = "offline";
+    const posted: string[] = [];
+    await page.route(/\/api\/support\/feedback(\?.*)?$/, (route) => {
+      if (mode === "offline") return route.abort("internetdisconnected");
+      if (route.request().method() === "GET")
+        return route.fulfill(json(200, { items: [], unseen: 0 }));
+      if (mode === "limited") return route.fulfill(json(429, { detail: "rate_limited" }));
+      const body = JSON.parse(route.request().postData() ?? "{}") as Record<string, unknown>;
+      posted.push(String(body["client_id"]));
+      return route.fulfill(
+        json(201, row({ client_id: body["client_id"], reply: "", unseen: false })),
+      );
+    });
+    await login(page);
+    const section = page.locator("#feedback");
+    await section.getByLabel("ملاحظتك").fill("ملاحظة كُتبت بلا اتصال");
+    await section.getByRole("button", { name: "أرسل الملاحظة" }).click();
+    await expect(section).toHaveAttribute("data-state", "saved_local");
+    const limited = page.waitForResponse(
+      (r) => r.url().endsWith("/api/support/feedback") && r.status() === 429,
+    );
+    mode = "limited";
+    await context.setOffline(true);
+    await context.setOffline(false);
+    await limited;
+    await expect(section).toContainText("بانتظار الإرسال");
+    await expect(section).toContainText("ملاحظة كُتبت بلا اتصال");
+    mode = "open";
+    await context.setOffline(true);
+    await context.setOffline(false);
+    await expect.poll(() => posted.length).toBe(1);
+    await expect(section).not.toContainText("بانتظار الإرسال");
+  });
 });

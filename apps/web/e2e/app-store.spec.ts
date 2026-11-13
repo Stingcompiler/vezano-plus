@@ -335,3 +335,16 @@ test("ORG-11 — القائمة برمز انتهى عمره تُستأنف وت
   expect(auths.at(-1)).toBe("Bearer a2");
   expect(seen.resumed).toBeGreaterThanOrEqual(1);
 });
+
+test("ORG-11 — فتح الصفحة بلا جلسة يقود إلى الدخول بوجهة العودة، لا «جارٍ التحميل» (0005 §٢٧٣)", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/resume", (route) =>
+    route.fulfill(json(401, { detail: "no_session" })),
+  );
+  await page.route("**/api/org/apps", (route) =>
+    route.fulfill(json(401, { detail: "not_authenticated" })),
+  );
+  await page.goto("/org/apps");
+  await expect(page).toHaveURL(/\/login\?next=(%2F|\/)org(%2F|\/)apps$/);
+});

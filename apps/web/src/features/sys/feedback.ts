@@ -20,6 +20,8 @@ export interface FeedbackDraft {
   /** 0005 §٢٦٧: لقطة شاشة اختيارية (data URL). */
   readonly attachment: string;
   readonly attachment_name: string;
+  /** صاحب المسودة على جهاز مشترك (0005 §٢٧٣) — للطابور المحلي وحده، الخادم يتجاهله. */
+  readonly user_id?: string;
 }
 
 export interface FeedbackRow {
