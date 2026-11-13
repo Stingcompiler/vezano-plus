@@ -28,7 +28,7 @@ import {
   renewOperatorAfter401,
 } from "@/features/platform/operator-session";
 import { PlatformFrame } from "@/features/platform/platform-nav";
-import { apiBaseUrl, apiFetch } from "@/lib/api";
+import { apiBaseUrl, apiFetch, getAccessToken } from "@/lib/api";
 
 import { LINK_ICONS, LinkIconMark } from "./link-icon";
 import { PlatformIcon, type Platform } from "./platform-icon";
@@ -294,7 +294,13 @@ export function PublicAppsSection() {
 
 /** ORG-11 — متجر التطبيقات للتاجر. */
 export function MerchantAppsClient() {
-  const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson);
+  const router = useRouter();
+  // 0005 §٢٧٣ — 401 بلا رمز في الذاكرة = لا جلسة أصلاً (`apiFetch` لا يستأنف ولا يستدعي ACC-08):
+  // الدخول بوجهة العودة بدل «جارٍ التحميل» إلى الأبد. جلسة انتهت فعلاً يتولاها معالج ACC-08.
+  const goLogin = useCallback(() => {
+    if (!getAccessToken()) router.replace("/login?next=/org/apps");
+  }, [router]);
+  const { rows, failed, load } = useCatalog("/api/org/apps", getOrgJson, goLogin);
   const [filter, setFilter] = useState<Platform | "">("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -304,7 +310,7 @@ export function MerchantAppsClient() {
     setMessage("");
     try {
       const res = await apiFetch(`/api/org/apps/${r.id}/link`, { method: "POST" });
-      if (res.status === 401) return;
+      if (res.status === 401) return goLogin();
       if (!res.ok) throw new Error(String(res.status));
       const { url } = (await res.json()) as { url: string };
       // مدير تنزيلات المتصفح يتولّى الملف: لا يُحمَّل في ذاكرة الصفحة

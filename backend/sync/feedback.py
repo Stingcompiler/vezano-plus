@@ -16,6 +16,7 @@ from datetime import timedelta
 from typing import Any
 
 from django.db import IntegrityError, transaction
+from django.db.models import BooleanField, Case, QuerySet, Value, When
 from django.utils import timezone
 
 from sync.models import Feedback
@@ -39,6 +40,22 @@ class FeedbackRejected(Exception):
         super().__init__(code)
         self.code = code
         self.status = status
+
+
+def light(qs: QuerySet[Feedback]) -> QuerySet[Feedback]:
+    """للقوائم (0005 §٢٧٣): بلا عمود اللقطة (حتى 2 ميغابايت للصف) — يكفيها أن تعرف هل توجد لقطة."""
+    return qs.defer("attachment").annotate(
+        has_shot=Case(
+            When(attachment="", then=Value(False)),
+            default=Value(True),
+            output_field=BooleanField(),
+        )
+    )
+
+
+def has_attachment(f: Feedback) -> bool:
+    flag = getattr(f, "has_shot", None)
+    return bool(f.attachment) if flag is None else bool(flag)
 
 
 def mask_phones(text: str) -> str:
@@ -65,7 +82,7 @@ def row(f: Feedback) -> dict[str, Any]:
         "created_at": _iso(f.created_at),
         "updated_at": _iso(f.updated_at),
         "unseen": bool(f.updated_at and (f.seen_at is None or f.seen_at < f.updated_at)),
-        "has_attachment": bool(f.attachment),
+        "has_attachment": has_attachment(f),
     }
 
 
@@ -86,7 +103,7 @@ def submit(
     attachment_name: str = "",
 ) -> tuple[Feedback, bool]:
     """يُنادى داخل `tenant_context`. يعيد (الملاحظة، أُنشئت الآن؟)."""
-    existing = Feedback.objects.filter(client_id=client_id).first()
+    existing = light(Feedback.objects.filter(client_id=client_id)).first()
     if existing is not None:
         return existing, False
     if kind not in Feedback.Kind.values:
@@ -107,37 +124,42 @@ def submit(
     if recent.count() >= PER_TENANT_PER_DAY:
         raise FeedbackRejected("rate_limited", 429)
     now = timezone.now()
-    seq = Feedback.objects.count() + 1
-    try:
-        with transaction.atomic():
-            f = Feedback.objects.create(
-                tenant_id=tenant_id,
-                reference=f"FB-{now:%y%m%d}-{seq:04d}",
-                client_id=client_id,
-                kind=kind,
-                text=mask_phones(text),
-                contact_ok=contact_ok,
-                screen=screen.strip()[:40],
-                platform=platform if platform in PLATFORMS else "",
-                app_version=app_version.strip()[:40],
-                user=user_id,
-                user_name=user_name[:200],
-                device=device_id,
-                attachment=attachment,
-                attachment_name=attachment_name.strip()[:120] if attachment else "",
-                created_at=now,
-            )
-    except IntegrityError:
-        # إرسالان متزامنان بالمعرّف نفسه (طابور محلي + نقرة): الأول يكسب
-        again = Feedback.objects.filter(client_id=client_id).first()
-        if again is None:
-            raise
-        return again, False
-    return f, True
+    seq = 0
+    for _ in range(5):
+        # ملاحظتان من المنشأة في اللحظة نفسها تحسبان الرقم نفسه: الخاسرة تأخذ التالي (0005 §٢٧٣)
+        seq = max(Feedback.objects.count() + 1, seq + 1)
+        try:
+            with transaction.atomic():
+                f = Feedback.objects.create(
+                    tenant_id=tenant_id,
+                    reference=f"FB-{now:%y%m%d}-{seq:04d}",
+                    client_id=client_id,
+                    kind=kind,
+                    text=mask_phones(text),
+                    contact_ok=contact_ok,
+                    screen=screen.strip()[:40],
+                    platform=platform if platform in PLATFORMS else "",
+                    app_version=app_version.strip()[:40],
+                    user=user_id,
+                    user_name=user_name[:200],
+                    device=device_id,
+                    attachment=attachment,
+                    attachment_name=attachment_name.strip()[:120] if attachment else "",
+                    created_at=now,
+                )
+            return f, True
+        except IntegrityError:
+            # إرسالان متزامنان بالمعرّف نفسه (طابور محلي + نقرة): الأول يكسب
+            again = light(Feedback.objects.filter(client_id=client_id)).first()
+            if again is not None:
+                return again, False
+    raise FeedbackRejected("server_busy", 503)
 
 
 def mine(user_id: uuid.UUID) -> dict[str, Any]:
-    rows = [row(f) for f in Feedback.objects.filter(user=user_id).order_by("-created_at")[:50]]
+    rows = [
+        row(f) for f in light(Feedback.objects.filter(user=user_id)).order_by("-created_at")[:50]
+    ]
     return {"items": rows, "unseen": sum(1 for r in rows if r["unseen"])}
 
 

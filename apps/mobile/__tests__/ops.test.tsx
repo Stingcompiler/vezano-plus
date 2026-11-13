@@ -561,6 +561,99 @@ describe("SYS-11 — ملاحظاتك (0005 §٢٦٤)", () => {
     const queue = JSON.parse(raw ?? "[]") as { text: string }[];
     expect(queue.map((q) => q.text)).toEqual(["أريد تقريراً بالساعة"]);
   });
+
+  const draft = (over: Record<string, unknown>) => ({
+    client_id: "00000000-0000-4000-8000-0000000000aa",
+    kind: "suggestion",
+    text: "ملاحظة في الطابور",
+    contact_ok: false,
+    screen: "SYS-11",
+    platform: "mobile",
+    app_version: "0.1.0",
+    created_at: new Date().toISOString(),
+    attachment: "",
+    attachment_name: "",
+    ...over,
+  });
+  const queued = async () =>
+    JSON.parse((await storage.read((t) => t.getMeta("feedback.outbox"))) ?? "[]") as {
+      text: string;
+    }[];
+
+  it("جهاز مشترك: مسودة مستخدم آخر لا تُرسل ولا تُعرض — تنتظر صاحبها (0005 §٢٧٣)", async () => {
+    await asRole("owner");
+    await storage.transaction((t) =>
+      t.putMeta(
+        "feedback.outbox",
+        JSON.stringify([
+          draft({ user_id: "u2", text: "ملاحظة الكاشير", client_id: "c-other" }),
+          draft({ user_id: "u1", text: "ملاحظة المالك", client_id: "c-mine" }),
+        ]),
+      ),
+    );
+    const posted: string[] = [];
+    const base = server({ "GET /api/support/feedback": [200, { items: [], unseen: 0 }] });
+    const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input as Request;
+      const url = new URL(typeof input === "string" ? input : req.url);
+      const method = (init?.method ?? req.method ?? "GET").toUpperCase();
+      if (method === "POST" && url.pathname === "/api/support/feedback") {
+        return req
+          .clone()
+          .json()
+          .then((b: Record<string, unknown>) => {
+            posted.push(String(b["text"]));
+            expect(b).not.toHaveProperty("user_id");
+            return new Response(JSON.stringify({ id: "f9", reference: "FB-1", text: b["text"] }), {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            });
+          });
+      }
+      return base(input, init);
+    }) as typeof fetch;
+    await renderWith(<SupportScreen />, fetchImpl);
+    await waitFor(() => expect(posted).toEqual(["ملاحظة المالك"]));
+    await waitFor(async () =>
+      expect((await queued()).map((q) => q.text)).toEqual(["ملاحظة الكاشير"]),
+    );
+    expect(screen.queryByText("ملاحظة الكاشير")).toBeNull();
+  });
+
+  it.each([401, 429])(
+    "إعادة الإرسال بردّ %i: المسودة تبقى في الطابور ولا تُحذف بصمت (0005 §٢٧٣)",
+    async (status) => {
+      await asRole("owner");
+      await storage.transaction((t) =>
+        t.putMeta("feedback.outbox", JSON.stringify([draft({ user_id: "u1" })])),
+      );
+      let tried = 0;
+      const base = server({ "GET /api/support/feedback": [200, { items: [], unseen: 0 }] });
+      const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
+        const req = input as Request;
+        const url = new URL(typeof input === "string" ? input : req.url);
+        const method = (init?.method ?? req.method ?? "GET").toUpperCase();
+        if (method === "POST" && url.pathname === "/api/support/feedback") {
+          tried += 1;
+          return Promise.resolve(
+            new Response(JSON.stringify({ detail: "x" }), {
+              status,
+              headers: { "content-type": "application/json" },
+            }),
+          );
+        }
+        return base(input, init);
+      }) as typeof fetch;
+      await renderWith(<SupportScreen />, fetchImpl);
+      await waitFor(() => expect(tried).toBeGreaterThan(0));
+      // 401 يُنهي الجلسة فتنتظر المسودة عودة صاحبها؛ 429 تبقى ظاهرة «بانتظار الإرسال»
+      if (status === 429)
+        await waitFor(() => expect(screen.getByText("ملاحظة في الطابور")).toBeTruthy());
+      await waitFor(async () =>
+        expect((await queued()).map((q) => q.text)).toEqual(["ملاحظة في الطابور"]),
+      );
+    },
+  );
 });
 
 describe("NAT-03 — إذن الإشعارات", () => {

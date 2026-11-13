@@ -145,6 +145,8 @@ test.describe("PLT-21", () => {
       .getByRole("button", { name: "افتح" })
       .click();
     await expect(root.getByRole("img", { name: "لقطة الشاشة المرفقة" })).toBeVisible();
+    // 0005 §٢٧٣: الرابط `blob:` يفتحه المتصفح في تبويب؛ رابط `data:` كان يفتح تبويباً فارغاً
+    await expect(root.locator("a.plt-fb-shot")).toHaveAttribute("href", /^blob:/);
     await root.getByLabel("ردّ الفريق").fill("سنضيفه في الإصدار القادم");
     await root.getByRole("radio", { name: "نُفّذت" }).check();
     await root.getByRole("button", { name: "احفظ وأبلغ المرسل" }).click();
