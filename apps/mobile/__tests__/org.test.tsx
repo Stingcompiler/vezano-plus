@@ -534,6 +534,33 @@ const SUB = {
   can_renew: true,
 };
 
+const ADDONS = [
+  {
+    kind: "devices",
+    label: "جهاز",
+    unit_monthly_minor: "500000",
+    offered: true,
+    qty: 0,
+    monthly_minor: "0",
+  },
+  {
+    kind: "users",
+    label: "مستخدم",
+    unit_monthly_minor: "300000",
+    offered: true,
+    qty: 0,
+    monthly_minor: "0",
+  },
+  {
+    kind: "branches",
+    label: "فرع",
+    unit_monthly_minor: "0",
+    offered: false,
+    qty: 0,
+    monthly_minor: "0",
+  },
+];
+
 describe("ORG-06 — الاشتراك", () => {
   it("ready: «ترقية» على الباقة الأعلى يجلب العرض ثم يفتح التجديد بمعامل upgrade", async () => {
     await renderWith(
@@ -566,6 +593,65 @@ describe("ORG-06 — الاشتراك", () => {
       pathname: "/org/subscription/renew",
       params: { upgrade: "pro" },
     });
+  });
+  it("الإضافات: مالك باشتراك مدفوع يطلب جهازين إضافيين ثم يفتح التجديد بمعاملي addon وqty", async () => {
+    await renderWith(
+      <OrgSubscription />,
+      server({
+        "GET /api/org/subscription": () =>
+          json(200, { ...SUB, addons: ADDONS, can_buy_addons: true }),
+        "GET /api/org/subscription/addon": () =>
+          json(200, {
+            quote: {
+              kind: "devices",
+              label: "جهاز",
+              qty: 2,
+              unit_monthly_minor: "500000",
+              remaining_days: 10,
+              amount_minor: "333333",
+              currency: "SDG",
+              renewal_monthly_minor: "6000000",
+              plan_code: "basic",
+              note: "ملاحظة الإضافة",
+            },
+          }),
+      }),
+    );
+    await waitFor(() => expect(hint("ORG-06")).toBe("ready"));
+    expect(screen.getByTestId("org-addons")).toBeTruthy();
+    // سطر لكل إضافة معروضة: أجهزة ومستخدمون (الفروع غير معروضة في هذه الباقة)
+    expect(screen.getAllByText(tx("ORG-06", "أضف"))).toHaveLength(2);
+    await fireEvent.press(screen.getByLabelText(`${tx("ORG-06", "زد كمية")} جهاز`));
+    await fireEvent.press(screen.getAllByText(tx("ORG-06", "أضف"))[0]);
+    const pay = await screen.findByText(tx("ORG-06", "ادفع وارفع الإثبات"));
+    expect(calls.some((c) => c.key === "GET /api/org/subscription/addon")).toBe(true);
+    await fireEvent.press(pay);
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/org/subscription/renew",
+      params: { addon: "devices", qty: 2 },
+    });
+  });
+  it("الإضافات في التجريبية: الأسعار ظاهرة بلا أزرار، مع سبب المنع", async () => {
+    await renderWith(
+      <OrgSubscription />,
+      server({
+        "GET /api/org/subscription": () =>
+          json(200, {
+            ...SUB,
+            plan: { ...SUB.plan, trial: true },
+            addons: ADDONS,
+            can_buy_addons: false,
+          }),
+      }),
+    );
+    await waitFor(() => expect(hint("ORG-06")).toBe("ready"));
+    expect(screen.getByTestId("org-addons")).toBeTruthy();
+    expect(screen.queryByText(tx("ORG-06", "أضف"))).toBeNull();
+    expect(
+      screen.getByText(
+        tx("ORG-06", "شراء الإضافات لاشتراك مدفوع ساري — من التجريبية أو بعد الانتهاء جدّد أولاً."),
+      ),
+    ).toBeTruthy();
   });
   it("المبالغ لغير المالك: permission_denied بلا قائمة الباقات", async () => {
     await renderWith(
