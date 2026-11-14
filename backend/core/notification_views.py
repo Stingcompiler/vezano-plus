@@ -59,7 +59,8 @@ class NotificationActionView(APIView):
         with tenant_context(tid):
             v = _viewer(request.auth)
             n = Notification.objects.filter(id=notification_id).first()
-            if n is None:
+            # إشعار مستخدم آخر كأنه غير موجود (0005 §٢٧٥): لا عنوان ولا وسم قراءة
+            if n is None or notifications.personal_to_other(n, v.user):
                 return Response({"detail": "not_found"}, status=404)
             if action == "read":
                 if n.owner_only and not v.is_owner:

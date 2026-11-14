@@ -64,6 +64,7 @@ def emit(
     screen: str = "",
     needs_action: bool = False,
     owner_only: bool = False,
+    for_user: uuid.UUID | None = None,
     branch_id: uuid.UUID | None = None,
     dedupe_key: str | None = None,
     expires_at: Any = None,
@@ -93,6 +94,7 @@ def emit(
         screen=screen,
         needs_action=needs_action,
         owner_only=owner_only,
+        for_user=for_user,
         branch_id=branch_id,
         dedupe_key=key,
         occurred_at=occurred_at or timezone.now(),
@@ -582,7 +584,14 @@ def save_prefs(
 # ------------------------------------------------------------------------------ الوارد
 
 
+def personal_to_other(n: Notification, user: User) -> bool:
+    """إشعار يخصّ مستخدماً آخر (0005 §٢٧٥) — لا يظهر ولا يُفتح ولا يُدفع لغير صاحبه."""
+    return n.for_user is not None and n.for_user != user.id
+
+
 def _visible(n: Notification, viewer: home.Viewer) -> bool:
+    if personal_to_other(n, viewer.user):
+        return False
     if viewer.is_owner:
         return True
     if n.branch_id is not None and viewer.branch is not None and n.branch_id != viewer.branch.id:
@@ -660,7 +669,7 @@ def open_link(n: Notification, viewer: home.Viewer, *, token: str) -> dict[str, 
     """الرابط العميق (ACC-113): يُعاد فحص التخويل على الخادم عند الفتح؛ بعد انتهاء الصلاحية نقول
     «انتهت صلاحية هذا الرابط» ونعرض الوجهة بديلاً — لا صفحة خطأ عامة."""
     now = timezone.now()
-    if n.owner_only and not viewer.is_owner:
+    if (n.owner_only and not viewer.is_owner) or personal_to_other(n, viewer.user):
         return {"status": "permission_denied", "title": n.title, "href": ""}
     if token != n.link_token or n.link_expires_at <= now:
         return {"status": "link_expired", "title": n.title, "href": n.href, "screen": n.screen}

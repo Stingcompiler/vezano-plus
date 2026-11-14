@@ -7,6 +7,7 @@ import {
   nextRound,
   SEEN_CAP,
   textOf,
+  FEEDBACK_REPLY_TEXT,
 } from "./inbox-notify";
 
 const item = (id: string, o: Partial<InboxItem> = {}): InboxItem => ({
@@ -64,6 +65,12 @@ describe("إشعارات النظام من الوارد (DESK-05 · 0005 §٢٥�
     expect(textOf(ann).title).toBe("فيزانو بلص — صيانة الليلة");
     expect(textOf(ann).body).toHaveLength(240);
     expect(textOf(item("x", { category: "weird" }))).toEqual(CATEGORY_TEXT["operational"]);
+  });
+
+  it("ردّ الفريق على ملاحظة ينبَّه بنصّه الثابت لا بنصّ «حسابك» (§٢٧٥)", () => {
+    const reply = item("r", { kind: "feedback_reply", category: "account", title: "أي عنوان" });
+    expect(textOf(reply)).toEqual(FEEDBACK_REPLY_TEXT);
+    expect(nextRound([reply], []).notify).toEqual([FEEDBACK_REPLY_TEXT]);
   });
 
   it("لا إغراق ولا ذاكرة بلا حدّ", () => {
