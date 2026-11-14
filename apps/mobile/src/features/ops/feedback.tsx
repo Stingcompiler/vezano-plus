@@ -76,9 +76,7 @@ const ERRORS: Record<string, string> = {
   kind_invalid: tx(K, "اختر نوع الملاحظة."),
 };
 
-async function readOutbox(): Promise<Draft[]> {
-  const s = await getStorage();
-  const raw = await s.read((t) => t.getMeta(OUTBOX));
+function parseOutbox(raw: string | null | undefined): Draft[] {
   if (!raw) return [];
   try {
     const v: unknown = JSON.parse(raw);
@@ -88,9 +86,22 @@ async function readOutbox(): Promise<Draft[]> {
   }
 }
 
-async function writeOutbox(items: readonly Draft[]): Promise<void> {
+async function readOutbox(): Promise<Draft[]> {
   const s = await getStorage();
-  await s.transaction((t) => t.putMeta(OUTBOX, JSON.stringify(items)));
+  return parseOutbox(await s.read((t) => t.getMeta(OUTBOX)));
+}
+
+/**
+ * تعديل الطابور في معاملة واحدة (قراءة ثم كتابة): إرسال جارٍ وحفظ مسودة جديدة في اللحظة نفسها كان
+ * أحدهما يكتب فوق الآخر فتضيع المسودة (0005 §٢٧٤).
+ */
+async function updateOutbox(change: (queue: Draft[]) => Draft[]): Promise<Draft[]> {
+  const s = await getStorage();
+  return s.transaction(async (t) => {
+    const next = change(parseOutbox(await t.getMeta(OUTBOX)));
+    await t.putMeta(OUTBOX, JSON.stringify(next));
+    return next;
+  });
 }
 
 export function FeedbackSection() {
@@ -106,6 +117,8 @@ export function FeedbackSection() {
   const [savedLocal, setSavedLocal] = useState(false);
   const [items, setItems] = useState<Row[] | null>(null);
   const [pending, setPending] = useState<Draft[]>([]);
+  // ردّ فاشل من الخادم (لا انقطاع): خطأ يُعاد، لا «لا ملاحظات بعد» (0005 §٢٧٤)
+  const [failed, setFailed] = useState(false);
   const flushing = useRef(false);
 
   const send = useCallback(
@@ -121,9 +134,11 @@ export function FeedbackSection() {
   const load = useCallback(async () => {
     const r = await call<{ items: Row[]; unseen: number }>(() => api.GET("/api/support/feedback"));
     if (!r.ok || !r.data) {
+      setFailed(!r.offline);
       setItems((prev) => prev ?? []);
       return;
     }
+    setFailed(false);
     setItems(r.data.items);
     if (r.data.unseen > 0) void call(() => api.POST("/api/support/feedback/seen"));
   }, [api]);
@@ -133,25 +148,26 @@ export function FeedbackSection() {
     flushing.current = true;
     try {
       const queue = await readOutbox();
-      const keep: Draft[] = [];
+      // ما خرج من الطابور: وصل، أو رفضه الخادم نهائياً
+      const gone = new Set<string>();
       let delivered = false;
-      let stopped = false;
       for (const d of queue) {
-        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها؛ وبعد رفض الجلسة لا يُرسل ما بعدها
-        if (stopped || !ownedBy(d, userId)) {
-          keep.push(d);
-          continue;
-        }
+        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها
+        if (!ownedBy(d, userId)) continue;
         const r = await send(d);
-        if (r.ok) delivered = true;
-        // 429: حدّ اليوم يزول غداً — تبقى في الطابور
-        else if (queueable(r) || r.status === 429) {
-          keep.push(d);
-          if (AUTH.includes(r.status)) stopped = true;
+        if (r.ok) {
+          delivered = true;
+          gone.add(d.client_id);
         }
+        // 429: حدّ اليوم يزول غداً — تبقى في الطابور
+        else if (!queueable(r) && r.status !== 429) gone.add(d.client_id);
+        // بعد رفض الجلسة لا يُرسل ما بعدها
+        else if (AUTH.includes(r.status)) break;
       }
-      if (keep.length !== queue.length) await writeOutbox(keep);
-      setPending(keep.filter((d) => ownedBy(d, userId)));
+      const left = gone.size
+        ? await updateOutbox((q) => q.filter((d) => !gone.has(d.client_id)))
+        : await readOutbox();
+      setPending(left.filter((d) => ownedBy(d, userId)));
       if (delivered) await load();
     } finally {
       flushing.current = false;
@@ -201,8 +217,7 @@ export function FeedbackSection() {
         return;
       }
       if (queueable(r)) {
-        const queue = [...(await readOutbox()), draft];
-        await writeOutbox(queue);
+        const queue = await updateOutbox((q) => [...q, draft]);
         setPending(queue.filter((d) => ownedBy(d, userId)));
         setSavedLocal(true);
         setText("");
@@ -214,7 +229,7 @@ export function FeedbackSection() {
     }
   };
 
-  const empty = items !== null && items.length + pending.length === 0;
+  const empty = !failed && items !== null && items.length + pending.length === 0;
 
   return (
     <Card
@@ -269,6 +284,11 @@ export function FeedbackSection() {
         {tx(K, "ملاحظاتي")}
       </AppText>
       {items === null ? <StateView state="loading" title={tx(K, "ملاحظاتي")} /> : null}
+      {failed ? (
+        <StateView state="server_error" title={tx(K, "ملاحظاتي")}>
+          <Button variant="secondary" label={tx(K, "أعد المحاولة")} onPress={() => void load()} />
+        </StateView>
+      ) : null}
       {empty ? (
         <StateView state="empty" title={tx(K, "لا ملاحظات بعد")}>
           <AppText variant="secondary">{tx(K, "ما ترسله يظهر هنا مع حالته وردّ الفريق.")}</AppText>

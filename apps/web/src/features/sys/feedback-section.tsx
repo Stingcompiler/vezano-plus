@@ -34,8 +34,7 @@ type SectionState =
   | "offline"
   | "server_error";
 
-async function readOutbox(): Promise<FeedbackDraft[]> {
-  const raw = await getStorage().read((tx) => tx.getMeta(FEEDBACK_OUTBOX_META));
+function parseOutbox(raw: string | null | undefined): FeedbackDraft[] {
   if (!raw) return [];
   try {
     const v: unknown = JSON.parse(raw);
@@ -45,8 +44,22 @@ async function readOutbox(): Promise<FeedbackDraft[]> {
   }
 }
 
-async function writeOutbox(items: readonly FeedbackDraft[]): Promise<void> {
-  await getStorage().transaction((tx) => tx.putMeta(FEEDBACK_OUTBOX_META, JSON.stringify(items)));
+async function readOutbox(): Promise<FeedbackDraft[]> {
+  return parseOutbox(await getStorage().read((tx) => tx.getMeta(FEEDBACK_OUTBOX_META)));
+}
+
+/**
+ * تعديل الطابور في معاملة واحدة (قراءة ثم كتابة): إرسال جارٍ وحفظ مسودة جديدة في اللحظة نفسها كان
+ * أحدهما يكتب فوق الآخر فتضيع المسودة (0005 §٢٧٤).
+ */
+async function updateOutbox(
+  change: (queue: FeedbackDraft[]) => FeedbackDraft[],
+): Promise<FeedbackDraft[]> {
+  return getStorage().transaction(async (tx) => {
+    const next = change(parseOutbox(await tx.getMeta(FEEDBACK_OUTBOX_META)));
+    await tx.putMeta(FEEDBACK_OUTBOX_META, JSON.stringify(next));
+    return next;
+  });
 }
 
 /**
@@ -125,6 +138,8 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
   const [items, setItems] = useState<FeedbackRow[] | null>(null);
   const [pending, setPending] = useState<FeedbackDraft[]>([]);
   const [failed, setFailed] = useState(false);
+  const failedRef = useRef(false);
+  failedRef.current = failed;
   const flushing = useRef(false);
 
   const load = useCallback(async () => {
@@ -141,6 +156,8 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
       setItems(body.items);
       if (body.unseen > 0) void api().POST("/api/support/feedback/seen");
     } catch {
+      // تعذّر الوصول إلى الخادم والمتصفح يقول «متصل»: خطأ يُعاد، لا «لا ملاحظات بعد» (0005 §٢٧٤)
+      setFailed(true);
       setItems((prev) => prev ?? []);
     }
   }, []);
@@ -150,24 +167,24 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
     flushing.current = true;
     try {
       const queue = await readOutbox();
-      const keep: FeedbackDraft[] = [];
+      // ما خرج من الطابور: وصل، أو رفضه الخادم نهائياً
+      const gone = new Set<string>();
       let delivered = false;
-      let stopped = false;
       for (const d of queue) {
-        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها؛ وبعد رفض الجلسة لا يُرسل ما بعدها
-        if (stopped || !ownedBy(d, userId)) {
-          keep.push(d);
-          continue;
-        }
+        // مسودة مستخدم آخر على الجهاز نفسه تنتظر صاحبها
+        if (!ownedBy(d, userId)) continue;
         const r = await sendOne(d);
-        if (r.ok) delivered = true;
-        else if (r.hold) {
-          keep.push(d);
-          if (r.auth) stopped = true;
-        }
+        if (r.ok) {
+          delivered = true;
+          gone.add(d.client_id);
+        } else if (!r.hold) gone.add(d.client_id);
+        // بعد رفض الجلسة لا يُرسل ما بعدها
+        else if (r.auth) break;
       }
-      if (keep.length !== queue.length) await writeOutbox(keep);
-      setPending(keep.filter((d) => ownedBy(d, userId)));
+      const left = gone.size
+        ? await updateOutbox((q) => q.filter((d) => !gone.has(d.client_id)))
+        : await readOutbox();
+      setPending(left.filter((d) => ownedBy(d, userId)));
       if (delivered) await load();
     } finally {
       flushing.current = false;
@@ -183,8 +200,11 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
   }, [load, flush, userId]);
 
   useEffect(() => {
-    if (online) void flush();
-  }, [online, flush]);
+    if (!online) return;
+    // عاد الاتصال: قائمة فشل تحميلها تُعاد مع إرسال الطابور
+    if (failedRef.current) void load();
+    void flush();
+  }, [online, flush, load]);
 
   const submit = async () => {
     if (busy) return;
@@ -224,8 +244,7 @@ export function FeedbackSection({ screen = "SYS-11" }: { readonly screen?: strin
         return;
       }
       if (r.retry) {
-        const queue = [...(await readOutbox()), draft];
-        await writeOutbox(queue);
+        const queue = await updateOutbox((q) => [...q, draft]);
         setPending(queue.filter((d) => ownedBy(d, userId)));
         setSavedLocal(true);
         setText("");
