@@ -37,4 +37,7 @@ class Command(BaseCommand):
                 last_derive = now
             if push.push_configured():
                 push_dispatch.dispatch_all(derive=derive)
+            else:
+                # §٢٧٧: إيصال الإعلان إلى الصناديق والشريط لا يتوقف على مفاتيح الدفع
+                push_dispatch.deliver_announcements()
             time.sleep(max(1, opts["interval"]))

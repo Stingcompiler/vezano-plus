@@ -520,7 +520,9 @@ def schedule_announcement(*, viewer: User, announcement_id: uuid.UUID) -> Platfo
         raise ReviewRejected(
             "promise_outside_plan", 400, {"outside_count": preview["outside_count"]}
         )
-    if a.starts_at <= timezone.now():
+    # §٢٧٧: نافذة بدأت ولم تنتهِ تُجدول وتصل فوراً («الآن») — المرفوض نافذة انتهت وحدها. كان كل
+    # إعلان يحتاج بداية قادمة، فلا سبيل لإعلان يصل الآن، وما سواه ينتظر بداية نافذته.
+    if a.ends_at <= timezone.now():
         raise ReviewRejected("window_in_past")
     a.status = PlatformAnnouncement.Status.SCHEDULED
     a.audience_count = int(preview["targeted"])

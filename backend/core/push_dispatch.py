@@ -181,6 +181,18 @@ def tenants_with_endpoints(*, pending_only: bool = False) -> list[uuid.UUID]:
         return list(tids)
 
 
+def deliver_announcements() -> int:
+    """إعلانات المنصة التي حان موعدها إلى صناديق المتاجر. يعمل بلا مفاتيح الدفع (§٢٧٧): كانت الحلقة
+    لا تستدعي شيئاً حين تغيب مفاتيح VAPID، فلا يصل إعلان غير الصيانة إلى صندوق ولا شريط."""
+    try:
+        from stingops import announce
+
+        return announce.deliver_due()
+    except Exception:  # noqa: BLE001
+        log.exception("push: announcement delivery failed")
+        return 0
+
+
 def dispatch_all(*, derive: bool) -> dict[str, int]:
     """دورة واحدة: فريق المنصة ثم كل منشأة لها أجهزة مشتركة. خطأ منشأة لا يوقف غيرها."""
     from stingops import operator_push
@@ -191,12 +203,7 @@ def dispatch_all(*, derive: bool) -> dict[str, int]:
     except Exception:  # noqa: BLE001
         log.exception("push: operator dispatch failed")
     # إعلانات المنصة التي حان موعدها تُكتب في الصناديق أولاً، فيدفعها الموزّع في الدورة نفسها (§٢٣١)
-    try:
-        from stingops import announce
-
-        out["announcements"] = announce.deliver_due()
-    except Exception:  # noqa: BLE001
-        log.exception("push: announcement delivery failed")
+    out["announcements"] = deliver_announcements()
     for tid in tenants_with_endpoints(pending_only=not derive):
         try:
             out["tenants"] += dispatch_tenant(tid, derive=derive)

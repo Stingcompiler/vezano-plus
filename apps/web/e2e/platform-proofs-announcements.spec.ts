@@ -479,6 +479,29 @@ test.describe("PLT-04", () => {
     await expect(root).toContainText("أُلغي");
   });
 
+  test("§٢٧٧: غير الصيانة يبدأ الآن لكل المتاجر ثلاثة أيام، وما عدّله المشغّل يبقى", async ({
+    page,
+  }) => {
+    await mockAnnouncements(page);
+    await operatorLogin(page);
+    await goSection(page, "الإعلانات");
+    const startField = page.getByLabel(/بداية النافذة/);
+    const endField = page.getByLabel(/نهاية النافذة/);
+    const ms = async (f: typeof startField) => Date.parse(await f.inputValue());
+    // الصيانة كما رُسمت: بعد ست ساعات، لمتاجر السوق
+    expect((await ms(startField)) - Date.now()).toBeGreaterThan(5 * 3_600_000);
+    await page.getByRole("button", { name: "إعلان عام", exact: true }).click();
+    await expect(page.getByRole("button", { name: "كل المتاجر" })).toHaveClass(/pos-chip--on/);
+    expect(Math.abs((await ms(startField)) - Date.now())).toBeLessThan(2 * 60_000);
+    expect((await ms(endField)) - (await ms(startField))).toBe(72 * 3_600_000);
+    // جمهور اختاره المشغّل لا يُستبدل بتغيير النوع
+    await page.getByRole("button", { name: "متاجر ذات مزامنة سوق فعّالة", exact: true }).click();
+    await page.getByRole("button", { name: "تنبيه مهم", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "متاجر ذات مزامنة سوق فعّالة", exact: true }),
+    ).toHaveClass(/pos-chip--on/);
+  });
+
   test("validation_error → saving: نصّ يَعِد بميزة سوق لكل المتاجر لا يُجدول حتى يُضيَّق الجمهور، والجدولة تُسجَّل ولا تُرسل", async ({
     page,
   }, info) => {

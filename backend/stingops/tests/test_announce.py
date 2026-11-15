@@ -152,3 +152,69 @@ def test_status_targets_use_subscription_state(ctx: dict[str, Any]) -> None:  # 
     for ids in groups.values():
         assert not (ids & seen)
         seen |= ids
+
+
+def test_started_window_is_delivered_now_and_ended_window_refused(
+    ctx: dict[str, Any],  # noqa: F811
+) -> None:
+    """§٢٧٧: إعلان بدأت نافذته يُجدول ويصل فوراً إلى الصندوق والشريط؛ النافذة المنتهية وحدها تُرفض."""
+    c, op = Client(), _operator_headers("ann-op5", "هدى — تشغيل")
+    body = {
+        "title": "ساعات الدعم تغيّرت",
+        "body": "الدعم متاح من الثامنة صباحاً.",
+        "kind": "notice",
+        "audience": "all",
+        **_window(-0.1, 72),
+    }
+    a = _post(c, op, API, body).json()["announcement"]
+    s = _post(c, op, f"{API}/{a['id']}/schedule").json()["announcement"]
+    assert s["status"] == "scheduled" and s["delivered_count"] >= 2 and s["delivered_at"]
+    owner = _h(ctx["tokens"]["owner"])
+    bar = c.get("/api/org/announcements", headers=owner).json()["announcements"]
+    assert [b["title"] for b in bar] == ["ساعات الدعم تغيّرت"] and bar[0]["active"] is True
+    kinds = [i["kind"] for i in c.get("/api/notifications", headers=owner).json()["items"]]
+    assert "platform_announcement" in kinds
+    # مسودة انتهت نافذتها قبل الجدولة تُرفض
+    d = _post(c, op, API, {**body, "title": "قديم"}).json()["announcement"]
+    PlatformAnnouncement.objects.filter(id=d["id"]).update(
+        ends_at=timezone.now() - timedelta(minutes=1)
+    )
+    r = _post(c, op, f"{API}/{d['id']}/schedule")
+    assert (r.status_code, r.json()["detail"]) == (400, "window_in_past")
+
+
+def test_worker_delivers_announcements_without_push_keys(
+    ctx: dict[str, Any],  # noqa: F811
+    monkeypatch: Any,
+) -> None:
+    """§٢٧٧: حلقة العامل كانت لا تستدعي شيئاً بلا مفاتيح VAPID، فلا يصل إعلان غير الصيانة أبداً."""
+    from django.core.management import call_command
+
+    from core import push
+    from core.management.commands import push_dispatch as cmd
+
+    now = timezone.now()
+    a = PlatformAnnouncement.objects.create(
+        kind="feature",
+        title="جديد",
+        body="تقرير جديد.",
+        audience="all",
+        starts_at=now - timedelta(minutes=1),
+        ends_at=now + timedelta(hours=2),
+        status="scheduled",
+        created_by_name="x",
+    )
+    monkeypatch.setattr(push, "push_configured", lambda: False)
+
+    class Stop(Exception):
+        pass
+
+    def stop(_s: float) -> None:
+        raise Stop
+
+    monkeypatch.setattr(f"{cmd.__name__}.time.sleep", stop)
+    with pytest.raises(Stop):
+        call_command("push_dispatch", "--loop")
+    assert PlatformAnnouncement.objects.get(id=a.id).delivered_count >= 2
+    with tenant_context(ctx["tenant"].id):
+        assert Notification.objects.filter(dedupe_key=f"ann:{a.id}").exists()
