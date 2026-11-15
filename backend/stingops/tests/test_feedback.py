@@ -43,6 +43,26 @@ def test_mask_phones() -> None:
     assert mask_phones("بعت 12 كرتونة بسعر 4500 في 2026") == "بعت 12 كرتونة بسعر 4500 في 2026"
 
 
+def test_mask_keeps_barcodes_and_invoice_numbers() -> None:
+    """0005 §٢٧٦: البلاغ عن باركود أو فاتورة يصل الفريق برقمه؛ الهاتف يبقى مخفياً."""
+    from catalog.services import internal_barcode
+
+    ours = internal_barcode(15)  # باركود المتجر الداخلي (§٢٦٩)
+    for code in (ours, "6291041500213", "036000291452"):  # داخلي · EAN-13 · UPC-A
+        assert mask_phones(f"الباركود {code} لا يُقرأ") == f"الباركود {code} لا يُقرأ"
+    assert mask_phones("الباركود ٦٢٩١٠٤١٥٠٠٢١٣") == "الباركود ٦٢٩١٠٤١٥٠٠٢١٣"
+    for number in ("INV-KRT-A2-26-000001", "RET-01-B1-26-000042", "inv-krt-a2-26-000001"):
+        assert mask_phones(f"فاتورة {number} ناقصة") == f"فاتورة {number} ناقصة"
+    # خانة تحقق خاطئة ليست باركوداً، والبادئة الدولية هاتف ولو صحّت خانتها
+    assert mask_phones("6291041500214") == "•••"
+    assert mask_phones("249912447099") == "•••" and mask_phones("00249912447099") == "•••"
+    assert mask_phones("+6291041500213") == "•••"
+    # باركود بفواصل، أو هاتف ملصق برقم فاتورة، يبقى مخفياً
+    assert mask_phones("6291 0415 00213") == "•••"
+    assert mask_phones("INV-KRT-A2-26-000001 و 0912447099") == "INV-KRT-A2-26-000001 و •••"
+    assert mask_phones("tel-0912-447-099") == "tel-•••"
+
+
 def test_any_role_sends_and_sees_own(ctx: dict[str, Any]) -> None:  # noqa: F811
     c = Client()
     cash = _h(ctx["tokens"]["cashier"])
@@ -169,3 +189,45 @@ def test_lists_do_not_load_the_screenshot_column(ctx: dict[str, Any]) -> None:  
     assert mine == {with_shot["id"]: True, plain["id"]: False}
     listed = {i["id"]: i["has_attachment"] for i in feedback_ops.list_payload()["items"]}
     assert listed == {with_shot["id"]: True, plain["id"]: False}
+
+
+def test_reply_notifies_only_the_sender_in_their_inbox(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0005 §٢٧٥: ردّ الفريق إشعار في وارد صاحب الملاحظة وحده — لا يراه المالك ولا يفتحه غيره."""
+    from core.models import Notification
+
+    c = Client()
+    cash, owner = _h(ctx["tokens"]["cashier"]), _h(ctx["tokens"]["owner"])
+    a = _post(c, cash, URL, _body(kind="problem")).json()
+    path = f"/api/platform/feedback/{ctx['tenant'].id}/{a['id']}"
+    assert (
+        _post(c, _support_headers(), path, {"status": "studying", "reply": "نراجعها"}).status_code
+        == 200
+    )
+
+    def replies(headers: dict[str, str]) -> list[dict[str, Any]]:
+        items = c.get("/api/notifications", headers=headers).json()["items"]
+        return [i for i in items if i["kind"] == "feedback_reply"]
+
+    mine = replies(cash)
+    assert len(mine) == 1 and mine[0]["read"] is False and mine[0]["locked"] is False
+    assert mine[0]["title"] == "ردّ على ملاحظتك" and mine[0]["href"] == "/support#feedback"
+    # لا نصّ الملاحظة ولا الردّ في الإشعار
+    assert "نراجعها" not in mine[0]["body"] and a["text"] not in mine[0]["body"]
+    assert replies(owner) == [] and replies(_h(ctx["tokens"]["manager"])) == []
+    # غير صاحبه — ولو المالك — لا يوسمه مقروءاً ولا يفتحه: كأنه غير موجود
+    nid = mine[0]["id"]
+    assert _post(c, owner, f"/api/notifications/{nid}/read").status_code == 404
+    opened = _post(c, owner, f"/api/notifications/{nid}/open", {"token": mine[0]["link_token"]})
+    assert opened.status_code == 404
+    # تحديث ثانٍ إشعار ثانٍ (الحاسوب ينبّه بالمعرّف الجديد)
+    assert (
+        _post(c, _support_headers(), path, {"status": "done", "reply": "أُصلحت"}).status_code == 200
+    )
+    assert len(replies(cash)) == 2
+    # فتح «ملاحظاتي» يقرأ إشعاراتها
+    assert _post(c, cash, f"{URL}/seen").json()["unseen"] == 0
+    assert [i["read"] for i in replies(cash)] == [True, True]
+    with tenant_context(ctx["tenant"].id):
+        assert {n.for_user for n in Notification.objects.filter(kind="feedback_reply")} == {
+            ctx["users"]["cashier"].id
+        }

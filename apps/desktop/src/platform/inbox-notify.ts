@@ -27,10 +27,20 @@ export const CATEGORY_TEXT: Readonly<Record<string, NotifyText>> = {
   marketing: { title: "فيزانو بلص", body: "جديد من المنصة." },
 };
 
+/**
+ * ردّ الفريق على ملاحظة (0005 §٢٧٥): نصّ ثابت بلا نصّ الملاحظة ولا الردّ. مرآة `feedback_reply` في
+ * `backend/core/push.py` — الإشعار يصل صاحب الملاحظة وحده (الوارد لا يعرضه لغيره).
+ */
+export const FEEDBACK_REPLY_TEXT: NotifyText = {
+  title: "ردّ على ملاحظتك",
+  body: "فريق فيزانو ردّ على ملاحظة أرسلتها.",
+};
+
 /** إعلان المنصة نصّ كتبه المشغّل للمتاجر كلها فلا سرّ فيه — يظهر كما هو (كالخادم). */
 export function textOf(item: InboxItem): NotifyText {
   if (item.kind === "platform_announcement")
     return { title: `فيزانو بلص — ${item.title}`.slice(0, 120), body: item.body.slice(0, 240) };
+  if (item.kind === "feedback_reply") return FEEDBACK_REPLY_TEXT;
   return CATEGORY_TEXT[item.category] ?? CATEGORY_TEXT["operational"]!;
 }
 

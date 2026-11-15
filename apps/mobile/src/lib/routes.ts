@@ -193,7 +193,8 @@ export const ROUTES: readonly Row[] = [
 
 /** المسار الأصلي لعنوان ويب، أو null إن لم تُبنَ شاشته بعد. */
 export function nativeRoute(href: string): string | null {
-  const path = href.split("?")[0] ?? href;
+  // رابط إلى قسم داخل شاشة (`/support#feedback` من إشعار ردّ الفريق، 0005 §٢٧٥) يفتح شاشته الأصلية
+  const path = href.split(/[?#]/)[0] ?? href;
   for (const r of ROUTES) {
     const m = path.match(r.web);
     if (m) return r.native(m);

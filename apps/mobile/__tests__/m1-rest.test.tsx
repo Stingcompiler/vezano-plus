@@ -154,5 +154,8 @@ describe("M1 — ما بقي (0005 §١٩٢)", () => {
     expect(nativeRoute("/invite/abc")).toBe("/invite/abc");
     expect(nativeRoute("/org/users")).toBe("/org/users");
     expect(nativeRoute("/no/such/screen")).toBeNull();
+    // إشعار ردّ الفريق يحمل قسماً داخل الشاشة (§٢٧٥) — يُفتح في التطبيق لا في المتصفح
+    expect(nativeRoute("/support#feedback")).toBe("/support");
+    expect(nativeRoute("/notify/inbox?category=account#top")).toBe("/notify/inbox");
   });
 });

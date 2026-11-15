@@ -33,6 +33,17 @@ _ATTACHMENT_RE = re.compile(r"^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+
 _DIGIT = "[0-9٠-٩۰-۹]"
 # تسعة أرقام فأكثر، تفصلها مسافة أو شرطة أو نقطة اختيارياً، وقد تبدأ بـ«+»
 PHONE_RE = re.compile(rf"\+?(?:{_DIGIT}[\s\-.]?){{8,}}{_DIGIT}")
+# 0005 §٢٧٦: رقم الفاتورة أو المرتجع بصيغته (§٨.٢) — `INV-KRT-A2-26-000001` — ليس رقم هاتف
+DOC_NUMBER_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:INV|RET)-[A-Z0-9]{1,6}-[A-Z0-9]{1,6}-[0-9]{2}-[0-9]{6,8}(?![0-9])",
+    re.IGNORECASE,
+)
+_MASKABLE_RE = re.compile(
+    rf"(?P<doc>{DOC_NUMBER_RE.pattern})|(?P<num>{PHONE_RE.pattern})", re.IGNORECASE
+)
+_ASCII_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+#: بادئات هاتف دولية بلا «+» — لا تُعامل باركوداً ولو صحّت خانة تحققها
+_PHONE_PREFIXES = ("00", "249")
 
 
 class FeedbackRejected(Exception):
@@ -58,8 +69,31 @@ def has_attachment(f: Feedback) -> bool:
     return bool(f.attachment) if flag is None else bool(flag)
 
 
+def is_barcode(digits: str) -> bool:
+    """باركود قياسي (UPC-A / EAN-13 / GTIN-14): 12–14 خانة متصلة تصحّ خانة تحققها (GS1).
+
+    رقم الهاتف العشوائي لا يجتاز الخانة إلا مرة من عشر، ولا يكون بهذا الطول إلا ببادئة دولية —
+    وتلك مستثناة — فالباب المفتوح ضيق: رقم أجنبي من 12–14 خانة كُتب متصلاً بلا «+» ولا «00»."""
+    if not digits.isascii() or not digits.isdigit() or len(digits) not in (12, 13, 14):
+        return False
+    if digits.startswith(_PHONE_PREFIXES):
+        return False
+    body, check = digits[:-1], int(digits[-1])
+    total = sum(int(d) * (3 if i % 2 == 0 else 1) for i, d in enumerate(reversed(body)))
+    return (10 - total % 10) % 10 == check
+
+
 def mask_phones(text: str) -> str:
-    return PHONE_RE.sub(MASK, text)
+    """يخفي ما يشبه رقم هاتف، ويُبقي ما يحتاجه الفريق ليفهم البلاغ (0005 §٢٧٦): رقم الفاتورة
+    بصيغته، والباركود القياسي المتصل. ما سوى ذلك من تسعة أرقام فأكثر يُخفى كما كان."""
+
+    def swap(m: re.Match[str]) -> str:
+        if m.group("doc"):
+            return m.group(0)
+        found = m.group(0)
+        return found if is_barcode(found.translate(_ASCII_DIGITS)) else MASK
+
+    return _MASKABLE_RE.sub(swap, text)
 
 
 def _iso(dt: Any) -> str:
@@ -165,4 +199,13 @@ def mine(user_id: uuid.UUID) -> dict[str, Any]:
 
 def mark_seen(user_id: uuid.UUID) -> dict[str, Any]:
     Feedback.objects.filter(user=user_id, updated_at__isnull=False).update(seen_at=timezone.now())
+    # من رأى الردّ في «ملاحظاتي» لا يبقى إشعاره في الوارد غير مقروء (0005 §٢٧٥)
+    from core.models import Notification
+
+    uid = str(user_id)
+    for n in Notification.objects.filter(kind="feedback_reply", for_user=user_id):
+        ids = [str(x) for x in (n.read_user_ids or [])]
+        if uid not in ids:
+            n.read_user_ids = [*ids, uid]
+            n.save(update_fields=["read_user_ids"])
     return mine(user_id)

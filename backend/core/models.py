@@ -771,6 +771,8 @@ class Notification(TenantScoped):
     screen = models.CharField(max_length=16, blank=True, default="")
     needs_action = models.BooleanField(default=False)
     owner_only = models.BooleanField(default=False)
+    #: 0005 §٢٧٥: إشعار لمستخدم بعينه (ردّ الفريق على ملاحظته) — لا يراه غيره ولو كان المالك
+    for_user = models.UUIDField(null=True, blank=True)
     branch_id = models.UUIDField(null=True, blank=True)
     #: مفتاح إزالة التكرار عند إعادة الاشتقاق (وردية بعينها، جهاز بعينه…)
     dedupe_key = models.CharField(max_length=120)

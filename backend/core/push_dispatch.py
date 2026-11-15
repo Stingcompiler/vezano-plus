@@ -58,6 +58,10 @@ def push_text(n: Notification) -> dict[str, str]:
     للمتاجر كلها فلا سرّ فيه، فيظهر عنوانه ونصّه كما هما على الهاتف والتطبيق المثبَّت (0005 §٢٣٢)."""
     if n.kind == "platform_announcement":
         return {"title": f"فيزانو بلص — {n.title}"[:120], "body": n.body[:240]}
+    # ردّ الفريق على ملاحظة (§٢٧٥): نصّ ثابت بلا نصّ الملاحظة — يُدفع لصاحبها وحده
+    if n.kind == "feedback_reply":
+        fixed = push.NOTIFICATION_KINDS["feedback_reply"]
+        return {"title": fixed["title"], "body": fixed["body"]}
     return CATEGORY_PUSH.get(n.category, CATEGORY_PUSH["operational"])
 
 
@@ -82,6 +86,8 @@ def _branches(user_ids: set[uuid.UUID]) -> dict[uuid.UUID, set[uuid.UUID]]:
 def _wants(
     n: Notification, user: User, branches: set[uuid.UUID], prefs: dict[str, Any], now: datetime
 ) -> bool:
+    if notifications.personal_to_other(n, user):
+        return False
     if n.owner_only and not user.is_owner:
         return False
     if n.branch_id is not None and not user.is_owner and n.branch_id not in branches:

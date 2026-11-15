@@ -252,3 +252,24 @@ def test_platform_announcement_push_shows_its_own_text(
     assert sent[0]["title"] == "فيزانو بلص — جديد: تقارير الهامش"
     assert sent[0]["body"] == "تقرير الهامش لكل صنف صار في التقارير."
     assert sent[0]["path"] == "/notify/inbox"
+
+
+def test_personal_notification_goes_to_its_user_only(
+    ctx: dict[str, Any],  # noqa: F811
+    sent: Sent,
+) -> None:
+    """0005 §٢٧٥: ردّ الفريق على ملاحظة يُدفع لأجهزة صاحبها وحده بنصّه الثابت."""
+    for who in ("owner", "manager", "cashier"):
+        _subscribe(ctx, who)
+    fixed = push.NOTIFICATION_KINDS["feedback_reply"]
+    _emit(
+        ctx,
+        kind="feedback_reply",
+        title=fixed["title"],
+        body=fixed["body"],
+        href=fixed["url"],
+        for_user=ctx["users"]["cashier"].id,
+    )
+    assert _dispatch(ctx) == 1
+    assert [s["endpoint"] for s in sent] == ["https://push.example/cashier"]
+    assert sent[0]["title"] == "ردّ على ملاحظتك" and sent[0]["path"] == "/support#feedback"

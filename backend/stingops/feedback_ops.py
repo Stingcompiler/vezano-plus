@@ -1,5 +1,6 @@
 """«الملاحظات» في وارد فريق المنصة (0005 §٢٦٤) — قراءة ملاحظات التجار عبر كل المنشآت، وتغيير الحالة
-(جديدة/قيد الدراسة/نُفّذت/لن تُنفّذ)، وردّ مكتوب يراه المرسل في «ملاحظاتي» مع تنبيه لجهازه."""
+(جديدة/قيد الدراسة/نُفّذت/لن تُنفّذ)، وردّ مكتوب يراه المرسل في «ملاحظاتي»
+مع إشعار له وحده في وارده (§٢٧٥)."""
 
 from __future__ import annotations
 
@@ -188,20 +189,35 @@ def update(
         f.updated_at = timezone.now()
         f.save(update_fields=["status", "reply", "updated_by_name", "updated_at"])
         tenants = {t.id: t.name for t in Tenant.unscoped.filter(id=f.tenant_id)}
-    if f.device:
-        _notify(f.tenant_id, f.device)
+    _notify(f)
     return _row(f, tenants)
 
 
-def _notify(tenant_id: uuid.UUID, device_id: uuid.UUID) -> None:
-    """تنبيه لجهاز المرسل — لا يكسر الحفظ أبداً."""
-    from core import push
+def _notify(f: Feedback) -> None:
+    """إشعار لصاحب الملاحظة وحده (0005 §٢٧٥) — لا يكسر الحفظ أبداً.
 
+    يُكتب في وارد المنشأة موسوماً بمستخدمه، فيراه على الويب والهاتف والحاسوب أياً كان جهازه، ويدفعه
+    الموزّع إلى أجهزته المشتركة بتفضيلاته. كان التنبيه قبل ذلك دفعاً لجهاز الإرسال وحده: لا يصل
+    الهاتف ولا الحاسوب ولا يظهر في «الإشعارات». النص ثابت بلا نصّ الملاحظة ولا الردّ."""
+    from core import notifications, push
+
+    fixed = push.NOTIFICATION_KINDS["feedback_reply"]
+    stamp = int(f.updated_at.timestamp() * 1000) if f.updated_at else 0
     try:
-        with tenant_context(tenant_id):
-            push.notify_device(device_id, "feedback_reply")
+        with tenant_context(f.tenant_id):
+            notifications.emit(
+                kind="feedback_reply",
+                category="account",
+                title=fixed["title"],
+                body=fixed["body"],
+                href=fixed["url"],
+                screen="SYS-11",
+                for_user=f.user,
+                # إشعار لكل تحديث: الحاسوب يتذكّر المعرّفات، فإحياء القديم لا يُنبَّه به
+                dedupe_key=f"feedback_reply:{f.id}:{stamp}",
+            )
     except Exception:  # noqa: BLE001 — التنبيه أقل أهمية من الردّ نفسه
-        log.exception("feedback push failed")
+        log.exception("feedback notification failed")
 
 
 def attachment(tenant_id: uuid.UUID, feedback_id: uuid.UUID) -> dict[str, Any]:
