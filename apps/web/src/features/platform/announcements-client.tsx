@@ -209,11 +209,16 @@ export function AnnouncementsClient() {
           body: { audience, body, kind, audience_value: audienceValue } as never,
         });
         const b = data as unknown as Preview | undefined;
-        if (response.ok && b) setPreview(b);
+        if (response.ok && b) {
+          setPreview(b);
+          // §٢٧٧: جمهور «متاجر السوق» الافتراضي بلا متجر واحد يُعطّل «جدولة» فلا يبقى إلا «حفظ»
+          // (مسودة لا تُرسل) — كذلك حُفظ إعلان المالك ولم يصل أحداً. فيصير «كل المتاجر» ما لم يختره المشغّل.
+          if (b.targeted === 0 && audience === "market" && !touched.audience) setAudience("all");
+        }
       })().catch(() => undefined);
     }, 150);
     return () => clearTimeout(t);
-  }, [audience, body, kind, audienceValue]);
+  }, [audience, body, kind, audienceValue, touched.audience]);
 
   // «متجر واحد»: بحث بالاسم في جدول المستأجرين (PLT-20)
   useEffect(() => {

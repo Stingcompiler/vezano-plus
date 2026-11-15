@@ -502,6 +502,35 @@ test.describe("PLT-04", () => {
     ).toHaveClass(/pos-chip--on/);
   });
 
+  test("§٢٧٧: جمهور متاجر السوق الافتراضي بلا متجر يصير «كل المتاجر» فلا تُعطَّل الجدولة", async ({
+    page,
+  }) => {
+    await mockAnnouncements(page);
+    // كالإنتاج: لا متجر بمزامنة سوق فعّالة
+    await page.route("**/api/platform/announcements/preview", (route) => {
+      const b = route.request().postDataJSON() as { audience: "all" | "market" };
+      const n = b.audience === "all" ? 12 : 0;
+      return route.fulfill(
+        json(200, {
+          targeted: n,
+          segments: SEGMENTS(b.audience),
+          promise_outside_plan: false,
+          outside_count: 0,
+        }),
+      );
+    });
+    await operatorLogin(page);
+    await goSection(page, "الإعلانات");
+    await expect(page.getByRole("button", { name: "كل المتاجر" })).toHaveClass(/pos-chip--on/);
+    await expect(page.getByRole("button", { name: "جدولة — 12 متجراً" })).toBeVisible();
+    // اختيار المشغّل الصريح يبقى ولو كان صفراً
+    await page.getByRole("button", { name: "متاجر ذات مزامنة سوق فعّالة", exact: true }).click();
+    await expect(page.getByRole("button", { name: "جدولة — 0 متاجر" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "متاجر ذات مزامنة سوق فعّالة", exact: true }),
+    ).toHaveClass(/pos-chip--on/);
+  });
+
   test("validation_error → saving: نصّ يَعِد بميزة سوق لكل المتاجر لا يُجدول حتى يُضيَّق الجمهور، والجدولة تُسجَّل ولا تُرسل", async ({
     page,
   }, info) => {
