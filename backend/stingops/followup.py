@@ -28,10 +28,13 @@ def trials(now: Any) -> QuerySet[TenantSubscription]:
         issued_at__gte=OuterRef("trial_ends_at"),
         issued_at__lte=now,
     ).order_by("issued_at")
-    return TenantSubscription.unscoped.filter(trial_ends_at__isnull=False).annotate(
+    rows: QuerySet[TenantSubscription] = TenantSubscription.unscoped.filter(
+        trial_ends_at__isnull=False
+    ).annotate(
         order_at=Subquery(orders.values("sent_at")[:1]),
         paid_at=Subquery(payments.values("issued_at")[:1]),
     )
+    return rows
 
 
 def renewal_counts(now: Any) -> dict[str, int]:
@@ -120,8 +123,8 @@ def annotate_followup(rows: list[dict[str, Any]], now: Any) -> None:
             "trial_end": stamp(sub.trial_ends_at if sub else None),
             "first_sale": stamp(first_sale.get(key)),
             "report": stamp(sub.first_trial_report_at if sub else None),
-            "order": stamp(sub.order_at if sub else None),
-            "paid": stamp(sub.paid_at if sub else None),
+            "order": stamp(getattr(sub, "order_at", None)),
+            "paid": stamp(getattr(sub, "paid_at", None)),
             "accepted": stamp(accepted.get(key)),
             "last_ok": stamp(last_ok),
             "error": error,
