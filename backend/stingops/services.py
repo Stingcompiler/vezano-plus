@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from django.contrib.auth.hashers import check_password, make_password
@@ -27,6 +27,7 @@ from core.models import (
 )
 from core.subscription import PLAN_ORDER, PLANS
 from core.tenancy import platform_context, tenant_context
+from sales.models import Sale
 from stingops import subscriptions as _subscriptions
 from stingops.models import OperatorAccessLog, OperatorProfile, SupportGrant
 
@@ -131,7 +132,7 @@ def _sub_status(sub: TenantSubscription | None, now: Any) -> tuple[str, str, str
             f"أوقفه المشغّل {sub.suspended_at:%d/%m} · {sub.suspended_reason}",
         )
     days = (sub.expires_at - now).days
-    if sub.state == TenantSubscription.State.TRIAL:
+    if sub.state == TenantSubscription.State.TRIAL and sub.expires_at >= now:
         return (
             "trial",
             "تجريبي",
@@ -165,11 +166,13 @@ def tenant_row(t: Tenant, now: Any) -> dict[str, Any]:
     if pending_proof and code != "suspended":
         code, label = "payment_pending", "دفع معلّق"
     elif sync_stuck and code == "active":
-        code, label = "sync_late", "مزامنة متأخرة"
+        code, label = "sync_late", "تأخر ظهور الجهاز"
     tech = (
-        "لم يُدخل بيانات بعد — لا نلاحقه بعروض"
+        "لا ظهور مسجّل لجلسة جهاز"
         if last_seen is None
-        else (f"جهاز لم يزامن {stale_days} أيام" if sync_stuck else "كل الأجهزة متزامنة")
+        else (
+            f"آخر ظهور لجلسة جهاز قبل {stale_days} أيام" if sync_stuck else "ظهرت جلسة جهاز حديثاً"
+        )
     )
     if pending_proof and code != "suspended":
         tech = "إيصال دفع بانتظار المراجعة"
@@ -219,6 +222,14 @@ def _actions(code: str, sub: TenantSubscription | None) -> str:
     return "مراجعة استحقاق · إعلان صيانة · لا قراءة دفاتر"
 
 
+def due_soon(row: dict[str, Any], now: Any) -> bool:
+    return bool(
+        row["expires_at"]
+        and row["status"] not in {"pending_approval", "suspended"}
+        and now <= datetime.fromisoformat(row["expires_at"]) <= now + timedelta(days=DUE_SOON_DAYS)
+    )
+
+
 def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
     now = timezone.now()
     with platform_context():
@@ -227,11 +238,12 @@ def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
             term = q.strip()
             qs = qs.filter(id=term) if _is_uuid(term) else qs.filter(name__icontains=term)
         total = Tenant.unscoped.count()
+        if filter_code in {"due14_sold", "due14_no_sale"}:
+            sold = Sale.unscoped.values("tenant_id")
+            qs = qs.filter(pk__in=sold) if filter_code == "due14_sold" else qs.exclude(pk__in=sold)
         rows = [tenant_row(t, now) for t in qs]
-    if filter_code == "due14":
-        rows = [
-            r for r in rows if r["days_left"] is not None and 0 <= r["days_left"] <= DUE_SOON_DAYS
-        ]
+    if filter_code in {"due14", "due14_sold", "due14_no_sale"}:
+        rows = [r for r in rows if due_soon(r, now)]
     elif filter_code == "sync_stuck":
         rows = [r for r in rows if r["sync_stuck"]]
     elif filter_code == "late":
@@ -242,10 +254,12 @@ def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
         rows = [r for r in rows if r["status"] == "pending_approval"]
     # فحص 2026-10-17 VP05: بطاقتا «نشط» و«تجريبي» في النظرة العامة تفتحان مرشّحهما بتعريف العدّاد نفسه
     elif filter_code == "active":
-        rows = [r for r in rows if r["status"] == "active"]
+        rows = [r for r in rows if r["status"] in {"active", "sync_late"}]
     elif filter_code == "trial":
         rows = [r for r in rows if r["status"] == "trial"]
-    active = sum(1 for r in rows if r["status"] == "active")
+    if filter_code in {"due14", "due14_sold", "due14_no_sale"}:
+        rows.sort(key=lambda r: (r["expires_at"], r["id"]))
+    active = sum(1 for r in rows if r["status"] in {"active", "sync_late"})
     return {
         "tenants": rows,
         "total": total,

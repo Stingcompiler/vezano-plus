@@ -18,6 +18,7 @@ from core.auth.tokens import AuthContext
 from core.models import Tenant
 from core.tenancy import platform_context, tenant_context
 from stingops import roles, services
+from stingops.followup import annotate_followup
 from stingops.models import OperatorAccessLog
 from stingops.paging import PAGE_PARAMS, paginate
 
@@ -226,16 +227,14 @@ class OperatorTenantsView(APIView):
         auth = _operator(request)
         if auth is None:
             return Response({"detail": "operator_required"}, status=status.HTTP_403_FORBIDDEN)
-        return Response(
-            paginate(
-                services.tenants_payload(
-                    q=str(request.query_params.get("q", "")),
-                    filter_code=str(request.query_params.get("filter", "all")),
-                ),
-                "tenants",
-                request,
-            )
+        payload = services.tenants_payload(
+            q=str(request.query_params.get("q", "")),
+            filter_code=str(request.query_params.get("filter", "all")),
         )
+        page = paginate(payload, "tenants", request)
+        with platform_context():
+            annotate_followup(page["tenants"], timezone.now())
+        return Response(page)
 
 
 class OperatorTenantDirectoryView(APIView):

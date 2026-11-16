@@ -313,12 +313,14 @@ def ensure_subscription() -> TenantSubscription:
     sub: TenantSubscription | None = TenantSubscription.objects.filter(tenant_id=tenant_id).first()
     if sub is None:
         tenant = Tenant.unscoped.get(id=tenant_id)
+        trial_end = tenant.created_at + timedelta(days=trial_days())
         sub = TenantSubscription.objects.create(
             tenant_id=tenant_id,
             plan_code="trial",
             state=TenantSubscription.State.TRIAL,
             started_at=tenant.created_at,
-            expires_at=tenant.created_at + timedelta(days=trial_days()),
+            expires_at=trial_end,
+            trial_ends_at=trial_end,
         )
     return sub
 

@@ -51511,6 +51511,19 @@
           },
           "tenants_total": {
             "type": "integer"
+          },
+          "trial_renewals": {
+            "additionalProperties": false,
+            "properties": {
+              "eligible": {
+                "type": "integer"
+              },
+              "paid": {
+                "type": "integer"
+              }
+            },
+            "required": ["eligible", "paid"],
+            "type": "object"
           }
         },
         "required": [
@@ -53238,6 +53251,58 @@
                 },
                 "expires_at": {
                   "type": "string"
+                },
+                "followup": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_at": {
+                      "type": "string"
+                    },
+                    "first_sale": {
+                      "type": "string"
+                    },
+                    "last_ok": {
+                      "type": "string"
+                    },
+                    "order": {
+                      "type": "string"
+                    },
+                    "paid": {
+                      "type": "string"
+                    },
+                    "pending": {
+                      "type": ["integer", "null"]
+                    },
+                    "report": {
+                      "type": "string"
+                    },
+                    "reported_at": {
+                      "type": "string"
+                    },
+                    "trial_end": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "error",
+                    "error_at",
+                    "first_sale",
+                    "last_ok",
+                    "order",
+                    "paid",
+                    "pending",
+                    "report",
+                    "reported_at",
+                    "trial_end"
+                  ],
+                  "type": "object"
                 },
                 "id": {
                   "type": "string"

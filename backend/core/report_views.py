@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.http import HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -15,6 +16,7 @@ from rest_framework.views import APIView
 
 from core import home
 from core.auth.tokens import AuthContext
+from core.models import TenantSubscription
 from core.tenancy import platform_context, tenant_context
 from parties import reports as party_reports
 from sales import reports as sales_reports
@@ -27,6 +29,17 @@ def _tenant(auth: Any) -> Any:
 def _viewer(auth: Any) -> home.Viewer:
     assert isinstance(auth, AuthContext)
     return home.viewer_for(auth.user, auth.device)
+
+
+def _record_trial_report() -> None:
+    now = timezone.now()
+    TenantSubscription.objects.filter(
+        state=TenantSubscription.State.TRIAL,
+        suspended_at__isnull=True,
+        started_at__lte=now,
+        trial_ends_at__gt=now,
+        first_trial_report_at__isnull=True,
+    ).update(first_trial_report_at=now)
 
 
 def _csv(body: str, name: str) -> HttpResponse:
@@ -72,6 +85,7 @@ class SalesReportView(APIView):
             )
             if q.get("export") == "csv":
                 return _csv(sales_reports.export_csv(payload), "sales-report.csv")
+            _record_trial_report()
             return Response(payload)
 
 
@@ -102,6 +116,7 @@ class ReceivablesReportView(APIView):
             )
             if q.get("export") == "csv":
                 return _csv(party_reports.export_csv(payload), "receivables-report.csv")
+            _record_trial_report()
             return Response(payload)
 
 
@@ -140,6 +155,7 @@ class StockReportView(APIView):
             )
             if q.get("export") == "csv":
                 return _csv(stock_reports.export_csv(payload), "stock-report.csv")
+            _record_trial_report()
             return Response(payload)
 
 
@@ -178,6 +194,7 @@ class CashReportView(APIView):
             )
             if q.get("export") == "csv":
                 return _csv(cash_reports.export_csv(payload), "cash-report.csv")
+            _record_trial_report()
             return Response(payload)
 
 
@@ -212,7 +229,9 @@ class MarginReportView(APIView):
             rng = sales_reports.parse_range(
                 str(q.get("range", "30d")), start=q.get("start"), end=q.get("end")
             )
-            return Response(margin.margin_report(viewer=v, rng=rng))
+            payload = margin.margin_report(viewer=v, rng=rng)
+            _record_trial_report()
+            return Response(payload)
 
 
 def _export_error(e: Any) -> Response:

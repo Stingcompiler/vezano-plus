@@ -570,6 +570,8 @@ class TenantSubscription(TenantScoped):
     state = models.CharField(max_length=10, choices=State.choices, default=State.TRIAL)
     started_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
+    trial_ends_at = models.DateTimeField(null=True, blank=True)
+    first_trial_report_at = models.DateTimeField(null=True, blank=True)
     extra_features = models.JSONField(default=list, blank=True)
     renewal_amount_minor = models.BigIntegerField(default=0)
     # PLT-13: إيقاف من المشغّل بسبب مسجَّل — يوقف الميزات المدفوعة كالانتهاء ولا يحجب الدفتر

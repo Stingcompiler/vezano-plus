@@ -56,3 +56,55 @@ def test_overview_tiles_open_matching_filter(ctx: dict[str, Any]) -> None:  # no
         assert href.endswith(f"?filter={key}"), (key, href)
         shown = c.get(f"/api/platform/tenants?filter={key}", headers=oh).json()["shown"]
         assert shown == tiles[key]["value"] or key == "due14", (key, shown, tiles[key]["value"])
+
+
+def test_trial_followup_counts_distinct_mature_trials(ctx: dict[str, Any]) -> None:  # noqa: F811
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.models import SubscriptionReceipt
+    from core.subscription import ensure_subscription
+    from core.tenancy import tenant_context
+
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    operator = _operator_headers("followup", "تشغيل")
+    with tenant_context(ctx["tenant"].id):
+        sub = ensure_subscription()
+        sub.started_at = timezone.now() - timedelta(days=15)
+        sub.trial_ends_at = sub.expires_at = timezone.now() + timedelta(days=1)
+        sub.save()
+    assert c.get("/api/reports/sales", headers=owner).status_code == 200
+    filters = "/api/platform/tenants?filter="
+    rows = c.get(filters + "due14_no_sale", headers=operator).json()["tenants"]
+    assert str(ctx["tenant"].id) in {r["id"] for r in rows}
+    assert not c.get(filters + "due14_sold", headers=operator).json()["tenants"]
+    overview = "/api/platform/overview"
+    assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 0, "paid": 0}
+    with tenant_context(ctx["tenant"].id):
+        sub.refresh_from_db()
+        assert sub.first_trial_report_at is not None
+        sub.first_trial_report_at = sub.started_at + timedelta(days=1)
+        sub.trial_ends_at = sub.expires_at = timezone.now() - timedelta(days=1)
+        sub.save()
+    assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 0}
+    for reference in ("FOLLOW-1", "FOLLOW-2"):
+        proof = _post(
+            c, owner, "/api/org/subscription/proofs", {"reference": reference, "plan_code": "dual"}
+        ).json()["proof"]
+        assert (
+            _post(
+                c, operator, f"/api/platform/proofs/{ctx['tenant'].id}/{proof['id']}/approve", {}
+            ).status_code
+            == 200
+        )
+    assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 1}
+    row = c.get("/api/platform/tenants", headers=operator).json()["tenants"]
+    followup = next(r["followup"] for r in row if r["id"] == str(ctx["tenant"].id))
+    assert followup["trial_end"] == sub.trial_ends_at.isoformat() and followup["paid"]
+    assert followup["report"] and not followup["first_sale"]
+    assert followup["pending"] is None
+    with tenant_context(ctx["tenant"].id):
+        SubscriptionReceipt.objects.update(issued_at=sub.started_at)
+    assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 0}
