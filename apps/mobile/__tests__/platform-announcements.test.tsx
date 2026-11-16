@@ -107,4 +107,38 @@ describe("شريط إعلانات المنصة (0005 §٢٣٤)", () => {
     );
     await waitFor(() => expect(screen.queryByText(/اشتراكك ينتهي/)).toBeNull());
   });
+
+  it("يعيد الجلب بسحب التحديث فيظهر إعلان وصل بعد فتح الرئيسية (§٢٧٧)", async () => {
+    const later = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+    let rows: unknown[] = [];
+    const f = server({
+      "GET /api/org/announcements": () => json(200, { announcements: rows }),
+    });
+    const nav = jest.fn();
+    const view = await renderWith(<PlatformAnnouncements onNavigate={nav} refreshKey={0} />, f);
+    await waitFor(() => expect(f).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/إعلان عام/)).toBeNull();
+    rows = [
+      {
+        id: "an2",
+        kind: "notice",
+        kind_label: "إعلان عام",
+        title: "ساعات الدعم تغيّرت",
+        body: "الدعم متاح من 8 صباحاً.",
+        starts_at: later(0),
+        ends_at: later(72),
+        active: true,
+        cta_label: "",
+        cta_url: "",
+      },
+    ];
+    await view.rerender(
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <SessionProvider fetchImpl={f} initial={ACTIVE}>
+          <PlatformAnnouncements onNavigate={nav} refreshKey={1} />
+        </SessionProvider>
+      </SafeAreaProvider>,
+    );
+    expect(await screen.findByText("إعلان عام — ساعات الدعم تغيّرت")).toBeTruthy();
+  });
 });

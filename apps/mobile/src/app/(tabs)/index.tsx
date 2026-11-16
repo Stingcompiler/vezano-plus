@@ -120,6 +120,7 @@ export default function Home() {
   const [period, setPeriod] = useState("today");
   const [branch, setBranch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const load = useCallback(async () => {
     const storage = await getStorage();
@@ -154,6 +155,7 @@ export default function Home() {
 
   const refresh = async () => {
     setRefreshing(true);
+    setRefreshKey((k) => k + 1);
     await load();
     setRefreshing(false);
   };
@@ -228,7 +230,7 @@ export default function Home() {
         </Pressable>
       ) : null}
       {/* إعلانات المنصة النافذة لهذا المتجر (0005 §٢٣٤) */}
-      <PlatformAnnouncements onNavigate={(p) => router.push(p)} />
+      <PlatformAnnouncements onNavigate={(p) => router.push(p)} refreshKey={refreshKey} />
       {/* البحث العام (HOME-03) كحقل شريط الويب: لمسة تفتح شاشة البحث بحقلها مركّزاً */}
       <Pressable
         accessibilityRole="search"

@@ -112,6 +112,22 @@ const storesWord = (n: number) =>
 const localIso = (d: Date) =>
   new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 
+/**
+ * النافذة والجمهور الافتراضيان بالنوع (0005 §٢٧٧): الصيانة كما رُسمت (بعد ست ساعات، أربعون دقيقة، متاجر
+ * السوق)، وما سواها يبدأ الآن ثلاثة أيام لكل المتاجر — كان كل إعلان يرث نافذة الصيانة وجمهورها، فيصل بعد
+ * ست ساعات إلى متاجر السوق وحدها ويختفي شريطه بعد أربعين دقيقة.
+ */
+const HOUR = 3_600_000;
+function defaultWindow(kind: Kind, now = Date.now()): { starts: string; ends: string } {
+  if (kind === "maintenance")
+    return {
+      starts: localIso(new Date(now + 6 * HOUR)),
+      ends: localIso(new Date(now + 6 * HOUR + 40 * 60_000)),
+    };
+  return { starts: localIso(new Date(now)), ends: localIso(new Date(now + 72 * HOUR)) };
+}
+const defaultAudience = (kind: Kind): AudienceCode => (kind === "maintenance" ? "market" : "all");
+
 /** PLT-04 — إعلانات المنصة وصيانة (26-D19 ready/success · 39-D31 validation_error/saving): الجمهور المتأثّر يظهر قبل الجدولة. */
 export function AnnouncementsClient() {
   const router = useRouter();
@@ -129,10 +145,22 @@ export function AnnouncementsClient() {
   const [ctaUrl, setCtaUrl] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [starts, setStarts] = useState(() => localIso(new Date(Date.now() + 6 * 3_600_000)));
-  const [ends, setEnds] = useState(() =>
-    localIso(new Date(Date.now() + 6 * 3_600_000 + 40 * 60_000)),
-  );
+  const [starts, setStarts] = useState(() => defaultWindow("maintenance").starts);
+  const [ends, setEnds] = useState(() => defaultWindow("maintenance").ends);
+  // ما عدّله المشغّل بيده لا يُستبدل حين يغيّر النوع
+  const [touched, setTouched] = useState({ audience: false, window: false });
+  const pickKind = (k: Kind) => {
+    setKind(k);
+    if (!touched.audience) {
+      setAudience(defaultAudience(k));
+      setAudienceValue("");
+    }
+    if (!touched.window) {
+      const w = defaultWindow(k);
+      setStarts(w.starts);
+      setEnds(w.ends);
+    }
+  };
   const [preview, setPreview] = useState<Preview | null>(null);
   // فحص 2026-10-17 VP04: النافذة تُفحص فوراً بجوار الحقل لا بعد الإرسال
   const startMs = Date.parse(starts);
@@ -143,8 +171,9 @@ export function AnnouncementsClient() {
       ? "اكتب نهاية صالحة بالصيغة نفسها"
       : endMs <= startMs
         ? "النهاية قبل البداية — اجعلها بعدها"
-        : startMs <= Date.now()
-          ? "البداية في الماضي — اختر وقتاً قادماً"
+        : // §٢٧٧: نافذة بدأت تُجدول وتصل فوراً؛ المرفوض نافذة انتهت
+          endMs <= Date.now()
+          ? ERRORS.window_in_past
           : undefined;
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [draftId, setDraftId] = useState("");
@@ -180,11 +209,16 @@ export function AnnouncementsClient() {
           body: { audience, body, kind, audience_value: audienceValue } as never,
         });
         const b = data as unknown as Preview | undefined;
-        if (response.ok && b) setPreview(b);
+        if (response.ok && b) {
+          setPreview(b);
+          // §٢٧٧: جمهور «متاجر السوق» الافتراضي بلا متجر واحد يُعطّل «جدولة» فلا يبقى إلا «حفظ»
+          // (مسودة لا تُرسل) — كذلك حُفظ إعلان المالك ولم يصل أحداً. فيصير «كل المتاجر» ما لم يختره المشغّل.
+          if (b.targeted === 0 && audience === "market" && !touched.audience) setAudience("all");
+        }
       })().catch(() => undefined);
     }, 150);
     return () => clearTimeout(t);
-  }, [audience, body, kind, audienceValue]);
+  }, [audience, body, kind, audienceValue, touched.audience]);
 
   // «متجر واحد»: بحث بالاسم في جدول المستأجرين (PLT-20)
   useEffect(() => {
@@ -384,7 +418,7 @@ export function AnnouncementsClient() {
                       key={k}
                       type="button"
                       className={`pos-chip${kind === k ? " pos-chip--on" : ""}`}
-                      onClick={() => setKind(k)}
+                      onClick={() => pickKind(k)}
                     >
                       {label}
                     </button>
@@ -406,14 +440,20 @@ export function AnnouncementsClient() {
                   kind="text"
                   mono
                   value={starts}
-                  onChange={(e) => setStarts(e.target.value)}
+                  onChange={(e) => {
+                    setStarts(e.target.value);
+                    setTouched((t) => ({ ...t, window: true }));
+                  }}
                 />
                 <TextField
                   label={`نهاية النافذة (بتوقيت ${tz})`}
                   kind="text"
                   mono
                   value={ends}
-                  onChange={(e) => setEnds(e.target.value)}
+                  onChange={(e) => {
+                    setEnds(e.target.value);
+                    setTouched((t) => ({ ...t, window: true }));
+                  }}
                   error={windowError}
                 />
                 <div className="pos-chips" role="group" aria-label="الجمهور">
@@ -425,6 +465,7 @@ export function AnnouncementsClient() {
                       onClick={() => {
                         setAudience(k);
                         setAudienceValue("");
+                        setTouched((t) => ({ ...t, audience: true }));
                       }}
                     >
                       {label}

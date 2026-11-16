@@ -2,7 +2,7 @@ import { dayMonth, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
 import { AppText, Button, Card, SPACE } from "@sting/ui-native";
 import { useEffect, useState } from "react";
-import { Linking, View } from "react-native";
+import { AppState, Linking, View } from "react-native";
 
 import { openHref } from "@/lib/home";
 import { useSession } from "@/lib/session";
@@ -32,10 +32,26 @@ const when = (iso: string) => {
   return `${day} ${month} ${hhmm(iso)}`;
 };
 
-export function PlatformAnnouncements({ onNavigate }: { onNavigate: (path: string) => void }) {
+export function PlatformAnnouncements({
+  onNavigate,
+  refreshKey = 0,
+}: {
+  onNavigate: (path: string) => void;
+  /** يتغيّر مع سحب التحديث في الرئيسية فيُعاد الجلب (§٢٧٧) */
+  refreshKey?: number;
+}) {
   const { api } = useSession();
   const [rows, setRows] = useState<Ann[]>([]);
   const [, bump] = useState(0);
+  // §٢٧٧: الرئيسية تبقى مركّبة في تبويبها، فكان الشريط يُجلب مرة عند فتح التطبيق ولا يرى إعلاناً وصل
+  // بعدها. يُعاد الجلب بسحب التحديث وحين يعود التطبيق إلى المقدمة.
+  const [focusKey, setFocusKey] = useState(0);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") setFocusKey((k) => k + 1);
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     let gone = false;
@@ -51,7 +67,7 @@ export function PlatformAnnouncements({ onNavigate }: { onNavigate: (path: strin
     return () => {
       gone = true;
     };
-  }, [api]);
+  }, [api, refreshKey, focusKey]);
 
   const shown = rows.filter((a) => !hidden.has(a.id));
   if (!shown.length) return null;
