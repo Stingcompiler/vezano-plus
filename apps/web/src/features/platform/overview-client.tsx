@@ -319,17 +319,35 @@ export function OverviewClient() {
                   <section className="plt-panel">
                     <h3 className="cat-head__title">الدفع بعد تجربة ميزة مدفوعة</h3>
                     <strong>
-                      {data.trial_renewals.eligible
-                        ? `${((10 * data.trial_renewals.paid) / data.trial_renewals.eligible).toLocaleString("ar", { maximumFractionDigits: 1 })} من كل ١٠`
-                        : "لا تجارب مكتملة مؤهلة بعد"}
+                      {data.trial_renewals.eligible ? (
+                        <>
+                          <span className="sting-mono">
+                            {(
+                              (10 * data.trial_renewals.paid) /
+                              data.trial_renewals.eligible
+                            ).toLocaleString("en", { maximumFractionDigits: 1 })}
+                          </span>{" "}
+                          من كل <span className="sting-mono">10</span>
+                        </>
+                      ) : (
+                        "لا تجارب مكتملة مؤهلة بعد"
+                      )}
                     </strong>
                     <p>
-                      دفعت {data.trial_renewals.paid} من {data.trial_renewals.eligible} منشأة بعد
+                      دفعت <span className="sting-mono">{data.trial_renewals.paid}</span> من{" "}
+                      <span className="sting-mono">{data.trial_renewals.eligible}</span> منشأة بعد
                       انتهاء تجربتها. يشمل القياس التجارب ذات النهاية الموثّقة التي سُجّل خلالها فتح
                       تقرير أو إرسال طلب توريد في السوق. يبدأ رصد فتح التقارير من تفعيل هذه
                       المتابعة. الدفع بإيصال تجديد معتمد.
                     </p>
-                    <small>آخر قياس {new Date(data.measured_at).toLocaleString("ar-SD")}</small>
+                    <small>
+                      آخر قياس{" "}
+                      <span className="sting-mono">
+                        {new Date(data.measured_at).toLocaleString("en-GB", {
+                          timeZone: "Africa/Khartoum",
+                        })}
+                      </span>
+                    </small>
                   </section>
                 )}
                 {/* 0005 §١٣٥/§١٤١: ما ينتظر قراراً أولاً، ثم المستأجرون، والصحة جانباً على الواسعة */}

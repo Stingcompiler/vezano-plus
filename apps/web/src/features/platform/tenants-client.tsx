@@ -109,7 +109,7 @@ const agoWord = (iso: string) => {
 const STATUS_FILTERS = [
   ["all", "كل الاستحقاقات"],
   ["pending_approval", "بانتظار الاعتماد"],
-  ["active", "اشتراكات سارية"],
+  ["active", "نشط"],
   ["trial", "تجريبي"],
   ["late", "متأخرو السداد"],
   ["suspended", "موقوفون"],
@@ -118,7 +118,7 @@ const WATCH_FILTERS = [
   ["due14", "الاستحقاق خلال 14 يوماً"],
   ["due14_sold", "قرب الاستحقاق · بيع مسجّل"],
   ["due14_no_sale", "قرب الاستحقاق · بلا بيع مسجّل"],
-  ["sync_stuck", "تأخر ظهور الأجهزة"],
+  ["sync_stuck", "مزامنة متعثّرة"],
 ] as const;
 const FILTERS = [...STATUS_FILTERS, ...WATCH_FILTERS] as const;
 
@@ -194,7 +194,12 @@ export function TenantsClient() {
         ? "empty"
         : "ready";
 
-  const date = (iso: string) => new Date(iso).toLocaleDateString("ar-SD");
+  // الأرقام لاتينية داخل sting-mono بتوقيت الخرطوم — كما في directory-client
+  const date = (iso: string) => (
+    <span className="sting-mono">
+      {new Date(iso).toLocaleDateString("en-GB", { timeZone: "Africa/Khartoum" })}
+    </span>
+  );
   const columns = [
     {
       key: "name",
@@ -256,10 +261,14 @@ export function TenantsClient() {
     },
     {
       key: "sync",
-      header: "حالة الأجهزة",
+      header: "آخر مزامنة",
       render: (t: TenantRow) => (
         <>
-          <div>آخر ظهور: {t.last_sync_at ? agoWord(t.last_sync_at) : "غير معلوم"}</div>
+          <div>
+            {t.last_sync_at
+              ? `${agoWord(t.last_sync_at)}${t.sync_stuck ? " — تحت المتابعة" : ""}`
+              : "—"}
+          </div>
           {t.followup && (
             <>
               <div>
@@ -272,13 +281,23 @@ export function TenantsClient() {
               </div>
               <div>
                 آخر خطأ مسجّل:{" "}
-                {t.followup.error_at
-                  ? `${t.followup.error} · ${date(t.followup.error_at)}`
-                  : "لا سجل"}
+                {t.followup.error_at ? (
+                  <>
+                    <span className="sting-mono">{t.followup.error}</span> ·{" "}
+                    {date(t.followup.error_at)}
+                  </>
+                ) : (
+                  "لا سجل"
+                )}
               </div>
               <div>
-                المعلّق في آخر تقرير جهاز: {t.followup.pending ?? "غير معلوم"}{" "}
-                {t.followup.reported_at && `· ${date(t.followup.reported_at)}`}
+                المعلّق في آخر تقرير جهاز:{" "}
+                {t.followup.pending === null ? (
+                  "غير معلوم"
+                ) : (
+                  <span className="sting-mono">{t.followup.pending}</span>
+                )}
+                {t.followup.reported_at && <> · {date(t.followup.reported_at)}</>}
               </div>
             </>
           )}
