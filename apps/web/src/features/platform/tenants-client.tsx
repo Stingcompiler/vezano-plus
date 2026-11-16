@@ -21,7 +21,16 @@ import { PlatformFrame } from "@/features/platform/platform-nav";
 
 type State = "loading" | "ready" | "empty" | "permission_denied";
 type Filter =
-  "all" | "pending_approval" | "active" | "trial" | "due14" | "sync_stuck" | "late" | "suspended";
+  | "all"
+  | "pending_approval"
+  | "active"
+  | "trial"
+  | "due14_sold"
+  | "due14_no_sale"
+  | "due14"
+  | "sync_stuck"
+  | "late"
+  | "suspended";
 
 export interface TenantRow {
   id: string;
@@ -29,6 +38,19 @@ export interface TenantRow {
   plan_label: string;
   plan_code: string;
   due_line: string;
+  followup?: {
+    trial_end: string;
+    first_sale: string;
+    report: string;
+    order: string;
+    paid: string;
+    accepted: string;
+    last_ok: string;
+    error: string;
+    error_at: string;
+    pending: number | null;
+    reported_at: string;
+  };
   expires_at: string;
   days_left: number | null;
   devices: number;
@@ -87,14 +109,16 @@ const agoWord = (iso: string) => {
 const STATUS_FILTERS = [
   ["all", "كل الاستحقاقات"],
   ["pending_approval", "بانتظار الاعتماد"],
-  ["active", "نشط"],
+  ["active", "اشتراكات سارية"],
   ["trial", "تجريبي"],
   ["late", "متأخرو السداد"],
   ["suspended", "موقوفون"],
 ] as const;
 const WATCH_FILTERS = [
   ["due14", "الاستحقاق خلال 14 يوماً"],
-  ["sync_stuck", "مزامنة متعثّرة"],
+  ["due14_sold", "قرب الاستحقاق · بيع مسجّل"],
+  ["due14_no_sale", "قرب الاستحقاق · بلا بيع مسجّل"],
+  ["sync_stuck", "تأخر ظهور الأجهزة"],
 ] as const;
 const FILTERS = [...STATUS_FILTERS, ...WATCH_FILTERS] as const;
 
@@ -115,6 +139,8 @@ export function TenantsClient() {
     initial === "pending_approval" ||
       initial === "active" ||
       initial === "trial" ||
+      initial === "due14_sold" ||
+      initial === "due14_no_sale" ||
       initial === "due14" ||
       initial === "late" ||
       initial === "sync_stuck" ||
@@ -168,6 +194,7 @@ export function TenantsClient() {
         ? "empty"
         : "ready";
 
+  const date = (iso: string) => new Date(iso).toLocaleDateString("ar-SD");
   const columns = [
     {
       key: "name",
@@ -192,12 +219,71 @@ export function TenantsClient() {
         </>
       ),
     },
-    { key: "due", header: "الباقة والاستحقاق", render: (t: TenantRow) => t.due_line },
+    {
+      key: "due",
+      header: "الباقة والاستحقاق",
+      render: (t: TenantRow) => (
+        <>
+          <div>{t.due_line}</div>
+          {t.followup && (
+            <>
+              <div>
+                نهاية التجربة: {t.followup.trial_end ? date(t.followup.trial_end) : "غير موثّقة"}
+              </div>
+              <div>
+                أول بيع وصل للخادم: {t.followup.first_sale ? date(t.followup.first_sale) : "لا سجل"}
+              </div>
+              <div>
+                أثناء التجربة:{" "}
+                {[t.followup.report && "فتح تقرير", t.followup.order && "طلب توريد"]
+                  .filter(Boolean)
+                  .join("، ") || "لا استخدام مرصود"}
+              </div>
+              <div>
+                الدفع بعد التجربة:{" "}
+                {t.followup.paid
+                  ? date(t.followup.paid)
+                  : !t.followup.trial_end
+                    ? "غير معلوم"
+                    : Date.parse(t.followup.trial_end) > Date.now()
+                      ? "التجربة جارية"
+                      : "لا إيصال تجديد مسجّل"}
+              </div>
+            </>
+          )}
+        </>
+      ),
+    },
     {
       key: "sync",
-      header: "آخر مزامنة",
-      render: (t: TenantRow) =>
-        t.last_sync_at ? `${agoWord(t.last_sync_at)}${t.sync_stuck ? " — تحت المتابعة" : ""}` : "—",
+      header: "حالة الأجهزة",
+      render: (t: TenantRow) => (
+        <>
+          <div>آخر ظهور: {t.last_sync_at ? agoWord(t.last_sync_at) : "غير معلوم"}</div>
+          {t.followup && (
+            <>
+              <div>
+                آخر عملية قبلها الخادم:{" "}
+                {t.followup.accepted ? date(t.followup.accepted) : "غير مسجّلة"}
+              </div>
+              <div>
+                آخر مزامنة ناجحة بحسب تقرير الجهاز:{" "}
+                {t.followup.last_ok ? date(t.followup.last_ok) : "غير معلومة"}
+              </div>
+              <div>
+                آخر خطأ مسجّل:{" "}
+                {t.followup.error_at
+                  ? `${t.followup.error} · ${date(t.followup.error_at)}`
+                  : "لا سجل"}
+              </div>
+              <div>
+                المعلّق في آخر تقرير جهاز: {t.followup.pending ?? "غير معلوم"}{" "}
+                {t.followup.reported_at && `· ${date(t.followup.reported_at)}`}
+              </div>
+            </>
+          )}
+        </>
+      ),
     },
     {
       key: "status",

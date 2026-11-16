@@ -95,7 +95,9 @@ def extend(tenant: Tenant, *, days: int, reason: str, by_name: str) -> dict[str,
             sub.expires_at = base + timedelta(days=days)
             if sub.state == TenantSubscription.State.EXPIRED:
                 sub.state = TenantSubscription.State.ACTIVE
-            sub.save(update_fields=["expires_at", "state", "updated_at"])
+            if sub.plan_code == "trial" and sub.state == TenantSubscription.State.TRIAL:
+                sub.trial_ends_at = sub.expires_at
+            sub.save(update_fields=["expires_at", "trial_ends_at", "state", "updated_at"])
         _event(
             tenant,
             kind=SubscriptionEvent.Kind.EXTEND,
@@ -184,7 +186,8 @@ def approve_trial(tenant: Tenant, *, reason: str, by_name: str) -> dict[str, Any
         sub.state = TenantSubscription.State.TRIAL
         sub.started_at = now
         sub.expires_at = now + timedelta(days=days)
-        sub.save(update_fields=["state", "started_at", "expires_at", "updated_at"])
+        sub.trial_ends_at = sub.expires_at
+        sub.save(update_fields=["state", "started_at", "expires_at", "trial_ends_at", "updated_at"])
         from core import notifications
 
         notifications.emit(

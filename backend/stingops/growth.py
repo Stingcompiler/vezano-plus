@@ -143,7 +143,7 @@ def compute_m0(*, month: str, viewer: User | None = None) -> M0Snapshot:
             },
             {
                 "key": "active",
-                "label": "منشأة نشطة",
+                "label": "منشآت باعت أو نشرت",
                 "value": len(active_ids),
                 "note": f"نشاط = بيع أو نشر خلال {ACTIVE_DAYS} يوماً",
                 "ratio": _pct(len(active_ids), registered_total) + " من المسجَّلين",

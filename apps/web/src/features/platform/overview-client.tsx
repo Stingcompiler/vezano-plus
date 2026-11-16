@@ -28,6 +28,7 @@ interface Tile {
 interface Payload {
   measured_at: string;
   tenants_total: number;
+  trial_renewals?: { eligible: number; paid: number };
   attention: number;
   subscriptions: Tile[];
   queues: Tile[];
@@ -166,7 +167,13 @@ export function OverviewClient() {
         ),
         tone: "info",
       },
-      { key: "active", label: "نشط", value: v("active"), note: "اشتراك سارٍ", tone: "ok" },
+      {
+        key: "active",
+        label: "اشتراكات سارية",
+        value: v("active"),
+        note: "بحسب الاستحقاق",
+        tone: "ok",
+      },
       {
         key: "trial",
         label: "تجريبي",
@@ -308,6 +315,23 @@ export function OverviewClient() {
                 </div>
                 {data.tenants_total === 0 ? gettingStarted() : null}
                 {kpis(data)}
+                {data.trial_renewals && (
+                  <section className="plt-panel">
+                    <h3 className="cat-head__title">الدفع بعد تجربة ميزة مدفوعة</h3>
+                    <strong>
+                      {data.trial_renewals.eligible
+                        ? `${((10 * data.trial_renewals.paid) / data.trial_renewals.eligible).toLocaleString("ar", { maximumFractionDigits: 1 })} من كل ١٠`
+                        : "لا تجارب مكتملة مؤهلة بعد"}
+                    </strong>
+                    <p>
+                      دفعت {data.trial_renewals.paid} من {data.trial_renewals.eligible} منشأة بعد
+                      انتهاء تجربتها. يشمل القياس التجارب ذات النهاية الموثّقة التي سُجّل خلالها فتح
+                      تقرير أو إرسال طلب توريد في السوق. يبدأ رصد فتح التقارير من تفعيل هذه
+                      المتابعة. الدفع بإيصال تجديد معتمد.
+                    </p>
+                    <small>آخر قياس {new Date(data.measured_at).toLocaleString("ar-SD")}</small>
+                  </section>
+                )}
                 {/* 0005 §١٣٥/§١٤١: ما ينتظر قراراً أولاً، ثم المستأجرون، والصحة جانباً على الواسعة */}
                 <div className="plt-overview__grid">
                   <div className="plt-overview__main">

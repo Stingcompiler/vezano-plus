@@ -12,11 +12,13 @@ from typing import Any
 from django.utils import timezone
 
 from core.models import SubscriptionProof, Tenant
+from core.subscription import trial_days
 from core.tenancy import platform_context
 from stingops import health as health_svc
 from stingops import moderation, ops
+from stingops.followup import renewal_counts
 from stingops.models import DemoRequest
-from stingops.services import DUE_SOON_DAYS, tenant_row
+from stingops.services import due_soon, tenant_row
 
 
 def _iso(dt: Any) -> str:
@@ -26,6 +28,8 @@ def _iso(dt: Any) -> str:
 def overview_payload() -> dict[str, Any]:
     now = timezone.now()
     with platform_context():
+        renewals = renewal_counts(now)
+        duration = trial_days()
         rows = [tenant_row(t, now) for t in Tenant.unscoped.all()]
         proofs_pending = SubscriptionProof.unscoped.filter(
             status=SubscriptionProof.Status.PENDING
@@ -38,11 +42,10 @@ def overview_payload() -> dict[str, Any]:
         k: sum(1 for r in rows if r["status"] == k)
         for k in ("active", "trial", "expired", "suspended")
     }
+    by["active"] += sum(1 for r in rows if r["status"] == "sync_late")
     # «متأخرو السداد» بتعريف مرشّح القائمة نفسه (منتهٍ أو بانتظار مراجعة الدفع) — فحص 2026-10-17 VP05
     late = sum(1 for r in rows if r["status"] in {"expired", "payment_pending"})
-    due14 = sum(
-        1 for r in rows if r["days_left"] is not None and 0 <= r["days_left"] <= DUE_SOON_DAYS
-    )
+    due14 = sum(1 for r in rows if due_soon(r, now))
     sync_stuck = sum(1 for r in rows if r["sync_stuck"])
     verifications = ops.verifications_payload()
     ver_pending = sum(
@@ -64,12 +67,19 @@ def overview_payload() -> dict[str, Any]:
         }
 
     subscriptions = [
-        tile("active", "نشط", by["active"], "اشتراك سارٍ", "/platform/tenants?filter=active", "ok"),
+        tile(
+            "active",
+            "اشتراكات سارية",
+            by["active"],
+            "اشتراك سارٍ",
+            "/platform/tenants?filter=active",
+            "ok",
+        ),
         tile(
             "trial",
             "تجريبي",
             by["trial"],
-            "30 يوماً من الإنشاء",
+            f"مدة التجارب الجديدة {duration} يوماً",
             "/platform/tenants?filter=trial",
             "info",
         ),
@@ -145,9 +155,9 @@ def overview_payload() -> dict[str, Any]:
     technical = [
         tile(
             "sync_stuck",
-            "مزامنة متعثّرة",
+            "تأخر ظهور الأجهزة",
             sync_stuck,
-            "جهاز لم يزامن 3 أيام",
+            "منشآت غابت جلسات أجهزتها 3 أيام أو أكثر",
             "/platform/tenants?filter=sync_stuck",
             "warn" if sync_stuck else "ok",
         ),
@@ -163,6 +173,7 @@ def overview_payload() -> dict[str, Any]:
     attention = sum(t["value"] for t in queues) + by["suspended"] + sync_stuck + health_issues
     return {
         "measured_at": _iso(now),
+        "trial_renewals": renewals,
         "tenants_total": len(rows),
         "attention": attention,
         "subscriptions": subscriptions,

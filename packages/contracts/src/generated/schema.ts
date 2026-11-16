@@ -15222,6 +15222,10 @@ export interface components {
                 value: number;
             }[];
             tenants_total: number;
+            trial_renewals?: {
+                eligible: number;
+                paid: number;
+            };
         };
         GetPlatformPlansResponse: {
             changes: unknown[];
@@ -15660,6 +15664,19 @@ export interface components {
                 devices: number;
                 due_line: string;
                 expires_at: string;
+                followup?: {
+                    accepted: string;
+                    error: string;
+                    error_at: string;
+                    first_sale: string;
+                    last_ok: string;
+                    order: string;
+                    paid: string;
+                    pending: number | null;
+                    report: string;
+                    reported_at: string;
+                    trial_end: string;
+                };
                 id: string;
                 last_sync_at: string;
                 name: string;
