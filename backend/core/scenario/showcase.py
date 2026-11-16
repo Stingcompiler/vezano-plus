@@ -258,6 +258,8 @@ class Ctx:
     suppliers: dict[str, Any] = field(default_factory=dict)
     counters: dict[str, int] = field(default_factory=dict)
     sales: list[dict[str, Any]] = field(default_factory=list)  # للمرتجعات
+    #: بيع رُدّ مرة لا يُردّ ثانية: سطره رُدّ كله، فالثاني «return_exceeds_sale» (CI ‏2026-11-16)
+    returned: set[str] = field(default_factory=set)
     scarce: set[str] = field(default_factory=set)
     #: ما يجوز بيعه من الصنف القليل في كل فرع (يبقى 6 للتنبيه) — لا رصيد سالب مهما كان يوم البذر
     scarce_left: dict[tuple[str, str], int] = field(default_factory=dict)
@@ -774,10 +776,17 @@ def _sale_op(
 def _return_op(
     ctx: Ctx, rnd: random.Random, *, branch: str, user: Any, shift_id: str, d: date
 ) -> dict[str, Any] | None:
-    pool = [s for s in ctx.sales[-80:] if s["branch"] == branch and s["kind"] in ("cash", "credit")]
+    pool = [
+        s
+        for s in ctx.sales[-80:]
+        if s["branch"] == branch
+        and s["kind"] in ("cash", "credit")
+        and s["sale_id"] not in ctx.returned
+    ]
     if not pool:
         return None
     sale = rnd.choice(pool)
+    ctx.returned.add(sale["sale_id"])
     ln = sale["lines"][0]
     qty = ln["qty"] if ln["qty"] <= 1000 else 1000
     lt = line_total_minor(qty, ln["price"])
