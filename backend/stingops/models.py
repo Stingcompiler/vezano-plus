@@ -581,6 +581,28 @@ class AppRelease(models.Model):
         return f"{self.name} {self.platform} {self.version}"
 
 
+class AppDownload(models.Model):
+    """تنزيل فعلي لملف من متجر التطبيقات: يُسجَّل حين يخدم الخادم الملف لرابط موقَّع، مرة لكل رابط
+    (إعادة فتح الرابط نفسه أو استئنافه لا تُحسب ثانية). الروابط إلى منصات أخرى لا تمرّ بالخادم فلا
+    تُحسب. لا يُخزَّن إلا معرِّف المتجر والوقت — لا عنوان ولا جهاز."""
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    release = models.ForeignKey(AppRelease, on_delete=models.CASCADE, related_name="downloads")
+    tenant_id = models.UUIDField(null=True, blank=True)
+    token_digest = models.CharField(max_length=64, unique=True)
+    downloaded_at = models.DateTimeField(default=timezone.now)
+
+    objects: ClassVar[models.Manager[AppDownload]] = models.Manager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["release", "tenant_id"], name="app_download_release_tenant")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.release_id} {self.downloaded_at:%Y-%m-%d}"
+
+
 class OperatorPushEndpoint(models.Model):
     """0005 §٢١٦ — اشتراك Web Push لمتصفح مشغّل: إشعارات الفريق تصل فوراً بدل انتظار تحديث القائمة.
     نقطة النهاية سرّ تشغيلي لا يُعاد في ردّ؛ الانتهاء عند المزوّد (404/410) يوسم ولا يُحذف."""

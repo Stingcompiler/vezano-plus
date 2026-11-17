@@ -5,6 +5,8 @@
   الخادم لجلسة تاجر، فيتنزّل الملف بمدير تنزيلات المتصفح (لا يُحمَّل 512 ميبيبايت في ذاكرة الصفحة).
 - لكل ملف بصمة SHA-256 تُحسب عند الرفع وتظهر للتاجر.
 - النشر والسحب لمدير المنصة وحده (`roles.check_request`)، ويُسجَّلان في `OperatorAccessLog`.
+- كل تنزيل يخدمه الخادم يُحسب مرة لكل رابط موقَّع (`AppDownload`)، ويرى المشغّل لكل إصدار عدد
+  التنزيلات وعدد المتاجر التي نزّلته (`download_counts`).
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from django.core import signing
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
 from django.db import IntegrityError, transaction
+from django.db.models import Count
 from django.http import FileResponse, Http404
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
@@ -32,7 +35,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.auth.tokens import AuthContext
-from stingops.models import AppRelease, OperatorAccessLog
+from stingops.models import AppDownload, AppRelease, OperatorAccessLog
 from stingops.views import _operator
 
 #: الامتدادات المقبولة لكل نظام (آيفون رابط لا ملف)
@@ -110,6 +113,16 @@ class ReleaseInput(serializers.Serializer[dict[str, Any]]):
         return attrs
 
 
+def download_counts() -> dict[str, dict[str, int]]:
+    """لكل إصدار: عدد التنزيلات الفعلية، وعدد المتاجر المختلفة التي نزّلته."""
+    return {
+        str(row["release_id"]): {"downloads": row["downloads"], "stores": row["stores"]}
+        for row in AppDownload.objects.values("release_id").annotate(
+            downloads=Count("id"), stores=Count("tenant_id", distinct=True)
+        )
+    }
+
+
 def _row(r: AppRelease, *, merchant: bool) -> dict[str, Any]:
     """الرابط يظهر للجميع (يفتحه أيّ أحد)؛ الملف وتفاصيله لجلسة التاجر وحدها."""
     out: dict[str, Any] = {
@@ -137,6 +150,18 @@ def _row(r: AppRelease, *, merchant: bool) -> dict[str, Any]:
 
 def catalog(*, merchant: bool) -> list[dict[str, Any]]:
     return [_row(r, merchant=merchant) for r in AppRelease.objects.all()]
+
+
+def operator_catalog() -> list[dict[str, Any]]:
+    """فهرس المشغّل: ما يراه التاجر، ومعه عدّاد التنزيلات للملفات (الروابط لا تمرّ بالخادم)."""
+    counts = download_counts()
+    rows = catalog(merchant=True)
+    for row in rows:
+        if row["kind"] == "file":
+            row |= {"downloads": 0, "download_stores": 0}
+            if c := counts.get(row["id"]):
+                row |= {"downloads": c["downloads"], "download_stores": c["stores"]}
+    return rows
 
 
 def _require_merchant(request: Request) -> AuthContext:
@@ -173,12 +198,13 @@ class MerchantDownloadLinkView(APIView):
 
     @extend_schema(request=None, responses={200: None, 404: None})
     def post(self, request: Request, release_id: UUID) -> Response:
-        _require_merchant(request)
+        auth = _require_merchant(request)
         r = AppRelease.objects.filter(pk=release_id).exclude(storage_key="").first()
         if r is None:
             return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
         # الرابط مربوط بالإصدار وعمره خمس دقائق فقط؛ الجلسة فُحصت هنا عند إصداره
-        token = signing.dumps({"r": str(r.id)}, salt=LINK_SALT)
+        # والمتجر فيه ليُحسب التنزيل له (عدد المتاجر في فهرس المشغّل)
+        token = signing.dumps({"r": str(r.id), "t": str(auth.tenant_id)}, salt=LINK_SALT)
         return Response(
             {"url": f"/api/apps/download/{token}", "expires_in": LINK_MAX_AGE},
         )
@@ -203,12 +229,25 @@ class SignedDownloadView(APIView):
             fh = _storage().open(r.storage_key)
         except FileNotFoundError:
             raise Http404 from None
+        _count_download(r, token, data.get("t"))
         response = FileResponse(
             fh, as_attachment=True, filename=r.filename, content_type="application/octet-stream"
         )
         response["Cache-Control"] = "private, no-store"
         response["X-Content-Type-Options"] = "nosniff"
         return response
+
+
+def _count_download(r: AppRelease, token: str, tenant: object) -> None:
+    """مرة لكل رابط: إعادة فتحه خلال دقائقه الخمس أو استئناف التنزيل لا يضيف عدّاً."""
+    try:
+        tenant_id = UUID(str(tenant)) if tenant else None
+    except ValueError:
+        tenant_id = None
+    AppDownload.objects.get_or_create(
+        token_digest=hashlib.sha256(token.encode()).hexdigest(),
+        defaults={"release": r, "tenant_id": tenant_id},
+    )
 
 
 def _storage_room_for(size: int) -> bool:
@@ -247,7 +286,7 @@ class OperatorAppsView(APIView):
 
     @extend_schema(responses={200: None})
     def get(self, request: Request) -> Response:
-        return Response({"releases": catalog(merchant=True)})
+        return Response({"releases": operator_catalog()})
 
     @extend_schema(request=None, responses={201: None, 400: None, 409: None})
     def post(self, request: Request) -> Response:
@@ -319,4 +358,4 @@ class OperatorAppDeleteView(APIView):
             r.delete()
         if key:
             _storage().delete(key)
-        return Response({"releases": catalog(merchant=True)})
+        return Response({"releases": operator_catalog()})

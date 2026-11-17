@@ -14358,6 +14358,8 @@ export interface components {
         GetPlatformAppsResponse: {
             releases: {
                 apple_url: string;
+                download_stores?: number;
+                downloads?: number;
                 filename: string;
                 id: string;
                 kind: string;
@@ -14394,6 +14396,8 @@ export interface components {
         PostPlatformAppsByReleaseIdRemoveResponse: {
             releases: {
                 apple_url: string;
+                download_stores?: number;
+                downloads?: number;
                 filename: string;
                 id: string;
                 kind: string;

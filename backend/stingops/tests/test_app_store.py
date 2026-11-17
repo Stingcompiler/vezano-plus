@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import hashlib
+import time
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import pytest
 from django.core import signing
@@ -14,7 +16,7 @@ from django.test import Client
 
 from core.tests.test_org import _h, ctx  # noqa: F401
 from stingops.app_store import LINK_SALT
-from stingops.models import OperatorAccessLog
+from stingops.models import AppDownload, OperatorAccessLog
 from stingops.tests.test_operator import _operator_headers
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -138,3 +140,55 @@ def test_storage_cap_refuses_upload(
         c.post("/api/org/apps/00000000-0000-0000-0000-000000000000/link", headers=admin).status_code
         == 403
     )
+
+
+def test_download_counter_counts_each_link_once_per_store(
+    ctx: dict[str, Any],  # noqa: F811
+    settings: Any,
+    tmp_path: Path,
+) -> None:
+    """عدّاد التنزيلات: يُحسب التنزيل حين يخدم الخادم الملف، مرة لكل رابط موقَّع، ويرى المشغّل لكل
+    إصدار ملفٍّ عدد التنزيلات وعدد المتاجر؛ الروابط إلى منصات أخرى بلا عدّاد."""
+    settings.APP_STORE_ROOT = tmp_path
+    c = Client()
+    admin = _operator_headers("store-admin", "هدى — تشغيل")
+    merchant = _h(ctx["tokens"]["owner"])
+    form: dict[str, Any] = {"name": "Vezano", "version": "1.0", "platform": "android"}
+    rel = c.post(API, {**form, "file": _apk()}, headers=admin).json()["release"]
+    play = {
+        **form,
+        "version": "2.0",
+        "link_url": "https://play.google.com/store/apps/details?id=app.vezano",
+        "link_label": "Google Play",
+        "link_icon": "google_play",
+    }
+    assert c.post(API, play, headers=admin).status_code == 201
+
+    def counts() -> dict[str, dict[str, Any]]:
+        return {r["version"]: r for r in c.get(API, headers=admin).json()["releases"]}
+
+    assert counts()["1.0"]["downloads"] == 0 and counts()["1.0"]["download_stores"] == 0
+    # طلب الرابط وحده لا يُحسب؛ خدمة الملف تُحسب، وإعادة فتح الرابط نفسه لا تُحسب ثانية
+    first = c.post(f"/api/org/apps/{rel['id']}/link", headers=merchant).json()["url"]
+    assert counts()["1.0"]["downloads"] == 0
+    assert c.get(first).status_code == 200
+    assert c.get(first).status_code == 200
+    assert AppDownload.objects.count() == 1
+    assert str(AppDownload.objects.get().tenant_id) == str(ctx["tenant"].id)
+    # رابط جديد من المتجر نفسه تنزيل ثانٍ، والمتاجر تبقى واحداً
+    signing_time = time.time() + 2
+    with mock.patch("django.core.signing.time.time", return_value=signing_time):
+        second = c.post(f"/api/org/apps/{rel['id']}/link", headers=merchant).json()["url"]
+    assert second != first
+    assert c.get(second).status_code == 200
+    row = counts()["1.0"]
+    assert (row["downloads"], row["download_stores"]) == (2, 1)
+    # الرابط المزوَّر لا يُحسب، ورابط المنصة الأخرى بلا عدّاد، والتاجر والزائر لا يريان العدّاد
+    assert c.get(first + "x").status_code == 404
+    assert AppDownload.objects.count() == 2
+    assert "downloads" not in counts()["2.0"]
+    assert "downloads" not in c.get("/api/org/apps", headers=merchant).json()["releases"][0]
+    assert "downloads" not in c.get("/api/public/apps").json()["releases"][0]
+    # سحب الإصدار يحذف عدّاده معه
+    assert c.post(f"/api/platform/apps/{rel['id']}/remove", headers=admin).status_code == 200
+    assert AppDownload.objects.count() == 0
