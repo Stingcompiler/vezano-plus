@@ -48062,6 +48062,12 @@
                 "apple_url": {
                   "type": "string"
                 },
+                "download_stores": {
+                  "type": "integer"
+                },
+                "downloads": {
+                  "type": "integer"
+                },
                 "filename": {
                   "type": "string"
                 },
@@ -48206,6 +48212,12 @@
               "properties": {
                 "apple_url": {
                   "type": "string"
+                },
+                "download_stores": {
+                  "type": "integer"
+                },
+                "downloads": {
+                  "type": "integer"
                 },
                 "filename": {
                   "type": "string"

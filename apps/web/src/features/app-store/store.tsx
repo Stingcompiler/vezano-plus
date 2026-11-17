@@ -69,6 +69,9 @@ export interface Release {
   size_bytes?: number;
   sha256?: string;
   apple_url?: string;
+  /** للمشغّل وحده، لإصدارات الملفات: تنزيلات خدمها الخادم (مرة لكل رابط) وعدد المتاجر */
+  downloads?: number;
+  download_stores?: number;
 }
 
 /** رموز رفض الخادم بنصّ يقول ما الخطأ وكيف يُصلح. */
@@ -195,6 +198,13 @@ function ReleaseRow({
             <>
               {" "}
               · <span className="sting-mono">{mib(r.size_bytes)}</span> ميبيبايت
+            </>
+          ) : null}
+          {details && r.downloads !== undefined ? (
+            <>
+              {" "}
+              · التنزيلات: <span className="sting-mono">{r.downloads}</span> · المتاجر:{" "}
+              <span className="sting-mono">{r.download_stores ?? 0}</span>
             </>
           ) : null}
         </span>

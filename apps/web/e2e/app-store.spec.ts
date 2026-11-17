@@ -189,7 +189,8 @@ test.describe("متجر التطبيقات", () => {
       if (route.request().method() === "GET") return route.fulfill(json(200, { releases: rows }));
       posts += 1;
       if (posts === 1) {
-        rows = [MERCHANT[0]];
+        // فهرس المشغّل يحمل عدّاد التنزيلات لإصدارات الملفات
+        rows = [{ ...MERCHANT[0], downloads: 7, download_stores: 3 }];
         return route.fulfill(json(201, { release: MERCHANT[0] }));
       }
       return route.fulfill(json(409, { detail: "release_exists" }));
@@ -232,6 +233,8 @@ test.describe("متجر التطبيقات", () => {
       state: "ready",
       texts: ["نشر إصدار", "متجر التطبيقات", "سحب الإصدار"],
     });
+    // عدّاد التنزيلات: كم مرة نُزِّل الملف ومن كم متجراً، بأرقام لاتينية داخل sting-mono
+    await expect(root.locator(".vz-app__main")).toContainText("التنزيلات: 7 · المتاجر: 3");
     // التكرار: رسالة تقول ما الخطأ
     await root.getByLabel("رقم الإصدار").fill("1.4.2");
     await root
