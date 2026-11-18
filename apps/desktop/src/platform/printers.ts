@@ -3,13 +3,7 @@
  * الإيصالات المختارة في DESK-02 — بلا حوار — والفشل يدخل طابور الطباعة بحالته وأثره (لا أثر على
  * الدفتر). بلا طابعة مختارة يبقى سلوك الويب: «system» فيطبع بحوار النظام. خارج Tauri: الويب كما هو.
  */
-import {
-  type LabelPrint,
-  labelsEscPos,
-  type PaperWidth,
-  renderCanvas,
-  toEscPos,
-} from "@/lib/print/raster";
+import { type LabelPrint, labelsEscPos, renderCanvas, toEscPos } from "@/lib/print/raster";
 
 import * as web from "../../../web/src/lib/print/printers";
 import { native, type PrintTarget } from "./native";
