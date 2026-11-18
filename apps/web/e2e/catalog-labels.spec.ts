@@ -142,6 +142,33 @@ test.describe("CAT-07 ملصقات الأصناف", () => {
     await expect.poll(() => prints(page)).toBe(1);
   });
 
+  test("0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الجهاز يصل الملصقات — النسخة المحلية تتحدّث من الخادم", async ({
+    page,
+  }) => {
+    await seed(page, ITEMS);
+    // الخادم أعطى «بلا باركود» باركوداً داخلياً؛ نسخة الجهاز ما زالت بلا باركود
+    const server = ITEMS.map((i) => (i.id === "i3" ? { ...i, barcode: "2000000000039" } : i));
+    await page.route(/\/api\/catalog\/items(\?.*)?$/, (route) =>
+      route.fulfill(
+        json(200, {
+          items: server,
+          total: server.length,
+          all_total: server.length,
+          groups: [],
+          offset: 0,
+          can_assign_barcodes: false,
+          missing_barcode_count: 0,
+        }),
+      ),
+    );
+    await login(page, "/catalog/labels");
+    const root = page.locator('[data-screen="CAT-07"][data-state="ready"]');
+    await expect(root).toBeVisible();
+    await expect(root.getByRole("gridcell", { name: "2000000000039" })).toBeVisible();
+    await root.getByLabel("العدد — بلا باركود", { exact: true }).fill("2");
+    await expect(root.locator(".cat-labels-page .cat-label")).toHaveCount(2);
+  });
+
   test("empty: لا صنف بباركود EAN-13 — الطريق إلى الكتالوج", async ({ page }, info) => {
     await seed(page, [ITEMS[1], ITEMS[2]]);
     await login(page, "/catalog/labels");

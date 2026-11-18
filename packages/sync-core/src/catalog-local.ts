@@ -93,3 +93,47 @@ export function filterLocalItems(items: readonly LocalItem[], query: LocalItemQu
     .filter((i) => itemMatches(i, query.q ?? ""))
     .sort((a, b) => a.name_normalized.localeCompare(b.name_normalized, "ar"));
 }
+
+/** صفحة من `GET /api/catalog/items` كما يعيدها الخادم: حمولة الصنف نفسها التي تكتبها النسخة. */
+export interface ServerItemsPage {
+  readonly items: readonly ({ readonly id: string } & Record<string, unknown>)[];
+  readonly total: number;
+}
+
+export const CATALOG_REFRESHED_META = "catalog.refreshed_at";
+/** تحديث الكتالوج من الخادم مرة كل عشر دقائق على الأكثر حين لا يُطلب صراحة. */
+export const CATALOG_REFRESH_EVERY_MS = 10 * 60 * 1000;
+
+/**
+ * مراجعة 2026-11-18 (0005 §٢٨٠): نسخة الكتالوج على الجهاز تُكتب عند التهيئة وحدها لأن PULL غير موصول،
+ * فالباركود الذي يولّده الخادم (أو صنف عُدّل أونلاين) لا يصل الملصقات ولا نقطة البيع. هنا تحديث
+ * الأصناف وحدها من قائمة الخادم صفحةً صفحة — إنشاء الصنف وتعديله أونلاين فقط، فالخادم هو الأصل،
+ * ولا يمسّ هذا مفاتيح المبيعات ولا مؤشر PULL. يعيد عدد الأصناف المكتوبة، أو `null` إن تعذّر الجلب
+ * (بلا شبكة أو رفض) فتبقى النسخة كما هي.
+ */
+export async function refreshLocalItems(
+  storage: StoragePort,
+  fetchPage: (offset: number) => Promise<ServerItemsPage | null>,
+  opts: { readonly force?: boolean; readonly now?: () => Date } = {},
+): Promise<number | null> {
+  const now = opts.now ?? (() => new Date());
+  if (!opts.force) {
+    const last = await storage.read((tx) => tx.getMeta(CATALOG_REFRESHED_META));
+    if (last && now().getTime() - Date.parse(last) < CATALOG_REFRESH_EVERY_MS) return 0;
+  }
+  const rows: ServerItemsPage["items"][number][] = [];
+  for (let offset = 0; ;) {
+    const page = await fetchPage(offset);
+    if (!page) return null;
+    rows.push(...page.items);
+    offset += page.items.length;
+    if (!page.items.length || offset >= page.total) break;
+  }
+  await storage.transaction(async (tx) => {
+    for (const { id, ...payload } of rows) {
+      await tx.putProjection({ key: ITEM_PREFIX + id, value: payload });
+    }
+    await tx.putMeta(CATALOG_REFRESHED_META, now().toISOString());
+  });
+  return rows.length;
+}

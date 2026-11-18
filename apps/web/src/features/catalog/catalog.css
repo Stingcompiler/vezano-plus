@@ -452,7 +452,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 9pt;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.25;
 }
 .cat-label__price {
@@ -472,7 +472,14 @@
   .c-print-doc:has(.cat-labels-strip) {
     padding: 0 !important;
   }
+  /* 0005 §٢٨٠: ورقة الملصقات A4 صراحة — على طابعة افتراضها Letter كان الصف الأخير ينزلق إلى صفحة.
+     صفحة مسمّاة فلا يرث الإيصال هذا المقاس بعد زيارة الشاشة. */
+  @page labels-a4 {
+    size: A4;
+    margin: 0;
+  }
   .cat-labels-page {
+    page: labels-a4;
     inline-size: 210mm;
     max-inline-size: none;
     block-size: 296mm;

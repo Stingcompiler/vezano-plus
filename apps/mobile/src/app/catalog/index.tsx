@@ -29,6 +29,7 @@ import { M } from "@/components/catalog/parts";
 import { CatRow, Line } from "@/components/catalog/row";
 import { SelectField } from "@/components/catalog/select-field";
 import { CT } from "@/features/catalog/texts";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
@@ -175,6 +176,8 @@ export default function CatalogIndex() {
     } finally {
       setAssigned(total);
       setAssigning(false);
+      // 0005 §٢٨٠: الباركودات الجديدة إلى نسخة الهاتف فتظهر في الملصقات ونقطة البيع
+      if (total) await refreshCatalog(api, true);
       setTick((t) => t + 1);
     }
   };

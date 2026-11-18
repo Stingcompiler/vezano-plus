@@ -29,6 +29,7 @@ import { hhmm } from "@/features/home/format";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { getStorage } from "@/lib/storage";
 
 type State = "ready" | "loading" | "empty" | "offline" | "stale";
@@ -157,6 +158,8 @@ export function CatalogClient() {
         if (!d.remaining || !d.assigned) break;
       }
       setAssigned(total);
+      // 0005 §٢٨٠: الباركودات الجديدة إلى نسخة الجهاز فتظهر في الملصقات ونقطة البيع
+      void refreshCatalog(true);
     } catch {
       setAssignFailed(true);
       if (total) setAssigned(total);

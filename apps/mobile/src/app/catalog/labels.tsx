@@ -19,6 +19,8 @@ import { View } from "react-native";
 import { M } from "@/components/catalog/parts";
 import { CatRow } from "@/components/catalog/row";
 import { labelsSheetHtml } from "@/lib/labels-print";
+import { refreshCatalog } from "@/lib/catalog-refresh";
+import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 const T = "CAT-07";
@@ -31,6 +33,7 @@ const T = "CAT-07";
 export default function Labels() {
   const router = useRouter();
   const { item } = useLocalSearchParams<{ item?: string }>();
+  const { api } = useSession();
   const [rows, setRows] = useState<LabelRow[] | null>(null);
   const [skipped, setSkipped] = useState(0);
   const [q, setQ] = useState("");
@@ -39,17 +42,28 @@ export default function Labels() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    void (async () => {
+    let cancelled = false;
+    const show = async () => {
       const r = labelRows(await readLocalItems(await getStorage()));
+      if (cancelled) return;
       setRows(r.rows);
       setSkipped(r.skipped);
       if (typeof item === "string" && item) {
-        setCounts(
-          Object.fromEntries(r.rows.filter((x) => x.itemId === item).map((x) => [x.key, 1])),
+        const preset = Object.fromEntries(
+          r.rows.filter((x) => x.itemId === item).map((x) => [x.key, 1]),
         );
+        setCounts((c) => (Object.keys(c).length ? c : preset));
       }
+    };
+    void (async () => {
+      await show();
+      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الهاتف يصل هنا — تحديث من الخادم ثم قراءة ثانية
+      if (await refreshCatalog(api, true)) await show();
     })();
-  }, [item]);
+    return () => {
+      cancelled = true;
+    };
+  }, [api, item]);
 
   const shown = useMemo(() => {
     if (!rows) return [];
