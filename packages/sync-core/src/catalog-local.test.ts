@@ -97,9 +97,9 @@ describe("تحديث الكتالوج المحلي من الخادم (0005 §٢�
     );
     const all = server(5);
     const offsets: number[] = [];
-    const fetchPage = async (offset: number): Promise<ServerItemsPage> => {
+    const fetchPage = (offset: number): Promise<ServerItemsPage> => {
       offsets.push(offset);
-      return { items: all.slice(offset, offset + 2), total: all.length };
+      return Promise.resolve({ items: all.slice(offset, offset + 2), total: all.length });
     };
     expect(await refreshLocalItems(s, fetchPage)).toBe(5);
     expect(offsets).toEqual([0, 2, 4]);
@@ -111,9 +111,9 @@ describe("تحديث الكتالوج المحلي من الخادم (0005 §٢�
   it("لا يجلب ثانية قبل عشر دقائق إلا صراحة، والفشل يترك النسخة كما هي", async () => {
     const s = new MemoryStorage();
     let calls = 0;
-    const fetchPage = async (): Promise<ServerItemsPage> => {
+    const fetchPage = (): Promise<ServerItemsPage> => {
       calls++;
-      return { items: server(1), total: 1 };
+      return Promise.resolve({ items: server(1), total: 1 });
     };
     const t0 = new Date("2026-11-18T10:00:00Z");
     await refreshLocalItems(s, fetchPage, { now: () => t0 });
@@ -123,7 +123,7 @@ describe("تحديث الكتالوج المحلي من الخادم (0005 §٢�
     expect(calls).toBe(1);
     await refreshLocalItems(s, fetchPage, { force: true, now: () => t0 });
     expect(calls).toBe(2);
-    expect(await refreshLocalItems(s, async () => null, { force: true })).toBeNull();
+    expect(await refreshLocalItems(s, () => Promise.resolve(null), { force: true })).toBeNull();
     expect(await readLocalItems(s)).toHaveLength(1);
   });
 });

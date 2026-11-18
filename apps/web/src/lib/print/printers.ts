@@ -131,7 +131,6 @@ export async function printReceiptOnDevice(
  */
 export async function printLabelsOnDevice(
   labels: readonly LabelPrint[],
-  width: PaperWidth,
 ): Promise<"printed" | "failed" | "unknown" | "system"> {
   const list = await listPrinters();
   const p = list.find((x) => x.conn === "ble" && x.ble && x.lastTest?.result === "ok");

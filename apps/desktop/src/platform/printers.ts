@@ -73,16 +73,15 @@ export async function printReceiptOnDevice(
 /** ملصقات CAT-07 (0005 §٢٧٠): ESC/POS خام إلى طابعة الإيصالات المختارة بلا حوار؛ الفشل إلى الطابور. */
 export async function printLabelsOnDevice(
   labels: readonly LabelPrint[],
-  width: PaperWidth,
 ): Promise<"printed" | "failed" | "unknown" | "system"> {
-  if (!active()) return web.printLabelsOnDevice(labels, width);
+  if (!active()) return web.printLabelsOnDevice(labels);
   const choice = await loadChoice();
   const target: PrintTarget | null = choice?.receipts
     ? { printer: choice.receipts }
     : choice?.networkIp
       ? { address: choice.networkIp }
       : null;
-  if (!target) return web.printLabelsOnDevice(labels, width);
+  if (!target) return web.printLabelsOnDevice(labels);
   // 0005 §٢٨٠: بعرض طابعة الإيصالات المسجَّل كالإيصال، لا بالمقاس المختار في الشاشة
   const bytes = labelsEscPos(labels, await web.receiptWidth());
   try {

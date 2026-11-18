@@ -143,7 +143,6 @@ export function LabelsClient() {
         price: withPrice ? formatMinor(l.priceMinor) : undefined,
         unit: withPrice ? l.unitName : undefined,
       })),
-      size === "58" ? 58 : 80,
     );
     if (out === "system") {
       printDocument();
