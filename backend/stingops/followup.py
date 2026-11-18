@@ -25,7 +25,8 @@ def trials(now: Any) -> QuerySet[TenantSubscription]:
         tenant_id=OuterRef("tenant_id"),
         proof__kind="renewal",
         amount_minor__gt=0,
-        issued_at__gte=OuterRef("trial_ends_at"),
+        # مراجعة 2026-11-18: من دفع أثناء التجربة اشترك أيضاً — الحدّ بداية التجربة
+        issued_at__gte=OuterRef("started_at"),
         issued_at__lte=now,
     ).order_by("issued_at")
     rows: QuerySet[TenantSubscription] = TenantSubscription.unscoped.filter(
@@ -65,7 +66,8 @@ def annotate_followup(rows: list[dict[str, Any]], now: Any) -> None:
         str(k): v
         for k, v in Sale.unscoped.filter(tenant_id__in=ids)
         .values("tenant_id")
-        .annotate(at=Min("occurred_at"))
+        # «أول بيع وصل للخادم»: وقت الاستلام، لا وقت الجهاز (البيع دون اتصال يصل لاحقاً)
+        .annotate(at=Min("received_at"))
         .values_list("tenant_id", "at")
     }
     accepted = {

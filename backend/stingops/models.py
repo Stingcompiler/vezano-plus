@@ -582,15 +582,16 @@ class AppRelease(models.Model):
 
 
 class AppDownload(models.Model):
-    """تنزيل فعلي لملف من متجر التطبيقات: يُسجَّل حين يخدم الخادم الملف لرابط موقَّع، مرة لكل رابط
-    (إعادة فتح الرابط نفسه أو استئنافه لا تُحسب ثانية). الروابط إلى منصات أخرى لا تمرّ بالخادم فلا
-    تُحسب. لا يُخزَّن إلا معرِّف المتجر والوقت — لا عنوان ولا جهاز."""
+    """رابط تنزيل موقَّع أصدره الخادم لمتجر، ويصير تنزيلاً فعلياً حين يخدم الخادم الملف أول مرة
+    (`downloaded_at`). إعادة فتح الرابط نفسه أو استئنافه لا تُحسب ثانية، وكل رابط جديد صفّ جديد.
+    الرابط يحمل معرِّف هذا الصف لا معرِّف المتجر (مراجعة 2026-11-18). الروابط إلى منصات أخرى لا تمرّ
+    بالخادم فلا تُحسب. لا يُخزَّن إلا معرِّف المتجر والوقت — لا عنوان ولا جهاز."""
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     release = models.ForeignKey(AppRelease, on_delete=models.CASCADE, related_name="downloads")
     tenant_id = models.UUIDField(null=True, blank=True)
-    token_digest = models.CharField(max_length=64, unique=True)
-    downloaded_at = models.DateTimeField(default=timezone.now)
+    issued_at = models.DateTimeField(default=timezone.now)
+    downloaded_at = models.DateTimeField(null=True, blank=True)
 
     objects: ClassVar[models.Manager[AppDownload]] = models.Manager()
 
@@ -600,7 +601,7 @@ class AppDownload(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.release_id} {self.downloaded_at:%Y-%m-%d}"
+        return f"{self.release_id} {self.issued_at:%Y-%m-%d}"
 
 
 class OperatorPushEndpoint(models.Model):

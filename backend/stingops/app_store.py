@@ -25,6 +25,7 @@ from django.core.files.uploadedfile import UploadedFile
 from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -117,9 +118,9 @@ def download_counts() -> dict[str, dict[str, int]]:
     """لكل إصدار: عدد التنزيلات الفعلية، وعدد المتاجر المختلفة التي نزّلته."""
     return {
         str(row["release_id"]): {"downloads": row["downloads"], "stores": row["stores"]}
-        for row in AppDownload.objects.values("release_id").annotate(
-            downloads=Count("id"), stores=Count("tenant_id", distinct=True)
-        )
+        for row in AppDownload.objects.filter(downloaded_at__isnull=False)
+        .values("release_id")
+        .annotate(downloads=Count("id"), stores=Count("tenant_id", distinct=True))
     }
 
 
@@ -204,7 +205,10 @@ class MerchantDownloadLinkView(APIView):
             return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
         # الرابط مربوط بالإصدار وعمره خمس دقائق فقط؛ الجلسة فُحصت هنا عند إصداره
         # والمتجر فيه ليُحسب التنزيل له (عدد المتاجر في فهرس المشغّل)
-        token = signing.dumps({"r": str(r.id), "t": str(auth.tenant_id)}, salt=LINK_SALT)
+        # والتنزيل يُحسب لصف هذا الرابط (مراجعة 2026-11-18): كل طلب رابط صفّ جديد، والرابط يحمل معرِّف
+        # الصف لا معرِّف المتجر — التوقيع يُقرأ ولا يُخفي
+        link = AppDownload.objects.create(release=r, tenant_id=auth.tenant_id)
+        token = signing.dumps({"r": str(r.id), "d": str(link.id)}, salt=LINK_SALT)
         return Response(
             {"url": f"/api/apps/download/{token}", "expires_in": LINK_MAX_AGE},
         )
@@ -229,7 +233,7 @@ class SignedDownloadView(APIView):
             fh = _storage().open(r.storage_key)
         except FileNotFoundError:
             raise Http404 from None
-        _count_download(r, token, data.get("t"))
+        _count_download(r, data)
         response = FileResponse(
             fh, as_attachment=True, filename=r.filename, content_type="application/octet-stream"
         )
@@ -238,16 +242,20 @@ class SignedDownloadView(APIView):
         return response
 
 
-def _count_download(r: AppRelease, token: str, tenant: object) -> None:
+def _count_download(r: AppRelease, data: dict[str, Any]) -> None:
     """مرة لكل رابط: إعادة فتحه خلال دقائقه الخمس أو استئناف التنزيل لا يضيف عدّاً."""
+    now = timezone.now()
+    if "d" in data:
+        AppDownload.objects.filter(pk=data["d"], release=r, downloaded_at__isnull=True).update(
+            downloaded_at=now
+        )
+        return
+    # رابط صدر قبل هذا الإصدار (يعيش خمس دقائق): يُحسب بلا صفّ مسبق
     try:
-        tenant_id = UUID(str(tenant)) if tenant else None
+        tenant_id = UUID(str(data["t"])) if data.get("t") else None
     except ValueError:
         tenant_id = None
-    AppDownload.objects.get_or_create(
-        token_digest=hashlib.sha256(token.encode()).hexdigest(),
-        defaults={"release": r, "tenant_id": tenant_id},
-    )
+    AppDownload.objects.create(release=r, tenant_id=tenant_id, issued_at=now, downloaded_at=now)
 
 
 def _storage_room_for(size: int) -> bool:

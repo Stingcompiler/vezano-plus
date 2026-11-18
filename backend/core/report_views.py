@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -17,7 +18,7 @@ from rest_framework.views import APIView
 from core import home
 from core.auth.tokens import AuthContext
 from core.models import TenantSubscription
-from core.tenancy import platform_context, tenant_context
+from core.tenancy import platform_context, require_tenant, tenant_context
 from parties import reports as party_reports
 from sales import reports as sales_reports
 
@@ -32,6 +33,10 @@ def _viewer(auth: Any) -> home.Viewer:
 
 
 def _record_trial_report() -> None:
+    """أول فتح تقرير أثناء التجربة (متابعة التجارب). مراجعة 2026-11-18: لا يكتب مع كل فتح — مرة كل
+    عشر دقائق لكل متجر على الأكثر، فالتحديث لا يطابق شيئاً بعد الختم الأول."""
+    if not cache.add(f"trial-report:{require_tenant()}", 1, timeout=600):
+        return
     now = timezone.now()
     TenantSubscription.objects.filter(
         state=TenantSubscription.State.TRIAL,
