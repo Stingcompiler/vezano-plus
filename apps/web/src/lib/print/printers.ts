@@ -139,5 +139,7 @@ export async function printLabelsOnDevice(
   const models = await loadModels();
   const profile = models?.profiles.find((x) => x.id === p.ble?.profileId);
   if (!profile) return "system";
-  return printBle(p.ble, profile, labelsEscPos(labels, width));
+  // 0005 §٢٨٠: بعرض الطابعة المسجَّل كالإيصال، لا بالمقاس المختار في الشاشة — صورة 80 مم على رأس 58 مم
+  // تخرج مقصوصة لا يقرؤها الماسح. المقاس المختار يبقى لطباعة النظام وحدها.
+  return printBle(p.ble, profile, labelsEscPos(labels, p.width));
 }

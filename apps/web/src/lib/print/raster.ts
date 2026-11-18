@@ -26,6 +26,30 @@ export interface RasterLine {
   readonly ean13?: string;
   /** سطر يُضغط ليتّسع لعرض الورقة بدل أن يُقصّ (اسم صنف طويل على ملصق). */
   readonly fit?: boolean;
+  /** يلتفّ النص على عدد أسطر أقصاه هذا قبل أي ضغط (اسم الصنف على الملصق؛ 0005 §٢٨٠). */
+  readonly wrap?: number;
+}
+
+/** يقسم النص كلماتٍ على أسطر بعرض أقصى، حتى `max` أسطر؛ ما يزيد يلحق بالسطر الأخير (فيُضغط). */
+export function wrapLines(
+  measure: (s: string) => number,
+  text: string,
+  maxWidth: number,
+  max: number,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (!cur || measure(next) <= maxWidth || lines.length === max - 1) cur = next;
+    else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [""];
 }
 
 export interface RasterDoc {
@@ -144,15 +168,20 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
   if (!measure) throw new Error("canvas غير متاح");
   const font = uiFont();
   let height = pad;
-  const rows: { line: RasterLine; y: number; h: number }[] = [];
+  const rows: { line: RasterLine; y: number; h: number; parts: string[] }[] = [];
   for (const line of doc.lines) {
     const size = line.size ?? 22;
+    let parts = [line.text];
+    if (line.wrap) {
+      measure.font = `${line.bold ? "700" : "400"} ${size}px ${font}`;
+      parts = wrapLines((s) => measure.measureText(s).width, line.text, width - pad * 2, line.wrap);
+    }
     const h = line.barcode
       ? 60 + 12
       : line.ean13
         ? EAN_BAR_H + EAN_DIGITS_H + 10
-        : Math.round(size * 1.5);
-    rows.push({ line, y: height, h });
+        : Math.round(size * 1.5) * parts.length;
+    rows.push({ line, y: height, h, parts });
     height += h;
   }
   height += pad * 4;
@@ -164,7 +193,7 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
   ctx.fillStyle = "#000";
   ctx.direction = "rtl";
   ctx.textBaseline = "top";
-  for (const { line, y } of rows) {
+  for (const { line, y, parts } of rows) {
     if (line.barcode) {
       drawBarcode(ctx, line.barcode, pad, y + 6, width - pad * 2);
       continue;
@@ -187,8 +216,11 @@ export function renderCanvas(doc: RasterDoc): HTMLCanvasElement {
     const align = line.align ?? "start";
     ctx.textAlign = align === "center" ? "center" : align === "end" ? "left" : "right";
     const x = align === "center" ? width / 2 : align === "end" ? pad : width - pad;
-    if (line.fit) ctx.fillText(line.text, x, y, width - pad * 2);
-    else ctx.fillText(line.text, x, y);
+    parts.forEach((part, i) => {
+      const py = y + i * Math.round(size * 1.5);
+      if (line.fit || line.wrap) ctx.fillText(part, x, py, width - pad * 2);
+      else ctx.fillText(part, x, py);
+    });
   }
   return canvas;
 }
@@ -234,22 +266,44 @@ export interface LabelPrint {
   readonly barcode: string;
   /** السعر منسَّقاً بأرقام لاتينية — غائب = ملصق بلا سعر (الافتراض). */
   readonly price?: string | undefined;
+  /** اسم الوحدة بجوار السعر كما في ورقة A4: «1,500 · كيلو» (0005 §٢٨٠). */
+  readonly unit?: string | undefined;
 }
 
 export function labelDoc(l: LabelPrint, width: PaperWidth): RasterDoc {
   return {
     width,
     lines: [
-      { text: l.label, align: "center", size: 24, bold: true, fit: true },
+      { text: l.label, align: "center", size: 24, bold: true, wrap: 2 },
       { text: "", ean13: l.barcode },
-      ...(l.price ? [{ text: l.price, align: "center" as const, size: 24, bold: true }] : []),
+      ...(l.price
+        ? [
+            {
+              text: l.unit ? `${l.price} · ${l.unit}` : l.price,
+              align: "center" as const,
+              size: 24,
+              bold: true,
+              fit: true,
+            },
+          ]
+        : []),
     ],
   };
 }
 
 /** كل الملصقات بايتات ESC/POS متتالية — كل ملصق صورة بقصّته. */
 export function labelsEscPos(labels: readonly LabelPrint[], width: PaperWidth): Uint8Array {
-  const parts = labels.map((l) => toEscPos(renderCanvas(labelDoc(l, width))));
+  // النسخ المتطابقة تُرسم مرة واحدة وتتكرر بايتاتها (0005 §٢٨٠) — 300 نسخة لا تعني 300 لوحة
+  const rendered = new Map<string, Uint8Array>();
+  const parts = labels.map((l) => {
+    const key = JSON.stringify([l.label, l.barcode, l.price ?? "", l.unit ?? ""]);
+    let bytes = rendered.get(key);
+    if (!bytes) {
+      bytes = toEscPos(renderCanvas(labelDoc(l, width)));
+      rendered.set(key, bytes);
+    }
+    return bytes;
+  });
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let at = 0;
   for (const p of parts) {

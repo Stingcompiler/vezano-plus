@@ -30,6 +30,7 @@ import "@/features/catalog/catalog.css";
 import { AppNav } from "@/features/home/app-nav";
 import { useApp } from "@/lib/app-context";
 import { printLabelsOnDevice } from "@/lib/print/printers";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { getStorage } from "@/lib/storage";
 
 type Size = "a4" | "58" | "80";
@@ -91,17 +92,29 @@ export function LabelsClient() {
   }, [app.expired, app.tokens, router]);
 
   useEffect(() => {
-    void (async () => {
+    let cancelled = false;
+    const show = async () => {
       const r = labelRows(await readLocalItems(getStorage()));
+      if (cancelled) return;
       setRows(r.rows);
       setSkipped(r.skipped);
       const pre = params.get("item");
+      // الصنف القادم من بطاقته يُختار مرة — لا يمحو عدداً كتبه المستخدم أثناء التحديث
       if (pre) {
-        setCounts(
-          Object.fromEntries(r.rows.filter((x) => x.itemId === pre).map((x) => [x.key, 1])),
+        const preset = Object.fromEntries(
+          r.rows.filter((x) => x.itemId === pre).map((x) => [x.key, 1]),
         );
+        setCounts((c) => (Object.keys(c).length ? c : preset));
       }
+    };
+    void (async () => {
+      await show();
+      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الجهاز يصل هنا — تحديث من الخادم ثم قراءة ثانية
+      if (await refreshCatalog(true)) await show();
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
   const shown = useMemo(() => {
@@ -128,6 +141,7 @@ export function LabelsClient() {
         label: l.label,
         barcode: l.barcode,
         price: withPrice ? formatMinor(l.priceMinor) : undefined,
+        unit: withPrice ? l.unitName : undefined,
       })),
       size === "58" ? 58 : 80,
     );

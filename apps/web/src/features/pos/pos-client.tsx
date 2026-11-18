@@ -56,6 +56,7 @@ import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { getStorage } from "@/lib/storage";
 import { hasLocalSetup } from "@/lib/device-setup";
 import { countPending } from "@/lib/sync";
@@ -201,6 +202,16 @@ export function PosClient() {
       cancelled = true;
     };
   }, [online, items, ctx?.branchId]);
+
+  // 0005 §٢٨٠: الكتالوج المحلي من الخادم (مرة كل عشر دقائق) — باركود ولّده الخادم يُمسح هنا أيضاً
+  const catalogRefreshed = useRef(false);
+  useEffect(() => {
+    if (!online || !appRef.current.tokens || items === null || catalogRefreshed.current) return;
+    catalogRefreshed.current = true;
+    void (async () => {
+      if (await refreshCatalog()) setItems(await readLocalItems(getStorage()));
+    })();
+  }, [online, items]);
 
   const persist = (next: readonly CartDraftLine[]) => {
     setLines(next);

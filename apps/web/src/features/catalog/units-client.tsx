@@ -19,6 +19,7 @@ import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { useApp } from "@/lib/app-context";
 
 import { GenerateBarcodeButton, InternalBarcodeNote } from "./internal-barcode";
@@ -156,6 +157,7 @@ export function UnitsClient({ itemId }: { itemId: string }) {
       if (response.ok && data) {
         const c = data as unknown as Card;
         setCard(c);
+        void refreshCatalog(true); // 0005 §٢٨٠: باركود الوحدة إلى نسخة الجهاز
         const unit = c.units.find((u) => u.unit_id === addUnitId);
         if (unit) setSaved({ unit, prior: 0, old: "" });
         setAdding(false);
@@ -187,6 +189,7 @@ export function UnitsClient({ itemId }: { itemId: string }) {
       if (response.ok && data) {
         const c = data as unknown as Card;
         setCard(c);
+        void refreshCatalog(true); // 0005 §٢٨٠: باركود الوحدة إلى نسخة الجهاز
         const unit = c.units.find((u) => u.id === editing.id);
         if (unit) setSaved({ unit, prior: editing.prior_lines, old: editing.factor_milli });
         setEditing(null);

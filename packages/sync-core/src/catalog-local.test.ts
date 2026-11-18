@@ -7,6 +7,8 @@ import {
   type LocalItem,
   readLocalGroups,
   readLocalItems,
+  refreshLocalItems,
+  type ServerItemsPage,
 } from "./catalog-local";
 
 const item = (id: string, over: Partial<LocalItem>): LocalItem => ({
@@ -76,5 +78,52 @@ describe("الكتالوج المحلي (CAT-01 المحلي أولاً؛ §٧.�
       filterLocalItems(items, { groupId: "g3", includeInactive: true }).map((i) => i.id),
     ).toEqual(["b"]);
     expect(filterLocalItems(items, { q: "صاب" })).toEqual([]);
+  });
+});
+
+describe("تحديث الكتالوج المحلي من الخادم (0005 §٢٨٠)", () => {
+  const server = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      ...item(`i${i}`, { barcode: `20000000000${String(i).padStart(2, "0")}` }),
+    }));
+
+  it("يجلب الصفحات كلها ويكتب الباركود الجديد فوق النسخة القديمة", async () => {
+    const s = new MemoryStorage();
+    await s.transaction((tx) =>
+      tx.putProjection({
+        key: "entity:catalog.Item:i0",
+        value: { ...item("i0", {}), id: undefined },
+      }),
+    );
+    const all = server(5);
+    const offsets: number[] = [];
+    const fetchPage = async (offset: number): Promise<ServerItemsPage> => {
+      offsets.push(offset);
+      return { items: all.slice(offset, offset + 2), total: all.length };
+    };
+    expect(await refreshLocalItems(s, fetchPage)).toBe(5);
+    expect(offsets).toEqual([0, 2, 4]);
+    const local = await readLocalItems(s);
+    expect(local).toHaveLength(5);
+    expect(local.find((i) => i.id === "i0")?.barcode).toBe("2000000000000");
+  });
+
+  it("لا يجلب ثانية قبل عشر دقائق إلا صراحة، والفشل يترك النسخة كما هي", async () => {
+    const s = new MemoryStorage();
+    let calls = 0;
+    const fetchPage = async (): Promise<ServerItemsPage> => {
+      calls++;
+      return { items: server(1), total: 1 };
+    };
+    const t0 = new Date("2026-11-18T10:00:00Z");
+    await refreshLocalItems(s, fetchPage, { now: () => t0 });
+    expect(
+      await refreshLocalItems(s, fetchPage, { now: () => new Date(t0.getTime() + 60_000) }),
+    ).toBe(0);
+    expect(calls).toBe(1);
+    await refreshLocalItems(s, fetchPage, { force: true, now: () => t0 });
+    expect(calls).toBe(2);
+    expect(await refreshLocalItems(s, async () => null, { force: true })).toBeNull();
+    expect(await readLocalItems(s)).toHaveLength(1);
   });
 });

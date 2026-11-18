@@ -48,6 +48,7 @@ import { Pressable, TextInput, View } from "react-native";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { UnitSheet } from "@/components/unit-sheet";
 import { newId } from "@/lib/crypto";
+import { refreshCatalog } from "@/lib/catalog-refresh";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
@@ -130,6 +131,8 @@ export default function Pos() {
         } catch {
           // بلا اتصال: الرصيد المحلي بوسم آخر مطابقة كما هو
         }
+        // 0005 §٢٨٠: الكتالوج من الخادم (مرة كل عشر دقائق) — باركود ولّده الخادم يُمسح هنا أيضاً
+        if ((await refreshCatalog(api)) && alive) setItems(await readLocalItems(storage));
       })();
       return () => {
         alive = false;

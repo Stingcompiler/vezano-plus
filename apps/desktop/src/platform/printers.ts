@@ -83,7 +83,8 @@ export async function printLabelsOnDevice(
       ? { address: choice.networkIp }
       : null;
   if (!target) return web.printLabelsOnDevice(labels, width);
-  const bytes = labelsEscPos(labels, width);
+  // 0005 §٢٨٠: بعرض طابعة الإيصالات المسجَّل كالإيصال، لا بالمقاس المختار في الشاشة
+  const bytes = labelsEscPos(labels, await web.receiptWidth());
   try {
     await native.printRaw(target, bytes);
     return "printed";
