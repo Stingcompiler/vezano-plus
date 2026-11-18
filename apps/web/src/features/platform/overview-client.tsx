@@ -25,6 +25,19 @@ interface Tile {
   href: string;
   tone: Tone;
 }
+/** ملاحظات البطاقات نصوص من الخادم قد تحمل أرقاماً («3 أيام»): الأرقام اللاتينية داخل sting-mono. */
+function monoDigits(text: string): ReactNode {
+  return text.split(/(\d+)/).map((part, i) =>
+    i % 2 ? (
+      <span key={i} className="sting-mono">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
 interface Payload {
   measured_at: string;
   tenants_total: number;
@@ -79,7 +92,7 @@ export function OverviewClient() {
       </span>
       <span className="plt-row__text">
         <span className="plt-tile__label">{t.label}</span>
-        <span className="plt-tile__note">{t.note}</span>
+        <span className="plt-tile__note">{monoDigits(t.note)}</span>
       </span>
       <span className="plt-tile__value plt-pill sting-mono">{t.value}</span>
       <span className="plt-row__chev" aria-hidden="true">
@@ -144,7 +157,7 @@ export function OverviewClient() {
                 <span className="plt-tile__label">{t.label}</span>
               </span>
               <span className="plt-tile__value sting-mono">{t.value}</span>
-              <span className="plt-tile__note">{t.note}</span>
+              <span className="plt-tile__note">{monoDigits(t.note)}</span>
             </button>
           ))}
         </div>

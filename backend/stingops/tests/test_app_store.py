@@ -4,10 +4,8 @@
 from __future__ import annotations
 
 import hashlib
-import time
 from pathlib import Path
 from typing import Any
-from unittest import mock
 
 import pytest
 from django.core import signing
@@ -169,23 +167,29 @@ def test_download_counter_counts_each_link_once_per_store(
 
     assert counts()["1.0"]["downloads"] == 0 and counts()["1.0"]["download_stores"] == 0
     # طلب الرابط وحده لا يُحسب؛ خدمة الملف تُحسب، وإعادة فتح الرابط نفسه لا تُحسب ثانية
-    first = c.post(f"/api/org/apps/{rel['id']}/link", headers=merchant).json()["url"]
+    link_path = f"/api/org/apps/{rel['id']}/link"
+    first = c.post(link_path, headers=merchant).json()["url"]
     assert counts()["1.0"]["downloads"] == 0
     assert c.get(first).status_code == 200
     assert c.get(first).status_code == 200
-    assert AppDownload.objects.count() == 1
+    assert counts()["1.0"]["downloads"] == 1
     assert str(AppDownload.objects.get().tenant_id) == str(ctx["tenant"].id)
-    # رابط جديد من المتجر نفسه تنزيل ثانٍ، والمتاجر تبقى واحداً
-    signing_time = time.time() + 2
-    with mock.patch("django.core.signing.time.time", return_value=signing_time):
-        second = c.post(f"/api/org/apps/{rel['id']}/link", headers=merchant).json()["url"]
+    # مراجعة 2026-11-18: الرابط يحمل معرِّف صفّه لا معرِّف المتجر
+    payload = signing.loads(first.rsplit("/", 1)[1], salt=LINK_SALT)
+    assert "t" not in payload and str(ctx["tenant"].id) not in str(payload)
+    # رابطان في الثانية نفسها تنزيلان: كل طلب رابط صفّ مستقل
+    second = c.post(link_path, headers=merchant).json()["url"]
     assert second != first
     assert c.get(second).status_code == 200
     row = counts()["1.0"]
     assert (row["downloads"], row["download_stores"]) == (2, 1)
+    # رابط صدر قبل هذا الإصدار (يحمل «t») يُحسب أيضاً
+    legacy = signing.dumps({"r": rel["id"], "t": str(ctx["tenant"].id)}, salt=LINK_SALT)
+    assert c.get(f"/api/apps/download/{legacy}").status_code == 200
+    assert counts()["1.0"]["downloads"] == 3
     # الرابط المزوَّر لا يُحسب، ورابط المنصة الأخرى بلا عدّاد، والتاجر والزائر لا يريان العدّاد
     assert c.get(first + "x").status_code == 404
-    assert AppDownload.objects.count() == 2
+    assert counts()["1.0"]["downloads"] == 3
     assert "downloads" not in counts()["2.0"]
     assert "downloads" not in c.get("/api/org/apps", headers=merchant).json()["releases"][0]
     assert "downloads" not in c.get("/api/public/apps").json()["releases"][0]

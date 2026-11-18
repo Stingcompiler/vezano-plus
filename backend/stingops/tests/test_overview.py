@@ -89,6 +89,11 @@ def test_trial_followup_counts_distinct_mature_trials(ctx: dict[str, Any]) -> No
         sub.trial_ends_at = sub.expires_at = timezone.now() - timedelta(days=1)
         sub.save()
     assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 0}
+    # مراجعة 2026-11-18: تجربة انتهت بلا دفع تبقى «تجريبي» ولا تدخل «متأخرو السداد»
+    late = c.get(filters + "late", headers=operator).json()["tenants"]
+    assert str(ctx["tenant"].id) not in {r["id"] for r in late}
+    trial = c.get(filters + "trial", headers=operator).json()["tenants"]
+    assert str(ctx["tenant"].id) in {r["id"] for r in trial}
     for reference in ("FOLLOW-1", "FOLLOW-2"):
         proof = _post(
             c, owner, "/api/org/subscription/proofs", {"reference": reference, "plan_code": "dual"}
@@ -105,6 +110,43 @@ def test_trial_followup_counts_distinct_mature_trials(ctx: dict[str, Any]) -> No
     assert followup["trial_end"] == sub.trial_ends_at.isoformat() and followup["paid"]
     assert followup["report"] and not followup["first_sale"]
     assert followup["pending"] is None
+    # مراجعة 2026-11-18: من دفع أثناء التجربة اشترك أيضاً؛ إيصال قبل بداية التجربة لا يُحسب
     with tenant_context(ctx["tenant"].id):
-        SubscriptionReceipt.objects.update(issued_at=sub.started_at)
+        SubscriptionReceipt.objects.update(issued_at=sub.started_at + timedelta(days=1))
+    assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 1}
+    with tenant_context(ctx["tenant"].id):
+        SubscriptionReceipt.objects.update(issued_at=sub.started_at - timedelta(days=1))
     assert c.get(overview, headers=operator).json()["trial_renewals"] == {"eligible": 1, "paid": 0}
+
+
+def test_backfill_trial_end_for_stores_that_already_subscribed(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """0046: متجر جرّب ثم اشترك قبل 0045 يأخذ نهاية تجربته من بداية أول فترة تجديد مدفوعة."""
+    import importlib
+
+    from django.db import connection
+
+    from core.models import SubscriptionReceipt, TenantSubscription
+    from core.subscription import ensure_subscription
+    from core.tenancy import platform_context, tenant_context
+
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    operator = _operator_headers("followup", "تشغيل")
+    with tenant_context(ctx["tenant"].id):
+        ensure_subscription()
+    proof = _post(
+        c, owner, "/api/org/subscription/proofs", {"reference": "BACKFILL-1", "plan_code": "dual"}
+    ).json()["proof"]
+    approve = f"/api/platform/proofs/{ctx['tenant'].id}/{proof['id']}/approve"
+    assert _post(c, operator, approve, {}).status_code == 200
+    with platform_context():
+        TenantSubscription.unscoped.filter(tenant_id=ctx["tenant"].id).update(trial_ends_at=None)
+        sub = TenantSubscription.unscoped.get(tenant_id=ctx["tenant"].id)
+        receipt = SubscriptionReceipt.unscoped.get(tenant_id=ctx["tenant"].id)
+    assert sub.plan_code != "trial"
+    sql = importlib.import_module("core.migrations.0046_trial_end_for_converted").SQL
+    with connection.cursor() as cur:
+        cur.execute(sql)
+    with platform_context():
+        sub.refresh_from_db()
+    assert sub.trial_ends_at == receipt.period_from

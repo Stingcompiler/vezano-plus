@@ -132,7 +132,8 @@ def _sub_status(sub: TenantSubscription | None, now: Any) -> tuple[str, str, str
             f"أوقفه المشغّل {sub.suspended_at:%d/%m} · {sub.suspended_reason}",
         )
     days = (sub.expires_at - now).days
-    if sub.state == TenantSubscription.State.TRIAL and sub.expires_at >= now:
+    # مراجعة 2026-11-18: تجربة انتهت ولم تُدفع تبقى «تجريبي» بسطر «انتهت قبل»، لا «متأخرو السداد»
+    if sub.state == TenantSubscription.State.TRIAL:
         return (
             "trial",
             "تجريبي",
