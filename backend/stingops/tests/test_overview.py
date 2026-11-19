@@ -213,10 +213,10 @@ def test_trial_tile_counts_running_trials_only(ctx: dict[str, Any]) -> None:  # 
 
     def trial_tile() -> int:
         o = c.get("/api/platform/overview", headers=oh).json()
-        return next(t["value"] for t in o["subscriptions"] if t["key"] == "trial")
+        return int(next(t["value"] for t in o["subscriptions"] if t["key"] == "trial"))
 
     def shown() -> int:
-        return c.get("/api/platform/tenants?filter=trial", headers=oh).json()["shown"]
+        return int(c.get("/api/platform/tenants?filter=trial", headers=oh).json()["shown"])
 
     before = trial_tile()
     assert before >= 1 and shown() == before
