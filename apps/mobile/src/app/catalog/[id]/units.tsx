@@ -28,6 +28,7 @@ import {
   monthWord,
   parseFactorInput,
 } from "@/features/catalog/lib";
+import { keepLocalItem } from "@/lib/catalog-refresh";
 import { readShiftContext } from "@/lib/pos";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
@@ -142,6 +143,7 @@ export default function UnitsScreen() {
       if (response.ok && data) {
         const next = data as unknown as Card;
         setCard(next);
+        void keepLocalItem(next); // مراجعة 2026-11-19: باركود الوحدة إلى نسخة الهاتف
         const unit = next.units.find((u) => u.unit_id === addUnitId);
         if (unit) setSaved({ unit, prior: 0, old: "" });
         setAdding(false);
@@ -175,6 +177,7 @@ export default function UnitsScreen() {
       if (response.ok && data) {
         const next = data as unknown as Card;
         setCard(next);
+        void keepLocalItem(next); // مراجعة 2026-11-19: باركود الوحدة إلى نسخة الهاتف
         const unit = next.units.find((u) => u.id === editing.id);
         if (unit) setSaved({ unit, prior: editing.prior_lines, old: editing.factor_milli });
         setEditing(null);

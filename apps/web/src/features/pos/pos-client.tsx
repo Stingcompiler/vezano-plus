@@ -171,9 +171,11 @@ export function PosClient() {
     })();
   }, [router]);
 
-  // مطابقة الأرصدة مع الخادم حين يوجد اتصال — البيع لا ينتظرها
+  // مطابقة الأرصدة مع الخادم حين يوجد اتصال — البيع لا ينتظرها. تنتظر تحميل الأصناف وحده: إعادة
+  // قراءتها بعد تحديث الكتالوج لا تعيد طلب الأرصدة (مراجعة 2026-11-19)
+  const itemsLoaded = items !== null;
   useEffect(() => {
-    if (!online || !appRef.current.tokens || items === null) return;
+    if (!online || !appRef.current.tokens || !itemsLoaded) return;
     let cancelled = false;
     setBalanceFetch("pending");
     void (async () => {
@@ -201,17 +203,17 @@ export function PosClient() {
     return () => {
       cancelled = true;
     };
-  }, [online, items, ctx?.branchId]);
+  }, [online, itemsLoaded, ctx?.branchId]);
 
   // 0005 §٢٨٠: الكتالوج المحلي من الخادم (مرة كل عشر دقائق) — باركود ولّده الخادم يُمسح هنا أيضاً
   const catalogRefreshed = useRef(false);
   useEffect(() => {
-    if (!online || !appRef.current.tokens || items === null || catalogRefreshed.current) return;
+    if (!online || !appRef.current.tokens || !itemsLoaded || catalogRefreshed.current) return;
     catalogRefreshed.current = true;
     void (async () => {
       if (await refreshCatalog()) setItems(await readLocalItems(getStorage()));
     })();
-  }, [online, items]);
+  }, [online, itemsLoaded]);
 
   const persist = (next: readonly CartDraftLine[]) => {
     setLines(next);

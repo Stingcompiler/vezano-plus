@@ -129,16 +129,29 @@ export async function printReceiptOnDevice(
  * ملصقات CAT-07 على طابعة الإيصالات (0005 §٢٧٠): طابعة BLE أثبتت تجربتها العربية → raster عبر
  * Bluetooth، ملصق في كل قصّة؛ وإلا «system» فيطبع المتصفح الملصقات بعرض الورقة بحواره.
  */
+/** طابعة BLE المجرَّبة التي تذهب إليها الملصقات، أو `null` فتُطبع بحوار النظام. */
+async function labelPrinter() {
+  const list = await listPrinters();
+  const p = list.find((x) => x.conn === "ble" && x.ble && x.lastTest?.result === "ok");
+  if (!p?.ble || p.width === "a4") return null;
+  const models = await loadModels();
+  const profile = models?.profiles.find((x) => x.id === p.ble?.profileId);
+  return profile ? { ble: p.ble, width: p.width, profile } : null;
+}
+
+/**
+ * عرض الملصق الحراري الذي تطبعه طابعة الجهاز، أو `null` حين تذهب الملصقات إلى حوار النظام. شاشة
+ * الملصقات تعرض هذا المقاس وحده بين مقاسي الطابعة فتطابق المعاينةُ ما يخرج (مراجعة 2026-11-19).
+ */
+export async function labelDeviceWidth(): Promise<PaperWidth | null> {
+  return (await labelPrinter())?.width ?? null;
+}
+
 export async function printLabelsOnDevice(
   labels: readonly LabelPrint[],
 ): Promise<"printed" | "failed" | "unknown" | "system"> {
-  const list = await listPrinters();
-  const p = list.find((x) => x.conn === "ble" && x.ble && x.lastTest?.result === "ok");
-  if (!p?.ble || p.width === "a4") return "system";
-  const models = await loadModels();
-  const profile = models?.profiles.find((x) => x.id === p.ble?.profileId);
-  if (!profile) return "system";
-  // 0005 §٢٨٠: بعرض الطابعة المسجَّل كالإيصال، لا بالمقاس المختار في الشاشة — صورة 80 مم على رأس 58 مم
-  // تخرج مقصوصة لا يقرؤها الماسح. المقاس المختار يبقى لطباعة النظام وحدها.
-  return printBle(p.ble, profile, labelsEscPos(labels, p.width));
+  const p = await labelPrinter();
+  if (!p) return "system";
+  // 0005 §٢٨٠: بعرض الطابعة المسجَّل كالإيصال — صورة 80 مم على رأس 58 مم تخرج مقصوصة لا يقرؤها الماسح
+  return printBle(p.ble, p.profile, labelsEscPos(labels, p.width));
 }

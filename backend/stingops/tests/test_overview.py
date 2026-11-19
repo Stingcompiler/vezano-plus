@@ -92,8 +92,11 @@ def test_trial_followup_counts_distinct_mature_trials(ctx: dict[str, Any]) -> No
     # مراجعة 2026-11-18: تجربة انتهت بلا دفع تبقى «تجريبي» ولا تدخل «متأخرو السداد»
     late = c.get(filters + "late", headers=operator).json()["tenants"]
     assert str(ctx["tenant"].id) not in {r["id"] for r in late}
+    # مراجعة 2026-11-19: ولا تُعدّ في «تجريبي» (التجارب الجارية) — صفّها «تجريبي» بسطر «انتهت قبل»
     trial = c.get(filters + "trial", headers=operator).json()["tenants"]
-    assert str(ctx["tenant"].id) in {r["id"] for r in trial}
+    assert str(ctx["tenant"].id) not in {r["id"] for r in trial}
+    every = c.get("/api/platform/tenants", headers=operator).json()["tenants"]
+    assert next(r for r in every if r["id"] == str(ctx["tenant"].id))["status"] == "trial"
     for reference in ("FOLLOW-1", "FOLLOW-2"):
         proof = _post(
             c, owner, "/api/org/subscription/proofs", {"reference": reference, "plan_code": "dual"}
@@ -150,3 +153,78 @@ def test_backfill_trial_end_for_stores_that_already_subscribed(ctx: dict[str, An
     with platform_context():
         sub.refresh_from_db()
     assert sub.trial_ends_at == receipt.period_from
+
+
+def test_undo_trial_end_for_stores_that_never_trialled(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-11-19: منشأة اعتُمد لها دفع قبل اعتماد تجربتها لم تجرّب — 0026 يفرغ نهاية التجربة
+    التي كتبها 0046؛ ومن له حدث «اعتماد التجربة» تبقى نهايته."""
+    import importlib
+
+    from django.db import connection
+
+    from core.models import TenantSubscription
+    from core.subscription import ensure_subscription
+    from core.tenancy import platform_context, tenant_context
+    from stingops.models import SubscriptionEvent
+
+    c = Client()
+    owner = _h(ctx["tokens"]["owner"])
+    operator = _operator_headers("undo-trial", "تشغيل")
+    with tenant_context(ctx["tenant"].id):
+        ensure_subscription()
+    proof = _post(
+        c, owner, "/api/org/subscription/proofs", {"reference": "UNDO-1", "plan_code": "dual"}
+    ).json()["proof"]
+    approve = f"/api/platform/proofs/{ctx['tenant'].id}/{proof['id']}/approve"
+    assert _post(c, operator, approve, {}).status_code == 200
+    subs = TenantSubscription.unscoped.filter(tenant_id=ctx["tenant"].id)
+    sql = importlib.import_module("stingops.migrations.0026_undo_trial_end_without_trial").SQL
+    with platform_context():
+        assert subs.get().trial_ends_at is not None
+        SubscriptionEvent.objects.create(
+            tenant_id=ctx["tenant"].id, kind="trial_approved", by_name="تشغيل"
+        )
+    with connection.cursor() as cur:
+        cur.execute(sql)
+    with platform_context():
+        assert subs.get().trial_ends_at is not None
+        SubscriptionEvent.objects.filter(kind="trial_approved").delete()
+    with connection.cursor() as cur:
+        cur.execute(sql)
+    with platform_context():
+        assert subs.get().trial_ends_at is None
+
+
+def test_trial_tile_counts_running_trials_only(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """مراجعة 2026-11-19: تجربة انتهت بلا دفع تبقى «تجريبي» في صفّها لكنها خارج بطاقة التجارب
+    الجارية ومرشّحها."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.models import TenantSubscription
+    from core.subscription import ensure_subscription
+    from core.tenancy import platform_context, tenant_context
+
+    c = Client()
+    oh = _operator_headers("trial-tile", "تشغيل")
+    with tenant_context(ctx["tenant"].id):
+        ensure_subscription()
+
+    def trial_tile() -> int:
+        o = c.get("/api/platform/overview", headers=oh).json()
+        return int(next(t["value"] for t in o["subscriptions"] if t["key"] == "trial"))
+
+    def shown() -> int:
+        return int(c.get("/api/platform/tenants?filter=trial", headers=oh).json()["shown"])
+
+    before = trial_tile()
+    assert before >= 1 and shown() == before
+    with platform_context():
+        TenantSubscription.unscoped.filter(tenant_id=ctx["tenant"].id).update(
+            state="trial", expires_at=timezone.now() - timedelta(days=3)
+        )
+    assert trial_tile() == before - 1 and shown() == before - 1
+    rows = c.get("/api/platform/tenants", headers=oh).json()["tenants"]
+    row = next(r for r in rows if r["id"] == str(ctx["tenant"].id))
+    assert row["status"] == "trial" and "انتهت قبل" in row["due_line"]

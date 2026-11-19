@@ -245,7 +245,7 @@ export function TenantsClient() {
                   .join("، ") || "لا استخدام مرصود"}
               </div>
               <div>
-                الدفع بعد التجربة:{" "}
+                أول إيصال تجديد:{" "}
                 {t.followup.paid
                   ? date(t.followup.paid)
                   : !t.followup.trial_end

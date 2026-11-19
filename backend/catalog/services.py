@@ -98,11 +98,27 @@ def item_unit_payload(u: ItemUnit) -> dict[str, Any]:
     }
 
 
+def _prefetched(item: Item, name: str) -> bool:
+    return name in getattr(item, "_prefetched_objects_cache", {})
+
+
+def _ordered_units(item: Item) -> list[ItemUnit]:
+    """وحدات الصنف بترتيب المعامل — من الجلب المسبق إن وُجد (مراجعة 2026-11-19: `order_by` على
+    العلاقة يتجاوز `prefetch_related` فيستعلم لكل صنف في القائمة)."""
+    if _prefetched(item, "units"):
+        return sorted(item.units.all(), key=lambda u: (u.factor_milli, u.created_at))
+    return list(item.units.select_related("unit").order_by("factor_milli"))
+
+
+def _ordered_aliases(item: Item) -> list[ItemAlias]:
+    if _prefetched(item, "aliases"):
+        return sorted(item.aliases.all(), key=lambda a: a.created_at)
+    return list(item.aliases.order_by("created_at"))
+
+
 def item_payload(item: Item) -> dict[str, Any]:
     """حمولة الصنف كما تصل الأجهزة (PULL/النسخة) — بلا الصورة نفسها (حجمها)؛ حضورها فقط."""
-    units = [
-        item_unit_payload(u) for u in item.units.select_related("unit").order_by("factor_milli")
-    ]
+    units = [item_unit_payload(u) for u in _ordered_units(item)]
     return {
         "name": item.name,
         "name_normalized": item.name_normalized,
@@ -121,7 +137,7 @@ def item_payload(item: Item) -> dict[str, Any]:
         "price_updated_at": _iso(item.price_updated_at),
         "image_present": bool(item.image_data_url),
         "image_updated_at": _iso(item.image_updated_at),
-        "aliases": [a.alias for a in item.aliases.order_by("created_at")],
+        "aliases": [a.alias for a in _ordered_aliases(item)],
         "is_active": item.is_active,
         "deactivated_at": _iso(item.deactivated_at),
         "updated_at": _iso(item.updated_at),
@@ -144,9 +160,7 @@ def item_card_payload(item: Item) -> dict[str, Any]:
     الوحدة الأساسية."""
     base = item_payload(item)
     units = []
-    for u, pu in zip(
-        item.units.select_related("unit").order_by("factor_milli"), base["units"], strict=True
-    ):
+    for u, pu in zip(_ordered_units(item), base["units"], strict=True):
         units.append(
             {
                 **pu,
@@ -657,7 +671,8 @@ def search_items(query: ItemQuery, *, limit: int = 100, offset: int = 0) -> tupl
             | Q(barcode__startswith=query.q.strip())
         ).distinct()
     total = qs.count()
-    return list(qs.order_by("name_normalized")[offset : offset + limit]), total
+    # المعرّف يكسر تعادل الأسماء فلا تتبدّل الصفحات بين طلب وآخر (مراجعة 2026-11-19)
+    return list(qs.order_by("name_normalized", "id")[offset : offset + limit]), total
 
 
 def groups_overview() -> list[dict[str, Any]]:

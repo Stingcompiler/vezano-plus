@@ -1,4 +1,4 @@
-import { refreshLocalItems, type ServerItemsPage } from "@sting/sync-core";
+import { putLocalItem, refreshLocalItems, type ServerItemsPage } from "@sting/sync-core";
 
 import { api } from "@/lib/api";
 import { getStorage } from "@/lib/storage";
@@ -25,4 +25,16 @@ export function refreshCatalog(force = false): Promise<number | null> {
     },
     { force },
   );
+}
+
+/**
+ * الصنف الذي حُفظ للتو إلى نسخة الجهاز من ردّ الحفظ (مراجعة 2026-11-19) — بلا جلب الكتالوج كله.
+ * فشل الكتابة المحلية لا يُفشل الحفظ: التحديث الدوري يلحق به.
+ */
+export async function keepLocalItem(card: { readonly id: string }): Promise<void> {
+  try {
+    await putLocalItem(getStorage(), card);
+  } catch {
+    /* يلحق به التحديث الدوري */
+  }
 }

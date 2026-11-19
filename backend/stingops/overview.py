@@ -18,7 +18,7 @@ from stingops import health as health_svc
 from stingops import moderation, ops
 from stingops.followup import renewal_counts
 from stingops.models import DemoRequest
-from stingops.services import due_soon, tenant_row
+from stingops.services import due_soon, running_trial, tenant_row
 
 
 def _iso(dt: Any) -> str:
@@ -43,6 +43,8 @@ def overview_payload() -> dict[str, Any]:
         for k in ("active", "trial", "expired", "suspended")
     }
     by["active"] += sum(1 for r in rows if r["status"] == "sync_late")
+    # مراجعة 2026-11-19: «تجريبي» التجارب الجارية وحدها — بتعريف مرشّحها نفسه
+    by["trial"] = sum(1 for r in rows if running_trial(r))
     # «متأخرو السداد» بتعريف مرشّح القائمة نفسه (منتهٍ أو بانتظار مراجعة الدفع) — فحص 2026-10-17 VP05
     late = sum(1 for r in rows if r["status"] in {"expired", "payment_pending"})
     due14 = sum(1 for r in rows if due_soon(r, now))

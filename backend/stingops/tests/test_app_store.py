@@ -187,6 +187,18 @@ def test_download_counter_counts_each_link_once_per_store(
     legacy = signing.dumps({"r": rel["id"], "t": str(ctx["tenant"].id)}, salt=LINK_SALT)
     assert c.get(f"/api/apps/download/{legacy}").status_code == 200
     assert counts()["1.0"]["downloads"] == 3
+    # مراجعة 2026-11-19: رابط مضت دقائقه ولم يُفتح يُحذف صفّه عند طلب رابط جديد؛ المحسوب يبقى
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    c.post(link_path, headers=merchant)
+    AppDownload.objects.filter(downloaded_at__isnull=True).update(
+        issued_at=timezone.now() - timedelta(minutes=6)
+    )
+    c.post(link_path, headers=merchant)
+    assert AppDownload.objects.filter(downloaded_at__isnull=True).count() == 1
+    assert counts()["1.0"]["downloads"] == 3
     # الرابط المزوَّر لا يُحسب، ورابط المنصة الأخرى بلا عدّاد، والتاجر والزائر لا يريان العدّاد
     assert c.get(first + "x").status_code == 404
     assert counts()["1.0"]["downloads"] == 3

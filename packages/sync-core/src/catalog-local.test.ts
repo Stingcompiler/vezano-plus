@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   filterLocalItems,
+  CATALOG_REFRESHED_META,
   itemMatches,
   type LocalItem,
+  putLocalItem,
   readLocalGroups,
   readLocalItems,
   refreshLocalItems,
@@ -125,5 +127,38 @@ describe("تحديث الكتالوج المحلي من الخادم (0005 §٢�
     expect(calls).toBe(2);
     expect(await refreshLocalItems(s, () => Promise.resolve(null), { force: true })).toBeNull();
     expect(await readLocalItems(s)).toHaveLength(1);
+  });
+  it("صنف قفز إلى صفحة مضت أثناء الجلب: يُكتب ما وصل بلا ختم الوقت فيُعاد الجلب", async () => {
+    const s = new MemoryStorage();
+    const all = server(4);
+    // الصفحة الثانية تعيد صنفاً من الأولى (أُعيدت تسمية i3 فانتقل إلى البداية وتخطّاه الجلب)
+    const pages = [all.slice(0, 2), [all[1]!, all[2]!]];
+    const fetchPage = (offset: number): Promise<ServerItemsPage> =>
+      Promise.resolve({ items: pages[offset / 2] ?? [], total: 4 });
+    expect(await refreshLocalItems(s, fetchPage)).toBe(4);
+    expect(await s.read((tx) => tx.getMeta(CATALOG_REFRESHED_META))).toBeFalsy();
+    expect(await readLocalItems(s)).toHaveLength(3);
+  });
+
+  it("الصنف المحفوظ يُكتب من ردّ الحفظ وحده بلا حقول البطاقة", async () => {
+    const s = new MemoryStorage();
+    const unit = { id: "iu", unit_id: "u", code: "piece", name: "حبة", factor_milli: "1000" };
+    const { id, ...rest } = item("i9", { barcode: "2000000000099" });
+    await putLocalItem(s, {
+      id,
+      ...rest,
+      units: [{ ...unit, prior_lines: 3, changes: [] }],
+      image_data_url: "data:image/png;base64,AAAA",
+      movements: 4,
+      base_unit_locked: true,
+    });
+    const rows = await s.read((tx) => tx.listProjections("entity:catalog.Item:"));
+    expect(rows).toHaveLength(1);
+    const value = rows[0]!.value;
+    expect(value.barcode).toBe("2000000000099");
+    expect(value).not.toHaveProperty("image_data_url");
+    expect(value).not.toHaveProperty("movements");
+    expect(value).not.toHaveProperty("id");
+    expect(value.units).toEqual([unit]);
   });
 });

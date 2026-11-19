@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, apiBaseUrl, getAccessToken, renewAccessAfter401 } from "@/lib/api";
-import { refreshCatalog } from "@/lib/catalog-refresh";
+import { keepLocalItem } from "@/lib/catalog-refresh";
 
 import {
   describeError,
@@ -331,8 +331,8 @@ export function ItemForm({
       }
     }
     setSaved(card);
-    // 0005 §٢٨٠: الصنف المحفوظ (وباركوده) إلى نسخة الجهاز فتراه الملصقات ونقطة البيع
-    void refreshCatalog(true);
+    // 0005 §٢٨٠: الصنف المحفوظ (وباركوده) إلى نسخة الجهاز فتراه الملصقات ونقطة البيع — من ردّ الحفظ
+    void keepLocalItem(card);
     onSaved?.(card);
     setState("success");
     if (addAnother) resetKeepingUnit();
