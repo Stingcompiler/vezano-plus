@@ -94,6 +94,20 @@ def test_list_defaults_to_active_and_search_uses_prefix_and_normalization() -> N
     assert api.get("/api/catalog/items", {"group_id": drinks}).json()["total"] == 2
 
 
+def test_list_query_count_does_not_grow_with_items() -> None:
+    """مراجعة 2026-11-19: قائمة الأصناف تقرأ الوحدات والأسماء البديلة من الجلب المسبق — عدد
+    الاستعلامات ثابت مهما كثرت الأصناف (كان استعلامين لكل صنف)."""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    api = Api()
+    with CaptureQueriesContext(connection) as all_items:
+        n = len(api.get("/api/catalog/items", {"include_inactive": "1"}).json()["items"])
+    with CaptureQueriesContext(connection) as one_item:
+        assert len(api.get("/api/catalog/items", {"q": "سكر"}).json()["items"]) == 1
+    assert n == 7 and len(all_items) == len(one_item)
+
+
 def test_alias_is_a_search_key_that_opens_one_item() -> None:
     """CAT-06: الاسم البديل مأخوذ → نسمّي الصنف المالك؛ والنجاح لا يلمس رصيداً ولا سعراً."""
     api = Api()

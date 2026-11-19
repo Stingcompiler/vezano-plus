@@ -1,5 +1,5 @@
 import type { createApiClient } from "@sting/app-core";
-import { refreshLocalItems, type ServerItemsPage } from "@sting/sync-core";
+import { putLocalItem, refreshLocalItems, type ServerItemsPage } from "@sting/sync-core";
 
 import { getStorage } from "@/lib/storage";
 
@@ -27,4 +27,16 @@ export async function refreshCatalog(
     },
     { force },
   );
+}
+
+/**
+ * الصنف الذي حُفظ للتو إلى نسخة الهاتف من ردّ الحفظ (مراجعة 2026-11-19) — نظير الويب. فشل الكتابة
+ * المحلية لا يُفشل الحفظ: التحديث الدوري يلحق به.
+ */
+export async function keepLocalItem(card: { readonly id: string }): Promise<void> {
+  try {
+    await putLocalItem(await getStorage(), card);
+  } catch {
+    /* يلحق به التحديث الدوري */
+  }
 }

@@ -3,7 +3,13 @@
  * الإيصالات المختارة في DESK-02 — بلا حوار — والفشل يدخل طابور الطباعة بحالته وأثره (لا أثر على
  * الدفتر). بلا طابعة مختارة يبقى سلوك الويب: «system» فيطبع بحوار النظام. خارج Tauri: الويب كما هو.
  */
-import { type LabelPrint, labelsEscPos, renderCanvas, toEscPos } from "@/lib/print/raster";
+import {
+  type LabelPrint,
+  labelsEscPos,
+  type PaperWidth,
+  renderCanvas,
+  toEscPos,
+} from "@/lib/print/raster";
 
 import * as web from "../../../web/src/lib/print/printers";
 import { native, type PrintTarget } from "./native";
@@ -62,6 +68,14 @@ export async function printReceiptOnDevice(
     });
     return "failed";
   }
+}
+
+/** عرض الملصق الحراري: طابعة الإيصالات المختارة تطبع بقياس الإيصال المعدّ (مراجعة 2026-11-19). */
+export async function labelDeviceWidth(): Promise<PaperWidth | null> {
+  if (!active()) return web.labelDeviceWidth();
+  const choice = await loadChoice();
+  if (!choice?.receipts && !choice?.networkIp) return web.labelDeviceWidth();
+  return web.receiptWidth();
 }
 
 /** ملصقات CAT-07 (0005 §٢٧٠): ESC/POS خام إلى طابعة الإيصالات المختارة بلا حوار؛ الفشل إلى الطابور. */

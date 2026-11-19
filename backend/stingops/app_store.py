@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -207,6 +208,11 @@ class MerchantDownloadLinkView(APIView):
         # والمتجر فيه ليُحسب التنزيل له (عدد المتاجر في فهرس المشغّل)
         # والتنزيل يُحسب لصف هذا الرابط (مراجعة 2026-11-18): كل طلب رابط صفّ جديد، والرابط يحمل معرِّف
         # الصف لا معرِّف المتجر — التوقيع يُقرأ ولا يُخفي
+        # مراجعة 2026-11-19: رابط مضت دقائقه ولم يُفتح لا يُحسب أبداً — يُحذف صفّه فلا تتراكم الصفوف
+        AppDownload.objects.filter(
+            downloaded_at__isnull=True,
+            issued_at__lt=timezone.now() - timedelta(seconds=LINK_MAX_AGE),
+        ).delete()
         link = AppDownload.objects.create(release=r, tenant_id=auth.tenant_id)
         token = signing.dumps({"r": str(r.id), "d": str(link.id)}, salt=LINK_SALT)
         return Response(

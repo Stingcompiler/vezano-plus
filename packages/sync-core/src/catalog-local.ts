@@ -122,18 +122,80 @@ export async function refreshLocalItems(
     if (last && now().getTime() - Date.parse(last) < CATALOG_REFRESH_EVERY_MS) return 0;
   }
   const rows: ServerItemsPage["items"][number][] = [];
+  let total = 0;
   for (let offset = 0; ;) {
     const page = await fetchPage(offset);
     if (!page) return null;
     rows.push(...page.items);
+    total = page.total;
     offset += page.items.length;
     if (!page.items.length || offset >= page.total) break;
   }
+  // مراجعة 2026-11-19: الصفحات بالإزاحة — صنف أُعيدت تسميته أثناء الجلب قد ينتقل إلى صفحة مضت فيُتخطّى.
+  // يُكتب ما وصل، لكن بلا ختم الوقت حين يقلّ عدد الأصناف المختلفة عن آخر مجموع، فيُعاد الجلب في المرة
+  // التالية بدل أن يغيب الصنف عشر دقائق.
+  const complete = new Set(rows.map((r) => r.id)).size >= total;
   await storage.transaction(async (tx) => {
     for (const { id, ...payload } of rows) {
       await tx.putProjection({ key: ITEM_PREFIX + id, value: payload });
     }
-    await tx.putMeta(CATALOG_REFRESHED_META, now().toISOString());
+    if (complete) await tx.putMeta(CATALOG_REFRESHED_META, now().toISOString());
   });
   return rows.length;
+}
+
+/** حقول إسقاط الصنف كما يكتبها `item_payload` على الخادم — بطاقة الصنف تزيد عليها ما لا يُحفظ. */
+const ITEM_KEYS = [
+  "name",
+  "name_normalized",
+  "group_id",
+  "group_name",
+  "base_unit_id",
+  "base_unit_code",
+  "base_unit_name",
+  "base_unit_decimal_places",
+  "units",
+  "barcode",
+  "sale_price_minor",
+  "alert_threshold_milli",
+  "price_updated_at",
+  "image_present",
+  "image_updated_at",
+  "aliases",
+  "is_active",
+  "deactivated_at",
+  "updated_at",
+] as const;
+const UNIT_KEYS = [
+  "id",
+  "unit_id",
+  "code",
+  "name",
+  "decimal_places",
+  "factor_milli",
+  "barcode",
+  "created_at",
+] as const;
+
+function pick(source: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) if (k in source) out[k] = source[k];
+  return out;
+}
+
+/**
+ * مراجعة 2026-11-19: الصنف الذي حُفظ للتو (إنشاء، تعديل، وحدة) يُكتب إلى نسخة الجهاز من ردّ الحفظ نفسه —
+ * لا جلب للكتالوج كله بعد كل حفظ. يقبل حمولة القائمة أو بطاقة الصنف (يُسقط منها السجلّ والصورة).
+ */
+export async function putLocalItem(
+  storage: StoragePort,
+  item: { readonly id: string } & Record<string, unknown>,
+): Promise<void> {
+  const value = pick(item, ITEM_KEYS);
+  if (Array.isArray(value.units)) {
+    value.units = (value.units as Record<string, unknown>[]).map((u) => pick(u, UNIT_KEYS));
+  }
+  await storage.transaction(async (tx) => {
+    await tx.putProjection({ key: ITEM_PREFIX + item.id, value });
+  });
 }

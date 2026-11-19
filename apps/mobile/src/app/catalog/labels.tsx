@@ -43,9 +43,11 @@ export default function Labels() {
 
   useEffect(() => {
     let cancelled = false;
-    const show = async () => {
+    /** يعيد هل الصنف القادم من بطاقته (إن وُجد) حاضر بباركود في نسخة الهاتف. */
+    const show = async (): Promise<boolean> => {
       const r = labelRows(await readLocalItems(await getStorage()));
-      if (cancelled) return;
+      const found = typeof item !== "string" || !item || r.rows.some((x) => x.itemId === item);
+      if (cancelled) return found;
       setRows(r.rows);
       setSkipped(r.skipped);
       if (typeof item === "string" && item) {
@@ -54,11 +56,13 @@ export default function Labels() {
         );
         setCounts((c) => (Object.keys(c).length ? c : preset));
       }
+      return found;
     };
     void (async () => {
-      await show();
-      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الهاتف يصل هنا — تحديث من الخادم ثم قراءة ثانية
-      if (await refreshCatalog(api, true)) await show();
+      const found = await show();
+      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الهاتف يصل هنا — تحديث من الخادم ثم قراءة ثانية.
+      // مراجعة 2026-11-19: مرة كل عشر دقائق، إلا إن غاب الصنف المطلوب عن نسخة الهاتف
+      if (await refreshCatalog(api, !found)) await show();
     })();
     return () => {
       cancelled = true;

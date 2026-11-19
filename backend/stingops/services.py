@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -144,6 +145,12 @@ def _sub_status(sub: TenantSubscription | None, now: Any) -> tuple[str, str, str
     return "active", "نشط", f"يُجدَّد بعد {days} يوماً · حتى {sub.expires_at:%d/%m}"
 
 
+def running_trial(row: Mapping[str, Any]) -> bool:
+    """تجربة جارية — بطاقة «تجريبي» ومرشّحها (مراجعة 2026-11-19). التجربة المنتهية بلا دفع تبقى
+    «تجريبي» في صفّها بسطر «انتهت قبل»، لكنها لا تُعدّ ضمن التجارب الجارية."""
+    return row["status"] == "trial" and (row.get("days_left") is None or row["days_left"] >= 0)
+
+
 def tenant_row(t: Tenant, now: Any) -> dict[str, Any]:
     with platform_context():
         sub = TenantSubscription.unscoped.filter(tenant=t).first()
@@ -257,7 +264,7 @@ def tenants_payload(*, q: str = "", filter_code: str = "all") -> dict[str, Any]:
     elif filter_code == "active":
         rows = [r for r in rows if r["status"] in {"active", "sync_late"}]
     elif filter_code == "trial":
-        rows = [r for r in rows if r["status"] == "trial"]
+        rows = [r for r in rows if running_trial(r)]
     if filter_code in {"due14", "due14_sold", "due14_no_sale"}:
         rows.sort(key=lambda r: (r["expires_at"], r["id"]))
     active = sum(1 for r in rows if r["status"] in {"active", "sync_late"})

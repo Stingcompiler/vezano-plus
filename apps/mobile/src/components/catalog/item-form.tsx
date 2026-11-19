@@ -21,6 +21,7 @@ import {
   type UnitRow,
 } from "@/features/catalog/lib";
 import { type CreateRoute, goHref } from "@/features/catalog/nav";
+import { keepLocalItem } from "@/lib/catalog-refresh";
 import { useSession } from "@/lib/session";
 
 export type ItemFormState = "ready" | "validation_error" | "saving" | "success";
@@ -180,6 +181,8 @@ export function ItemForm({
       }
       if (!card) return;
       mark(1);
+      // مراجعة 2026-11-19: الصنف المحفوظ (وباركوده) إلى نسخة الهاتف فتراه الملصقات ونقطة البيع
+      void keepLocalItem(card);
       setSaved(card);
       onSaved?.(card);
       setState("success");

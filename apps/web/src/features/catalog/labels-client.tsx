@@ -29,7 +29,7 @@ import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import { AppNav } from "@/features/home/app-nav";
 import { useApp } from "@/lib/app-context";
-import { printLabelsOnDevice } from "@/lib/print/printers";
+import { labelDeviceWidth, printLabelsOnDevice } from "@/lib/print/printers";
 import { refreshCatalog } from "@/lib/catalog-refresh";
 import { getStorage } from "@/lib/storage";
 
@@ -86,6 +86,22 @@ export function LabelsClient() {
   const [size, setSize] = useState<Size>("a4");
   const [withPrice, setWithPrice] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>("idle");
+  // مراجعة 2026-11-19: طابعة الجهاز تطبع بعرضها المسجَّل — فلا يُعرض من مقاسَي الطابعة إلا هو، فتطابق
+  // المعاينةُ ما يخرج. بلا طابعة جهاز (حوار النظام) يبقى المقاسان.
+  const [deviceWidth, setDeviceWidth] = useState<58 | 80 | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void labelDeviceWidth()
+      .then((w) => {
+        if (cancelled || !w) return;
+        setDeviceWidth(w);
+        setSize((s) => (s === "a4" ? s : (String(w) as Size)));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!app.tokens && !app.expired) router.replace("/login?next=%2Fcatalog%2Flabels");
@@ -93,12 +109,14 @@ export function LabelsClient() {
 
   useEffect(() => {
     let cancelled = false;
-    const show = async () => {
+    /** يعيد هل الصنف القادم من بطاقته (إن وُجد) حاضر بباركود في نسخة الجهاز. */
+    const show = async (): Promise<boolean> => {
       const r = labelRows(await readLocalItems(getStorage()));
-      if (cancelled) return;
+      const pre = params.get("item");
+      const found = !pre || r.rows.some((x) => x.itemId === pre);
+      if (cancelled) return found;
       setRows(r.rows);
       setSkipped(r.skipped);
-      const pre = params.get("item");
       // الصنف القادم من بطاقته يُختار مرة — لا يمحو عدداً كتبه المستخدم أثناء التحديث
       if (pre) {
         const preset = Object.fromEntries(
@@ -106,11 +124,13 @@ export function LabelsClient() {
         );
         setCounts((c) => (Object.keys(c).length ? c : preset));
       }
+      return found;
     };
     void (async () => {
-      await show();
-      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الجهاز يصل هنا — تحديث من الخادم ثم قراءة ثانية
-      if (await refreshCatalog(true)) await show();
+      const found = await show();
+      // 0005 §٢٨٠: باركود ولّده الخادم بعد تهيئة الجهاز يصل هنا — تحديث من الخادم ثم قراءة ثانية.
+      // مراجعة 2026-11-19: مرة كل عشر دقائق، إلا إن غاب الصنف المطلوب عن نسخة الجهاز
+      if (await refreshCatalog(!found)) await show();
     })();
     return () => {
       cancelled = true;
@@ -238,7 +258,9 @@ export function LabelsClient() {
                   { value: "a4", label: "ورق A4 — 24 ملصقاً" },
                   { value: "58", label: "طابعة إيصالات 58 مم" },
                   { value: "80", label: "طابعة إيصالات 80 مم" },
-                ]}
+                ].filter(
+                  (o) => o.value === "a4" || !deviceWidth || o.value === String(deviceWidth),
+                )}
               />
               <SwitchField
                 label="السعر على الملصق"
