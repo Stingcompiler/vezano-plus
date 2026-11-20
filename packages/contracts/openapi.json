@@ -7728,6 +7728,55 @@
         }
       }
     },
+    "/api/parties/{party_id}/offset": {
+      "post": {
+        "operationId": "parties_offset_create",
+        "description": "«مقاصة بين الرصيدين» (§٧.١؛ 0005 §٢٨٥): للمالك، للطرف ذي الصفتين، بسبب، وبما لا يتجاوز أصغر\nالرصيدين — حركتان متقابلتان لا نقد فيهما.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "party_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["parties"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartyOffset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPartiesByPartyIdOffsetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/parties/{party_id}/opening-balance": {
       "post": {
         "operationId": "parties_opening_balance_create",
@@ -14099,6 +14148,20 @@
           }
         },
         "required": ["name"]
+      },
+      "PartyOffset": {
+        "type": "object",
+        "properties": {
+          "amount_minor": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "default": "",
+            "maxLength": 300
+          }
+        },
+        "required": ["amount_minor"]
       },
       "PatchedItemPatch": {
         "type": "object",
@@ -46379,6 +46442,110 @@
           }
         },
         "required": ["merge", "source", "target"],
+        "type": "object"
+      },
+      "PostPartiesByPartyIdOffsetResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "numbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "party": {
+            "additionalProperties": false,
+            "properties": {
+              "aliases": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "balance_as_of": {
+                "type": "string"
+              },
+              "balance_minor": {
+                "type": "string"
+              },
+              "credit_limit_minor": {
+                "type": "string"
+              },
+              "deactivated_at": {
+                "type": "string"
+              },
+              "distinct_from_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_active": {
+                "type": "boolean"
+              },
+              "is_customer": {
+                "type": "boolean"
+              },
+              "is_supplier": {
+                "type": "boolean"
+              },
+              "last_movement_at": {
+                "type": "string"
+              },
+              "last_sale_at": {
+                "type": "string"
+              },
+              "market_linked": {
+                "type": "boolean"
+              },
+              "merged_into": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "name_normalized": {
+                "type": "string"
+              },
+              "note": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "supplier_owed_minor": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "name_normalized",
+              "phone",
+              "aliases",
+              "note",
+              "credit_limit_minor",
+              "is_customer",
+              "is_supplier",
+              "distinct_from_id",
+              "merged_into",
+              "balance_minor",
+              "balance_as_of",
+              "last_sale_at",
+              "is_active",
+              "deactivated_at",
+              "updated_at",
+              "supplier_owed_minor",
+              "last_movement_at",
+              "market_linked"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["numbers", "party"],
         "type": "object"
       },
       "PostPartiesByPartyIdOpeningBalanceResponse": {

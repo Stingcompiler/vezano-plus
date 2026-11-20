@@ -3062,6 +3062,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/parties/{party_id}/offset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description «مقاصة بين الرصيدين» (§٧.١؛ 0005 §٢٨٥): للمالك، للطرف ذي الصفتين، بسبب، وبما لا يتجاوز أصغر
+         *     الرصيدين — حركتان متقابلتان لا نقد فيهما.
+         */
+        post: operations["parties_offset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parties/{party_id}/opening-balance": {
         parameters: {
             query?: never;
@@ -5872,6 +5892,11 @@ export interface components {
             distinct_from_party_id?: string | null;
             /** @default customer */
             role: components["schemas"]["RoleEnum"];
+        };
+        PartyOffset: {
+            amount_minor: string;
+            /** @default  */
+            reason: string;
         };
         PatchedItemPatch: {
             name?: string;
@@ -13917,6 +13942,31 @@ export interface components {
             };
             target: {
                 aliases: unknown[];
+                balance_as_of: string;
+                balance_minor: string;
+                credit_limit_minor: string;
+                deactivated_at: string;
+                distinct_from_id: string;
+                id: string;
+                is_active: boolean;
+                is_customer: boolean;
+                is_supplier: boolean;
+                last_movement_at: string;
+                last_sale_at: string;
+                market_linked: boolean;
+                merged_into: string;
+                name: string;
+                name_normalized: string;
+                note: string;
+                phone: string;
+                supplier_owed_minor: string;
+                updated_at: string;
+            };
+        };
+        PostPartiesByPartyIdOffsetResponse: {
+            numbers: string[];
+            party: {
+                aliases: string[];
                 balance_as_of: string;
                 balance_minor: string;
                 credit_limit_minor: string;
@@ -26067,6 +26117,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostPartiesByPartyIdMergeResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    parties_offset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyOffset"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPartiesByPartyIdOffsetResponse"];
                 };
             };
             /** @description No response body */

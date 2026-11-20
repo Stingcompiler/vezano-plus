@@ -52,14 +52,17 @@ ${r.reason ? row(tx(T, "ملاحظة"), r.reason) : ""}
  */
 export default function SupplierPay() {
   const router = useRouter();
-  const { id: partyId } = useLocalSearchParams<{ id: string }>();
+  const { id: partyId, amount: prefill } = useLocalSearchParams<{ id: string; amount?: string }>();
   const { api } = useSession();
   const ctx = useShiftContext();
   const [party, setParty] = useState<LocalParty | null | undefined>(undefined);
   const [pending, setPending] = useState(0n);
   const [shift, setShift] = useState<LocalShift | null | undefined>(undefined);
   const [method, setMethod] = useState<ReceiptMethod>("cash");
-  const [amount, setAmount] = useState("");
+  // «ادفع الآن» من مستند شراء معتمد يمرّر مبلغه بالوحدة الصغرى (0005 §٢٨٥)
+  const [amount, setAmount] = useState(() =>
+    prefill && /^[0-9]+$/.test(prefill) ? formatMinorShort(prefill).replace(/,/g, "") : "",
+  );
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [refUsed, setRefUsed] = useState(false);

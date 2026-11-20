@@ -78,6 +78,9 @@ export function SupplierPaymentClient({ partyId }: { partyId: string }) {
 
   useEffect(() => {
     void readHomeCache().then((c) => setShop(c?.summary.tenant_name ?? ""));
+    // «ادفع الآن» من مستند شراء معتمد يمرّر مبلغه بالوحدة الصغرى (0005 §٢٨٥)؛ يُعدَّل قبل الحفظ
+    const minor = new URLSearchParams(window.location.search).get("amount");
+    if (minor && /^[0-9]+$/.test(minor)) setAmount(formatMinor(minor).replace(/,/g, ""));
   }, []);
 
   useEffect(() => {

@@ -542,3 +542,75 @@ test.describe("سند صرف لمورد — المرحلة ٣", () => {
     await expect(page).toHaveURL(/\/parties\/s9\/pay$/);
   });
 });
+
+// المرحلة ٣ ب (0005 §٢٨٥): مقاصة بين الرصيدين، و«ادفع الآن» بمبلغ مستند الشراء
+const BOTH_CARD = {
+  id: "b7",
+  name: "خالد إبراهيم — تجريبي",
+  phone: "",
+  aliases: [],
+  note: "",
+  credit_limit_minor: "0",
+  is_customer: true,
+  is_supplier: true,
+  balance_minor: "30000",
+  supplier_owed_minor: "50000",
+  last_movement_at: "",
+  can_edit: true,
+  can_open_balance: false,
+  has_movements: true,
+  opening_balances: [],
+  potential_duplicates: [],
+};
+
+test.describe("مقاصة بين الرصيدين — المرحلة ٣ ب", () => {
+  test("المالك: الحدّ أصغر الرصيدين، المعاينة، ثم حركتان متقابلتان", async ({ page }) => {
+    await seed(page, { role: "owner" });
+    await page.route(/\/api\/parties\/b7$/, (route) => route.fulfill(json(200, BOTH_CARD)));
+    let posted: unknown = null;
+    await page.route(/\/api\/parties\/b7\/offset$/, (route) => {
+      posted = JSON.parse(route.request().postData() ?? "{}");
+      return route.fulfill(
+        json(201, { numbers: ["OFF-000001-C", "OFF-000001-S"], party: BOTH_CARD }),
+      );
+    });
+    await login(page, "/parties/b7/offset");
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toContainText("مقاصة بين الرصيدين — خالد إبراهيم — تجريبي");
+    await expect(root).toContainText("الحدّ الأقصى للمقاصة");
+    await page.getByLabel("مبلغ المقاصة").fill("400");
+    await page.getByLabel("السبب").fill("خصم دينه من مستحقاته");
+    await page.getByRole("button", { name: "سجّل المقاصة" }).click();
+    await expect(root).toHaveAttribute("data-state", "validation_error");
+    await expect(root).toContainText("أكبر من أصغر الرصيدين");
+    await page.getByLabel("مبلغ المقاصة").fill("200");
+    await expect(root).toContainText("100.00");
+    await expect(root).toContainText("300.00");
+    await page.getByRole("button", { name: "سجّل المقاصة" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    await expect(root).toContainText("OFF-000001-C");
+    expect(posted).toEqual({ amount_minor: "20000", reason: "خصم دينه من مستحقاته" });
+  });
+
+  test("غير المالك: 403 → المقاصة للمالك", async ({ page }) => {
+    await seed(page, { role: "owner" });
+    await page.route(/\/api\/parties\/b7$/, (route) => route.fulfill(json(200, BOTH_CARD)));
+    await page.route(/\/api\/parties\/b7\/offset$/, (route) =>
+      route.fulfill(json(403, { detail: "owner_required" })),
+    );
+    await login(page, "/parties/b7/offset");
+    await page.getByLabel("مبلغ المقاصة").fill("100");
+    await page.getByLabel("السبب").fill("سبب");
+    await page.getByRole("button", { name: "سجّل المقاصة" }).click();
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toHaveAttribute("data-state", "permission_denied");
+    await expect(root).toContainText("المقاصة للمالك");
+  });
+
+  test("«ادفع الآن» يملأ مبلغ المستند في سند الصرف", async ({ page }) => {
+    await seed(page, { role: "owner" });
+    await seedSupplier(page);
+    await login(page, "/parties/s9/pay?amount=37310000");
+    await expect(page.getByLabel("المبلغ المدفوع")).toHaveValue("373100.00");
+  });
+});

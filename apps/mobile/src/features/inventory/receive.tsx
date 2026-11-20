@@ -354,6 +354,9 @@ export function ReceiveScreen() {
                 {tx(T, "مورد جديد — يُضاف إلى «الموردون» عند الحفظ.")}
               </AppText>
             ) : null}
+            <AppText variant="note" muted>
+              {tx(T, "الاستلام لا يُنشئ ذمّة على المنشأة للمورد — للذمّة سجّل مستند شراء.")}
+            </AppText>
             {hints.length > 0 ? (
               <Wrap>
                 {hints.slice(0, 6).map((s) => (

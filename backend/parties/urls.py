@@ -8,6 +8,7 @@ from parties.views import (
     PartyDistinctView,
     PartyListView,
     PartyMergeView,
+    PartyOffsetView,
     PartyStatementView,
     ReceiptCorrectionView,
     ReceiptMatchView,
@@ -38,6 +39,7 @@ urlpatterns = [
     ),
     path("parties/exports/<str:token>", StatementDocumentView.as_view(), name="parties-export-doc"),
     path("parties/<uuid:party_id>/merge", PartyMergeView.as_view(), name="parties-merge"),
+    path("parties/<uuid:party_id>/offset", PartyOffsetView.as_view(), name="parties-offset"),
     path("parties/merges/<uuid:merge_id>/undo", MergeUndoView.as_view(), name="parties-merge-undo"),
     path(
         "parties/receipts/<uuid:receipt_id>/correct",

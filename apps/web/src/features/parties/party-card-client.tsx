@@ -421,11 +421,23 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                     </div>
                   ) : null}
                   {card.is_customer && card.is_supplier ? (
-                    <p className="acc-choice__note">
-                      <strong>لا مقاصة تلقائية.</strong> الرصيدان مستقلان في دفترين. إن اتفقتَ معه
-                      على خصم دينه من مستحقاته، سجّل ذلك بمستندَي سداد متقابلين بسبب واضح — لا يجري
-                      النظام المقاصة نيابة عنك.
-                    </p>
+                    <div className="pty-side">
+                      <p className="acc-choice__note">
+                        <strong>لا مقاصة تلقائية.</strong> الرصيدان مستقلان في دفترين. إن اتفقتَ معه
+                        على خصم دينه من مستحقاته، سجّل «مقاصة بين الرصيدين» بسبب واضح — لا يجري
+                        النظام المقاصة نيابة عنك.
+                      </p>
+                      {/* المرحلة ٣ ب من مراجعة الأطراف (0005 §٢٨٥؛ G-12) */}
+                      <Button
+                        variant="secondary"
+                        onClick={() => router.push(`/parties/${card.id}/offset`)}
+                        disabledReason={
+                          card.can_open_balance || card.can_edit ? undefined : "المقاصة للمالك"
+                        }
+                      >
+                        مقاصة بين الرصيدين
+                      </Button>
+                    </div>
                   ) : null}
                   <div className="cat-form__actions">
                     <Button
