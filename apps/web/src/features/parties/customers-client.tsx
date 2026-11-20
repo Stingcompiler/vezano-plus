@@ -6,10 +6,11 @@ import {
   readLocalParties,
   readPartiesMatchedAt,
   readPendingCreditByParty,
+  searchLocalParties,
   type ServerParty,
   storeParties,
 } from "@sting/sync-core";
-import { Button, formatMinor, Frame, Notice, Status, Table } from "@sting/ui-web";
+import { Button, formatMinor, Frame, Notice, Status, Table, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -21,7 +22,7 @@ import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { hhmm } from "@/features/home/format";
 import { DayLabel } from "@/features/pos/invoices-client";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
@@ -100,6 +101,7 @@ export function CustomersClient() {
   const [denied, setDenied] = useState(false);
   const [failed, setFailed] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [q, setQ] = useState("");
   const [sort, setSort] = useState<{ key: string; dir: "ascending" | "descending" }>({
     key: "due",
     dir: "descending",
@@ -153,13 +155,17 @@ export function CustomersClient() {
     .filter((p) => p.is_active !== false && p.is_customer !== false)
     .map((p) => toRow(p, pending.get(p.id)));
   const idleBefore = now.getTime() - IDLE_DAYS * 86_400_000;
-  let rows = rowsAll.filter((r) =>
-    filter === "due"
-      ? (r.dueMinor ?? 0n) > 0n
-      : filter === "idle"
-        ? !r.lastAt || new Date(r.lastAt).getTime() < idleBefore
-        : true,
-  );
+  // البحث بالبادئة في أطراف الجهاز (§٧.٥؛ مراجعة الأطراف 2026-11-20، المرحلة ٢ — G-16)
+  const hits = q.trim() ? new Set(searchLocalParties(local ?? [], q).map((p) => p.id)) : null;
+  let rows = rowsAll
+    .filter((r) => (hits ? hits.has(r.id) : true))
+    .filter((r) =>
+      filter === "due"
+        ? (r.dueMinor ?? 0n) > 0n
+        : filter === "idle"
+          ? !r.lastAt || new Date(r.lastAt).getTime() < idleBefore
+          : true,
+    );
   rows = [...rows].sort((a, b) => {
     const dir = sort.dir === "ascending" ? 1 : -1;
     if (sort.key === "last") return dir * a.lastAt.localeCompare(b.lastAt);
@@ -268,7 +274,7 @@ export function CustomersClient() {
   const open = (r: Row) => router.push(`/parties/${r.id}/statement`);
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide" data-screen="PTY-01" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
@@ -317,6 +323,14 @@ export function CustomersClient() {
                     </Button>
                   </div>
                 </div>
+                {rowsAll.length > 0 ? (
+                  <TextField
+                    label="العملاء"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    inputMode="search"
+                  />
+                ) : null}
 
                 {state === "loading" ? (
                   <Notice kind="info" title="جلب الأطراف">

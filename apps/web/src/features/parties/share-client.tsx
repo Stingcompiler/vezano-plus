@@ -21,7 +21,7 @@ import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { dayMonth, hhmm } from "@/features/home/format";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { api, apiBaseUrl } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { docTitle } from "@/lib/print/doc-title";
@@ -225,7 +225,7 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
   const print = () => printDocument();
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide" data-screen="PTY-08" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

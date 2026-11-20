@@ -17,7 +17,7 @@ import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { DayLabel } from "@/features/pos/invoices-client";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { parseAmount } from "@/features/pos/use-sale";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
@@ -104,37 +104,41 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
       const storage = getStorage();
       const pend = await readPendingCreditByParty(storage);
       setPending(pend.get(partyId)?.pendingMinor ?? 0n);
+      // بلا خادم (خطأ أو انقطاع): البطاقة من الإسقاط المحلي بلا تعديل — الطرف المُنشأ للتوّ بلا اتصال
+      // («مورد جديد»، الإنشاء السريع) كان يُعاد إلى القائمة عند انقطاع الشبكة (0005 §٢٨٣)
+      const fromLocal = async () => {
+        const local = (await readLocalParties(storage)).find((p) => p.id === partyId);
+        setCard(
+          local
+            ? {
+                ...(local as unknown as Card),
+                aliases: (local as unknown as { aliases?: string[] }).aliases ?? [],
+                note: (local as unknown as { note?: string }).note ?? "",
+                supplier_owed_minor: "",
+                last_movement_at: local.last_sale_at,
+                can_edit: false,
+                can_open_balance: false,
+                has_movements: false,
+                opening_balances: [],
+                potential_duplicates: [],
+              }
+            : null,
+        );
+      };
       try {
         const { data, response } = await api().GET("/api/parties/{party_id}", {
           params: { path: { party_id: partyId } },
         });
         const body = data as unknown as Card | undefined;
         if (!response.ok || !body) {
-          // بلا خادم: البطاقة من الإسقاط المحلي بلا تعديل
-          const local = (await readLocalParties(storage)).find((p) => p.id === partyId);
-          setCard(
-            local
-              ? {
-                  ...(local as unknown as Card),
-                  aliases: (local as unknown as { aliases?: string[] }).aliases ?? [],
-                  note: (local as unknown as { note?: string }).note ?? "",
-                  supplier_owed_minor: "",
-                  last_movement_at: local.last_sale_at,
-                  can_edit: false,
-                  can_open_balance: false,
-                  has_movements: false,
-                  opening_balances: [],
-                  potential_duplicates: [],
-                }
-              : null,
-          );
+          await fromLocal();
           return;
         }
         setCard(body);
         setForm(formOf(body));
         await storeParties(storage, [body as never], new Date().toISOString());
       } catch {
-        setCard(null);
+        await fromLocal();
       }
     })();
   }, [partyId, router]);
@@ -229,9 +233,15 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
   };
 
   const due = card ? BigInt(card.balance_minor || "0") + pending : 0n;
+  // المورد وحده يُعرض في قسمه مع المشتريات (مراجعة الأطراف 2026-11-20، المرحلة ٢)
+  const supplierOnly = Boolean(card && !card.is_customer && card.is_supplier);
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame
+      title={supplierOnly ? "الموردون" : "العملاء والذمم"}
+      nav={<AppNav currentId={supplierOnly ? "suppliers" : "parties"} />}
+      footer={null}
+    >
       <div className="pos pos--wide pos--cols" data-screen="PTY-03" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

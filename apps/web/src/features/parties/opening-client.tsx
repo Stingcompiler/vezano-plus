@@ -11,7 +11,7 @@ import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { parseAmount } from "@/features/pos/use-sale";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
@@ -136,7 +136,7 @@ export function OpeningClient({ partyId }: { partyId: string }) {
   const sideLabel = side === "customer_due" ? "عليها لنا" : "لها علينا";
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide pos--cols" data-screen="PTY-04" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

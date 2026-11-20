@@ -21,7 +21,7 @@ import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { hhmm } from "@/features/home/format";
 import { DayLabel } from "@/features/pos/invoices-client";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
@@ -424,7 +424,7 @@ export function StatementClient({ partyId }: { partyId: string }) {
   };
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide" data-screen="PTY-05" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

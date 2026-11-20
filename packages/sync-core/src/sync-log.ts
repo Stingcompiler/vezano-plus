@@ -139,7 +139,7 @@ export function describeOperation(op: StoredOperation): OperationDescription {
       const name = str(h["party_name"]);
       const isRefund = op.kind === "refund" || h["kind"] === "refund";
       return {
-        title: isRefund ? "سند صرف" : "سند قبض",
+        title: isRefund ? "سند ردّ مبلغ" : "سند قبض",
         number: str(h["receipt_number"]),
         effect: isRefund
           ? `صرف ${minor(h["amount_minor"])} — يخرج من الصندوق${name ? ` إلى ${name}` : ""}`

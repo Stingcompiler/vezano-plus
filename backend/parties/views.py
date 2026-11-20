@@ -33,11 +33,14 @@ def _tenant(auth: Any) -> uuid.UUID | None:
 class PartiesView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    class CreateSerializer(serializers.Serializer[dict[str, Any]]):
+    class PartyCreateSerializer(serializers.Serializer[dict[str, Any]]):
         id = serializers.UUIDField(required=False)
         name = serializers.CharField(allow_blank=False, max_length=200, trim_whitespace=False)
         phone = serializers.CharField(allow_blank=True, required=False, default="", max_length=32)
         distinct_from_party_id = serializers.UUIDField(required=False, allow_null=True)
+        role = serializers.ChoiceField(
+            choices=("customer", "supplier"), required=False, default="customer"
+        )
 
     @extend_schema(
         parameters=[OpenApiParameter("q", str, OpenApiParameter.QUERY, required=False)],
@@ -61,13 +64,15 @@ class PartiesView(APIView):
                     row["balance_minor"] = ""
             return Response({"parties": parties})
 
-    @extend_schema(request=CreateSerializer, responses={201: None, 400: None, 403: None, 409: None})
+    @extend_schema(
+        request=PartyCreateSerializer, responses={201: None, 400: None, 403: None, 409: None}
+    )
     def post(self, request: Request) -> Response:
         tid = _tenant(request.auth)
         auth = request.auth
         if tid is None or not isinstance(auth, AuthContext):
             return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
-        s = self.CreateSerializer(data=request.data)
+        s = self.PartyCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         d = s.validated_data
         name = str(d["name"])
@@ -96,6 +101,7 @@ class PartiesView(APIView):
                 phone=str(d.get("phone", "")),
                 created_by=auth.user,
                 distinct_from=distinct,
+                role=str(d.get("role", "customer")),
             )
             return Response(services.party_payload(party), status=status.HTTP_201_CREATED)
 

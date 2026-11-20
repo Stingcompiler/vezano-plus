@@ -11,7 +11,7 @@ import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { getStorage } from "@/lib/storage";
@@ -189,7 +189,7 @@ export function MergeClient({ sourceId, targetId }: { sourceId: string; targetId
   const tgt = preview?.target;
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide pos--cols" data-screen="PTY-07" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">

@@ -97,6 +97,8 @@ export interface CreatePartyInput {
   readonly phone: string;
   /** «إنشاء منفصل مع تمييز»: قرار هوية صريح بأن هذا ليس ذاك. */
   readonly distinctFromPartyId?: string | undefined;
+  /** الصفة عند الإنشاء: عميل (الافتراضي) أو مورد («مورد جديد»، المرحلة ٢ من مراجعة الأطراف). */
+  readonly role?: "customer" | "supplier" | undefined;
   readonly occurredAt: string;
 }
 
@@ -116,6 +118,8 @@ export function partyCreateDraft(i: CreatePartyInput): OperationDraft {
           name: i.name.trim(),
           phone: i.phone.trim(),
           ...(i.distinctFromPartyId ? { distinct_from_party_id: i.distinctFromPartyId } : {}),
+          // بلا صفة = عميل كما كان؛ الحمولة القديمة لا تتغيّر
+          ...(i.role === "supplier" ? { role: "supplier" } : {}),
           occurred_at: i.occurredAt,
         },
       },
@@ -135,8 +139,8 @@ export async function createPartyLocally(
       name_normalized: normalizeSearch(input.name.trim()),
       phone: input.phone.trim(),
       credit_limit_minor: "0",
-      is_customer: true,
-      is_supplier: false,
+      is_customer: input.role !== "supplier",
+      is_supplier: input.role === "supplier",
       distinct_from_id: input.distinctFromPartyId ?? "",
       balance_minor: "0",
       last_sale_at: "",

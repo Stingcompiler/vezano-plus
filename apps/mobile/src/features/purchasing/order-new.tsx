@@ -352,6 +352,12 @@ export function OrderNewScreen() {
               setAttempted(false);
             }}
           />
+          {/* المورد غير الموجود يُضاف من «مورد جديد» (مراجعة الأطراف 2026-11-20، المرحلة ٢) */}
+          <Button
+            label={tx(T, "مورد جديد")}
+            variant="quiet"
+            onPress={() => router.push("/parties/new-supplier")}
+          />
           {drafts.map((d) => {
             const it = itemOf(d.item_id);
             const idx = lineIndex(d.key);

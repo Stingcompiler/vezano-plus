@@ -5862,6 +5862,17 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        PartyCreate: {
+            /** Format: uuid */
+            id?: string;
+            name: string;
+            /** @default  */
+            phone: string;
+            /** Format: uuid */
+            distinct_from_party_id?: string | null;
+            /** @default customer */
+            role: components["schemas"]["RoleEnum"];
+        };
         PatchedItemPatch: {
             name?: string;
             base_unit_id?: string;
@@ -6020,6 +6031,12 @@ export interface components {
             /** @default false */
             after_upload: boolean;
         };
+        /**
+         * @description * `customer` - customer
+         *     * `supplier` - supplier
+         * @enum {string}
+         */
+        RoleEnum: "customer" | "supplier";
         Scope: {
             group: string;
             total: number;
@@ -25822,7 +25839,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Create"];
+                "application/json": components["schemas"]["PartyCreate"];
             };
         };
         responses: {
