@@ -329,12 +329,15 @@ def _validate_party_created(p: Payload) -> None:
     _require(p, "party_id", "name", "occurred_at")
     if not str(p["name"]).strip():
         raise KindError("party name must not be blank")
+    # «مورد جديد» (مراجعة الأطراف 2026-11-20، المرحلة ٢): الصفة عند الإنشاء؛ غيابها = عميل كما كان
+    if p.get("role", "customer") not in ("customer", "supplier"):
+        raise KindError("role must be customer|supplier")
 
 
 PARTY_CREATED = EntitySpec(
     entity="parties.PartyCreated",
     schema_version=1,
-    fields=("party_id", "name", "phone", "distinct_from_party_id", "occurred_at"),
+    fields=("party_id", "name", "phone", "distinct_from_party_id", "role", "occurred_at"),
     required=("party_id", "name", "occurred_at"),
     validate=_validate_party_created,
 )

@@ -35,6 +35,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { id: "catalog", label: "الكتالوج", href: "/catalog", group: NAV_GROUPS.stock },
   { id: "inventory", label: "المخزون", href: "/inventory", group: NAV_GROUPS.stock },
   { id: "purchasing", label: "أوامر الشراء", href: "/purchasing/orders", group: NAV_GROUPS.stock },
+  // مراجعة الأطراف 2026-11-20 (المرحلة ٢): المورد مع المشتريات لا تحت «العملاء والذمم» في البيع
+  { id: "suppliers", label: "الموردون", href: "/parties/suppliers", group: NAV_GROUPS.stock },
   {
     id: "cost-margin",
     label: "التكلفة والهامش",

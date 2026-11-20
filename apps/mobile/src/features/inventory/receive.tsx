@@ -1,6 +1,7 @@
 import { formatMinor, formatQty, pushPending } from "@sting/app-core";
 import {
   baseQtyMilli,
+  createPartyLocally,
   type LocalGoodsReceipt,
   type LocalItem,
   readLocalItems,
@@ -79,6 +80,7 @@ export function ReceiveScreen() {
   const [saved, setSaved] = useState<LocalGoodsReceipt | null>(null);
   const [missed, setMissed] = useState(false);
   const ids = useRef<{ operationId: string; receiptId: string } | null>(null);
+  const newSupplierIds = useRef<{ operationId: string; partyId: string } | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -166,7 +168,22 @@ export function ReceiveScreen() {
     setPhase("saving");
     ids.current ??= { operationId: newId(), receiptId: newId() };
     const storage = await getStorage();
-    const match = suppliers.find((s) => s.name === supplier.trim());
+    let match = suppliers.find((s) => s.name === supplier.trim());
+    // اسم مورد جديد يُنشئ المورد محلياً قبل الاستلام (تبعية العملية) — مراجعة الأطراف 2026-11-20،
+    // المرحلة ٢ (0005 §٢٨٣)
+    if (!match) {
+      newSupplierIds.current ??= { operationId: newId(), partyId: newId() };
+      const { party } = await createPartyLocally(storage, {
+        ...newSupplierIds.current,
+        name: supplier,
+        phone: "",
+        role: "supplier",
+        occurredAt: new Date().toISOString(),
+      });
+      const created = { id: party.id, name: party.name, op: newSupplierIds.current.operationId };
+      setSuppliers((prev) => [...prev, created]);
+      match = created;
+    }
     const { receipt } = await saveGoodsReceiptLocally(storage, {
       operationId: ids.current.operationId,
       receiptId: ids.current.receiptId,
@@ -211,6 +228,7 @@ export function ReceiveScreen() {
 
   const reset = () => {
     ids.current = null;
+    newSupplierIds.current = null;
     setSaved(null);
     setPhase("idle");
     setPush("none");
@@ -324,10 +342,18 @@ export function ReceiveScreen() {
             <TextField
               label={tx(T, "المورد")}
               value={supplier}
-              onChangeText={setSupplier}
+              onChangeText={(v) => {
+                setSupplier(v);
+                newSupplierIds.current = null;
+              }}
               error={attempted ? errors["supplier"] : undefined}
               required
             />
+            {supplier.trim() && !suppliers.some((s) => s.name === supplier.trim()) ? (
+              <AppText variant="note" muted>
+                {tx(T, "مورد جديد — يُضاف إلى «الموردون» عند الحفظ.")}
+              </AppText>
+            ) : null}
             {hints.length > 0 ? (
               <Wrap>
                 {hints.slice(0, 6).map((s) => (

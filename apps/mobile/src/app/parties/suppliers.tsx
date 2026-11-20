@@ -1,5 +1,11 @@
 import { formatMinorShort } from "@sting/app-core";
-import { type LocalParty, maskPhone, readLocalParties, storeParties } from "@sting/sync-core";
+import {
+  type LocalParty,
+  maskPhone,
+  readLocalParties,
+  searchLocalParties,
+  storeParties,
+} from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
   AppText,
@@ -8,6 +14,7 @@ import {
   Screen,
   SPACE,
   StateView,
+  TextField,
   useColors,
 } from "@sting/ui-native";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -41,6 +48,7 @@ export default function Suppliers() {
   const [local, setLocal] = useState<readonly LocalParty[] | null>(null);
   const [data, setData] = useState<ListData | null>(null);
   const [failed, setFailed] = useState(false);
+  const [q, setQ] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -75,7 +83,7 @@ export default function Suppliers() {
   );
 
   const canSee = data?.can_see_balances ?? false;
-  const rows: Row[] = (local ?? [])
+  const rowsAll: Row[] = (local ?? [])
     .filter((p) => p.is_active !== false && p.is_supplier)
     .map((p) => {
       const sp = p as LocalParty & { supplier_owed_minor?: string; market_linked?: boolean };
@@ -88,13 +96,16 @@ export default function Suppliers() {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  // البحث بالبادئة في أطراف الجهاز (مراجعة الأطراف 2026-11-20، المرحلة ٢)
+  const hits = q.trim() ? new Set(searchLocalParties(local ?? [], q).map((p) => p.id)) : null;
+  const rows = hits ? rowsAll.filter((r) => hits.has(r.id)) : rowsAll;
 
   const state: State =
     local === null || (data === null && !failed)
       ? "loading"
       : data && !data.can_see_balances
         ? "permission_denied"
-        : rows.length === 0
+        : rowsAll.length === 0
           ? "empty"
           : "ready";
 
@@ -103,7 +114,7 @@ export default function Suppliers() {
   const open = (r: Row) => router.push({ pathname: "/parties/[id]", params: { id: r.id } });
 
   return (
-    <Screen screenId={T} state={state} title={tx(T, "العملاء والذمم")}>
+    <Screen screenId={T} state={state} title={tx(T, "الموردون")}>
       <AppText variant="title" style={{ marginBottom: SPACE["2"] }}>
         {tx(T, "الموردون")}
       </AppText>
@@ -117,12 +128,16 @@ export default function Suppliers() {
         )}
       </AppText>
       <Stack>
+        <Button label={tx(T, "مورد جديد")} onPress={() => router.push("/parties/new-supplier")} />
         <Button
           label={tx(T, "قائمة العملاء")}
           variant="quiet"
           onPress={() => router.push("/parties")}
         />
       </Stack>
+      {rowsAll.length > 0 ? (
+        <TextField label={tx(T, "الموردون")} value={q} onChangeText={setQ} autoCorrect={false} />
+      ) : null}
 
       {state === "loading" ? <StateView state="loading" title={tx(T, "جلب الموردين")} /> : null}
       {state === "empty" ? (
@@ -130,10 +145,7 @@ export default function Suppliers() {
           <AppText variant="secondary">{tx(T, "الشراء نقدي بلا حساب مفتوح.")}</AppText>
           <AppText variant="note">
             {tx(T, "المسار")}{" "}
-            {tx(
-              T,
-              "· أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
-            )}
+            {tx(T, "· أضف مورداً من «مورد جديد»، أو اكتب اسمه الجديد عند استلام البضاعة.")}
           </AppText>
         </StateView>
       ) : null}

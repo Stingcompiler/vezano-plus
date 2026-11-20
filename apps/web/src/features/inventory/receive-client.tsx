@@ -2,6 +2,7 @@
 
 import {
   baseQtyMilli,
+  createPartyLocally,
   type LocalGoodsReceipt,
   type LocalItem,
   readLocalItems,
@@ -78,6 +79,7 @@ export function ReceiveClient() {
   const [push, setPush] = useState<"none" | "synced" | "pending" | "failed">("none");
   const [saved, setSaved] = useState<LocalGoodsReceipt | null>(null);
   const ids = useRef<{ operationId: string; receiptId: string } | null>(null);
+  const newSupplierIds = useRef<{ operationId: string; partyId: string } | null>(null);
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -152,7 +154,24 @@ export function ReceiveClient() {
     setPhase("saving");
     if (!ids.current)
       ids.current = { operationId: crypto.randomUUID(), receiptId: crypto.randomUUID() };
-    const match = suppliers.find((s) => s.name === supplier.trim());
+    let match = suppliers.find((s) => s.name === supplier.trim());
+    // اسم مورد جديد يُنشئ المورد محلياً قبل الاستلام وفي العملية نفسها تبعيةً — كان يُحفظ نصّاً بلا
+    // طرف فلا يظهر في «الموردون» (مراجعة الأطراف 2026-11-20، المرحلة ٢؛ 0005 §٢٨٣)
+    if (!match) {
+      if (!newSupplierIds.current)
+        newSupplierIds.current = { operationId: crypto.randomUUID(), partyId: crypto.randomUUID() };
+      const { party } = await createPartyLocally(getStorage(), {
+        ...newSupplierIds.current,
+        name: supplier,
+        phone: "",
+        role: "supplier",
+        occurredAt: new Date().toISOString(),
+      });
+      const created = { id: party.id, name: party.name, op: newSupplierIds.current.operationId };
+      // الاستلام التالي باسمه نفسه يجده في القائمة فلا يُنشئ مورداً ثانياً
+      setSuppliers((prev) => [...prev, created]);
+      match = created;
+    }
     const { receipt } = await saveGoodsReceiptLocally(getStorage(), {
       operationId: ids.current.operationId,
       receiptId: ids.current.receiptId,
@@ -209,6 +228,7 @@ export function ReceiveClient() {
 
   const reset = () => {
     ids.current = null;
+    newSupplierIds.current = null;
     setSaved(null);
     setPhase("idle");
     setPush("none");
@@ -315,7 +335,10 @@ export function ReceiveClient() {
                 <TextField
                   label="المورد"
                   value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
+                  onChange={(e) => {
+                    setSupplier(e.target.value);
+                    newSupplierIds.current = null;
+                  }}
                   list="inv-suppliers"
                   error={attempted ? errors["supplier"] : undefined}
                   required
@@ -325,6 +348,9 @@ export function ReceiveClient() {
                     <option key={s.id} value={s.name} />
                   ))}
                 </datalist>
+                {supplier.trim() && !suppliers.some((s) => s.name === supplier.trim()) ? (
+                  <p className="acc-choice__note">مورد جديد — يُضاف إلى «الموردون» عند الحفظ.</p>
+                ) : null}
                 <TextField
                   label="مرجع المستند"
                   value={reference}

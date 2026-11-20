@@ -4,10 +4,11 @@ import {
   type LocalParty,
   maskPhone,
   readLocalParties,
+  searchLocalParties,
   type ServerParty,
   storeParties,
 } from "@sting/sync-core";
-import { Button, formatMinor, Frame, Notice, Status, Table } from "@sting/ui-web";
+import { Button, formatMinor, Frame, Notice, Status, Table, TextField } from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,7 +17,7 @@ import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
 import "@/features/parties/parties.css";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { getStorage } from "@/lib/storage";
@@ -51,6 +52,7 @@ export function SuppliersClient() {
   const [local, setLocal] = useState<readonly LocalParty[] | null>(null);
   const [data, setData] = useState<ListData | null>(null);
   const [failed, setFailed] = useState(false);
+  const [q, setQ] = useState("");
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -86,7 +88,9 @@ export function SuppliersClient() {
   }, [router]);
 
   const canSee = data?.can_see_balances ?? false;
-  const rows: Row[] = (local ?? [])
+  // البحث بالبادئة في أطراف الجهاز (§٧.٥؛ مراجعة الأطراف 2026-11-20، المرحلة ٢)
+  const hits = q.trim() ? new Set(searchLocalParties(local ?? [], q).map((p) => p.id)) : null;
+  const rowsAll: Row[] = (local ?? [])
     .filter((p) => p.is_active !== false && p.is_supplier)
     .map((p) => {
       const sp = p as LocalParty & { supplier_owed_minor?: string; market_linked?: boolean };
@@ -99,13 +103,14 @@ export function SuppliersClient() {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  const rows = hits ? rowsAll.filter((r) => hits.has(r.id)) : rowsAll;
 
   const state: State =
     local === null || (data === null && !failed)
       ? "loading"
       : data && !data.can_see_balances
         ? "permission_denied"
-        : rows.length === 0
+        : rowsAll.length === 0
           ? "empty"
           : "ready";
 
@@ -153,7 +158,7 @@ export function SuppliersClient() {
   const open = (r: Row) => router.push(`/parties/${r.id}`);
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="الموردون" nav={<AppNav currentId="suppliers" />} footer={null}>
       <div className="pos pos--wide" data-screen="PTY-02" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
@@ -168,21 +173,28 @@ export function SuppliersClient() {
               وتحققاً منفصلاً في «تهيئة البائع».
             </p>
             <div className="pty-actions">
+              <Button onClick={() => router.push("/parties/new-supplier")}>مورد جديد</Button>
               <Button variant="quiet" onClick={() => router.push("/parties")}>
                 قائمة العملاء
               </Button>
             </div>
+            {rowsAll.length > 0 ? (
+              <TextField
+                label="الموردون"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                inputMode="search"
+              />
+            ) : null}
 
             {state === "loading" ? <Notice kind="info" title="جلب الموردين" /> : null}
             {state === "empty" ? (
               <Notice kind="empty" title="لا موردين">
                 <p className="acc-lead">الشراء نقدي بلا حساب مفتوح.</p>
-                {/* كان «يُنشأ المورد عند أول استلام بضاعة أو أمر شراء» ولا شيء يُنشئه هناك: الاستلام
-                    يحفظ الاسم نصّاً والأمر يختار من الموردين القائمين (مراجعة الأطراف 2026-11-20، G-07)
-                    — المسار الفعلي حتى يُبنى «مورد جديد» (0005 §١٦٩: الفراغ يتبع الواقع) */}
+                {/* المسار الفعلي (0005 §١٦٩ و§٢٨٣): «مورد جديد»، أو اسم جديد عند الاستلام يُنشئ المورد */}
                 <p className="acc-choice__note">
-                  <strong>المسار</strong> · أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح
-                  «تعديل البطاقة» وفعّل «مورد».
+                  <strong>المسار</strong> · أضف مورداً من «مورد جديد»، أو اكتب اسمه الجديد عند
+                  استلام البضاعة.
                 </p>
               </Notice>
             ) : null}

@@ -360,6 +360,12 @@ export function OrderNewClient() {
                   }}
                   options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
                 />
+                {/* المورد غير الموجود يُضاف من «مورد جديد» (مراجعة الأطراف 2026-11-20، المرحلة ٢) */}
+                <div className="cat-form__actions">
+                  <Button variant="quiet" onClick={() => router.push("/parties/new-supplier")}>
+                    مورد جديد
+                  </Button>
+                </div>
                 <table className="pur-lines">
                   <thead>
                     <tr>

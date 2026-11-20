@@ -63,5 +63,23 @@ describe("الأطراف محلياً (POS-04؛ §٧.٥)", () => {
       name: "مطعم الروضة",
       distinct_from_party_id: "p1",
     });
+    expect(ops[0]!.members[0]!.payload).not.toHaveProperty("role");
+    expect(a.party.is_customer && !a.party.is_supplier).toBe(true);
+  });
+
+  it("«مورد جديد»: الصفة في الحدث والإسقاط — مورد لا عميل", async () => {
+    const s = new MemoryStorage();
+    const { party } = await createPartyLocally(s, {
+      operationId: "op2",
+      partyId: "s1",
+      name: "مخبز النيل",
+      phone: "",
+      role: "supplier",
+      occurredAt: "2026-11-20T10:00:00Z",
+    });
+    expect(party.is_supplier).toBe(true);
+    expect(party.is_customer).toBe(false);
+    const ops = await s.read((tx) => tx.listOperationsByState("local"));
+    expect(ops[0]!.members[0]!.payload).toMatchObject({ party_id: "s1", role: "supplier" });
   });
 });

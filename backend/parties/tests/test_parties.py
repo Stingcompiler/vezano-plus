@@ -101,6 +101,15 @@ def test_create_by_name_search_by_prefix_and_similarity_warns(ctx: dict[str, Any
     # عزل: المستأجر الآخر لا يرى شيئاً
     with tenant_context(ctx["other"].id):
         assert Party.objects.count() == 0
+    # «مورد جديد» أونلاين: الصفة عند الإنشاء (مراجعة الأطراف 2026-11-20، المرحلة ٢)
+    r = client.post(
+        "/api/parties",
+        {"name": "مطاحن سيقا", "role": "supplier"},
+        content_type="application/json",
+        **h,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 201
+    assert r.json()["is_supplier"] is True and r.json()["is_customer"] is False
     r = client.post("/api/parties", {"name": "   "}, content_type="application/json", **h)  # type: ignore[arg-type]
     assert r.status_code == 400 and r.json()["errors"][0]["field"] == "name"
     assert Client().get("/api/parties").status_code == 401
@@ -162,6 +171,23 @@ def test_quick_create_offline_arrives_as_event_and_is_idempotent(ctx: dict[str, 
     member["payload"] = {**member["payload"], "party_id": member["id"], "name": "  "}
     bad = dict(op, operation_id=str(uuid.uuid4()), members=[member])
     assert do(bad) == ["rejected"]
+    with tenant_context(ctx["tenant"].id):
+        assert p.is_customer and not p.is_supplier  # بلا صفة = عميل كما كان
+    # «مورد جديد» (مراجعة الأطراف 2026-11-20، المرحلة ٢): الصفة تصل مع الحدث
+    sid = str(uuid.uuid4())
+    sup_member = {
+        **member,
+        "id": sid,
+        "payload": {**member["payload"], "party_id": sid, "name": "مخبز النيل", "role": "supplier"},
+    }
+    assert do(dict(op, operation_id=str(uuid.uuid4()), members=[sup_member])) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        sp = Party.objects.get(id=sid)
+        assert sp.is_supplier and not sp.is_customer
+    odd_id = str(uuid.uuid4())
+    odd = {**sup_member, "id": odd_id, "payload": {**sup_member["payload"], "party_id": odd_id}}
+    odd["payload"]["role"] = "partner"
+    assert do(dict(op, operation_id=str(uuid.uuid4()), members=[odd])) == ["rejected"]
 
 
 def test_lists_customers_for_finance_only_and_suppliers_names_for_all(ctx: dict[str, Any]) -> None:

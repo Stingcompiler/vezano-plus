@@ -431,10 +431,10 @@ test.describe("PTY-02", () => {
       state: "empty",
       texts: fromFrame("PTY-02", "empty", ["لا موردين", "الشراء نقدي بلا حساب مفتوح.", "المسار"]),
     });
-    // لا شيء يُنشئ المورد عند الاستلام أو الأمر — المسار الفعلي (مراجعة الأطراف 2026-11-20، G-07)
+    // المسار الفعلي: «مورد جديد» أو اسم جديد عند الاستلام (مراجعة الأطراف 2026-11-20، §٢٨٢–§٢٨٣)
     const root = page.locator('[data-screen="PTY-02"]');
     await expect(root).toContainText(
-      "أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
+      "أضف مورداً من «مورد جديد»، أو اكتب اسمه الجديد عند استلام البضاعة.",
     );
     await expect(root).not.toContainText("يُنشأ المورد عند أول استلام بضاعة");
   });
@@ -460,5 +460,61 @@ test.describe("PTY-02", () => {
       ]),
     });
     await expect(page.locator('[data-screen="PTY-02"]')).not.toContainText("4,200.00");
+  });
+});
+
+// مراجعة الأطراف 2026-11-20 — المرحلة ٢ (0005 §٢٨٣): مدخلان منفصلان، «مورد جديد»، والبحث
+test.describe("الأطراف — المرحلة ٢", () => {
+  test("PTY-01: البحث بالبادئة يضيّق القائمة", async ({ page }) => {
+    await seed(page, { localParties: CUSTOMERS });
+    await listRoute(page, listBody("customers", CUSTOMERS));
+    await login(page, "/parties");
+    const root = page.locator('[data-screen="PTY-01"]');
+    await expect(root).toContainText("أحمد الطيب — تجريبي");
+    await page.getByRole("textbox", { name: "العملاء" }).fill("فاطمة");
+    await expect(root).toContainText("فاطمة حسن — تجريبي");
+    await expect(root).not.toContainText("أحمد الطيب — تجريبي");
+  });
+
+  test("PTY-02 → «مورد جديد»: الإنشاء بصفة مورد، والتشابه يُسأل عنه ولا يُمنع", async ({
+    page,
+  }) => {
+    const suppliers = [
+      party("s1", "مخزن البركة — تجريبي", "0155000200", "0", "0", "", {
+        is_customer: false,
+        is_supplier: true,
+      }),
+    ];
+    await seed(page, { localParties: suppliers });
+    await listRoute(page, listBody("suppliers", suppliers));
+    await login(page, "/parties/suppliers");
+    // القسم مع المشتريات: عنوانه «الموردون» وبنده في «المخزون والمشتريات»
+    await expect(page.locator("h1")).toContainText("الموردون");
+    await page.getByRole("button", { name: "مورد جديد" }).click();
+    await expect(page).toHaveURL(/\/parties\/new-supplier$/);
+    const root = page.locator('[data-screen="PTY-03"]');
+    await page.getByLabel("الاسم").fill("مخزن البركة — تجريبي");
+    await page.getByRole("button", { name: /^أنشئ:/ }).click();
+    await expect(root).toHaveAttribute("data-state", "validation_error");
+    await expect(root).toContainText("يوجد طرف بنفس الاسم");
+    await page.getByLabel("الاسم").fill("مخبز النيل");
+    await expect(root).toHaveAttribute("data-state", "ready");
+    // الطرف لم يصل الخادم بعد: البطاقة من نسخة الجهاز ولا ترتدّ إلى القائمة
+    await page.route(/\/api\/parties\/[0-9a-f-]{36}$/, (route) => route.abort());
+    await page.getByRole("button", { name: /^أنشئ:/ }).click();
+    await expect(page).toHaveURL(/\/parties\/[0-9a-f-]{36}$/);
+    await expect(page.locator('[data-screen="PTY-03"]')).toContainText("مخبز النيل");
+    await expect(page).toHaveURL(/\/parties\/[0-9a-f-]{36}$/);
+    const op = await page.evaluate(async () => {
+      const req = indexedDB.open("sting-bootstrap");
+      const db = await new Promise<IDBDatabase>((res) => (req.onsuccess = () => res(req.result)));
+      const all = await new Promise<{ kind: string; members: { payload: unknown }[] }[]>((res) => {
+        const r = db.transaction("operations").objectStore("operations").getAll();
+        r.onsuccess = () => res(r.result as { kind: string; members: { payload: unknown }[] }[]);
+      });
+      db.close();
+      return all.find((o) => o.kind === "party_create")?.members[0]?.payload;
+    });
+    expect(op).toMatchObject({ name: "مخبز النيل", role: "supplier" });
   });
 });

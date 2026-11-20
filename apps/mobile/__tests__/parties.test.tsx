@@ -192,10 +192,7 @@ describe("M3 — الأطراف (PTY-01 … PTY-09)", () => {
     expect(await screen.findByText(tx("PTY-02", "لا موردين"))).toBeTruthy();
     expect(
       screen.getByText(
-        tx(
-          "PTY-02",
-          "· أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
-        ),
+        tx("PTY-02", "· أضف مورداً من «مورد جديد»، أو اكتب اسمه الجديد عند استلام البضاعة."),
         { exact: false },
       ),
     ).toBeTruthy();

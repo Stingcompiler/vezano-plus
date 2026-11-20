@@ -35,7 +35,7 @@ import "@/features/shifts/shifts.css";
 import "@/features/parties/parties.css";
 import { hhmm } from "@/features/home/format";
 import { readHomeCache } from "@/features/home/home-cache";
-import { PosNav } from "@/features/pos/pos-nav";
+import { AppNav } from "@/features/home/app-nav";
 import { parseAmount, today } from "@/features/pos/use-sale";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { useApp } from "@/lib/app-context";
@@ -203,7 +203,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
     kind === "receipt" ? (method === "cash" ? "— سداد نقدي" : "— تحويل غير مطابق") : "— ردّ مبلغ";
 
   return (
-    <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
+    <Frame title="العملاء والذمم" nav={<AppNav currentId="parties" />} footer={null}>
       <div className="pos pos--wide pos--cols" data-screen="PTY-06" data-state={state}>
         <div className="cat-table pos-card">
           <div className="cat-head">
@@ -455,7 +455,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                   {/* الورقة سند وحده: الطرف والمبلغ والوسيلة والرصيد بعده — لا رسائل الشاشة */}
                   <PrintDoc
                     title={docTitle(
-                      saved.kind === "receipt" ? "سند قبض" : "سند صرف",
+                      saved.kind === "receipt" ? "سند قبض" : "سند ردّ مبلغ",
                       saved.receipt_number,
                       shop,
                     )}
@@ -463,7 +463,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                   >
                     <Receipt
                       shopName={shop || "—"}
-                      title={saved.kind === "receipt" ? "سند قبض" : "سند صرف"}
+                      title={saved.kind === "receipt" ? "سند قبض" : "سند ردّ مبلغ"}
                       number={saved.receipt_number}
                       dateLabel={`${saved.business_date} ${hhmm(saved.occurred_at)}`}
                       lines={[

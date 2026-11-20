@@ -120,13 +120,19 @@ def create_party(
     phone: str,
     created_by: User | None,
     distinct_from: Party | None,
+    role: str = "customer",
 ) -> Party:
+    """الإنشاء بالاسم فقط وبصفة واحدة: عميل (الافتراضي) أو مورد («مورد جديد»)؛ الصفة الثانية من
+    تعديل البطاقة."""
+    supplier = role == "supplier"
     with transaction.atomic():
         party: Party = Party.objects.create(
             tenant_id=require_tenant(),
             **({"id": party_id} if party_id else {}),
             name=name.strip(),
             phone=phone.strip(),
+            is_customer=not supplier,
+            is_supplier=supplier,
             created_by_user_id=created_by.id if created_by else None,
             distinct_from=distinct_from,
         )
@@ -149,11 +155,14 @@ def apply_party_created(
     distinct = (
         Party.unscoped.filter(tenant_id=tenant_id, id=distinct_id).first() if distinct_id else None
     )
+    supplier = payload.get("role") == "supplier"
     Party.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
         name=str(payload["name"]).strip(),
         phone=str(payload.get("phone", "")).strip(),
+        is_customer=not supplier,
+        is_supplier=supplier,
         created_by_user_id=actor_user_id,
         distinct_from=distinct,
     )

@@ -7477,7 +7477,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Create"
+                "$ref": "#/components/schemas/PartyCreate"
               }
             }
           },
@@ -14062,6 +14062,37 @@
         },
         "required": ["entities", "group", "image_id", "page_no", "pages"]
       },
+      "PartyCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "default": "",
+            "maxLength": 32
+          },
+          "distinct_from_party_id": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RoleEnum"
+              }
+            ],
+            "default": "customer"
+          }
+        },
+        "required": ["name"]
+      },
       "PatchedItemPatch": {
         "type": "object",
         "properties": {
@@ -14465,6 +14496,11 @@
             "default": false
           }
         }
+      },
+      "RoleEnum": {
+        "enum": ["customer", "supplier"],
+        "type": "string",
+        "description": "* `customer` - customer\n* `supplier` - supplier"
       },
       "Scope": {
         "type": "object",

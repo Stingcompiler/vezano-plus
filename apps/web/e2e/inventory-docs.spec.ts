@@ -559,6 +559,42 @@ test.describe("INV-04", () => {
     await expect(page.getByLabel("المورد")).toHaveValue("");
   });
 
+  test("مراجعة الأطراف 2026-11-20 (المرحلة ٢): اسم مورد جديد يُنشئ المورد قبل الاستلام وفي تبعيته", async ({
+    page,
+  }) => {
+    await seed(page);
+    const pushed: Record<string, unknown>[] = [];
+    await pushRoute(page, pushed);
+    await login(page, RECEIVE);
+    await page.getByLabel("المورد").fill("مخبز النيل");
+    const root = page.locator('[data-screen="INV-04"]');
+    await expect(root).toContainText("مورد جديد — يُضاف إلى «الموردون» عند الحفظ.");
+    await page.getByLabel("مرجع المستند").fill("فاتورة 12");
+    await page.getByLabel("الصنف").first().selectOption("i1");
+    await page.getByLabel("الكمية").first().fill("2");
+    await page.getByRole("button", { name: "تسجيل الاستلام" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    await expect.poll(() => pushed.length).toBe(2);
+    const ops = pushed as {
+      operation_id: string;
+      kind: string;
+      dependencies: string[];
+      members: { entity: string; payload: Record<string, unknown> }[];
+    }[];
+    const create = ops.find((o) => o.kind === "party_create")!;
+    const receipt = ops.find((o) => o.kind === "stock_receipt")!;
+    const party = create.members[0]!.payload;
+    expect(party["name"]).toBe("مخبز النيل");
+    expect(party["role"]).toBe("supplier");
+    const head = receipt.members.find((m) => m.entity === "inventory.GoodsReceipt")!.payload;
+    expect(head["party_id"]).toBe(party["party_id"]);
+    expect(receipt.dependencies).toEqual([create.operation_id]);
+    // الاستلام التالي باسمه نفسه يجده مورداً — لا مورد ثانٍ
+    await page.getByRole("button", { name: "استلام آخر" }).click();
+    await page.getByLabel("المورد").fill("مخبز النيل");
+    await expect(root).not.toContainText("مورد جديد — يُضاف");
+  });
+
   test("validation_error: كمية بوحدة غير معرَّفة — لا تخمين؛ والمورد والمرجع مطلوبان", async ({
     page,
   }, info) => {
