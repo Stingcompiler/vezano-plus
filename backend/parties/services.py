@@ -576,7 +576,10 @@ def effective_receipt(r: PaymentReceipt) -> EffectiveReceipt:
             bdate = c.new_business_date
         elif c.kind == "reverse":
             reversed_ = True
-    effective = (method == "cash" or r.matched_at is not None) and not reversed_
+    # الدفع لمورد تحويلٌ أرسلناه نحن فأثره فوري؛ «مطابق» شرط ما يصلنا فقط (ACC-133؛ 0005 §٢٨٤)
+    effective = (
+        method == "cash" or r.matched_at is not None or r.kind == "payment"
+    ) and not reversed_
     return EffectiveReceipt(
         kind=r.kind,
         method=method,
@@ -604,7 +607,9 @@ def identity_ids(party: Party) -> list[uuid.UUID]:
 def _receipts_balance(party: Party) -> int:
     """السداد يخفّض ذمّة الطرف والردّ يرفعها (§٧.٢: سداد دين 40 نقداً → دائن 40)."""
     total = 0
-    for r in PaymentReceipt.objects.filter(party_id__in=identity_ids(party)):
+    for r in PaymentReceipt.objects.filter(party_id__in=identity_ids(party)).exclude(
+        kind="payment"
+    ):
         e = effective_receipt(r)
         if not e.effective:
             continue
@@ -612,14 +617,29 @@ def _receipts_balance(party: Party) -> int:
     return total
 
 
+def _supplier_payments(party: Party) -> int:
+    """سند الصرف يخفّض «له علينا» (§٧.٢: «دفع لمورد: نقد صادر، مدين يخفض له علينا»)."""
+    total = 0
+    for r in PaymentReceipt.objects.filter(party_id__in=identity_ids(party), kind="payment"):
+        e = effective_receipt(r)
+        if e.effective:
+            total -= e.amount_minor
+    return total
+
+
 BALANCE_PROVIDERS.append(_receipts_balance)
+SUPPLIER_OWED_PROVIDERS.append(_supplier_payments)
 MOVEMENT_PROVIDERS.append(lambda party: PaymentReceipt.objects.filter(party=party).exists())
 
 
 def _receipt_lines(party: Party) -> list[StatementLine]:
     out: list[StatementLine] = []
     ids = identity_ids(party)
-    for r in PaymentReceipt.objects.filter(party_id__in=ids).order_by("occurred_at"):
+    for r in (
+        PaymentReceipt.objects.filter(party_id__in=ids)
+        .exclude(kind="payment")
+        .order_by("occurred_at")
+    ):
         e = effective_receipt(r)
         corrected = r.corrections.exists()
         if r.kind == "receipt":
@@ -684,6 +704,121 @@ def _receipt_lines(party: Party) -> list[StatementLine]:
 
 
 STATEMENT_LINE_PROVIDERS.append(_receipt_lines)
+
+
+# --------------------------------------------- كشف المورد (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤)
+
+#: سطور كشف المورد من الوحدات (مستندات الشراء والمرتجعات — INV): party → [StatementLine]. الاتجاه
+#: هنا من جهة المورد: `credit_minor` يرفع «له علينا» و`debit_minor` يخفّضه (§٧.١: سالب المورد = له)
+SUPPLIER_STATEMENT_LINE_PROVIDERS: list[Callable[[Party], list[StatementLine]]] = []
+
+
+def _supplier_payment_lines(party: Party) -> list[StatementLine]:
+    out: list[StatementLine] = []
+    for r in PaymentReceipt.objects.filter(
+        party_id__in=identity_ids(party), kind="payment"
+    ).order_by("occurred_at"):
+        e = effective_receipt(r)
+        corrected = r.corrections.exists()
+        label = ("دفع نقدي" if e.method == "cash" else "دفع بتحويل بنكي") + (
+            " — مصحَّح" if corrected else ""
+        )
+        out.append(
+            StatementLine(
+                doc=r.receipt_number,
+                doc_id=str(r.id),
+                kind="payment",
+                label=label,
+                occurred_at=r.occurred_at,
+                business_date=e.business_date,
+                debit_minor=e.amount_minor if e.effective else 0,
+                credit_minor=0,
+                branch_id=r.branch_id,
+                info=not e.effective,
+                party_id=r.party_id,
+            )
+        )
+    return out
+
+
+SUPPLIER_STATEMENT_LINE_PROVIDERS.append(_supplier_payment_lines)
+
+
+def supplier_statement_lines(party: Party) -> list[StatementLine]:
+    lines: list[StatementLine] = []
+    for ob in OpeningBalance.objects.filter(party_id__in=identity_ids(party), side="supplier_owed"):
+        lines.append(
+            StatementLine(
+                doc="OPEN",
+                doc_id=str(ob.id),
+                kind="opening",
+                label="رصيد افتتاحي",
+                occurred_at=ob.occurred_at,
+                business_date=ob.business_date,
+                debit_minor=0,
+                credit_minor=ob.amount_minor,
+                branch_id=None,
+            )
+        )
+    for p in SUPPLIER_STATEMENT_LINE_PROVIDERS:
+        lines.extend(p(party))
+    lines.sort(key=lambda ln: (ln.business_date or date.min, ln.occurred_at))
+    return lines
+
+
+def supplier_statement_payload(
+    party: Party, *, visible_branch_ids: list[uuid.UUID] | None, since: datetime | None
+) -> dict[str, Any]:
+    """كشف المورد المتتابع: «له علينا» الجاري من كل الحركات (لا رصيد جزئي) — الافتتاحي ومستندات
+    الشراء المعتمدة ترفعه، والمرتجعات المقبولة وسندات الصرف تخفّضه. مدير الفرع يرى سطور فرعه
+    والرصيد كاملاً (ACC-46)."""
+    running = 0
+    rows: list[dict[str, Any]] = []
+    hidden = 0
+    names = {p.id: p.name for p in Party.objects.filter(id__in=identity_ids(party))}
+    last_payment: datetime | None = None
+    for ln in supplier_statement_lines(party):
+        running += ln.credit_minor - ln.debit_minor
+        if ln.kind == "payment" and not ln.info:
+            last_payment = ln.occurred_at
+        visible = (
+            visible_branch_ids is None or ln.branch_id is None or ln.branch_id in visible_branch_ids
+        )
+        if not visible:
+            hidden += 1
+            continue
+        if since is not None and ln.occurred_at < since and ln.kind != "opening":
+            continue
+        rows.append(
+            {
+                "doc": ln.doc,
+                "doc_id": ln.doc_id,
+                "kind": ln.kind,
+                "label": ln.label,
+                "occurred_at": ln.occurred_at.isoformat(),
+                "business_date": ln.business_date.isoformat() if ln.business_date else "",
+                "debit_minor": str(ln.debit_minor) if ln.debit_minor else "",
+                "credit_minor": str(ln.credit_minor) if ln.credit_minor else "",
+                "balance_minor": str(running),
+                "branch_id": str(ln.branch_id) if ln.branch_id else "",
+                "info": ln.info,
+                "source_party": (
+                    names.get(ln.party_id, "")
+                    if ln.party_id is not None and ln.party_id != party.id
+                    else ""
+                ),
+            }
+        )
+    return {
+        "side": "supplier",
+        "party": list_payload(party, with_balances=True),
+        "rows": rows,
+        "owed_minor": str(running),
+        "hidden_other_branch": hidden,
+        "last_payment_at": _iso(last_payment),
+        "as_of": timezone.now().isoformat(),
+        "tenant_name": _tenant_name(),
+    }
 
 
 # ------------------------------------------------------------- الدمج والتصحيح (PTY-07/PTY-09)

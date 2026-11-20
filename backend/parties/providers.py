@@ -72,7 +72,7 @@ def _shift_receipts(shift: Shift) -> dict[str, int]:
     """السداد النقدي يدخل درج الوردية فوراً والردّ النقدي يخرج منه (§١٠.٣) — التحويل لا."""
     from parties.services import effective_receipt
 
-    received = refunded = 0
+    received = refunded = paid = 0
     for r in PaymentReceipt.objects.filter(shift_id=shift.id):
         e = effective_receipt(r)
         # التصحيح (PTY-09) يغيّر الأثر لا الأصل: عكس أو وسيلة أو مبلغ
@@ -80,9 +80,16 @@ def _shift_receipts(shift: Shift) -> dict[str, int]:
             continue
         if r.kind == "receipt":
             received += e.amount_minor
+        elif r.kind == "payment":
+            # الدفع لمورد من الدرج نقدٌ صادر كالسحب (0005 §٢٨٤)
+            paid += e.amount_minor
         else:
             refunded += e.amount_minor
-    return {"cash_debt_receipts": int(received), "cash_refunds": int(refunded)}
+    return {
+        "cash_debt_receipts": int(received),
+        "cash_refunds": int(refunded),
+        "cash_withdrawals": int(paid),
+    }
 
 
 def _late_receipts(shift: Shift) -> list[shift_services.LateItem]:
@@ -92,7 +99,7 @@ def _late_receipts(shift: Shift) -> list[shift_services.LateItem]:
         shift_services.LateItem(
             id=str(r.id),
             number=r.receipt_number,
-            kind="receipt" if r.kind == "receipt" else "refund",
+            kind=r.kind,
             signed_amount_minor=r.amount_minor if r.kind == "receipt" else -r.amount_minor,
             occurred_at=r.occurred_at,
             received_at=r.received_at,

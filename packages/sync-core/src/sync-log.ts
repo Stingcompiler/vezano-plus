@@ -138,6 +138,13 @@ export function describeOperation(op: StoredOperation): OperationDescription {
       const h = p(op, "parties.PaymentReceipt");
       const name = str(h["party_name"]);
       const isRefund = op.kind === "refund" || h["kind"] === "refund";
+      // سند صرف لمورد (0005 §٢٨٤)
+      if (h["kind"] === "payment")
+        return {
+          title: "سند صرف",
+          number: str(h["receipt_number"]),
+          effect: `دفع ${minor(h["amount_minor"])} — يخفّض ما ${name || "للمورد"} علينا`,
+        };
       return {
         title: isRefund ? "سند ردّ مبلغ" : "سند قبض",
         number: str(h["receipt_number"]),

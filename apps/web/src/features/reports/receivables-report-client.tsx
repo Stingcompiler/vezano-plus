@@ -276,9 +276,11 @@ export function ReceivablesReportClient() {
                   rows={p.rows}
                   rowKey={(r) => r.id}
                   onOpenRow={(r) =>
-                    // كشف المورد لم يُبنَ — صف المورد يفتح بطاقته (مراجعة الأطراف 2026-11-20، G-02)
+                    // صف المورد يفتح كشف المورد بجهته (مراجعة الأطراف، المرحلة ٣ — 0005 §٢٨٤)
                     router.push(
-                      side === "customers" ? `/parties/${r.id}/statement` : `/parties/${r.id}`,
+                      side === "customers"
+                        ? `/parties/${r.id}/statement`
+                        : `/parties/${r.id}/supplier-statement`,
                     )
                   }
                 />

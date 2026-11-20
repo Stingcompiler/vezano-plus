@@ -34,7 +34,7 @@ interface Context {
     readonly id: string;
     readonly receipt_number: string;
     readonly party_id: string;
-    readonly kind: "receipt" | "refund";
+    readonly kind: "receipt" | "refund" | "payment";
     readonly method: "cash" | "bank";
     readonly amount_minor: string;
     readonly reference: string;
@@ -190,7 +190,13 @@ export function CorrectionClient({ receiptId }: { receiptId: string }) {
   };
 
   const rec = ctx?.receipt;
-  const kindLabel = rec?.kind === "refund" ? "ردّ مبلغ" : "سداد";
+  const kindLabel =
+    rec?.kind === "refund" ? "ردّ مبلغ" : rec?.kind === "payment" ? "دفع لمورد" : "سداد";
+  // سند الصرف لمورد يعود إلى كشف المورد (0005 §٢٨٤)
+  const stmtPath = (partyId: string) =>
+    rec?.kind === "payment"
+      ? `/parties/${partyId}/supplier-statement`
+      : `/parties/${partyId}/statement`;
   const balanceBefore = ctx ? BigInt(ctx.party.balance_minor || "0") : 0n;
   const balanceAfter = done ? BigInt(done.party.balance_minor || "0") : balanceBefore;
   const origDate = eff ? dayMonth(eff.business_date) : null;
@@ -273,7 +279,7 @@ export function CorrectionClient({ receiptId }: { receiptId: string }) {
                   </p>
                 </Notice>
                 <div className="cat-form__actions">
-                  <Button onClick={() => router.push(`/parties/${done.party.id}/statement`)} pos>
+                  <Button onClick={() => router.push(stmtPath(done.party.id))} pos>
                     كشف الحساب
                   </Button>
                   <Button
@@ -369,10 +375,7 @@ export function CorrectionClient({ receiptId }: { receiptId: string }) {
                   >
                     إنشاء مستند التصحيح
                   </Button>
-                  <Button
-                    variant="quiet"
-                    onClick={() => router.push(`/parties/${ctx.party.id}/statement`)}
-                  >
+                  <Button variant="quiet" onClick={() => router.push(stmtPath(ctx.party.id))}>
                     كشف الحساب
                   </Button>
                 </div>

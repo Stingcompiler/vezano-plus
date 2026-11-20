@@ -107,7 +107,8 @@ class PaymentReceipt(TenantScoped):
     ومرجعه لا يُستهلك مرتين (ACC-15). الردّ ليس سداداً سالباً — له سببه وصلاحيته. لا يُحذف: التصحيح
     بسند عكس يشير إليه."""
 
-    KIND = (("receipt", "سداد"), ("refund", "ردّ مبلغ"))
+    #: `payment` = سند صرف لمورد (مراجعة الأطراف، المرحلة ٣): يخفّض «له علينا» لا ذمّة العميل
+    KIND = (("receipt", "سداد"), ("refund", "ردّ مبلغ"), ("payment", "دفع لمورد"))
     METHOD = (("cash", "نقداً"), ("bank", "تحويل بنكي"))
 
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name="receipts")

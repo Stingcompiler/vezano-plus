@@ -59,6 +59,7 @@ const KIND_LABEL: Record<CashRow["kind"], string> = {
   sale: "بيع نقدي",
   receipt: "سداد",
   refund: "مرتجع نقدي",
+  payment: "دفع لمورد",
 };
 /** البيع غير النقدي باسم وسيلته (بند 27): الآجل لا يُسمّى «نقدياً» وإن لم يدخل الصندوق. */
 const MODE_LABEL = { credit: "بيع آجل", bank: "بيع بالتحويل", mixed: "بيع مختلط" } as const;

@@ -17,6 +17,7 @@ from parties.services import (
     statement_lines,
     supplier_documents,
     supplier_owed_minor,
+    supplier_statement_lines,
 )
 
 
@@ -85,11 +86,17 @@ def _supplier_row(party: Party) -> dict[str, Any] | None:
         source = "رصيد افتتاحي — بلا فواتير"
     else:
         source = ""
+    # آخر سند صرف فعّال (المرحلة ٣ من مراجعة الأطراف) — كان فارغاً دائماً لأن الدفع لم يُبنَ
+    paid = [
+        ln.business_date or ln.occurred_at.date()
+        for ln in supplier_statement_lines(party)
+        if ln.kind == "payment" and ln.debit_minor > 0
+    ]
     return {
         "id": str(party.id),
         "name": party.name,
         "balance_minor": str(owed),
-        "last_payment_date": "",
+        "last_payment_date": _iso_date(max(paid, default=None)),
         "oldest_unpaid_date": "",
         "invoices": docs,
         "source": source,

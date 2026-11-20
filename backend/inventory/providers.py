@@ -49,11 +49,13 @@ MOVEMENT_SOURCE_RESOLVERS["inventory.TransferReceipt"] = receipt_transfer_source
 from inventory.purchase_docs import (  # noqa: E402
     supplier_documents_approved,
     supplier_owed_from_purchases,
+    supplier_statement_lines_from_purchases,
 )
 from parties import services as _party_services  # noqa: E402
 
 _party_services.SUPPLIER_OWED_PROVIDERS.append(supplier_owed_from_purchases)
 _party_services.SUPPLIER_DOCUMENT_PROVIDERS.append(supplier_documents_approved)
+_party_services.SUPPLIER_STATEMENT_LINE_PROVIDERS.append(supplier_statement_lines_from_purchases)
 
 
 # «قرارات تنتظرك» في الرئيسية: مستندات شراء تنتظر الاعتماد، وأصناف نفد رصيدها

@@ -208,7 +208,7 @@ export function ReceivablesReport() {
                 onPress={() =>
                   side === "customers"
                     ? router.push(`/parties/${r.id}/statement` as never)
-                    : router.push(`/parties/${r.id}` as never)
+                    : router.push(`/parties/${r.id}/supplier-statement` as never)
                 }
                 last={i === p.rows.length - 1}
               />

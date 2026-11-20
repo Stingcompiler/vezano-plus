@@ -411,7 +411,8 @@ export async function readPartyPendingCredit(
     // غير المطابق لا أثر له (ACC-133)
     const receipts = (await tx.listProjections(RECEIPT_PREFIX))
       .map((r) => r.value as unknown as LocalReceipt)
-      .filter((r) => r.party_id === partyId && r.method === "cash");
+      // سند الصرف لمورد لا يمسّ ذمّة العميل (0005 §٢٨٤)
+      .filter((r) => r.party_id === partyId && r.method === "cash" && r.kind !== "payment");
     for (const r of receipts) {
       const op = await tx.getOperation(r.operation_id);
       const covered = op?.state === "synced" && (!asOf || r.occurred_at <= asOf);

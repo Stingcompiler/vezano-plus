@@ -7797,6 +7797,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "side",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "tags": ["parties"],
@@ -46540,6 +46547,9 @@
           "oldest_unpaid_at": {
             "type": "string"
           },
+          "owed_minor": {
+            "type": "string"
+          },
           "party": {
             "additionalProperties": false,
             "properties": {
@@ -46694,6 +46704,9 @@
           "scope": {
             "type": "string"
           },
+          "side": {
+            "type": "string"
+          },
           "tenant_name": {
             "type": "string"
           }
@@ -46701,10 +46714,8 @@
         "required": [
           "party",
           "rows",
-          "balance_minor",
           "hidden_other_branch",
           "last_payment_at",
-          "oldest_unpaid_at",
           "as_of",
           "tenant_name",
           "scope",

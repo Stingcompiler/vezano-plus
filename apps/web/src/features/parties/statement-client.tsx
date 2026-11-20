@@ -188,7 +188,7 @@ export function StatementClient({ partyId }: { partyId: string }) {
       // السندات المحلية غير المغطّاة (سداد نقدي يخفّض؛ تحويل مسجَّل بلا أثر؛ ردّ يرفع) — PTY-06
       const pendRec: LocalReceipt[] = [];
       for (const r of receipts) {
-        if (r.party_id !== partyId) continue;
+        if (r.party_id !== partyId || r.kind === "payment") continue;
         const op = await storage.read((tx) => tx.getOperation(r.operation_id));
         const covered = op?.state === "synced" && (!asOf || r.occurred_at <= asOf);
         if (!covered) pendRec.push(r);
