@@ -616,6 +616,10 @@
   "POST /api/parties/{party_id}/merge": [
    "400:validation_error"
   ],
+  "POST /api/parties/{party_id}/offset": [
+   "400:validation_error",
+   "403:owner_required"
+  ],
   "POST /api/parties/{party_id}/opening-balance": [
    "400:validation_error",
    "403:owner_required"
@@ -45257,6 +45261,115 @@
      "merge",
      "source",
      "target"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/parties/{party_id}/offset": {
+   "201": {
+    "additionalProperties": false,
+    "properties": {
+     "numbers": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "party": {
+      "additionalProperties": false,
+      "properties": {
+       "aliases": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "balance_as_of": {
+        "type": "string"
+       },
+       "balance_minor": {
+        "type": "string"
+       },
+       "credit_limit_minor": {
+        "type": "string"
+       },
+       "deactivated_at": {
+        "type": "string"
+       },
+       "distinct_from_id": {
+        "type": "string"
+       },
+       "id": {
+        "type": "string"
+       },
+       "is_active": {
+        "type": "boolean"
+       },
+       "is_customer": {
+        "type": "boolean"
+       },
+       "is_supplier": {
+        "type": "boolean"
+       },
+       "last_movement_at": {
+        "type": "string"
+       },
+       "last_sale_at": {
+        "type": "string"
+       },
+       "market_linked": {
+        "type": "boolean"
+       },
+       "merged_into": {
+        "type": "string"
+       },
+       "name": {
+        "type": "string"
+       },
+       "name_normalized": {
+        "type": "string"
+       },
+       "note": {
+        "type": "string"
+       },
+       "phone": {
+        "type": "string"
+       },
+       "supplier_owed_minor": {
+        "type": "string"
+       },
+       "updated_at": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "name",
+       "name_normalized",
+       "phone",
+       "aliases",
+       "note",
+       "credit_limit_minor",
+       "is_customer",
+       "is_supplier",
+       "distinct_from_id",
+       "merged_into",
+       "balance_minor",
+       "balance_as_of",
+       "last_sale_at",
+       "is_active",
+       "deactivated_at",
+       "updated_at",
+       "supplier_owed_minor",
+       "last_movement_at",
+       "market_linked"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "numbers",
+     "party"
     ],
     "type": "object"
    }

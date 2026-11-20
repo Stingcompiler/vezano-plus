@@ -109,7 +109,8 @@ class PaymentReceipt(TenantScoped):
 
     #: `payment` = سند صرف لمورد (مراجعة الأطراف، المرحلة ٣): يخفّض «له علينا» لا ذمّة العميل
     KIND = (("receipt", "سداد"), ("refund", "ردّ مبلغ"), ("payment", "دفع لمورد"))
-    METHOD = (("cash", "نقداً"), ("bank", "تحويل بنكي"))
+    #: `offset` = مقاصة بين رصيدي الطرف ذي الصفتين (§٧.١: حركتان متقابلتان؛ 0005 §٢٨٥)
+    METHOD = (("cash", "نقداً"), ("bank", "تحويل بنكي"), ("offset", "مقاصة"))
 
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name="receipts")
     receipt_number = models.CharField(max_length=40)

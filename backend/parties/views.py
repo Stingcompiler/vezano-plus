@@ -340,6 +340,70 @@ class OpeningBalanceView(APIView):
             )
 
 
+class PartyOffsetView(APIView):
+    """«مقاصة بين الرصيدين» (§٧.١؛ 0005 §٢٨٥): للمالك، للطرف ذي الصفتين، بسبب، وبما لا يتجاوز أصغر
+    الرصيدين — حركتان متقابلتان لا نقد فيهما."""
+
+    permission_classes = (IsAuthenticated,)
+
+    class PartyOffsetSerializer(serializers.Serializer[dict[str, Any]]):
+        amount_minor = serializers.CharField()
+        reason = serializers.CharField(allow_blank=True, required=False, default="", max_length=300)
+
+    @extend_schema(
+        request=PartyOffsetSerializer, responses={201: None, 400: None, 403: None, 404: None}
+    )
+    def post(self, request: Request, party_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        ser = self.PartyOffsetSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            if not viewer.is_owner:
+                return Response({"detail": "owner_required"}, status=status.HTTP_403_FORBIDDEN)
+            party = Party.objects.filter(id=party_id).first()
+            if party is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                amount = int(str(d["amount_minor"]))
+            except ValueError:
+                return Response(
+                    Rejected([FieldError("amount_minor", "invalid")]).as_response(),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            branch = (
+                viewer.branch
+                or Branch.objects.filter(is_active=True).order_by("created_at").first()
+            )
+            if branch is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                receipt, payment = services.offset_balances(
+                    party,
+                    amount_minor=amount,
+                    reason=str(d.get("reason", "")),
+                    actor=viewer.user,
+                    branch_id=branch.id,
+                    device_id=auth.device.id if auth.device else uuid.UUID(int=0),
+                )
+            except services.CardRejected as e:
+                return Response(
+                    Rejected([FieldError(e.field or "offset", e.code)]).as_response(),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {
+                    "numbers": [receipt.receipt_number, payment.receipt_number],
+                    "party": services.list_payload(party, with_balances=True),
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+
 class PartyStatementView(APIView):
     """PTY-05: كشف الحساب — الشاشة المحورية. لمن يرى المال؛ مدير الفرع يرى سطور فرعه والرصيد
     المؤسسي كاملاً (ACC-46)؛ الكاشير يرى رصيد من أمامه وقت البيع فقط (403)."""

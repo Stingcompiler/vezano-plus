@@ -351,6 +351,10 @@ export function ReceiveClient() {
                 {supplier.trim() && !suppliers.some((s) => s.name === supplier.trim()) ? (
                   <p className="acc-choice__note">مورد جديد — يُضاف إلى «الموردون» عند الحفظ.</p>
                 ) : null}
+                {/* G-11 (0005 §٢٨٥): طريقان لواقعة واحدة بأثرين — نعلن الفرق بدل أن يُكتشف */}
+                <p className="acc-choice__note">
+                  الاستلام لا يُنشئ ذمّة على المنشأة للمورد — للذمّة سجّل مستند شراء.
+                </p>
                 <TextField
                   label="مرجع المستند"
                   value={reference}

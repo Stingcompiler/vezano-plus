@@ -44,6 +44,7 @@ export interface Doc {
   number: string;
   order_id: string;
   order_number: string;
+  supplier_id: string;
   supplier_name: string;
   branch_name: string;
   supplier_invoice_number: string;
@@ -376,6 +377,20 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                 <p className="acc-choice__note">
                   اعتمده {doc.approved_by_name}. الاعتماد لا يُلغى — يُعكس بمستند مضادّ.
                 </p>
+                {/* الدفع عند الشراء (المرحلة ٣ ب من مراجعة الأطراف — 0005 §٢٨٥): سند صرف بمبلغ المستند
+                    من الدرج أو تحويلاً، يُعدَّل قبل الحفظ للدفع الجزئي */}
+                <div className="cat-form__actions">
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      router.push(
+                        `/parties/${doc.supplier_id}/pay?amount=${doc.effects.payable_minor ?? doc.total_minor}`,
+                      )
+                    }
+                  >
+                    ادفع الآن
+                  </Button>
+                </div>
               </Notice>
             ) : null}
 

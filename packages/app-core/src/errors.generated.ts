@@ -1615,6 +1615,16 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "validation_error",
     },
   ],
+  "POST /api/parties/{party_id}/offset": [
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "owner_required",
+    },
+  ],
   "POST /api/parties/{party_id}/opening-balance": [
     {
       status: 400,

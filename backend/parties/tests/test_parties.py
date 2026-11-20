@@ -679,6 +679,60 @@ def test_supplier_payment_lowers_owed_drawer_and_statement(ctx: dict[str, Any]) 
     assert r.json()["rows"] == [] and r.json()["balance_minor"] == "0"
 
 
+def test_offset_two_opposite_movements_owner_only(ctx: dict[str, Any]) -> None:
+    """«مقاصة بين الرصيدين» (§٧.١؛ 0005 §٢٨٥): حركتان متقابلتان بسبب للمالك وحده، لا تتجاوز أصغر
+    الرصيدين، ولا درج؛ كلٌّ في كشفه؛ ولا تُصحَّح إحداهما وحدها."""
+    with tenant_context(ctx["tenant"].id):
+        both = services.create_party(
+            party_id=None, name="خالد إبراهيم", phone="", created_by=None, distinct_from=None
+        )
+        both.is_supplier = True
+        both.save()
+        for side, amount in (("customer_due", 30000), ("supplier_owed", 50000)):
+            services.record_opening_balance(
+                both,
+                side=side,
+                amount_minor=amount,
+                reason="افتتاحي",
+                reference="",
+                business_date=None,
+                actor=ctx["user"],
+            )
+        only = services.create_party(
+            party_id=None, name="أحمد", phone="", created_by=None, distinct_from=None
+        )
+    c, hc = api(ctx)
+    url = f"/api/parties/{both.id}/offset"
+    body = {"amount_minor": "20000", "reason": "خصم دينه من مستحقاته باتفاق"}
+    r = c.post(url, body, content_type="application/json", **hc)  # type: ignore[arg-type]
+    assert r.status_code == 403
+    co, ho = _owner_client(ctx)
+    over = {"amount_minor": "30001", "reason": "زيادة"}
+    r = co.post(url, over, content_type="application/json", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 400 and r.json()["errors"][0]["code"] == "exceeds"
+    blank = {"amount_minor": "100", "reason": ""}
+    r = co.post(url, blank, content_type="application/json", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 400 and r.json()["errors"][0]["code"] == "required"
+    other = f"/api/parties/{only.id}/offset"
+    r = co.post(other, body, content_type="application/json", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 400 and r.json()["errors"][0]["code"] == "not_both"
+    r = co.post(url, body, content_type="application/json", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 201
+    assert r.json()["numbers"] == ["OFF-000001-C", "OFF-000001-S"]
+    assert r.json()["party"]["balance_minor"] == "10000"
+    assert r.json()["party"]["supplier_owed_minor"] == "30000"
+    cust = co.get(f"/api/parties/{both.id}/statement?range=all", **ho).json()  # type: ignore[arg-type]
+    assert [x["label"] for x in cust["rows"]][-1] == "مقاصة مع ما له علينا"
+    sup_url = f"/api/parties/{both.id}/statement?range=all&side=supplier"
+    sup = co.get(sup_url, **ho).json()  # type: ignore[arg-type]
+    assert [x["label"] for x in sup["rows"]][-1] == "مقاصة مع ما عليه لنا"
+    assert sup["owed_minor"] == "30000"
+    with tenant_context(ctx["tenant"].id):
+        rec = PaymentReceipt.objects.get(receipt_number="OFF-000001-C")
+        with pytest.raises(services.CardRejected):
+            services.correct_receipt(rec, kind="reverse", reason="خطأ", actor=ctx["user"])
+
+
 def test_merge_identity_map_late_events_and_undo(ctx: dict[str, Any]) -> None:
     """PTY-07 / ACC-78: الدمج للمالك بتأكيد مزدوج؛ الرصيد المجمّع من خريطة هوية (الحركات تبقى
     بهويتها)؛ حدث متأخر باسم المصدر بعد الدمج يظهر في كشف الوارث موسوماً بمصدره؛ لا حلقات؛ التراجع

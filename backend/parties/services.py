@@ -578,7 +578,7 @@ def effective_receipt(r: PaymentReceipt) -> EffectiveReceipt:
             reversed_ = True
     # الدفع لمورد تحويلٌ أرسلناه نحن فأثره فوري؛ «مطابق» شرط ما يصلنا فقط (ACC-133؛ 0005 §٢٨٤)
     effective = (
-        method == "cash" or r.matched_at is not None or r.kind == "payment"
+        method in ("cash", "offset") or r.matched_at is not None or r.kind == "payment"
     ) and not reversed_
     return EffectiveReceipt(
         kind=r.kind,
@@ -643,7 +643,9 @@ def _receipt_lines(party: Party) -> list[StatementLine]:
         e = effective_receipt(r)
         corrected = r.corrections.exists()
         if r.kind == "receipt":
-            if e.method == "cash":
+            if e.method == "offset":
+                label = "مقاصة مع ما له علينا"
+            elif e.method == "cash":
                 label = "سداد نقدي"
             elif e.effective:
                 label = "سداد بتحويل بنكي — مطابق"
@@ -720,9 +722,11 @@ def _supplier_payment_lines(party: Party) -> list[StatementLine]:
     ).order_by("occurred_at"):
         e = effective_receipt(r)
         corrected = r.corrections.exists()
-        label = ("دفع نقدي" if e.method == "cash" else "دفع بتحويل بنكي") + (
-            " — مصحَّح" if corrected else ""
-        )
+        label = (
+            "مقاصة مع ما عليه لنا"
+            if e.method == "offset"
+            else ("دفع نقدي" if e.method == "cash" else "دفع بتحويل بنكي")
+        ) + (" — مصحَّح" if corrected else "")
         out.append(
             StatementLine(
                 doc=r.receipt_number,
@@ -941,6 +945,9 @@ def correct_receipt(
         raise CardRejected("invalid", "kind")
     if not reason.strip():
         raise CardRejected("required", "reason")
+    # المقاصة حركتان متقابلتان — تصحيح إحداهما وحدها يكسر التقابل (0005 §٢٨٥)
+    if receipt.method == "offset":
+        raise CardRejected("offset_not_correctable", "method")
     e = effective_receipt(receipt)
     if e.reversed:
         raise CardRejected("already_reversed")
@@ -1188,3 +1195,63 @@ th,td{{padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:start}}
 {hidden_note}
 <div class=total><span>الرصيد المستحق</span><span class=m>{balance}</span></div>
 </body></html>"""
+
+
+# ------------------------------------------------------ المقاصة بين الرصيدين (0005 §٢٨٥؛ G-12)
+
+
+def offset_balances(
+    party: Party,
+    *,
+    amount_minor: int,
+    reason: str,
+    actor: User,
+    branch_id: uuid.UUID,
+    device_id: uuid.UUID,
+) -> tuple[PaymentReceipt, PaymentReceipt]:
+    """§٧.١: «المقاصة عملية صريحة معتمدة بحركتين متقابلتين؛ لا تجمعهما دالة الرصيد تلقائياً». للطرف
+    ذي الصفتين وحده، بسبب، وبما لا يتجاوز أصغر الرصيدين: سند قبض بوسيلة «مقاصة» يخفّض «عليه» وسند صرف
+    بوسيلة «مقاصة» يخفّض «له علينا» بالمبلغ نفسه — لا نقد ولا درج، وكلاهما يُرى في كشفه."""
+    if not (party.is_customer and party.is_supplier):
+        raise CardRejected("not_both", "role")
+    if amount_minor <= 0:
+        raise CardRejected("min", "amount_minor")
+    if not reason.strip():
+        raise CardRejected("required", "reason")
+    if amount_minor > min(balance_minor(party), supplier_owed_minor(party)):
+        raise CardRejected("exceeds", "amount_minor")
+    seq = PaymentReceipt.objects.filter(method="offset", kind="receipt").count() + 1
+    base = f"OFF-{seq:06d}"
+    now = timezone.now()
+    common: dict[str, Any] = {
+        "tenant_id": require_tenant(),
+        "party": party,
+        "method": "offset",
+        "amount_minor": amount_minor,
+        "reason": reason.strip(),
+        "branch_id": branch_id,
+        "device_id": device_id,
+        "user_id": actor.id,
+        "user_name": actor.display_name,
+        "business_date": timezone.localdate(),
+        "occurred_at": now,
+    }
+    with transaction.atomic():
+        receipt = PaymentReceipt.objects.create(
+            receipt_number=f"{base}-C", kind="receipt", **common
+        )
+        payment = PaymentReceipt.objects.create(
+            receipt_number=f"{base}-S", kind="payment", **common
+        )
+        log_reference(require_tenant(), "parties.Party", party.id)
+        from core import audit
+
+        audit.record(
+            kind="party.offset",
+            title="مقاصة بين رصيدي طرف",
+            actor=actor,
+            detail=f"«{party.name}»: {amount_minor} — {reason.strip()}",
+            ref_entity="parties.Party",
+            ref_id=party.id,
+        )
+    return receipt, payment

@@ -55,6 +55,7 @@ export interface Doc {
   number: string;
   order_id: string;
   order_number: string;
+  supplier_id: string;
   supplier_name: string;
   branch_name: string;
   supplier_invoice_number: string;
@@ -422,6 +423,20 @@ export function DocumentScreen({
               {tx(T, "اعتمده")} {doc.approved_by_name}
               {tx(T, ". الاعتماد لا يُلغى — يُعكس بمستند مضادّ.")}
             </Note>
+            {/* الدفع عند الشراء (0005 §٢٨٥): سند صرف بمبلغ المستند، يُعدَّل قبل الحفظ */}
+            <Button
+              label={tx(T, "ادفع الآن")}
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: "/parties/[id]/pay",
+                  params: {
+                    id: doc.supplier_id,
+                    amount: doc.effects.payable_minor ?? doc.total_minor,
+                  },
+                })
+              }
+            />
           </Notice>
         ) : null}
 
