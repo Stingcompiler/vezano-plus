@@ -10,10 +10,12 @@ from typing import Any
 from django.utils import timezone
 
 from core import home
-from parties.models import Party
+from parties.models import OpeningBalance, Party
 from parties.services import (
     balance_minor,
+    identity_ids,
     statement_lines,
+    supplier_documents,
     supplier_owed_minor,
 )
 
@@ -67,14 +69,30 @@ def _supplier_row(party: Party) -> dict[str, Any] | None:
     owed = supplier_owed_minor(party)
     if owed <= 0:
         return None
+    # المصدر من الحركات الفعلية لا نصّ ثابت: كان «رصيد افتتاحي — بلا فواتير» حتى لذمّة من مستندات
+    # شراء معتمدة (مراجعة الأطراف 2026-11-20، G-06)
+    docs = supplier_documents(party)
+    opening = OpeningBalance.objects.filter(
+        party_id__in=identity_ids(party), side="supplier_owed"
+    ).exists()
+    if docs and opening:
+        source = f"رصيد افتتاحي + {docs} مستندات شراء"
+    elif docs == 1:
+        source = "مستند شراء واحد"
+    elif docs:
+        source = "مستندات شراء"
+    elif opening:
+        source = "رصيد افتتاحي — بلا فواتير"
+    else:
+        source = ""
     return {
         "id": str(party.id),
         "name": party.name,
         "balance_minor": str(owed),
         "last_payment_date": "",
         "oldest_unpaid_date": "",
-        "invoices": 0,
-        "source": "رصيد افتتاحي — بلا فواتير",
+        "invoices": docs,
+        "source": source,
     }
 
 

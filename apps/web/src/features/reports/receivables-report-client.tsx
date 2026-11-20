@@ -177,7 +177,7 @@ export function ReceivablesReportClient() {
                   على العملاء
                 </Chip>
                 <Chip on={side === "suppliers"} onClick={() => setSide("suppliers")}>
-                  لنا على الموردين
+                  للموردين علينا
                 </Chip>
               </div>
               <div className="pos-chips" role="group" aria-label="الفرع">
@@ -241,7 +241,7 @@ export function ReceivablesReportClient() {
             {p && state !== "permission_denied" && state !== "empty" ? (
               <>
                 <p className="acc-choice__note">
-                  {side === "customers" ? "على العملاء" : "لنا على الموردين"} ·{" "}
+                  {side === "customers" ? "على العملاء" : "للموردين علينا"} ·{" "}
                   <span className="sting-mono">{p.totals.parties}</span> طرفاً · المجموع{" "}
                   <span className="sting-mono">{formatMinor(p.totals.balance_minor)}</span> · حُسب
                   في <span className="sting-mono">{hhmm(p.computed_at)}</span>
@@ -275,7 +275,12 @@ export function ReceivablesReportClient() {
                   ]}
                   rows={p.rows}
                   rowKey={(r) => r.id}
-                  onOpenRow={(r) => router.push(`/parties/${r.id}/statement`)}
+                  onOpenRow={(r) =>
+                    // كشف المورد لم يُبنَ — صف المورد يفتح بطاقته (مراجعة الأطراف 2026-11-20، G-02)
+                    router.push(
+                      side === "customers" ? `/parties/${r.id}/statement` : `/parties/${r.id}`,
+                    )
+                  }
                 />
               </>
             ) : null}

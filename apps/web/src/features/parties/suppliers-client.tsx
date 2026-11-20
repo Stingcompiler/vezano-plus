@@ -138,17 +138,19 @@ export function SuppliersClient() {
       ),
     },
     {
-      key: "statement",
-      header: "كشف الحساب",
+      key: "card",
+      header: "بطاقة الطرف",
       render: (r: Row) => (
         <Button variant="secondary" onClick={() => open(r)}>
-          كشف الحساب
+          بطاقة الطرف
         </Button>
       ),
     },
   ];
 
-  const open = (r: Row) => router.push(`/parties/${r.id}/statement`);
+  // كشف المورد لم يُبنَ — «كشف الحساب» كان يفتح جهة العميل فيعرض «عليه 0.00» لمورد له علينا
+  // (مراجعة الأطراف 2026-11-20، G-02)؛ البطاقة تعرض «له علينا» بصدق
+  const open = (r: Row) => router.push(`/parties/${r.id}`);
 
   return (
     <Frame title="العملاء والذمم" nav={<PosNav currentId="parties" />} footer={null}>
@@ -175,9 +177,12 @@ export function SuppliersClient() {
             {state === "empty" ? (
               <Notice kind="empty" title="لا موردين">
                 <p className="acc-lead">الشراء نقدي بلا حساب مفتوح.</p>
+                {/* كان «يُنشأ المورد عند أول استلام بضاعة أو أمر شراء» ولا شيء يُنشئه هناك: الاستلام
+                    يحفظ الاسم نصّاً والأمر يختار من الموردين القائمين (مراجعة الأطراف 2026-11-20، G-07)
+                    — المسار الفعلي حتى يُبنى «مورد جديد» (0005 §١٦٩: الفراغ يتبع الواقع) */}
                 <p className="acc-choice__note">
-                  <strong>المسار</strong> · يُنشأ المورد عند أول استلام بضاعة أو أمر شراء. لا نطلب
-                  تسجيلاً مسبقاً.
+                  <strong>المسار</strong> · أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح
+                  «تعديل البطاقة» وفعّل «مورد».
                 </p>
               </Notice>
             ) : null}

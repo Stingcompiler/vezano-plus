@@ -170,6 +170,14 @@ def supplier_owed_minor(party: Party) -> int:
     return sum(p(party) for p in SUPPLIER_OWED_PROVIDERS)
 
 
+#: عدد مستندات الشراء المعتمدة على المورد — تسجّله INV (PUR-03)؛ لمصدر الذمّة في REP-02
+SUPPLIER_DOCUMENT_PROVIDERS: list[Callable[[Party], int]] = []
+
+
+def supplier_documents(party: Party) -> int:
+    return sum(p(party) for p in SUPPLIER_DOCUMENT_PROVIDERS)
+
+
 def list_payload(party: Party, *, with_balances: bool) -> dict[str, Any]:
     """صف قائمة الأطراف: الرصيد وآخر حركة لمن يرى المال؛ الأسماء للجميع (أمين المخزن يرى
     الأسماء)."""

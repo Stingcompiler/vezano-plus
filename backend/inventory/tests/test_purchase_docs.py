@@ -147,6 +147,13 @@ def test_document_limit_refer_approve_return_and_response(ctx: dict[str, Any]) -
         mv = StockMovement.objects.order_by("-received_at").first()
         assert mv is not None and mv.reason == "receive" and mv.delta_base_qty_milli == 4920000
         assert party_services.supplier_owed_minor(supplier) == 37310000
+        # REP-02: مصدر ذمّة المورد من مستنداته لا «رصيد افتتاحي — بلا فواتير» ثابتاً
+        # (مراجعة الأطراف 2026-11-20، G-06)
+        from parties.reports import _supplier_row
+
+        assert party_services.supplier_documents(supplier) == 1
+        row = _supplier_row(supplier)
+        assert row is not None and row["source"] == "مستند شراء واحد" and row["invoices"] == 1
         from catalog import services as catalog_services
 
         assert catalog_services.branch_balances(ctx["branch"].id)[sugar] == "5400000"

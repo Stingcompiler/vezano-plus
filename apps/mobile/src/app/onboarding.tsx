@@ -144,7 +144,7 @@ export default function OnboardingScreen() {
           detail:
             balances > 0 ? <N>{balances}</N> : tx(T, "لم تبدأ — يمكن إضافتها عند أول بيع آجل"),
           action: tx(T, "ابدأ"),
-          href: "/parties/opening",
+          href: "/parties",
           mark: balances > 0 ? "done" : 3,
           needsServer: false,
         },

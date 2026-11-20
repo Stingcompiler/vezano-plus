@@ -339,6 +339,12 @@ def test_party_card_edit_distinct_and_opening_balance(ctx: dict[str, Any]) -> No
     assert party["balance_minor"] == "34000" and party["supplier_owed_minor"] == "115000"
     with tenant_context(ctx["tenant"].id):
         assert SyncLog.unscoped.filter(entity="parties.OpeningBalance").count() == 2
+        # REP-02 جهة الموردين: الافتتاحي وحده مصدرٌ معلَن (مراجعة الأطراف 2026-11-20، G-06)
+        from parties.reports import _supplier_row
+
+        khalid.refresh_from_db()
+        row = _supplier_row(khalid)
+        assert row is not None and row["source"] == "رصيد افتتاحي — بلا فواتير"
 
 
 def test_statement_sequential_with_opening_and_branch_scope(ctx: dict[str, Any]) -> None:

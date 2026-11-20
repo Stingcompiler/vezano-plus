@@ -81,7 +81,7 @@ export function ReceivablesReport() {
           ? "empty"
           : "ready";
   const expectedCount = cached?.totals.parties ?? 0;
-  const sideLabel = side === "customers" ? tx(T, "على العملاء") : tx(T, "لنا على الموردين");
+  const sideLabel = side === "customers" ? tx(T, "على العملاء") : tx(T, "للموردين علينا");
 
   const exportCsv = async () => {
     const body = await fetchFileText(
@@ -112,7 +112,7 @@ export function ReceivablesReport() {
           onPress={() => setSide("customers")}
         />
         <Chip
-          label={tx(T, "لنا على الموردين")}
+          label={tx(T, "للموردين علينا")}
           on={side === "suppliers"}
           onPress={() => setSide("suppliers")}
         />
@@ -204,7 +204,12 @@ export function ReceivablesReport() {
                     </AppText>
                   </View>
                 }
-                onPress={() => router.push(`/parties/${r.id}/statement` as never)}
+                // كشف المورد لم يُبنَ — صف المورد يفتح بطاقته (مراجعة الأطراف 2026-11-20، G-02)
+                onPress={() =>
+                  side === "customers"
+                    ? router.push(`/parties/${r.id}/statement` as never)
+                    : router.push(`/parties/${r.id}` as never)
+                }
                 last={i === p.rows.length - 1}
               />
             ))}

@@ -388,13 +388,14 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                           </span>
                         </div>
                       </div>
-                      <p className="acc-choice__note">
-                        لا استلام مسجَّل بعد — الاستلام من «استلام البضاعة».
-                      </p>
-                      <Button
-                        variant="secondary"
-                        onClick={() => router.push(`/parties/${card.id}/statement?side=supplier`)}
-                      >
+                      {card.supplier_owed_minor === "0" ? (
+                        <p className="acc-choice__note">
+                          لا استلام مسجَّل بعد — الاستلام من «استلام البضاعة».
+                        </p>
+                      ) : null}
+                      {/* كشف المورد لم يُبنَ: الكشف الحالي جهة العميل وحدها فكان يعرض «عليه 0.00» لمورد
+                          له علينا (مراجعة الأطراف 2026-11-20، G-02) — معطَّل بسببه حتى يُبنى */}
+                      <Button variant="secondary" disabledReason="كشف المورد لم يُبنَ بعد">
                         كشف حساب المورد
                       </Button>
                     </div>
@@ -426,9 +427,15 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                     >
                       رصيد افتتاحي
                     </Button>
-                    <Button variant="quiet" onClick={() => router.push("/parties")}>
-                      قائمة العملاء
-                    </Button>
+                    {card.is_customer ? (
+                      <Button variant="quiet" onClick={() => router.push("/parties")}>
+                        قائمة العملاء
+                      </Button>
+                    ) : (
+                      <Button variant="quiet" onClick={() => router.push("/parties/suppliers")}>
+                        قائمة الموردين
+                      </Button>
+                    )}
                   </div>
                 </>
               ) : form ? (

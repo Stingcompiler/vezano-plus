@@ -615,6 +615,15 @@ def respond(
 # ------------------------------------------------------------ ذمّة المورد (PTY): مستندات − مرتجعات
 
 
+def supplier_documents_approved(party: Any) -> int:
+    """عدد مستندات الشراء المعتمدة على المورد (وما دُمج فيه) — مصدر ذمّته في REP-02."""
+    from parties.services import identity_ids
+
+    return PurchaseDocument.objects.filter(
+        supplier_id__in=identity_ids(party), status=PurchaseDocument.Status.APPROVED
+    ).count()
+
+
 def supplier_owed_from_purchases(party: Any) -> int:
     from parties.services import identity_ids
 

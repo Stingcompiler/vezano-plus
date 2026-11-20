@@ -334,6 +334,12 @@ test.describe("HOME-02", () => {
     // لا بطاقة مالية للكاشير — المحجوب لا يُعرض
     await expect(page.locator(".home-kpi")).toHaveCount(0);
     await expect(page.locator('[data-screen="HOME-02"]')).toContainText("08:00");
+    // «تسجيل سداد» كان إلى `/parties/payment` ولا شاشة بها — يفتح قائمة العملاء ومنها الكشف فالسداد
+    // (مراجعة الأطراف 2026-11-20، G-05)
+    await expect(page.getByRole("link", { name: "تسجيل سداد" })).toHaveAttribute(
+      "href",
+      "/parties",
+    );
   });
 
   test("empty: لا مهام اليوم — والمخرج الواحد بارز", async ({ page }, info) => {

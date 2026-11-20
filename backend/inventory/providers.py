@@ -46,10 +46,14 @@ register_applier("inventory.TransferReceiptLine", apply_transfer_receipt_line)
 MOVEMENT_SOURCE_RESOLVERS["inventory.TransferReceipt"] = receipt_transfer_sources
 
 # PUR-03/04: ذمّة المورد من مستندات الشراء المعتمدة ناقص المرتجعات المقبولة
-from inventory.purchase_docs import supplier_owed_from_purchases  # noqa: E402
+from inventory.purchase_docs import (  # noqa: E402
+    supplier_documents_approved,
+    supplier_owed_from_purchases,
+)
 from parties import services as _party_services  # noqa: E402
 
 _party_services.SUPPLIER_OWED_PROVIDERS.append(supplier_owed_from_purchases)
+_party_services.SUPPLIER_DOCUMENT_PROVIDERS.append(supplier_documents_approved)
 
 
 # «قرارات تنتظرك» في الرئيسية: مستندات شراء تنتظر الاعتماد، وأصناف نفد رصيدها

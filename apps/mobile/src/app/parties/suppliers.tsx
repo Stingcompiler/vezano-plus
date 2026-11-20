@@ -98,11 +98,9 @@ export default function Suppliers() {
           ? "empty"
           : "ready";
 
-  const open = (r: Row) =>
-    router.push({
-      pathname: "/parties/[id]/statement",
-      params: { id: r.id, side: "supplier" },
-    });
+  // كشف المورد لم يُبنَ — كان يفتح جهة العميل فيعرض «عليه 0.00» لمورد له علينا
+  // (مراجعة الأطراف 2026-11-20، G-02)؛ البطاقة تعرض «له علينا» بصدق
+  const open = (r: Row) => router.push({ pathname: "/parties/[id]", params: { id: r.id } });
 
   return (
     <Screen screenId={T} state={state} title={tx(T, "العملاء والذمم")}>
@@ -132,7 +130,10 @@ export default function Suppliers() {
           <AppText variant="secondary">{tx(T, "الشراء نقدي بلا حساب مفتوح.")}</AppText>
           <AppText variant="note">
             {tx(T, "المسار")}{" "}
-            {tx(T, "· يُنشأ المورد عند أول استلام بضاعة أو أمر شراء. لا نطلب تسجيلاً مسبقاً.")}
+            {tx(
+              T,
+              "· أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
+            )}
           </AppText>
         </StateView>
       ) : null}
