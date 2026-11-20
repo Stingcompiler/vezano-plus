@@ -4,6 +4,7 @@ import { expect, it } from "vitest";
 
 import {
   readPendingReceiptsByParty,
+  readPendingSupplierPayments,
   readReceiptCashRows,
   type ReceiptInput,
   saveReceiptLocally,
@@ -124,4 +125,34 @@ it("تحويل بنكي مسجَّل بلا أثر على الذمّة ومرج�
   const rows = await readReceiptCashRows(s, "s1");
   expect(rows.find((r) => r.kind === "refund")!.inCashMinor).toBe("-1000");
   expect(rows.find((r) => r.doc === "REC-KRT-A2-26-000001")!.outCashMinor).toBe("3000");
+});
+
+/** سند صرف لمورد (مراجعة الأطراف، المرحلة ٣ — 0005 §٢٨٤): رقم PAY بعدّاده، يخرج من الدرج كالسحب،
+ * يخفّض «له علينا» المعلّق، ولا يمسّ ذمّة العميل للطرف نفسه. */
+it("دفع لمورد: PAY برقمه، سحبٌ من الدرج، ومعلّق المورد لا العميل", async () => {
+  const { s, shift } = await setup();
+  await saveReceiptLocally(s, input(shift));
+  const { receipt } = await saveReceiptLocally(
+    s,
+    input(shift, {
+      operationId: "op-pay-1",
+      receiptId: "pay-1",
+      kind: "payment",
+      amountMinor: "25000",
+    }),
+  );
+  expect(receipt.receipt_number).toBe("PAY-KRT-A2-26-000001");
+  // ذمّة العميل لا تتأثر بالدفع: 100 − سداد 40 = 60
+  expect((await readPartyPendingCredit(s, "p1")).pendingMinor).toBe(-4000n);
+  expect((await readPendingReceiptsByParty(s)).get("p1")?.signedMinor).toBe(-4000n);
+  const sup = await readPendingSupplierPayments(s, "p1");
+  expect(sup.signedMinor).toBe(-25000n);
+  expect(sup.rows.map((r) => r.receipt_number)).toEqual(["PAY-KRT-A2-26-000001"]);
+  const rows = await readReceiptCashRows(s, "s1");
+  const pay = rows.find((r) => r.kind === "payment")!;
+  expect(pay.inCashMinor).toBe("-25000");
+  expect(pay.note).toBe("دفع إلى أحمد الطيب");
+  const cash = await readShiftCash(s, shift, rows);
+  expect(cash.totals.cashWithdrawalsMinor).toBe(25000n);
+  expect(cash.totals.cashDebtReceiptsMinor).toBe(4000n);
 });

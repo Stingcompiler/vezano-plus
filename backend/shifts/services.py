@@ -238,6 +238,8 @@ def cash_totals(shift: Shift) -> CashTotals:
         sales += int(e.get("cash_sales", 0))
         receipts += int(e.get("cash_debt_receipts", 0))
         refunds += int(e.get("cash_refunds", 0))
+        # الدفع لمورد نقداً من الدرج (PTY؛ 0005 §٢٨٤) صادرٌ كالسحب
+        withdrawals += int(e.get("cash_withdrawals", 0))
     return CashTotals(
         opening_float_minor=shift.opening_float_minor,
         cash_sales_minor=sales,

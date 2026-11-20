@@ -132,7 +132,16 @@ export type CashRowSync = "synced" | "pending" | "conflict" | "quarantined";
 export interface CashRow {
   readonly doc: string;
   readonly time: string;
-  readonly kind: "opening" | "deposit" | "withdrawal" | "expense" | "sale" | "receipt" | "refund";
+  readonly kind:
+    | "opening"
+    | "deposit"
+    | "withdrawal"
+    | "expense"
+    | "sale"
+    | "receipt"
+    | "refund"
+    /** دفع لمورد نقداً من الدرج (سند صرف — 0005 §٢٨٤): صادرٌ كالسحب. */
+    | "payment";
   readonly note: string;
   /** يدخل الصندوق (موجب) أو يخرج منه (سالب) — بالوحدة الصغرى؛ null = لا نقد. */
   readonly inCashMinor: string | null;
@@ -228,6 +237,7 @@ export async function readShiftCash(
     if (r.kind === "sale") sales += v;
     else if (r.kind === "receipt") receipts += v;
     else if (r.kind === "refund") refunds += -v;
+    else if (r.kind === "payment") withdrawals += -v;
     rows.push(r);
   }
   const totals: CashTotals = {

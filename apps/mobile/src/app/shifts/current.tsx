@@ -38,6 +38,7 @@ const KIND_LABEL: Record<CashRow["kind"], string> = {
   sale: "بيع نقدي",
   receipt: "سداد",
   refund: "مرتجع نقدي",
+  payment: "دفع لمورد",
 };
 const MODE_LABEL = { credit: "بيع آجل", bank: "بيع بالتحويل", mixed: "بيع مختلط" } as const;
 const SYNC_LABEL = { synced: "مؤكد", pending: "معلّق", conflict: "تعارض", quarantined: "محجور" };

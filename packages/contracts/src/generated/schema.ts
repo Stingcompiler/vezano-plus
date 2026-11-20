@@ -13975,13 +13975,14 @@ export interface components {
         };
         GetPartiesByPartyIdStatementResponse: {
             as_of: string;
-            balance_minor: string;
+            balance_minor?: string;
             branch_names: {
                 [key: string]: string;
             };
             hidden_other_branch: number;
             last_payment_at: string;
-            oldest_unpaid_at: string;
+            oldest_unpaid_at?: string;
+            owed_minor?: string;
             party: {
                 aliases: unknown[];
                 balance_as_of: string;
@@ -14020,6 +14021,7 @@ export interface components {
                 source_party: string;
             }[];
             scope: string;
+            side?: string;
             tenant_name: string;
         };
         PostPartiesByPartyIdStatementExportResponse: {
@@ -26141,6 +26143,7 @@ export interface operations {
         parameters: {
             query?: {
                 range?: string;
+                side?: string;
             };
             header?: never;
             path: {

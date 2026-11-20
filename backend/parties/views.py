@@ -347,7 +347,10 @@ class PartyStatementView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[OpenApiParameter("range", str, OpenApiParameter.QUERY, required=False)],
+        parameters=[
+            OpenApiParameter("range", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("side", str, OpenApiParameter.QUERY, required=False),
+        ],
         responses={200: None, 403: None, 404: None},
     )
     def get(self, request: Request, party_id: uuid.UUID) -> Response:
@@ -365,6 +368,17 @@ class PartyStatementView(APIView):
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
             visible = None if viewer.is_owner else ([viewer.branch.id] if viewer.branch else [])
             since = None if rng == "all" else timezone.now() - timedelta(days=30)
+            # كشف المورد بجهته (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤): «له علينا» لا «عليه»
+            if request.query_params.get("side") == "supplier":
+                if not party.is_supplier:
+                    return Response({"detail": "not_supplier"}, status=status.HTTP_404_NOT_FOUND)
+                body = services.supplier_statement_payload(
+                    party, visible_branch_ids=visible, since=since
+                )
+                body["scope"] = "all" if visible is None else "branch"
+                body["branch_names"] = {str(b.id): b.name for b in Branch.objects.all()}
+                body["range"] = "all" if since is None else "30"
+                return Response(body)
             body = services.statement_payload(party, visible_branch_ids=visible, since=since)
             body["scope"] = "all" if visible is None else "branch"
             body["branch_names"] = {str(b.id): b.name for b in Branch.objects.all()}

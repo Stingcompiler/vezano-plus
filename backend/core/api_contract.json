@@ -120,7 +120,8 @@
    "403:owner_required"
   ],
   "GET /api/parties/{party_id}/statement": [
-   "403:finance_required"
+   "403:finance_required",
+   "404:not_supplier"
   ],
   "GET /api/platform/analytics": [
    "401:لم يتم تزويد بيانات الدخول.",
@@ -16280,6 +16281,9 @@
      "oldest_unpaid_at": {
       "type": "string"
      },
+     "owed_minor": {
+      "type": "string"
+     },
      "party": {
       "additionalProperties": false,
       "properties": {
@@ -16434,6 +16438,9 @@
      "scope": {
       "type": "string"
      },
+     "side": {
+      "type": "string"
+     },
      "tenant_name": {
       "type": "string"
      }
@@ -16441,10 +16448,8 @@
     "required": [
      "party",
      "rows",
-     "balance_minor",
      "hidden_other_branch",
      "last_payment_at",
-     "oldest_unpaid_at",
      "as_of",
      "tenant_name",
      "scope",

@@ -403,11 +403,21 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                           لا استلام مسجَّل بعد — الاستلام من «استلام البضاعة».
                         </p>
                       ) : null}
-                      {/* كشف المورد لم يُبنَ: الكشف الحالي جهة العميل وحدها فكان يعرض «عليه 0.00» لمورد
-                          له علينا (مراجعة الأطراف 2026-11-20، G-02) — معطَّل بسببه حتى يُبنى */}
-                      <Button variant="secondary" disabledReason="كشف المورد لم يُبنَ بعد">
-                        كشف حساب المورد
-                      </Button>
+                      {/* كشف المورد وسند الصرف (مراجعة الأطراف، المرحلة ٣ — 0005 §٢٨٤) */}
+                      <div className="pty-actions">
+                        <Button
+                          variant="secondary"
+                          onClick={() => router.push(`/parties/${card.id}/supplier-statement`)}
+                        >
+                          كشف حساب المورد
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => router.push(`/parties/${card.id}/pay`)}
+                        >
+                          دفع لمورد
+                        </Button>
+                      </div>
                     </div>
                   ) : null}
                   {card.is_customer && card.is_supplier ? (

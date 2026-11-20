@@ -73,7 +73,8 @@ export async function readPendingCreditByParty(
     // السندات النقدية المحلية غير المغطّاة تخفّض (سداد) أو ترفع (ردّ) المعلّق — ACC-03
     const receipts = (await tx.listProjections(RECEIPT_PREFIX))
       .map((r) => r.value as unknown as LocalReceipt)
-      .filter((r) => r.method === "cash");
+      // سند الصرف لمورد لا يمسّ ذمّة العميل (0005 §٢٨٤)
+      .filter((r) => r.method === "cash" && r.kind !== "payment");
     for (const r of receipts) {
       let asOf = asOfByParty.get(r.party_id);
       if (asOf === undefined) {

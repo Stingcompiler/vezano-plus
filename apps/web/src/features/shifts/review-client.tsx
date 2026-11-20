@@ -40,6 +40,7 @@ const KIND_LABEL: Record<string, string> = {
   sale: "بيع نقدي",
   receipt: "سداد",
   refund: "مرتجع نقدي",
+  payment: "دفع لمورد",
 };
 
 interface LateItem {

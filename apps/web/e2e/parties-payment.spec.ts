@@ -408,3 +408,137 @@ test.describe("PTY-06", () => {
     await expect(page.locator('[data-screen="PTY-06"] .shift-facts')).toContainText("190.00");
   });
 });
+
+// مراجعة الأطراف 2026-11-20 — المرحلة ٣ (0005 §٢٨٤): سند صرف لمورد وكشف المورد بجهته
+async function seedSupplier(page: Page) {
+  await page.evaluate(async () => {
+    const req = indexedDB.open("sting-bootstrap");
+    const db = await new Promise<IDBDatabase>((res) => (req.onsuccess = () => res(req.result)));
+    await new Promise<void>((res) => {
+      const tx = db.transaction("projections", "readwrite");
+      tx.objectStore("projections").put({
+        key: "entity:parties.Party:s9",
+        value: {
+          id: "s9",
+          name: "مخزن البركة — تجريبي",
+          name_normalized: "مخزن البركه — تجريبي",
+          phone: "",
+          credit_limit_minor: "0",
+          is_customer: false,
+          is_supplier: true,
+          distinct_from_id: "",
+          balance_minor: "0",
+          supplier_owed_minor: "115000",
+          balance_as_of: new Date().toISOString(),
+          last_sale_at: "",
+          is_active: true,
+          deactivated_at: "",
+          updated_at: new Date().toISOString(),
+        },
+      });
+      tx.oncomplete = () => res();
+    });
+    db.close();
+  });
+}
+
+test.describe("سند صرف لمورد — المرحلة ٣", () => {
+  test("المالك يدفع 400 نقداً: له علينا 1,150 → 750، سند PAY، ويُرفع بنوع payment", async ({
+    page,
+  }) => {
+    await seed(page, { role: "owner" });
+    await seedSupplier(page);
+    const pushed: { kind: string; members: { payload: Record<string, unknown> }[] }[] = [];
+    await pushRoute(page, pushed);
+    await login(page, "/parties/s9/pay");
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toContainText("دفع لمورد — سند صرف");
+    await expect(root).toContainText("دفع إلى مخزن البركة — تجريبي");
+    await expect(root).toContainText("1,150.00");
+    await page.getByLabel("المبلغ المدفوع").fill("400");
+    await expect(root).toContainText("750.00");
+    await page.getByRole("button", { name: "تسجيل الدفع وطباعة سند صرف" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    await expect(root).toContainText("سُجّل الدفع");
+    await expect(root).toContainText("PAY-KRT-A2-");
+    // البذرة فيها بيع آجل معلّق يُرفع معه — العبرة بعملية السند
+    await expect.poll(() => pushed.some((o) => o.kind === "payment_receipt")).toBe(true);
+    const op = pushed.find((o) => o.kind === "payment_receipt")!;
+    expect(op.members[0]!.payload).toMatchObject({
+      kind: "payment",
+      method: "cash",
+      amount_minor: "40000",
+      party_id: "s9",
+    });
+  });
+
+  test("الكاشير: الدفع للمورد للمدير والمالك", async ({ page }) => {
+    await seed(page, { role: "cashier" });
+    await seedSupplier(page);
+    await login(page, "/parties/s9/pay");
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toHaveAttribute("data-state", "permission_denied");
+    await expect(root).toContainText("الدفع للمورد للمدير والمالك");
+  });
+
+  test("كشف المورد: له علينا بجهته، والصفوف بعمودي عليه/له، ومنه «دفع لمورد»", async ({ page }) => {
+    await seed(page, { role: "owner" });
+    await seedSupplier(page);
+    await page.route(/\/api\/parties\/s9\/statement\?.*side=supplier/, (route) =>
+      route.fulfill(
+        json(200, {
+          side: "supplier",
+          party: { id: "s9", name: "مخزن البركة — تجريبي", phone: "" },
+          rows: [
+            {
+              doc: "OPEN",
+              doc_id: "ob1",
+              kind: "opening",
+              label: "رصيد افتتاحي",
+              occurred_at: new Date().toISOString(),
+              business_date: "",
+              debit_minor: "",
+              credit_minor: "115000",
+              balance_minor: "115000",
+              branch_id: "",
+              info: false,
+              source_party: "",
+            },
+            {
+              doc: "PAY-KRT-A2-26-000001",
+              doc_id: "pay1",
+              kind: "payment",
+              label: "دفع نقدي",
+              occurred_at: new Date().toISOString(),
+              business_date: "",
+              debit_minor: "40000",
+              credit_minor: "",
+              balance_minor: "75000",
+              branch_id: "b1",
+              info: false,
+              source_party: "",
+            },
+          ],
+          owed_minor: "75000",
+          hidden_other_branch: 0,
+          last_payment_at: new Date().toISOString(),
+          as_of: new Date().toISOString(),
+          tenant_name: "",
+          scope: "all",
+          branch_names: { b1: "الفرع الرئيسي" },
+          range: "30",
+        }),
+      ),
+    );
+    await login(page, "/parties/s9/supplier-statement");
+    const root = page.locator('[data-screen="PTY-05"]');
+    await expect(root).toHaveAttribute("data-state", "ready");
+    await expect(root).toContainText("كشف حساب المورد — مخزن البركة — تجريبي");
+    await expect(root).toContainText("له علينا الآن");
+    await expect(root).toContainText("750.00");
+    await expect(root).toContainText("دفع نقدي");
+    await expect(root).toContainText("آخر دفع");
+    await root.getByRole("button", { name: "دفع لمورد" }).click();
+    await expect(page).toHaveURL(/\/parties\/s9\/pay$/);
+  });
+});

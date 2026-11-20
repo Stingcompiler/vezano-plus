@@ -1253,12 +1253,13 @@ register(
 
 # ---------------------------------------------------------------- payment_receipt (§٧.٤؛ PTY-06)
 def _validate_payment_receipt(p: Payload) -> None:
-    """سند قبض أو ردّ: المبلغ موجب؛ التحويل يحتاج مرجعاً؛ الردّ يحتاج سبباً مكتوباً دائماً."""
+    """سند قبض أو ردّ أو دفع لمورد (سند صرف): المبلغ موجب؛ التحويل يحتاج مرجعاً؛ الردّ يحتاج سبباً
+    مكتوباً دائماً."""
     _require(p, "receipt_id", "receipt_number", "party_id", "branch_id", "device_id", "user_id")
     _require(p, "kind", "method", "amount_minor", "business_date", "occurred_at")
     _money(p, "amount_minor", unsigned=True)
-    if p["kind"] not in ("receipt", "refund"):
-        raise KindError("kind must be receipt or refund")
+    if p["kind"] not in ("receipt", "refund", "payment"):
+        raise KindError("kind must be receipt, refund or payment")
     if p["method"] not in ("cash", "bank"):
         raise KindError("method must be cash or bank")
     if int(p["amount_minor"]) <= 0:

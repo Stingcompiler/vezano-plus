@@ -589,6 +589,96 @@ def test_payment_receipt_effects_bank_matching_and_reference_once(ctx: dict[str,
     assert body["last_payment_at"]
 
 
+def test_supplier_payment_lowers_owed_drawer_and_statement(ctx: dict[str, Any]) -> None:
+    """سند صرف لمورد (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤): §٧.٢ «دفع لمورد: نقد صادر، مدين
+    يخفض له علينا». النقد يخرج من الدرج كالسحب، والتحويل الصادر أثره فوري (أرسلناه نحن)، ولا يمسّ
+    ذمّة العميل للطرف نفسه؛ كشف المورد بجهته: الافتتاحي يرفع والدفع يخفّض."""
+    from sales.tests.test_sale import do_push
+
+    with tenant_context(ctx["tenant"].id):
+        sup = services.create_party(
+            party_id=None,
+            name="مخزن البركة",
+            phone="",
+            created_by=None,
+            distinct_from=None,
+            role="supplier",
+        )
+        sup.is_customer = True  # عميل ومورد معاً: الدفع لا يمسّ «عليه»
+        sup.save()
+        services.record_opening_balance(
+            sup,
+            side="supplier_owed",
+            amount_minor=115000,
+            reason="بضاعة الأسبوع الماضي",
+            reference="",
+            business_date=None,
+            actor=ctx["user"],
+        )
+    oc = dict(ctx, owner=ctx["user"])
+    sid = str(uuid.uuid4())
+    do_push(
+        oc,
+        {
+            "operation_id": str(uuid.uuid4()),
+            "kind": "shift_open",
+            "op_version": 1,
+            "dependencies": [],
+            "members": [
+                {
+                    "entity": "shifts.ShiftOpened",
+                    "id": sid,
+                    "schema_version": 1,
+                    "payload": {
+                        "shift_id": sid,
+                        "branch_id": str(ctx["branch"].id),
+                        "device_id": str(ctx["device"].id),
+                        "user_id": str(ctx["user"].id),
+                        "opening_float_minor": "50000",
+                        "business_date": "2026-09-17",
+                        "occurred_at": "2026-09-17T08:00:00Z",
+                    },
+                }
+            ],
+        },
+    )
+    cash = _receipt_op(
+        ctx, str(sup.id), amount="40000", kind="payment", number="PAY-1", shift_id=sid
+    )
+    assert do_push(oc, cash) == ["accepted"]
+    bank = _receipt_op(
+        ctx,
+        str(sup.id),
+        amount="25000",
+        kind="payment",
+        method="bank",
+        reference="OUT-7",
+        number="PAY-2",
+    )
+    assert do_push(oc, bank) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        from shifts import services as shift_services
+        from shifts.models import Shift
+
+        assert services.supplier_owed_minor(sup) == 115000 - 40000 - 25000
+        assert services.balance_minor(sup) == 0
+        t = shift_services.cash_totals(Shift.objects.get(id=sid))
+        assert t.cash_withdrawals_minor == 40000 and t.cash_refunds_minor == 0
+        from parties.reports import _supplier_row
+
+        row = _supplier_row(sup)
+        assert row is not None and row["last_payment_date"] == "2026-09-17"
+    co, ho = _owner_client(ctx)
+    r = co.get(f"/api/parties/{sup.id}/statement?range=all&side=supplier", **ho)  # type: ignore[arg-type]
+    body = r.json()
+    assert body["side"] == "supplier" and body["owed_minor"] == "50000"
+    assert [x["label"] for x in body["rows"]] == ["رصيد افتتاحي", "دفع نقدي", "دفع بتحويل بنكي"]
+    assert [x["balance_minor"] for x in body["rows"]] == ["115000", "75000", "50000"]
+    # كشف العميل للطرف نفسه لا يرى الدفع
+    r = co.get(f"/api/parties/{sup.id}/statement?range=all", **ho)  # type: ignore[arg-type]
+    assert r.json()["rows"] == [] and r.json()["balance_minor"] == "0"
+
+
 def test_merge_identity_map_late_events_and_undo(ctx: dict[str, Any]) -> None:
     """PTY-07 / ACC-78: الدمج للمالك بتأكيد مزدوج؛ الرصيد المجمّع من خريطة هوية (الحركات تبقى
     بهويتها)؛ حدث متأخر باسم المصدر بعد الدمج يظهر في كشف الوارث موسوماً بمصدره؛ لا حلقات؛ التراجع

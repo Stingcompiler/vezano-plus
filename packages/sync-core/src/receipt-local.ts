@@ -14,8 +14,11 @@ import type { OperationDraft } from "./types";
 
 export const RECEIPT_PREFIX = "entity:parties.PaymentReceipt:";
 export const RECEIPT_SEQ_META = "receipt_seq";
+/** عدّاد سندات الصرف للموردين مستقلّ عن سندات القبض (`PAY-…`). */
+export const PAYMENT_SEQ_META = "payment_seq";
 
-export type ReceiptKind = "receipt" | "refund";
+/** `payment` = سند صرف لمورد (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤). */
+export type ReceiptKind = "receipt" | "refund" | "payment";
 export type ReceiptMethod = "cash" | "bank";
 
 export interface ReceiptInput {
@@ -61,10 +64,11 @@ export interface LocalReceipt {
 
 const CODE = /^[A-Z0-9]{1,6}$/;
 
-/** `REC-<فرع>-<جهاز>-<سنة>-<تسلسل>` — عدّاد مستقل (§٨.٢). */
+/** `REC-<فرع>-<جهاز>-<سنة>-<تسلسل>` — عدّاد مستقل (§٨.٢)؛ سند الصرف لمورد `PAY-…`. */
 export function formatReceiptNumber(
   parts: { branchCode: string; devicePrefix: string; yearTwoDigits: string },
   seq: number,
+  prefix: "REC" | "PAY" = "REC",
 ): string {
   if (
     !CODE.test(parts.branchCode) ||
@@ -73,7 +77,7 @@ export function formatReceiptNumber(
   ) {
     throw new Error("invalid receipt number parts");
   }
-  return `REC-${parts.branchCode}-${parts.devicePrefix}-${parts.yearTwoDigits}-${String(seq).padStart(6, "0")}`;
+  return `${prefix}-${parts.branchCode}-${parts.devicePrefix}-${parts.yearTwoDigits}-${String(seq).padStart(6, "0")}`;
 }
 
 export function receiptDraft(input: ReceiptInput, receiptNumber: string): OperationDraft {
@@ -127,11 +131,14 @@ export async function saveReceiptLocally(
     devicePrefix: input.devicePrefix,
     yearTwoDigits: input.businessDate.slice(2, 4),
   };
-  const provisional = receiptDraft(input, formatReceiptNumber(parts, 0));
+  const payout = input.kind === "payment";
+  const seqKey = payout ? PAYMENT_SEQ_META : RECEIPT_SEQ_META;
+  const prefix = payout ? "PAY" : "REC";
+  const provisional = receiptDraft(input, formatReceiptNumber(parts, 0, prefix));
   const out = await saveOperation(storage, provisional, async (tx, op) => {
-    const seq = Number((await tx.getMeta(RECEIPT_SEQ_META)) ?? "0") + 1;
-    await tx.putMeta(RECEIPT_SEQ_META, String(seq));
-    const number = formatReceiptNumber(parts, seq);
+    const seq = Number((await tx.getMeta(seqKey)) ?? "0") + 1;
+    await tx.putMeta(seqKey, String(seq));
+    const number = formatReceiptNumber(parts, seq, prefix);
     const fixed: StoredOperation = {
       ...op,
       members: op.members.map((m) => ({
@@ -195,7 +202,8 @@ export async function readPendingReceiptsByParty(
       const op = await tx.getOperation(r.operation_id);
       const asOf = asOfByParty.get(r.party_id) ?? "";
       const covered = op?.state === "synced" && (!asOf || r.occurred_at <= asOf);
-      if (covered) continue;
+      // سند الصرف لمورد لا يمسّ ذمّة العميل — له `readPendingSupplierPayments`
+      if (covered || r.kind === "payment") continue;
       const cur = out.get(r.party_id) ?? { signedMinor: 0n, rows: [] };
       const effect =
         r.method === "bank"
@@ -209,7 +217,32 @@ export async function readPendingReceiptsByParty(
   });
 }
 
-/** سطور السند النقدي لدرج الوردية (SHIFT-02): السداد يدخل والردّ يخرج؛ التحويل خارج الصندوق. */
+/**
+ * سندات الصرف المحلية لمورد غير المغطّاة برصيده الخادمي (غير المؤكَّدة أو بعد `balance_as_of`):
+ * كلها تخفّض «له علينا» نقداً كانت أو تحويلاً (الصادر أثره فوري — 0005 §٢٨٤).
+ */
+export async function readPendingSupplierPayments(
+  storage: StoragePort,
+  partyId: string,
+): Promise<{ readonly signedMinor: bigint; readonly rows: LocalReceipt[] }> {
+  return storage.read(async (tx) => {
+    const p = await tx.getProjection(`entity:parties.Party:${partyId}`);
+    const asOf = (p?.value as { balance_as_of?: string } | undefined)?.balance_as_of ?? "";
+    const rows: LocalReceipt[] = [];
+    let signed = 0n;
+    for (const row of await tx.listProjections(RECEIPT_PREFIX)) {
+      const r = row.value as unknown as LocalReceipt;
+      if (r.party_id !== partyId || r.kind !== "payment") continue;
+      const op = await tx.getOperation(r.operation_id);
+      if (op?.state === "synced" && (!asOf || r.occurred_at <= asOf)) continue;
+      rows.push(r);
+      signed -= BigInt(r.amount_minor);
+    }
+    return { signedMinor: signed, rows };
+  });
+}
+
+/** سطور السند النقدي لدرج الوردية (SHIFT-02): السداد يدخل والردّ والدفع لمورد يخرجان؛ التحويل خارج الصندوق. */
 export async function readReceiptCashRows(
   storage: StoragePort,
   shiftId: string,
@@ -241,8 +274,13 @@ export async function readReceiptCashRows(
     return {
       doc: r.receipt_number,
       time: r.occurred_at,
-      kind: r.kind === "receipt" ? "receipt" : "refund",
-      note: r.kind === "receipt" ? `سداد من ${r.party_name}` : `ردّ إلى ${r.party_name}`,
+      kind: r.kind,
+      note:
+        r.kind === "receipt"
+          ? `سداد من ${r.party_name}`
+          : r.kind === "payment"
+            ? `دفع إلى ${r.party_name}`
+            : `ردّ إلى ${r.party_name}`,
       inCashMinor: cash ? (r.kind === "receipt" ? amount : -amount).toString() : null,
       outCashMinor: cash ? null : amount.toString(),
       sync: syncOf(ops.get(r.operation_id)),

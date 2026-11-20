@@ -373,13 +373,26 @@ export default function PartyCard() {
                   />
                 ) : null}
                 {card.is_supplier ? (
-                  // كشف المورد لم يُبنَ: الكشف الحالي جهة العميل وحدها (مراجعة الأطراف 2026-11-20، G-02)
-                  <Button
-                    label={tx(T, "كشف حساب المورد")}
-                    variant="secondary"
-                    onPress={() => undefined}
-                    disabledReason={tx(T, "كشف المورد لم يُبنَ بعد")}
-                  />
+                  // كشف المورد وسند الصرف (مراجعة الأطراف، المرحلة ٣ — 0005 §٢٨٤)
+                  <>
+                    <Button
+                      label={tx(T, "كشف حساب المورد")}
+                      variant="secondary"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/parties/[id]/supplier-statement",
+                          params: { id: partyId },
+                        })
+                      }
+                    />
+                    <Button
+                      label={tx(T, "دفع لمورد")}
+                      variant="secondary"
+                      onPress={() =>
+                        router.push({ pathname: "/parties/[id]/pay", params: { id: partyId } })
+                      }
+                    />
+                  </>
                 ) : null}
               </Stack>
               {both ? (

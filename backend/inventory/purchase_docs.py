@@ -624,6 +624,56 @@ def supplier_documents_approved(party: Any) -> int:
     ).count()
 
 
+def supplier_statement_lines_from_purchases(party: Any) -> list[Any]:
+    """سطور كشف المورد (المرحلة ٣ من مراجعة الأطراف): المستند المعتمد يرفع «له علينا» بكامله
+    والمرتجع المقبول يخفّضه — بالمبلغين اللذين يحسبهما `supplier_owed_from_purchases`."""
+    from parties.services import StatementLine, identity_ids
+
+    ids = identity_ids(party)
+    out: list[Any] = []
+    for d in PurchaseDocument.objects.filter(
+        supplier_id__in=ids, status=PurchaseDocument.Status.APPROVED
+    ).order_by("approved_at"):
+        when = d.approved_at or d.created_at
+        out.append(
+            StatementLine(
+                doc=d.number,
+                doc_id=str(d.id),
+                kind="purchase",
+                label="مستند شراء معتمد"
+                + (
+                    f" — فاتورة المورد {d.supplier_invoice_number}"
+                    if d.supplier_invoice_number
+                    else ""
+                ),
+                occurred_at=when,
+                business_date=timezone.localdate(when),
+                debit_minor=0,
+                credit_minor=d.total_minor,
+                branch_id=d.branch_id,
+                party_id=d.supplier_id,
+            )
+        )
+    for r in PurchaseReturn.objects.filter(supplier_id__in=ids, accepted_minor__gt=0).order_by(
+        "created_at"
+    ):
+        out.append(
+            StatementLine(
+                doc=r.number,
+                doc_id=str(r.id),
+                kind="purchase_return",
+                label="مرتجع شراء — إشعار دائن",
+                occurred_at=r.created_at,
+                business_date=timezone.localdate(r.created_at),
+                debit_minor=r.accepted_minor,
+                credit_minor=0,
+                branch_id=r.branch_id,
+                party_id=r.supplier_id,
+            )
+        )
+    return out
+
+
 def supplier_owed_from_purchases(party: Any) -> int:
     from parties.services import identity_ids
 
