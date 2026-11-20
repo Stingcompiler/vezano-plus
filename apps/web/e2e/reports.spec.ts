@@ -420,7 +420,6 @@ test.describe("REP-02", () => {
         "تقرير الذمم — بلا تقادم مخترَع",
         "آخر سداد وأقدم حركة غير مسددة، لا جدول أعمار",
         "على العملاء",
-        "لنا على الموردين",
         "كل الفروع",
         "تصدير",
         "العميل",
@@ -447,7 +446,9 @@ test.describe("REP-02", () => {
     await expect(root).toContainText("2,500.00");
     await expect(root).toContainText("3 طرفاً · المجموع 2,950.00");
     await expect(root).toContainText("حسابه يتطلب توزيع كل دفعة على فواتير بعينها");
-    await page.getByRole("button", { name: "لنا على الموردين" }).click();
+    // الإطار «لنا على الموردين» عكس المعنى: المال لهم علينا (مراجعة الأطراف 2026-11-20، G-06)
+    await expect(root).not.toContainText("لنا على الموردين");
+    await page.getByRole("button", { name: "للموردين علينا" }).click();
     await expect(root).toHaveAttribute("data-state", "empty");
     await expect(root).toContainText("لا ذمم");
   });
@@ -491,7 +492,7 @@ test.describe("REP-02", () => {
     await expect(root).toHaveAttribute("data-state", "empty");
     // الكاشير: 403 → يرى زبائنه وقت البيع لا التقرير كاملاً
     denied = true;
-    await page.getByRole("button", { name: "لنا على الموردين" }).click();
+    await page.getByRole("button", { name: "للموردين علينا" }).click();
     await expectFrame(page, info, {
       screenId: "REP-02",
       state: "permission_denied",

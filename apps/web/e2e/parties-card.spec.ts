@@ -141,6 +141,11 @@ test.describe("PTY-03", () => {
       ]),
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
+    // كشف المورد لم يُبنَ — الزر معطَّل بسببه لا يفتح كشف جهة العميل (مراجعة الأطراف 2026-11-20، G-02)
+    await expect(page.getByRole("button", { name: "كشف حساب المورد" })).toBeDisabled();
+    await expect(page.locator('[data-screen="PTY-03"]')).toContainText("كشف المورد لم يُبنَ بعد");
+    // «لا استلام مسجَّل بعد» لا يظهر لمورد له علينا
+    await expect(page.locator('[data-screen="PTY-03"]')).not.toContainText("لا استلام مسجَّل بعد");
     await page.getByRole("button", { name: "تعديل البطاقة" }).click();
     // الاسم فقط إلزامي
     await page.getByLabel("الاسم").fill("");

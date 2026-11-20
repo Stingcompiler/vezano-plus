@@ -182,7 +182,7 @@ export function OnboardingClient() {
               "لم تبدأ — يمكن إضافتها عند أول بيع آجل"
             ),
           action: "ابدأ",
-          href: "/parties/opening",
+          href: "/parties",
           mark: Number(s.balances?.count ?? 0) > 0 ? "done" : 3,
           needsServer: false,
         },

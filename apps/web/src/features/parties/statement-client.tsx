@@ -54,6 +54,7 @@ interface Statement {
     readonly phone: string;
     readonly balance_as_of?: string;
     readonly updated_at: string;
+    readonly is_customer?: boolean;
   };
   readonly rows: readonly ServerRow[];
   readonly balance_minor: string;
@@ -144,6 +145,9 @@ export function StatementClient({ partyId }: { partyId: string }) {
   const [fetching, setFetching] = useState(false);
   const appRef = useRef(app);
   appRef.current = app;
+  // مرجع ثابت لإعادة المورد إلى بطاقته من داخل الجلب دون إعادة تشغيله مع كل رسم
+  const appRouter = useRef(router);
+  appRouter.current = router;
   const now = new Date();
 
   useEffect(() => {
@@ -161,6 +165,11 @@ export function StatementClient({ partyId }: { partyId: string }) {
         storage.read((tx) => tx.getMeta(cacheKey(partyId))),
       ]);
       const local = parties.find((p) => p.id === partyId);
+      // الكشف جهة العميل وحدها: المورد فقط يُعاد إلى بطاقته (مراجعة الأطراف 2026-11-20، G-02)
+      if (local?.is_customer === false) {
+        router.replace(`/parties/${partyId}`);
+        return;
+      }
       if (local) setParty({ name: local.name, phone: local.phone, since: local.updated_at || "" });
       const asOf =
         (
@@ -207,6 +216,10 @@ export function StatementClient({ partyId }: { partyId: string }) {
         const body = data as unknown as Statement | undefined;
         if (!response.ok || !body) {
           setFailed(true);
+          return;
+        }
+        if (body.party.is_customer === false) {
+          appRouter.current.replace(`/parties/${partyId}`);
           return;
         }
         setData(body);

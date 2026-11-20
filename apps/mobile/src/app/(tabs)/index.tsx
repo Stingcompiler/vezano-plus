@@ -471,7 +471,7 @@ export default function Home() {
                 <Button
                   label={tx(T, "تسجيل سداد")}
                   variant="secondary"
-                  onPress={() => go("/parties/payment")}
+                  onPress={() => go("/parties")}
                 />
               ) : null}
               {summary.quick_actions.includes("return") ? (

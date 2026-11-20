@@ -406,7 +406,6 @@ test.describe("PTY-02", () => {
         "الهاتف",
         "له علينا",
         "صلة السوق",
-        "كشف الحساب",
         "مخزن البركة — تجريبي",
         "مخزن النخيل — تجريبي",
       ]),
@@ -417,6 +416,10 @@ test.describe("PTY-02", () => {
     await expect(root).toContainText("4,200.00");
     await expect(root).toContainText("مرتبط بمنشأة سوق");
     await expect(root).toContainText("سجل داخلي فقط");
+    // كشف المورد لم يُبنَ: الصف يفتح البطاقة لا كشف جهة العميل (مراجعة الأطراف 2026-11-20، G-02)
+    await expect(root).not.toContainText("كشف الحساب");
+    await root.getByRole("button", { name: "بطاقة الطرف" }).first().click();
+    await expect(page).toHaveURL(/\/parties\/[^/]+$/);
   });
 
   test("empty: الشراء نقدي بلا حساب مفتوح", async ({ page }, info) => {
@@ -426,14 +429,14 @@ test.describe("PTY-02", () => {
     await expectFrame(page, info, {
       screenId: "PTY-02",
       state: "empty",
-      texts: fromFrame("PTY-02", "empty", [
-        "لا موردين",
-        "الشراء نقدي بلا حساب مفتوح.",
-        "المسار",
-        "يُنشأ المورد عند أول استلام بضاعة",
-        "أو أمر شراء. لا نطلب تسجيلاً مسبقاً.",
-      ]),
+      texts: fromFrame("PTY-02", "empty", ["لا موردين", "الشراء نقدي بلا حساب مفتوح.", "المسار"]),
     });
+    // لا شيء يُنشئ المورد عند الاستلام أو الأمر — المسار الفعلي (مراجعة الأطراف 2026-11-20، G-07)
+    const root = page.locator('[data-screen="PTY-02"]');
+    await expect(root).toContainText(
+      "أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
+    );
+    await expect(root).not.toContainText("يُنشأ المورد عند أول استلام بضاعة");
   });
 
   test("permission_denied: أمين المخزن يرى الأسماء لا المستحقّ", async ({ page }, info) => {

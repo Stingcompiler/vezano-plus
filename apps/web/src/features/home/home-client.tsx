@@ -380,7 +380,7 @@ export function HomeClient() {
                   </Link>
                 ) : null}
                 {summary.quick_actions.includes("payment") ? (
-                  <Link href="/parties/payment" className="home-action">
+                  <Link href="/parties" className="home-action">
                     تسجيل سداد
                   </Link>
                 ) : null}

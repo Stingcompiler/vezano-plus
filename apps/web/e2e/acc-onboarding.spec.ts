@@ -69,6 +69,13 @@ test.describe("ACC-10", () => {
     });
     await expect(page.locator(".acc-wizard__foot .sting-mono").first()).toHaveText("184");
     await expect(page.locator(".acc-wizard__foot .sting-mono").nth(1)).toHaveText("12");
+    // «أرصدة العملاء الافتتاحية» كان إلى `/parties/opening` ولا شاشة بها — يفتح قائمة العملاء
+    // (الافتتاحي من بطاقة كل طرف) — مراجعة الأطراف 2026-11-20، G-05
+    await expect(page.locator('a[href="/parties/opening"]')).toHaveCount(0);
+    await expect(page.locator('li:has-text("أرصدة العملاء الافتتاحية") a')).toHaveAttribute(
+      "href",
+      "/parties",
+    );
   });
 
   test("empty: لا شيء يُقترح قبل أول أسبوع بيع", async ({ page }, info) => {

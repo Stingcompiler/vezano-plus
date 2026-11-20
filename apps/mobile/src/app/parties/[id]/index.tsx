@@ -200,11 +200,7 @@ export default function PartyCard() {
   const title = both ? tx(T, "بطاقة طرف — الشخص عميل ومورد معاً") : tx(T, "بطاقة طرف");
   const due = card ? BigInt(card.balance_minor || "0") + pending : 0n;
   const lastSale = card?.last_movement_at ? dayLabel(card.last_movement_at) : null;
-  const stmt = (side?: "supplier") =>
-    router.push({
-      pathname: "/parties/[id]/statement",
-      params: side ? { id: partyId, side } : { id: partyId },
-    });
+  const stmt = () => router.push({ pathname: "/parties/[id]/statement", params: { id: partyId } });
 
   return (
     <Screen screenId={T} state={state} title={title}>
@@ -359,8 +355,11 @@ export default function PartyCard() {
                           : formatMinorShort(card.supplier_owed_minor)}
                       </M>
                     }
-                    sub={tx(T, "لا استلام مسجَّل بعد — الاستلام من «استلام البضاعة».")}
-                    onPress={() => stmt("supplier")}
+                    sub={
+                      card.supplier_owed_minor === "0"
+                        ? tx(T, "لا استلام مسجَّل بعد — الاستلام من «استلام البضاعة».")
+                        : undefined
+                    }
                     last
                   />
                 </GroupedList>
@@ -374,10 +373,12 @@ export default function PartyCard() {
                   />
                 ) : null}
                 {card.is_supplier ? (
+                  // كشف المورد لم يُبنَ: الكشف الحالي جهة العميل وحدها (مراجعة الأطراف 2026-11-20، G-02)
                   <Button
                     label={tx(T, "كشف حساب المورد")}
                     variant="secondary"
-                    onPress={() => stmt("supplier")}
+                    onPress={() => undefined}
+                    disabledReason={tx(T, "كشف المورد لم يُبنَ بعد")}
                   />
                 ) : null}
               </Stack>
@@ -410,11 +411,19 @@ export default function PartyCard() {
                   }
                   disabledReason={card.can_open_balance ? undefined : tx(T, "الافتتاحي للمالك")}
                 />
-                <Button
-                  label={tx(T, "قائمة العملاء")}
-                  variant="quiet"
-                  onPress={() => router.push("/parties")}
-                />
+                {card.is_customer ? (
+                  <Button
+                    label={tx(T, "قائمة العملاء")}
+                    variant="quiet"
+                    onPress={() => router.push("/parties")}
+                  />
+                ) : (
+                  <Button
+                    label={tx(T, "قائمة الموردين")}
+                    variant="quiet"
+                    onPress={() => router.push("/parties/suppliers")}
+                  />
+                )}
               </Stack>
             </>
           ) : form ? (

@@ -10,8 +10,10 @@ import Customers from "@/app/(tabs)/parties";
 import Merge from "@/app/parties/[id]/merge";
 import Opening from "@/app/parties/[id]/opening";
 import Payment from "@/app/parties/[id]/payment";
+import Statement from "@/app/parties/[id]/statement";
 import StatementShare from "@/app/parties/[id]/statement/share";
 import Correct from "@/app/parties/receipts/[receiptId]/correct";
+import Suppliers from "@/app/parties/suppliers";
 import { absoluteUrl } from "@/features/parties/lib";
 import { SHIFT_CONTEXT_META } from "@/lib/pos";
 import { setSecretsForTests } from "@/lib/secrets";
@@ -170,6 +172,48 @@ describe("M3 — الأطراف (PTY-01 … PTY-09)", () => {
     expect(hint("PTY-01")).toBe("permission_denied");
     await fireEvent.press(screen.getByRole("button", { name: tx("PTY-01", "اختيار العميل") }));
     expect(mockPush).toHaveBeenCalledWith("/pos/customer");
+  });
+
+  // مراجعة الأطراف 2026-11-20 (المرحلة ١)
+  it("PTY-02: الفراغ يذكر المسار الفعلي لا «يُنشأ المورد عند أول استلام»", async () => {
+    const { impl } = mockServer({
+      "/api/parties/list": {
+        body: {
+          kind: "suppliers",
+          can_see_balances: true,
+          role_name: "مالك",
+          as_of: "2026-11-20T08:00:00Z",
+          rows: [],
+          summary: { count: 0, total_due_minor: "0", total_owed_minor: "0" },
+        },
+      },
+    });
+    await renderWith(<Suppliers />, impl);
+    expect(await screen.findByText(tx("PTY-02", "لا موردين"))).toBeTruthy();
+    expect(
+      screen.getByText(
+        tx(
+          "PTY-02",
+          "· أنشئ الطرف من «عميل جديد» في قائمة العملاء، ثم افتح «تعديل البطاقة» وفعّل «مورد».",
+        ),
+        { exact: false },
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/يُنشأ المورد عند أول استلام/)).toBeNull();
+  });
+
+  it("PTY-05: المورد وحده لا يُعرض له كشف جهة العميل — يُعاد إلى بطاقته", async () => {
+    mockParams = { id: "s1" };
+    await storage.transaction(async (t) => {
+      await t.putProjection({
+        key: `${PARTY_PREFIX}s1`,
+        value: { ...PARTY, id: "s1", is_customer: false, is_supplier: true },
+      });
+    });
+    await renderWith(<Statement />);
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith({ pathname: "/parties/[id]", params: { id: "s1" } }),
+    );
   });
 
   it("PTY-06: بلا مبلغ = validation_error ولا سند محفوظ", async () => {

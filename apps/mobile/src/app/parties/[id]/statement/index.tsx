@@ -20,7 +20,7 @@ import {
   useColors,
 } from "@sting/ui-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
 import { M, PRow, Segments, Stack } from "@/components/parties/parts";
@@ -56,6 +56,7 @@ interface Statement {
     readonly phone: string;
     readonly balance_as_of?: string;
     readonly updated_at: string;
+    readonly is_customer?: boolean;
   };
   readonly rows: readonly ServerRow[];
   readonly balance_minor: string;
@@ -137,6 +138,9 @@ function Day({ iso, now }: { iso: string; now: Date }): ReactNode {
  */
 export default function StatementScreen() {
   const router = useRouter();
+  // مرجع ثابت لإعادة المورد إلى بطاقته من داخل التحميل دون إعادة تشغيله مع كل رسم
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const c = useColors();
   const { id: partyId } = useLocalSearchParams<{ id: string }>();
   const { api } = useSession();
@@ -162,6 +166,11 @@ export default function StatementScreen() {
       storage.read((t) => t.getMeta(cacheKey(partyId))),
     ]);
     const local = parties.find((p) => p.id === partyId);
+    // الكشف جهة العميل وحدها: المورد فقط يُعاد إلى بطاقته (مراجعة الأطراف 2026-11-20، G-02)
+    if (local?.is_customer === false) {
+      routerRef.current.replace({ pathname: "/parties/[id]", params: { id: partyId } });
+      return;
+    }
     if (local) setParty({ name: local.name, phone: local.phone, since: local.updated_at || "" });
     const asOf =
       (
@@ -213,6 +222,10 @@ export default function StatementScreen() {
         const body = res as unknown as Statement | undefined;
         if (!response.ok || !body) {
           setFailed(true);
+          return;
+        }
+        if (body.party.is_customer === false) {
+          routerRef.current.replace({ pathname: "/parties/[id]", params: { id: partyId } });
           return;
         }
         setData(body);
