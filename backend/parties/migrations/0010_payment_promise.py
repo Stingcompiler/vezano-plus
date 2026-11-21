@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('parties', '0009_offset_method'),
+        ("parties", "0009_offset_method"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='party',
-            name='promise_by_name',
-            field=models.CharField(blank=True, default='', max_length=200),
+            model_name="party",
+            name="promise_by_name",
+            field=models.CharField(blank=True, default="", max_length=200),
         ),
         migrations.AddField(
-            model_name='party',
-            name='promise_note',
-            field=models.CharField(blank=True, default='', max_length=200),
+            model_name="party",
+            name="promise_note",
+            field=models.CharField(blank=True, default="", max_length=200),
         ),
         migrations.AddField(
-            model_name='party',
-            name='promise_set_at',
+            model_name="party",
+            name="promise_set_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='party',
-            name='promised_on',
+            model_name="party",
+            name="promised_on",
             field=models.DateField(blank=True, null=True),
         ),
     ]

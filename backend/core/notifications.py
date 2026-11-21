@@ -343,9 +343,7 @@ def _promise_alerts(now: Any) -> None:
     today = now.date()
     live: set[str] = set()
     parties = list(
-        Party.objects.filter(
-            is_customer=True, merged_into__isnull=True, promised_on__lt=today
-        )
+        Party.objects.filter(is_customer=True, merged_into__isnull=True, promised_on__lt=today)
     )
     figures = party_figures(parties)
     for party in parties:
