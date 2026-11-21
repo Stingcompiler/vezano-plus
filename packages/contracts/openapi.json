@@ -8143,6 +8143,28 @@
         }
       }
     },
+    "/api/parties/receipts/unmatched": {
+      "get": {
+        "operationId": "parties_receipts_unmatched_retrieve",
+        "description": "«تحويلات تنتظر المطابقة» — للمالك (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04).",
+        "tags": ["parties"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPartiesReceiptsUnmatchedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/parties/statement-exports/{export_id}": {
       "get": {
         "operationId": "parties_statement_exports_retrieve",
@@ -47664,6 +47686,84 @@
           }
         },
         "required": ["receipt", "party"],
+        "type": "object"
+      },
+      "GetPartiesReceiptsUnmatchedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "computed_at": {
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "amount_minor": {
+                  "type": "string"
+                },
+                "branch_name": {
+                  "type": "string"
+                },
+                "business_date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "occurred_at": {
+                  "type": "string"
+                },
+                "party_id": {
+                  "type": "string"
+                },
+                "party_name": {
+                  "type": "string"
+                },
+                "receipt_number": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "user_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "amount_minor",
+                "branch_name",
+                "business_date",
+                "id",
+                "kind",
+                "occurred_at",
+                "party_id",
+                "party_name",
+                "receipt_number",
+                "reference",
+                "user_name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "totals": {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "receipts_minor": {
+                "type": "string"
+              }
+            },
+            "required": ["count", "receipts_minor"],
+            "type": "object"
+          }
+        },
+        "required": ["computed_at", "rows", "totals"],
         "type": "object"
       },
       "GetPartiesStatementExportsByExportIdResponse": {

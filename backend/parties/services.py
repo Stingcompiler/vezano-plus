@@ -538,15 +538,61 @@ def receipt_payload(r: PaymentReceipt) -> dict[str, Any]:
 
 
 def match_receipt(receipt: PaymentReceipt, *, actor: User) -> PaymentReceipt:
-    """«مطابق» بفعل صريح من كشف البنك — عندها فقط يُسقط الدين (ACC-133)."""
-    if receipt.method != "bank":
+    """«مطابق» بفعل صريح من كشف البنك — عندها فقط يُسقط الدين (ACC-133). الوسيلة الفعلية بعد
+    التصحيحات لا الأصلية؛ المعكوس لا يُطابَق (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦)."""
+    e = effective_receipt(receipt)
+    if e.method != "bank" or receipt.kind == "payment":
         raise CardRejected("invalid", "method")
+    if e.reversed:
+        raise CardRejected("already_reversed")
     if receipt.matched_at is not None:
         raise CardRejected("already_matched")
     receipt.matched_at = timezone.now()
     receipt.matched_by_name = actor.display_name
     receipt.save(update_fields=["matched_at", "matched_by_name"])
     return receipt
+
+
+def unmatched_transfers() -> dict[str, Any]:
+    """«تحويلات تنتظر المطابقة» (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04): كل سند قبض أو ردّ
+    وسيلته الفعلية تحويل بنكي، لم يُطابَق ولم يُعكس. سند الصرف للمورد خارجها لأن أثره فوري."""
+
+    branches = {b.id: b.name for b in Branch.objects.all()}
+    rows: list[dict[str, Any]] = []
+    total = 0
+    for r in (
+        # النقد لا يُطابَق: يكفي ما أصله تحويل أو صُحّحت وسيلته (قد تصير تحويلاً)
+        PaymentReceipt.objects.filter(matched_at__isnull=True)
+        .filter(Q(method="bank") | Q(corrections__kind="method"))
+        .exclude(kind="payment")
+        .distinct()
+        .select_related("party")
+        .order_by("occurred_at", "receipt_number")
+    ):
+        e = effective_receipt(r)
+        if e.method != "bank" or e.reversed:
+            continue
+        total += e.amount_minor if r.kind == "receipt" else 0
+        rows.append(
+            {
+                "id": str(r.id),
+                "receipt_number": r.receipt_number,
+                "kind": r.kind,
+                "party_id": str(r.party_id),
+                "party_name": r.party.name,
+                "amount_minor": str(e.amount_minor),
+                "reference": e.reference,
+                "business_date": e.business_date.isoformat(),
+                "occurred_at": _iso(r.occurred_at),
+                "user_name": r.user_name,
+                "branch_name": branches.get(r.branch_id, ""),
+            }
+        )
+    return {
+        "rows": rows,
+        "totals": {"count": len(rows), "receipts_minor": str(total)},
+        "computed_at": _iso(timezone.now()),
+    }
 
 
 @dataclass(frozen=True)

@@ -146,3 +146,43 @@
   unicode-bidi: isolate;
   word-break: break-all;
 }
+
+/* PTY-10 — تحويلات تنتظر المطابقة (المرحلة ٤ — 0005 §٢٨٦): بطاقة c-card لكل سند، بلا أشرطة */
+.pty-match {
+  display: grid;
+  gap: var(--space-3, 12px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pty-match__item {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+}
+.pty-match__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.pty-match__party {
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-brand-primary);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+.pty-match__amount {
+  font-size: 20px;
+  font-weight: 600;
+}
+.pty-match__confirm {
+  display: grid;
+  gap: var(--space-2, 8px);
+}

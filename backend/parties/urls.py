@@ -15,6 +15,7 @@ from parties.views import (
     StatementDocumentView,
     StatementExportStatusView,
     StatementExportView,
+    UnmatchedReceiptsView,
 )
 
 urlpatterns = [
@@ -45,6 +46,11 @@ urlpatterns = [
         "parties/receipts/<uuid:receipt_id>/correct",
         ReceiptCorrectionView.as_view(),
         name="parties-receipt-correct",
+    ),
+    path(
+        "parties/receipts/unmatched",
+        UnmatchedReceiptsView.as_view(),
+        name="parties-receipts-unmatched",
     ),
     path(
         "parties/receipts/<uuid:receipt_id>/match",

@@ -507,6 +507,13 @@ export function StatementClient({ partyId }: { partyId: string }) {
                 <Button onClick={() => router.push(`/parties/${partyId}/payment`)}>
                   تسجيل سداد
                 </Button>
+                {/* المالك يطابق التحويل المسجَّل ليسقط الدين (المرحلة ٤ — 0005 §٢٨٦) */}
+                {server?.scope === "all" &&
+                server.rows.some((r) => r.kind === "payment_pending") ? (
+                  <Button variant="quiet" onClick={() => router.push("/parties/receipts/matching")}>
+                    تحويلات تنتظر المطابقة
+                  </Button>
+                ) : null}
               </div>
             </div>
 

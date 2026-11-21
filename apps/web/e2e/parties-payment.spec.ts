@@ -614,3 +614,79 @@ test.describe("مقاصة بين الرصيدين — المرحلة ٣ ب", () 
     await expect(page.getByLabel("المبلغ المدفوع")).toHaveValue("373100.00");
   });
 });
+
+test.describe("تحويلات تنتظر المطابقة — المرحلة ٤", () => {
+  const transfer = (id: string, number: string, amount: string, ref: string) => ({
+    id,
+    receipt_number: number,
+    kind: "receipt",
+    party_id: "p1",
+    party_name: "أحمد الطيب",
+    amount_minor: amount,
+    reference: ref,
+    business_date: new Date().toISOString().slice(0, 10),
+    occurred_at: new Date().toISOString(),
+    user_name: "منى",
+    branch_name: "الخرطوم",
+  });
+
+  test("المالك: «مطابق» يُخرج السند، و«لم يصل» يعكسه بسبب — ثم القائمة فارغة", async ({ page }) => {
+    await seed(page, { role: "owner" });
+    let rows = [
+      transfer("r1", "REC-KRT-A2-26-000007", "3000", "TRF-88214"),
+      transfer("r2", "REC-KRT-A2-26-000008", "2000", "TRF-88215"),
+    ];
+    const list = () =>
+      json(200, {
+        rows,
+        totals: {
+          count: rows.length,
+          receipts_minor: String(rows.reduce((a, r) => a + Number(r.amount_minor), 0)),
+        },
+        computed_at: new Date().toISOString(),
+      });
+    await page.route(/\/api\/parties\/receipts\/unmatched$/, (route) => route.fulfill(list()));
+    await page.route(/\/api\/parties\/receipts\/r1\/match$/, (route) => {
+      rows = rows.filter((r) => r.id !== "r1");
+      return route.fulfill(json(200, { receipt: {}, party: {} }));
+    });
+    let reversed: unknown = null;
+    await page.route(/\/api\/parties\/receipts\/r2\/correct$/, (route) => {
+      reversed = JSON.parse(route.request().postData() ?? "{}");
+      rows = rows.filter((r) => r.id !== "r2");
+      return route.fulfill(json(201, { correction: {}, party: {} }));
+    });
+    await login(page, "/parties/receipts/matching");
+    const root = page.locator('[data-screen="PTY-10"]');
+    await expect(root).toHaveAttribute("data-state", "ready");
+    await expect(root).toContainText("تحويلات تنتظر المطابقة");
+    await expect(root).toContainText("TRF-88214");
+    await expect(root).toContainText("50.00");
+
+    await page.getByRole("button", { name: "مطابق" }).first().click();
+    await expect(root).toContainText("طوبق — نقص الدين");
+    await expect(root).not.toContainText("TRF-88214");
+
+    await page.getByRole("button", { name: "لم يصل", exact: true }).click();
+    await page.getByLabel("السبب").fill("");
+    await page.getByRole("button", { name: "سجّل أنه لم يصل" }).click();
+    await expect(root).toHaveAttribute("data-state", "validation_error");
+    await page.getByLabel("السبب").fill("لم يصل التحويل إلى الحساب");
+    await page.getByRole("button", { name: "سجّل أنه لم يصل" }).click();
+    await expect(root).toContainText("سُجّل أنه لم يصل");
+    await expect(root).toHaveAttribute("data-state", "empty");
+    await expect(root).toContainText("لا تحويلات تنتظر المطابقة");
+    expect(reversed).toMatchObject({ kind: "reverse", reason: "لم يصل التحويل إلى الحساب" });
+  });
+
+  test("غير المالك: 403 → المطابقة للمالك", async ({ page }) => {
+    await seed(page, { role: "cashier" });
+    await page.route(/\/api\/parties\/receipts\/unmatched$/, (route) =>
+      route.fulfill(json(403, { detail: "owner_required" })),
+    );
+    await login(page, "/parties/receipts/matching");
+    const root = page.locator('[data-screen="PTY-10"]');
+    await expect(root).toHaveAttribute("data-state", "permission_denied");
+    await expect(root).toContainText("المطابقة للمالك");
+  });
+});

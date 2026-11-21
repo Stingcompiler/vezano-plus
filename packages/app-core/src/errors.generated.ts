@@ -447,6 +447,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "finance_required",
     },
   ],
+  "GET /api/parties/receipts/unmatched": [
+    {
+      status: 403,
+      code: "owner_required",
+    },
+  ],
   "GET /api/parties/{party_id}/merge": [
     {
       status: 403,

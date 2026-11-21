@@ -589,6 +589,69 @@ def test_payment_receipt_effects_bank_matching_and_reference_once(ctx: dict[str,
     assert body["last_payment_at"]
 
 
+def test_unmatched_transfers_list_match_not_arrived_and_home(ctx: dict[str, Any]) -> None:
+    """«تحويلات تنتظر المطابقة» (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04): القائمة للمالك
+    بالتحويلات غير المطابقة وحدها؛ «مطابق» يُسقط الدين ويُخرجها؛ «لم يصل» عكسٌ بسبب يُخرجها والدين
+    باقٍ؛ والرئيسية تعرض القرار ما دام معلّق."""
+    from sales.tests.test_sale import do_push
+
+    with tenant_context(ctx["tenant"].id):
+        p = services.create_party(
+            party_id=None, name="بنكك الخرطوم", phone="", created_by=None, distinct_from=None
+        )
+        services.record_opening_balance(
+            p,
+            side="customer_due",
+            amount_minor=10000,
+            reason="دين سابق",
+            reference="",
+            business_date=None,
+            actor=ctx["user"],
+        )
+    oc = dict(ctx, owner=ctx["user"])
+    a = _receipt_op(ctx, str(p.id), amount="3000", method="bank", reference="TRF-1", number="R-A")
+    b = _receipt_op(ctx, str(p.id), amount="2000", method="bank", reference="TRF-2", number="R-B")
+    cash = _receipt_op(ctx, str(p.id), amount="1000", number="R-C")
+    for op in (a, b, cash):
+        assert do_push(oc, op) == ["accepted"]
+
+    c, hc = api(ctx)
+    assert c.get("/api/parties/receipts/unmatched", **hc).status_code == 403  # type: ignore[arg-type]
+    co, ho = _owner_client(ctx)
+    body = co.get("/api/parties/receipts/unmatched", **ho).json()  # type: ignore[arg-type]
+    assert [r["receipt_number"] for r in body["rows"]] == ["R-A", "R-B"]
+    assert body["totals"] == {"count": 2, "receipts_minor": "5000"}
+    assert body["rows"][0]["party_name"] == "بنكك الخرطوم"
+    home_ = co.get("/api/home", **ho).json()  # type: ignore[arg-type]
+    d = [x for x in home_["decisions"] if x["id"] == "parties-unmatched"]
+    assert d and d[0]["title"] == "تحويلان ينتظران المطابقة"
+    assert d[0]["href"] == "/parties/receipts/matching"
+
+    with tenant_context(ctx["tenant"].id):
+        ra = PaymentReceipt.objects.get(receipt_number="R-A")
+        rb = PaymentReceipt.objects.get(receipt_number="R-B")
+        assert services.party_payload(p)["balance_minor"] == "9000"
+    # «مطابق»: الدين ينقص 30 والسند يخرج من القائمة
+    r = co.post(f"/api/parties/receipts/{ra.id}/match", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 200 and r.json()["party"]["balance_minor"] == "6000"
+    # «لم يصل»: عكسٌ بسبب — لا أثر على الدين ويخرج من القائمة، ولا يُطابَق بعدها
+    r = co.post(
+        f"/api/parties/receipts/{rb.id}/correct",
+        data={"kind": "reverse", "reason": "لم يصل التحويل"},
+        content_type="application/json",
+        **ho,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 201
+    r = co.post(f"/api/parties/receipts/{rb.id}/match", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 400
+    body = co.get("/api/parties/receipts/unmatched", **ho).json()  # type: ignore[arg-type]
+    assert body["rows"] == [] and body["totals"]["count"] == 0
+    with tenant_context(ctx["tenant"].id):
+        assert services.party_payload(p)["balance_minor"] == "6000"
+    home_ = co.get("/api/home", **ho).json()  # type: ignore[arg-type]
+    assert not [x for x in home_["decisions"] if x["id"] == "parties-unmatched"]
+
+
 def test_supplier_payment_lowers_owed_drawer_and_statement(ctx: dict[str, Any]) -> None:
     """سند صرف لمورد (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤): §٧.٢ «دفع لمورد: نقد صادر، مدين
     يخفض له علينا». النقد يخرج من الدرج كالسحب، والتحويل الصادر أثره فوري (أرسلناه نحن)، ولا يمسّ

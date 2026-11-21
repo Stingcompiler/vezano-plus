@@ -455,6 +455,14 @@ export default function StatementScreen() {
             })
           }
         />
+        {/* المالك يطابق التحويل المسجَّل ليسقط الدين (المرحلة ٤ — 0005 §٢٨٦) */}
+        {server?.scope === "all" && server.rows.some((r) => r.kind === "payment_pending") ? (
+          <Button
+            label={tx(T, "تحويلات تنتظر المطابقة")}
+            variant="quiet"
+            onPress={() => router.push("/parties/receipts/matching")}
+          />
+        ) : null}
       </Stack>
 
       {state === "permission_denied" ? (
