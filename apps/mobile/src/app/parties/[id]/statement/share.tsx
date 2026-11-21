@@ -481,6 +481,15 @@ export default function ShareScreen() {
                       variant="secondary"
                       onPress={shareReminder}
                     />
+                    <Button
+                      label={tx(T, "أرسل عبر واتساب")}
+                      variant="secondary"
+                      onPress={() =>
+                        void Linking.openURL(
+                          `https://wa.me/?text=${encodeURIComponent(reminder)}`,
+                        ).catch(() => undefined)
+                      }
+                    />
                   </Stack>
                 </>
               ) : null}

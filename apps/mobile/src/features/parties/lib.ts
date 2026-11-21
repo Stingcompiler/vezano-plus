@@ -37,6 +37,13 @@ export interface Card {
     readonly phone: string;
     readonly balance_minor: string;
   }[];
+  /** «موعد السداد الموعود» — من الخادم فقط (0005 §٢٨٨) */
+  readonly promise?: {
+    readonly promised_on: string;
+    readonly note: string;
+    readonly set_by_name: string;
+    readonly set_at: string;
+  };
 }
 
 /** صف الشاشة: الرصيد المركّب «خادمي X + معلّق على جهازك Y = Z» (ACC-02). */

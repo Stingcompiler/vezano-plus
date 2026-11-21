@@ -479,6 +479,19 @@ export function ShareClient({ partyId, range }: { partyId: string; range: Range 
                           <Button variant="secondary" onClick={() => void copy("reminder")}>
                             {copied === "reminder" ? "نُسخ القالب" : "نسخ القالب"}
                           </Button>
+                          {/* المالك يرسله بنفسه ويختار المحادثة (المرحلة ٥ ب — 0005 §٢٨٨) */}
+                          <Button
+                            variant="secondary"
+                            onClick={() =>
+                              window.open(
+                                `https://wa.me/?text=${encodeURIComponent(reminder)}`,
+                                "_blank",
+                                "noopener",
+                              )
+                            }
+                          >
+                            أرسل عبر واتساب
+                          </Button>
                           <Button
                             variant="quiet"
                             onClick={() => router.push(`/parties/${stmt.party.id}/statement`)}

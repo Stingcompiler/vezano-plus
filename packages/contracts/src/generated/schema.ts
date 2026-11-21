@@ -3099,6 +3099,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/parties/{party_id}/promise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description «موعد السداد الموعود» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): يسجّله المالك أو المدير،
+         *     و`promised_on` فارغ يمسحه. يعيد البطاقة.
+         */
+        post: operations["parties_promise_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parties/{party_id}/statement": {
         parameters: {
             query?: never;
@@ -5953,6 +5973,12 @@ export interface components {
             price_minor: string;
             /** @default false */
             confirm_below_cost: boolean;
+        };
+        Promise: {
+            /** Format: date */
+            promised_on?: string | null;
+            /** @default  */
+            note: string;
         };
         ProofReview: {
             decision: components["schemas"]["ProofReviewDecisionEnum"];
@@ -13845,6 +13871,12 @@ export interface components {
                 phone: string;
                 updated_at: string;
             }[];
+            promise: {
+                note: string;
+                promised_on: string;
+                set_at: string;
+                set_by_name: string;
+            };
             supplier_owed_minor: string;
             updated_at: string;
         };
@@ -13872,6 +13904,12 @@ export interface components {
             opening_balances: unknown[];
             phone: string;
             potential_duplicates: unknown[];
+            promise: {
+                note: string;
+                promised_on: string;
+                set_at: string;
+                set_by_name: string;
+            };
             supplier_owed_minor: string;
             updated_at: string;
         };
@@ -14039,6 +14077,67 @@ export interface components {
                 supplier_owed_minor: string;
                 updated_at: string;
             };
+        };
+        PostPartiesByPartyIdPromiseResponse: {
+            aliases: string[];
+            balance_as_of: string;
+            balance_minor: string;
+            can_edit: boolean;
+            can_open_balance: boolean;
+            credit_limit_minor: string;
+            deactivated_at: string;
+            distinct_from_id: string;
+            has_movements: boolean;
+            id: string;
+            is_active: boolean;
+            is_customer: boolean;
+            is_supplier: boolean;
+            last_movement_at: string;
+            last_sale_at: string;
+            market_linked: boolean;
+            merged_into: string;
+            name: string;
+            name_normalized: string;
+            note: string;
+            opening_balances: {
+                amount_minor: string;
+                business_date: string;
+                decided_by_name: string;
+                id: string;
+                occurred_at: string;
+                party_id: string;
+                reason: string;
+                reference: string;
+                side: string;
+            }[];
+            phone: string;
+            potential_duplicates: {
+                aliases: unknown[];
+                balance_as_of: string;
+                balance_minor: string;
+                credit_limit_minor: string;
+                deactivated_at: string;
+                distinct_from_id: string;
+                id: string;
+                is_active: boolean;
+                is_customer: boolean;
+                is_supplier: boolean;
+                last_sale_at: string;
+                merged_into: string;
+                name: string;
+                name_normalized: string;
+                note: string;
+                phone: string;
+                updated_at: string;
+            }[];
+            promise: {
+                note: string;
+                promised_on: string;
+                set_at: string;
+                set_by_name: string;
+            };
+            supplier_owed_minor: string;
+            updated_at: string;
         };
         GetPartiesByPartyIdStatementResponse: {
             as_of: string;
@@ -26248,6 +26347,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostPartiesByPartyIdOpeningBalanceResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    parties_promise_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Promise"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPartiesByPartyIdPromiseResponse"];
                 };
             };
             /** @description No response body */

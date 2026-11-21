@@ -195,6 +195,12 @@ class PartyCardView(APIView):
         row["potential_duplicates"] = [
             services.party_payload(p) for p in services.potential_duplicates(party)
         ]
+        # وعد السداد معلومة مالية: يُحجب كما يُحجب الرصيد (0005 §٢٨٨)
+        row["promise"] = (
+            services.promise_payload(party)
+            if viewer.can_see_finance
+            else {"promised_on": "", "note": "", "set_by_name": "", "set_at": ""}
+        )
         return row
 
     @extend_schema(responses={200: None, 403: None, 404: None})
@@ -249,6 +255,49 @@ class PartyCardView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             return Response(self._card(party, viewer))
+
+
+class PartyPromiseView(APIView):
+    """«موعد السداد الموعود» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): يسجّله المالك أو المدير،
+    و`promised_on` فارغ يمسحه. يعيد البطاقة."""
+
+    permission_classes = (IsAuthenticated,)
+
+    class PromiseSerializer(serializers.Serializer[dict[str, Any]]):
+        promised_on = serializers.DateField(required=False, allow_null=True, default=None)
+        note = serializers.CharField(allow_blank=True, required=False, default="", max_length=200)
+
+    @extend_schema(
+        request=PromiseSerializer, responses={200: None, 400: None, 403: None, 404: None}
+    )
+    def post(self, request: Request, party_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        ser = self.PromiseSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            if not _can_edit(viewer):
+                return Response({"detail": "manager_required"}, status=status.HTTP_403_FORBIDDEN)
+            party = Party.objects.filter(id=party_id).first()
+            if party is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            try:
+                services.set_promise(
+                    party,
+                    promised_on=d.get("promised_on"),
+                    note=str(d.get("note", "")),
+                    actor=viewer.user,
+                )
+            except services.CardRejected as e:
+                return Response(
+                    Rejected([FieldError(e.field or "promised_on", e.code)]).as_response(),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(PartyCardView()._card(party, viewer))
 
 
 class PartyDistinctView(APIView):

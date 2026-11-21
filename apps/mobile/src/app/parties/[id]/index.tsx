@@ -20,6 +20,7 @@ import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
 import { M, PRow, Stack, SwitchRow } from "@/components/parties/parts";
+import { PromiseRows } from "@/components/parties/promise";
 import type { Card } from "@/features/parties/lib";
 import { dayLabel } from "@/lib/invoices";
 import { parseAmount } from "@/lib/pos";
@@ -364,6 +365,8 @@ export default function PartyCard() {
                   />
                 </GroupedList>
               ) : null}
+              {/* المرحلة ٥ ب من مراجعة الأطراف (0005 §٢٨٨) */}
+              {card.is_customer ? <PromiseRows card={card} onSaved={setCard} /> : null}
               <Stack>
                 {card.is_customer ? (
                   <Button

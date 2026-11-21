@@ -369,3 +369,58 @@ test.describe("PTY-04", () => {
     await expect(page.getByRole("button", { name: "حفظ الرصيد الافتتاحي" })).toBeDisabled();
   });
 });
+
+test.describe("موعد السداد الموعود — المرحلة ٥ ب", () => {
+  const iso = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  };
+  const none = { promised_on: "", note: "", set_by_name: "", set_at: "" };
+
+  test("المالك يسجّل موعداً قادماً بملاحظة — الماضي مرفوض", async ({ page }) => {
+    await seed(page);
+    await cardRoute(page, card({ promise: none }));
+    let posted: unknown = null;
+    const soon = iso(3);
+    await page.route("**/api/parties/p3/promise", (route) => {
+      posted = JSON.parse(route.request().postData() ?? "{}");
+      return route.fulfill(
+        json(
+          200,
+          card({
+            promise: { promised_on: soon, note: "بعد صرف الراتب", set_by_name: "سالم", set_at: "" },
+          }),
+        ),
+      );
+    });
+    await login(page, "/parties/p3");
+    const root = page.locator('[data-screen="PTY-03"]');
+    await expect(root).toContainText("موعد السداد الموعود");
+    await expect(root).toContainText("لا موعد مسجَّل");
+    await page.getByRole("button", { name: "سجّل موعد سداد" }).click();
+    await page.getByLabel("تاريخ السداد الموعود").fill(iso(-1));
+    await page.getByRole("button", { name: "احفظ الموعد" }).click();
+    await expect(root).toContainText("تاريخ قادم");
+    expect(posted).toBeNull();
+    await page.getByLabel("تاريخ السداد الموعود").fill(soon);
+    await page.getByLabel("ملاحظة").fill("بعد صرف الراتب");
+    await page.getByRole("button", { name: "احفظ الموعد" }).click();
+    await expect(root).toContainText("بعد صرف الراتب · سجّله سالم");
+    await expect(page.getByRole("button", { name: "غيّر الموعد" })).toBeVisible();
+    expect(posted).toEqual({ promised_on: soon, note: "بعد صرف الراتب" });
+  });
+
+  test("فات الموعد والدين باقٍ — تنبيه في البطاقة", async ({ page }) => {
+    await seed(page);
+    await cardRoute(
+      page,
+      card({ promise: { promised_on: iso(-2), note: "", set_by_name: "سالم", set_at: "" } }),
+    );
+    await login(page, "/parties/p3");
+    const root = page.locator('[data-screen="PTY-03"]');
+    await expect(root).toContainText("فات الموعد والدين باقٍ");
+    await expect(page.getByRole("button", { name: "امسح الموعد" })).toBeVisible();
+  });
+});

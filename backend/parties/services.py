@@ -640,6 +640,31 @@ def receipt_payload(r: PaymentReceipt) -> dict[str, Any]:
     }
 
 
+def promise_payload(party: Party) -> dict[str, Any]:
+    """«موعد السداد الموعود» في البطاقة (0005 §٢٨٨) — فارغ إن لم يُسجَّل."""
+    return {
+        "promised_on": party.promised_on.isoformat() if party.promised_on else "",
+        "note": party.promise_note,
+        "set_by_name": party.promise_by_name,
+        "set_at": _iso(party.promise_set_at),
+    }
+
+
+def set_promise(party: Party, *, promised_on: date | None, note: str, actor: User) -> Party:
+    """يسجّل وعد السداد أو يمسحه (promised_on=None). الوعد لا يغيّر الرصيد ولا يمسّ الكشف — تذكير
+    للمالك فقط؛ تاريخ مضى يُرفض (`past`) لأن الوعد بالمستقبل."""
+    if promised_on is not None and promised_on < timezone.localdate():
+        raise CardRejected("past", "promised_on")
+    if promised_on is not None and not party.is_customer:
+        raise CardRejected("not_customer", "promised_on")
+    party.promised_on = promised_on
+    party.promise_note = note.strip() if promised_on else ""
+    party.promise_by_name = actor.display_name if promised_on else ""
+    party.promise_set_at = timezone.now() if promised_on else None
+    party.save(update_fields=["promised_on", "promise_note", "promise_by_name", "promise_set_at"])
+    return party
+
+
 def match_receipt(receipt: PaymentReceipt, *, actor: User) -> PaymentReceipt:
     """«مطابق» بفعل صريح من كشف البنك — عندها فقط يُسقط الدين (ACC-133). الوسيلة الفعلية بعد
     التصحيحات لا الأصلية؛ المعكوس لا يُطابَق (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦)."""

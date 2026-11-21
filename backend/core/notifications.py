@@ -202,6 +202,7 @@ def refresh() -> None:
     # ٧) آجلٌ استحق — PTY-05 (0005 §٢٦٨، اختيار المالك «الآجلة حين تستحق» بمدة 30 يوماً): لا
     #    موعد استحقاق للفاتورة في النظام، فالمستحق = أقدم دين غير مسدَّد مضى عليه CREDIT_DUE_DAYS
     _credit_due_alerts(now)
+    _promise_alerts(now)
     # ٥) تسويقي: باقة الفروع المتعددة — قابل للإيقاف، لا يُنبَّه به بعد انتهاء العرض (ACC-110)
     # 0005 §١٧٠ — بالميزة لا برمز الباقة: التجريبية قد تُبنى على باقة الفروع المتعددة نفسها
     if "multi_branch" not in plan_of(sub).features:
@@ -331,6 +332,41 @@ def _credit_due_alerts(now: Any) -> None:
             ),
         )
     _resolve_stale("credit_due", live)
+
+
+def _promise_alerts(now: Any) -> None:
+    """«فات موعد سداد» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): وعدٌ مضى تاريخه والدين باقٍ.
+    للمالك وحده كإشعار الاستحقاق؛ يزول حين يسدّد أو يُمسح الوعد أو يُجدَّد بتاريخ قادم."""
+    from parties.models import Party
+    from parties.services import _day_month, party_figures
+
+    today = now.date()
+    live: set[str] = set()
+    parties = list(
+        Party.objects.filter(
+            is_customer=True, merged_into__isnull=True, promised_on__lt=today
+        )
+    )
+    figures = party_figures(parties)
+    for party in parties:
+        balance = figures[party.id].balance_minor
+        if balance <= 0 or party.promised_on is None:
+            continue
+        key = f"promise_missed:{party.id}:{party.promised_on.isoformat()}"
+        live.add(key)
+        d = party.promised_on
+        emit(
+            kind="promise_missed",
+            category="operational",
+            title=f"فات موعد سداد {party.name}",
+            body=f"وعد بالسداد في {_day_month(d)} وما زال عليه {_money(balance)}.",
+            href=f"/parties/{party.id}",
+            screen="PTY-03",
+            owner_only=True,
+            dedupe_key=key,
+            occurred_at=timezone.make_aware(datetime.combine(d + timedelta(days=1), time(9))),
+        )
+    _resolve_stale("promise_missed", live)
 
 
 def _count_days(n: int) -> str:

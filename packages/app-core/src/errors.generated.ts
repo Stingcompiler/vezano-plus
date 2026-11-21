@@ -1641,6 +1641,16 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "owner_required",
     },
   ],
+  "POST /api/parties/{party_id}/promise": [
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "manager_required",
+    },
+  ],
   "POST /api/parties/{party_id}/statement/export": [
     {
       status: 400,

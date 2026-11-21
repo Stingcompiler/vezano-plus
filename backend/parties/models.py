@@ -38,6 +38,12 @@ class Party(TenantScoped):
     #: يُبنى من الموافقين فقط؛ إيقاف التسويق يُحترم فوراً ولا يُتجاوز من داخل الشاشة
     marketing_consent_at = models.DateTimeField(null=True, blank=True)
     marketing_opt_out_at = models.DateTimeField(null=True, blank=True)
+    #: «موعد السداد الموعود» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): وعد العميل بتاريخ، يسجّله
+    #: المالك أو المدير؛ فواته والدين باقٍ يولّد إشعاراً. ليس في الحمولة المرجعية (لا يصل الأجهزة).
+    promised_on = models.DateField(null=True, blank=True)
+    promise_note = models.CharField(max_length=200, blank=True, default="")
+    promise_by_name = models.CharField(max_length=200, blank=True, default="")
+    promise_set_at = models.DateTimeField(null=True, blank=True)
     #: «إنشاء منفصل مع تمييز»: قرار هوية صريح بأن هذا ليس ذاك (§٧.٥)
     distinct_from = models.ForeignKey(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
