@@ -450,6 +450,24 @@ class PartyStatementView(APIView):
             return Response(body)
 
 
+class UnmatchedReceiptsView(APIView):
+    """«تحويلات تنتظر المطابقة» — للمالك (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None})
+    def get(self, request: Request) -> Response:
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            if not viewer.is_owner:
+                return Response({"detail": "owner_required"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(services.unmatched_transfers())
+
+
 class ReceiptMatchView(APIView):
     """«مطابق»: تأكيد وصول التحويل من كشف البنك بفعل صريح — للمالك (ACC-133)."""
 

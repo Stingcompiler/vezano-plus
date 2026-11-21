@@ -3229,6 +3229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/parties/receipts/unmatched": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description «تحويلات تنتظر المطابقة» — للمالك (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04). */
+        get: operations["parties_receipts_unmatched_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parties/statement-exports/{export_id}": {
         parameters: {
             query?: never;
@@ -14267,6 +14284,26 @@ export interface components {
                 reference: string;
                 shift_id: string;
                 user_name: string;
+            };
+        };
+        GetPartiesReceiptsUnmatchedResponse: {
+            computed_at: string;
+            rows: {
+                amount_minor: string;
+                branch_name: string;
+                business_date: string;
+                id: string;
+                kind: string;
+                occurred_at: string;
+                party_id: string;
+                party_name: string;
+                receipt_number: string;
+                reference: string;
+                user_name: string;
+            }[];
+            totals: {
+                count: number;
+                receipts_minor: string;
             };
         };
         GetPartiesStatementExportsByExportIdResponse: {
@@ -26539,6 +26576,33 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    parties_receipts_unmatched_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPartiesReceiptsUnmatchedResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

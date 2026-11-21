@@ -61,9 +61,37 @@ def _home_receivables(viewer: home.Viewer, out: dict[str, Any]) -> None:
     )
 
 
+def _home_unmatched(viewer: home.Viewer, out: dict[str, Any]) -> None:
+    """«قرارات تنتظرك»: تحويلات العملاء المسجَّلة غير المطابقة — الدين باقٍ حتى يطابقها المالك من
+    كشف البنك (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04)."""
+    if not viewer.is_owner:
+        return
+    from parties.services import unmatched_transfers
+
+    n = unmatched_transfers()["totals"]["count"]
+    if n:
+        out["decisions"].append(
+            {
+                "id": "parties-unmatched",
+                "title": home.counted(
+                    n,
+                    "تحويل ينتظر المطابقة",
+                    "تحويلان ينتظران المطابقة",
+                    "تحويلات تنتظر المطابقة",
+                    "تحويلاً ينتظر المطابقة",
+                ),
+                "detail": "دين العميل يبقى حتى تطابق التحويل من كشف البنك",
+                "action": "طابِق التحويلات",
+                "href": "/parties/receipts/matching",
+                "severity": "warn",
+            }
+        )
+
+
 register_resolver("parties.Party", _resolve)
 register_lister("parties", _list)
 home.HOME_PROVIDERS.append(_home_receivables)
+home.HOME_PROVIDERS.append(_home_unmatched)
 register_applier("parties.PartyCreated", apply_party_created)
 register_applier("parties.PaymentReceipt", apply_payment_receipt)
 

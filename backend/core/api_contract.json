@@ -116,6 +116,9 @@
   "GET /api/parties/list": [
    "403:finance_required"
   ],
+  "GET /api/parties/receipts/unmatched": [
+   "403:owner_required"
+  ],
   "GET /api/parties/{party_id}/merge": [
    "403:owner_required"
   ],
@@ -15554,6 +15557,93 @@
      "as_of",
      "rows",
      "summary"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/parties/receipts/unmatched": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "computed_at": {
+      "type": "string"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "amount_minor": {
+         "type": "string"
+        },
+        "branch_name": {
+         "type": "string"
+        },
+        "business_date": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "kind": {
+         "type": "string"
+        },
+        "occurred_at": {
+         "type": "string"
+        },
+        "party_id": {
+         "type": "string"
+        },
+        "party_name": {
+         "type": "string"
+        },
+        "receipt_number": {
+         "type": "string"
+        },
+        "reference": {
+         "type": "string"
+        },
+        "user_name": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "amount_minor",
+        "branch_name",
+        "business_date",
+        "id",
+        "kind",
+        "occurred_at",
+        "party_id",
+        "party_name",
+        "receipt_number",
+        "reference",
+        "user_name"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "totals": {
+      "additionalProperties": false,
+      "properties": {
+       "count": {
+        "type": "integer"
+       },
+       "receipts_minor": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "count",
+       "receipts_minor"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "computed_at",
+     "rows",
+     "totals"
     ],
     "type": "object"
    }
