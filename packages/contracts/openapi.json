@@ -7826,6 +7826,54 @@
         }
       }
     },
+    "/api/parties/{party_id}/promise": {
+      "post": {
+        "operationId": "parties_promise_create",
+        "description": "«موعد السداد الموعود» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): يسجّله المالك أو المدير،\nو`promised_on` فارغ يمسحه. يعيد البطاقة.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "party_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["parties"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Promise"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostPartiesByPartyIdPromiseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/parties/{party_id}/statement": {
       "get": {
         "operationId": "parties_statement_retrieve",
@@ -14292,6 +14340,20 @@
           }
         },
         "required": ["price_minor"]
+      },
+      "Promise": {
+        "type": "object",
+        "properties": {
+          "promised_on": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "note": {
+            "type": "string",
+            "default": "",
+            "maxLength": 200
+          }
+        }
       },
       "ProofReview": {
         "type": "object",
@@ -45900,6 +45962,25 @@
             },
             "type": "array"
           },
+          "promise": {
+            "additionalProperties": false,
+            "properties": {
+              "note": {
+                "type": "string"
+              },
+              "promised_on": {
+                "type": "string"
+              },
+              "set_at": {
+                "type": "string"
+              },
+              "set_by_name": {
+                "type": "string"
+              }
+            },
+            "required": ["note", "promised_on", "set_at", "set_by_name"],
+            "type": "object"
+          },
           "supplier_owed_minor": {
             "type": "string"
           },
@@ -45908,31 +45989,32 @@
           }
         },
         "required": [
-          "id",
-          "name",
-          "name_normalized",
-          "phone",
           "aliases",
-          "note",
-          "credit_limit_minor",
-          "is_customer",
-          "is_supplier",
-          "distinct_from_id",
-          "merged_into",
-          "balance_minor",
           "balance_as_of",
-          "last_sale_at",
-          "is_active",
-          "deactivated_at",
-          "updated_at",
-          "supplier_owed_minor",
-          "last_movement_at",
-          "market_linked",
+          "balance_minor",
           "can_edit",
           "can_open_balance",
+          "credit_limit_minor",
+          "deactivated_at",
+          "distinct_from_id",
           "has_movements",
+          "id",
+          "is_active",
+          "is_customer",
+          "is_supplier",
+          "last_movement_at",
+          "last_sale_at",
+          "market_linked",
+          "merged_into",
+          "name",
+          "name_normalized",
+          "note",
           "opening_balances",
-          "potential_duplicates"
+          "phone",
+          "potential_duplicates",
+          "promise",
+          "supplier_owed_minor",
+          "updated_at"
         ],
         "type": "object"
       },
@@ -46013,6 +46095,25 @@
             "items": {},
             "type": "array"
           },
+          "promise": {
+            "additionalProperties": false,
+            "properties": {
+              "note": {
+                "type": "string"
+              },
+              "promised_on": {
+                "type": "string"
+              },
+              "set_at": {
+                "type": "string"
+              },
+              "set_by_name": {
+                "type": "string"
+              }
+            },
+            "required": ["note", "promised_on", "set_at", "set_by_name"],
+            "type": "object"
+          },
           "supplier_owed_minor": {
             "type": "string"
           },
@@ -46021,31 +46122,32 @@
           }
         },
         "required": [
-          "id",
-          "name",
-          "name_normalized",
-          "phone",
           "aliases",
-          "note",
-          "credit_limit_minor",
-          "is_customer",
-          "is_supplier",
-          "distinct_from_id",
-          "merged_into",
-          "balance_minor",
           "balance_as_of",
-          "last_sale_at",
-          "is_active",
-          "deactivated_at",
-          "updated_at",
-          "supplier_owed_minor",
-          "last_movement_at",
-          "market_linked",
+          "balance_minor",
           "can_edit",
           "can_open_balance",
+          "credit_limit_minor",
+          "deactivated_at",
+          "distinct_from_id",
           "has_movements",
+          "id",
+          "is_active",
+          "is_customer",
+          "is_supplier",
+          "last_movement_at",
+          "last_sale_at",
+          "market_linked",
+          "merged_into",
+          "name",
+          "name_normalized",
+          "note",
           "opening_balances",
-          "potential_duplicates"
+          "phone",
+          "potential_duplicates",
+          "promise",
+          "supplier_owed_minor",
+          "updated_at"
         ],
         "type": "object"
       },
@@ -46710,6 +46812,258 @@
           }
         },
         "required": ["opening", "party"],
+        "type": "object"
+      },
+      "PostPartiesByPartyIdPromiseResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "balance_as_of": {
+            "type": "string"
+          },
+          "balance_minor": {
+            "type": "string"
+          },
+          "can_edit": {
+            "type": "boolean"
+          },
+          "can_open_balance": {
+            "type": "boolean"
+          },
+          "credit_limit_minor": {
+            "type": "string"
+          },
+          "deactivated_at": {
+            "type": "string"
+          },
+          "distinct_from_id": {
+            "type": "string"
+          },
+          "has_movements": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "is_customer": {
+            "type": "boolean"
+          },
+          "is_supplier": {
+            "type": "boolean"
+          },
+          "last_movement_at": {
+            "type": "string"
+          },
+          "last_sale_at": {
+            "type": "string"
+          },
+          "market_linked": {
+            "type": "boolean"
+          },
+          "merged_into": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "name_normalized": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "opening_balances": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "amount_minor": {
+                  "type": "string"
+                },
+                "business_date": {
+                  "type": "string"
+                },
+                "decided_by_name": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "occurred_at": {
+                  "type": "string"
+                },
+                "party_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "party_id",
+                "side",
+                "amount_minor",
+                "reason",
+                "reference",
+                "business_date",
+                "decided_by_name",
+                "occurred_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "potential_duplicates": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "aliases": {
+                  "items": {},
+                  "type": "array"
+                },
+                "balance_as_of": {
+                  "type": "string"
+                },
+                "balance_minor": {
+                  "type": "string"
+                },
+                "credit_limit_minor": {
+                  "type": "string"
+                },
+                "deactivated_at": {
+                  "type": "string"
+                },
+                "distinct_from_id": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "is_active": {
+                  "type": "boolean"
+                },
+                "is_customer": {
+                  "type": "boolean"
+                },
+                "is_supplier": {
+                  "type": "boolean"
+                },
+                "last_sale_at": {
+                  "type": "string"
+                },
+                "merged_into": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "name_normalized": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "phone": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "name_normalized",
+                "phone",
+                "aliases",
+                "note",
+                "credit_limit_minor",
+                "is_customer",
+                "is_supplier",
+                "distinct_from_id",
+                "merged_into",
+                "balance_minor",
+                "balance_as_of",
+                "last_sale_at",
+                "is_active",
+                "deactivated_at",
+                "updated_at"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "promise": {
+            "additionalProperties": false,
+            "properties": {
+              "note": {
+                "type": "string"
+              },
+              "promised_on": {
+                "type": "string"
+              },
+              "set_at": {
+                "type": "string"
+              },
+              "set_by_name": {
+                "type": "string"
+              }
+            },
+            "required": ["note", "promised_on", "set_at", "set_by_name"],
+            "type": "object"
+          },
+          "supplier_owed_minor": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "aliases",
+          "balance_as_of",
+          "balance_minor",
+          "can_edit",
+          "can_open_balance",
+          "credit_limit_minor",
+          "deactivated_at",
+          "distinct_from_id",
+          "has_movements",
+          "id",
+          "is_active",
+          "is_customer",
+          "is_supplier",
+          "last_movement_at",
+          "last_sale_at",
+          "market_linked",
+          "merged_into",
+          "name",
+          "name_normalized",
+          "note",
+          "opening_balances",
+          "phone",
+          "potential_duplicates",
+          "promise",
+          "supplier_owed_minor",
+          "updated_at"
+        ],
         "type": "object"
       },
       "GetPartiesByPartyIdStatementResponse": {

@@ -186,3 +186,10 @@
   display: grid;
   gap: var(--space-2, 8px);
 }
+
+/* «موعد السداد الموعود» داخل جهة العميل (المرحلة ٥ ب — 0005 §٢٨٨) */
+.pty-promise {
+  display: grid;
+  gap: var(--space-2, 8px);
+  padding-block-start: var(--space-2, 8px);
+}

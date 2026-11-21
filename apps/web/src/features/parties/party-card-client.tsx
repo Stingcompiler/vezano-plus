@@ -19,6 +19,7 @@ import "@/features/parties/parties.css";
 import { DayLabel } from "@/features/pos/invoices-client";
 import { AppNav } from "@/features/home/app-nav";
 import { parseAmount } from "@/features/pos/use-sale";
+import { PromiseBlock, type Promise_ } from "@/features/parties/promise-block";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
 import { getStorage } from "@/lib/storage";
@@ -47,6 +48,8 @@ export interface Card {
     readonly phone: string;
     readonly balance_minor: string;
   }[];
+  /** «موعد السداد الموعود» — من الخادم فقط (0005 §٢٨٨) */
+  readonly promise?: Promise_;
 }
 
 interface Form {
@@ -384,6 +387,8 @@ export function PartyCardClient({ partyId }: { partyId: string }) {
                       >
                         كشف حساب العميل
                       </Button>
+                      {/* المرحلة ٥ ب من مراجعة الأطراف (0005 §٢٨٨) */}
+                      <PromiseBlock card={card} onSaved={setCard} />
                     </div>
                   ) : null}
                   {card.is_supplier ? (

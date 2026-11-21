@@ -700,6 +700,71 @@ def test_party_figures_match_per_party_balances(ctx: dict[str, Any]) -> None:
         assert figures[sup.id].balance_minor == 1500
 
 
+def test_payment_promise_card_and_missed_alert(ctx: dict[str, Any]) -> None:
+    """«موعد السداد الموعود» (المرحلة ٥ ب من مراجعة الأطراف — 0005 §٢٨٨): للمالك والمدير، بتاريخ
+    قادم (الماضي `past`)؛ يظهر في البطاقة؛ فواته والدين باقٍ يُشعر المالك «فات موعد سداد»، ويزول
+    الإشعار حين يُمسح الوعد."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    with tenant_context(ctx["tenant"].id):
+        p = services.create_party(
+            party_id=None, name="عثمان الأمين", phone="", created_by=None, distinct_from=None
+        )
+        services.record_opening_balance(
+            p,
+            side="customer_due",
+            amount_minor=12000,
+            reason="دين سابق",
+            reference="",
+            business_date=None,
+            actor=ctx["user"],
+        )
+    today = timezone.localdate()
+    url = f"/api/parties/{p.id}/promise"
+    c, hc = api(ctx)
+    r = c.post(url, data={"promised_on": today.isoformat()}, content_type="application/json", **hc)  # type: ignore[arg-type]
+    assert r.status_code == 403
+    co, ho = _owner_client(ctx)
+    r = co.post(
+        url,
+        data={"promised_on": (today - timedelta(days=1)).isoformat()},
+        content_type="application/json",
+        **ho,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 400 and r.json()["errors"][0]["code"] == "past"
+    soon = today + timedelta(days=3)
+    r = co.post(
+        url,
+        data={"promised_on": soon.isoformat(), "note": "بعد صرف الراتب"},
+        content_type="application/json",
+        **ho,  # type: ignore[arg-type]
+    )
+    assert r.status_code == 200
+    promise = r.json()["promise"]
+    assert promise["promised_on"] == soon.isoformat() and promise["note"] == "بعد صرف الراتب"
+    assert promise["set_by_name"] == "سالم"
+    card = co.get(f"/api/parties/{p.id}", **ho).json()  # type: ignore[arg-type]
+    assert card["promise"]["promised_on"] == soon.isoformat()
+
+    def missed() -> list[dict[str, Any]]:
+        items = co.get("/api/notifications", **ho).json()["items"]  # type: ignore[arg-type]
+        return [i for i in items if i["kind"] == "promise_missed" and not i["resolved"]]
+
+    assert missed() == []
+    # مرّ الموعد والدين باقٍ
+    with tenant_context(ctx["tenant"].id):
+        Party.objects.filter(id=p.id).update(promised_on=today - timedelta(days=2))
+    got = missed()
+    assert [i["title"] for i in got] == ["فات موعد سداد عثمان الأمين"]
+    assert "120.00" in got[0]["body"] and got[0]["href"] == f"/parties/{p.id}"
+    # مسح الوعد يُزيل الإشعار
+    r = co.post(url, data={"promised_on": None}, content_type="application/json", **ho)  # type: ignore[arg-type]
+    assert r.status_code == 200 and r.json()["promise"]["promised_on"] == ""
+    assert missed() == []
+
+
 def test_unmatched_transfers_list_match_not_arrived_and_home(ctx: dict[str, Any]) -> None:
     """«تحويلات تنتظر المطابقة» (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04): القائمة للمالك
     بالتحويلات غير المطابقة وحدها؛ «مطابق» يُسقط الدين ويُخرجها؛ «لم يصل» عكسٌ بسبب يُخرجها والدين
