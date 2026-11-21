@@ -689,3 +689,20 @@ def supplier_owed_from_purchases(party: Any) -> int:
         or 0
     )
     return int(docs) - int(rets)
+
+
+def bulk_supplier_owed_from_purchases(ids: list[Any]) -> dict[Any, int]:
+    """نظير `supplier_owed_from_purchases` لكل هوية (0005 §٢٨٧)."""
+    from parties.services import sum_by
+
+    docs = sum_by(
+        PurchaseDocument.objects.filter(
+            supplier_id__in=ids, status=PurchaseDocument.Status.APPROVED
+        ),
+        "supplier_id",
+        "total_minor",
+    )
+    rets = sum_by(
+        PurchaseReturn.objects.filter(supplier_id__in=ids), "supplier_id", "accepted_minor"
+    )
+    return {k: docs.get(k, 0) - rets.get(k, 0) for k in set(docs) | set(rets)}

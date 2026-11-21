@@ -147,8 +147,33 @@ def _party_last_sale(party: Party) -> datetime | None:
     return stamp
 
 
+def _bulk_party_credit(ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    """نظير `_party_credit` لكل هوية (0005 §٢٨٧) — نفس الاستعلامات مجمّعة بـGROUP BY."""
+    sum_by = party_services.sum_by
+    total = sum_by(Sale.objects.filter(party_id__in=ids), "party_id", "credit_minor")
+    rev = sum_by(
+        Sale.objects.filter(party_id__in=ids, reversals__isnull=False), "party_id", "credit_minor"
+    )
+    refunds = sum_by(SaleReturn.objects.filter(party_id__in=ids), "party_id", "credit_minor")
+    keys = set(total) | set(rev) | set(refunds)
+    return {k: total.get(k, 0) - rev.get(k, 0) - refunds.get(k, 0) for k in keys}
+
+
+def _bulk_last_sale(ids: list[uuid.UUID]) -> dict[uuid.UUID, datetime]:
+    return {
+        row["party_id"]: row["m"]
+        for row in Sale.objects.filter(party_id__in=ids)
+        .values("party_id")
+        .annotate(m=Max("occurred_at"))
+        .order_by()
+        if row["m"] is not None
+    }
+
+
 party_services.BALANCE_PROVIDERS.append(_party_credit)
 party_services.LAST_SALE_PROVIDERS.append(_party_last_sale)
+party_services.BULK_BALANCE_PROVIDERS.append(_bulk_party_credit)
+party_services.BULK_LAST_SALE_PROVIDERS.append(_bulk_last_sale)
 # الافتتاحي قبل أول حركة (PTY-04): البيع حركة
 party_services.MOVEMENT_PROVIDERS.append(
     lambda party: Sale.objects.filter(party_id=party.id).exists()

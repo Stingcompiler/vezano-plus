@@ -13,8 +13,8 @@ from parties.models import OpeningBalance, Party, PaymentReceipt
 from parties.services import (
     apply_party_created,
     apply_payment_receipt,
-    balance_minor,
     opening_payload,
+    party_figures,
     party_payload,
 )
 from shifts import services as shift_services
@@ -24,13 +24,17 @@ from sync.reference import register_lister, register_resolver
 
 
 def _resolve(_tenant_id: uuid.UUID, ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, dict[str, Any]]:
-    return {p.id: party_payload(p) for p in Party.objects.filter(id__in=list(ids))}
+    parties = list(Party.objects.filter(id__in=list(ids)))
+    figures = party_figures(parties)
+    return {p.id: party_payload(p, figures[p.id]) for p in parties}
 
 
 def _list(_tenant_id: uuid.UUID) -> list[dict[str, Any]]:
+    parties = list(Party.objects.order_by("name_normalized"))
+    figures = party_figures(parties)  # النسخة المادية كلها باستعلامات ثابتة (0005 §٢٨٧)
     return [
-        {"entity": "parties.Party", "id": str(p.id), "payload": party_payload(p)}
-        for p in Party.objects.order_by("name_normalized")
+        {"entity": "parties.Party", "id": str(p.id), "payload": party_payload(p, figures[p.id])}
+        for p in parties
     ]
 
 
@@ -40,8 +44,9 @@ def _home_receivables(viewer: home.Viewer, out: dict[str, Any]) -> None:
         return
     total = 0
     count = 0
-    for party in Party.objects.filter(merged_into__isnull=True):
-        b = balance_minor(party)
+    figures = party_figures(list(Party.objects.filter(merged_into__isnull=True)))
+    for f in figures.values():
+        b = f.balance_minor
         if b > 0:
             total += b
             count += 1
