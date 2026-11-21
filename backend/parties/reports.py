@@ -14,6 +14,7 @@ from parties.models import OpeningBalance, Party
 from parties.services import (
     balance_minor,
     identity_ids,
+    party_figures,
     statement_lines,
     supplier_documents,
     supplier_owed_minor,
@@ -25,8 +26,8 @@ def _iso_date(d: date | None) -> str:
     return d.isoformat() if d else ""
 
 
-def _customer_row(party: Party) -> dict[str, Any] | None:
-    balance = balance_minor(party)
+def _customer_row(party: Party, balance: int | None = None) -> dict[str, Any] | None:
+    balance = balance_minor(party) if balance is None else balance
     if balance <= 0:
         return None
     lines = [ln for ln in statement_lines(party) if not ln.info]
@@ -66,8 +67,8 @@ def _customer_row(party: Party) -> dict[str, Any] | None:
     }
 
 
-def _supplier_row(party: Party) -> dict[str, Any] | None:
-    owed = supplier_owed_minor(party)
+def _supplier_row(party: Party, owed: int | None = None) -> dict[str, Any] | None:
+    owed = supplier_owed_minor(party) if owed is None else owed
     if owed <= 0:
         return None
     # المصدر من الحركات الفعلية لا نصّ ثابت: كان «رصيد افتتاحي — بلا فواتير» حتى لذمّة من مستندات
@@ -108,8 +109,15 @@ def receivables_report(*, viewer: home.Viewer, side: str = "customers") -> dict[
     rows: list[dict[str, Any]] = []
     qs = Party.objects.filter(merged_into__isnull=True).order_by("name_normalized")
     qs = qs.filter(is_supplier=True) if side == "suppliers" else qs.filter(is_customer=True)
-    for party in qs:
-        row = _supplier_row(party) if side == "suppliers" else _customer_row(party)
+    parties = list(qs)
+    figures = party_figures(parties)  # الرصيد لكل طرف باستعلامات ثابتة؛ الكشف لمن عليه فقط (§٢٨٧)
+    for party in parties:
+        f = figures[party.id]
+        row = (
+            _supplier_row(party, f.supplier_owed_minor)
+            if side == "suppliers"
+            else _customer_row(party, f.balance_minor)
+        )
         if row:
             rows.append(row)
     rows.sort(key=lambda r: -int(r["balance_minor"]))
@@ -127,7 +135,7 @@ def receivables_report(*, viewer: home.Viewer, side: str = "customers") -> dict[
 
 def export_csv(payload: dict[str, Any]) -> str:
     head = (
-        f"# تقرير الذمم · {'لنا على الموردين' if payload['side'] == 'suppliers' else 'على العملاء'}"
+        f"# تقرير الذمم · {'للموردين علينا' if payload['side'] == 'suppliers' else 'على العملاء'}"
         f" · حُسب في {payload['computed_at']} · بلا جدول أعمار (G-15)"
     )
     lines = [head, "name,balance_minor,last_payment_date,oldest_unpaid_date,source"]

@@ -131,9 +131,11 @@ class PartyListView(APIView):
             # المدموج يختفي من القوائم ويبقى في السجل (ACC-78)
             qs = Party.objects.filter(is_active=True, merged_into__isnull=True)
             qs = qs.filter(is_supplier=True) if kind == "suppliers" else qs.filter(is_customer=True)
+            parties = list(qs.order_by("name_normalized"))
+            figures = services.party_figures(parties)  # استعلامات ثابتة لا لكل طرف (§٢٨٧)
             rows = [
-                services.list_payload(p, with_balances=finance)
-                for p in qs.order_by("name_normalized")
+                services.list_payload(p, with_balances=finance, figures=figures[p.id])
+                for p in parties
             ]
             total_due = sum(
                 int(r["balance_minor"])

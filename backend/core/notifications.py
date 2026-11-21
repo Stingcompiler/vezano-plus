@@ -281,12 +281,14 @@ def _credit_due_alerts(now: Any) -> None:
     الديون (PTY-04) فلا يُنبَّه به. الاسم والمبلغ في الوارد للمالك وحده (الكاشير لا يرى قائمة
     الذمم)؛ والدفع الفوري بعنوان الفئة العام."""
     from parties.models import Party
-    from parties.services import balance_minor, statement_lines
+    from parties.services import party_figures, statement_lines
 
     today = now.date()
     live: set[str] = set()
-    for party in Party.objects.filter(is_customer=True, merged_into__isnull=True):
-        balance = balance_minor(party)
+    parties = list(Party.objects.filter(is_customer=True, merged_into__isnull=True))
+    figures = party_figures(parties)  # الكشف لمن عليه دين فقط (0005 §٢٨٧)
+    for party in parties:
+        balance = figures[party.id].balance_minor
         if balance <= 0:
             continue
         lines = [ln for ln in statement_lines(party) if not ln.info]

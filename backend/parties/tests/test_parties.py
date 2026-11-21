@@ -589,6 +589,117 @@ def test_payment_receipt_effects_bank_matching_and_reference_once(ctx: dict[str,
     assert body["last_payment_at"]
 
 
+def test_party_figures_match_per_party_balances(ctx: dict[str, Any]) -> None:
+    """الحساب الجماعي (المرحلة ٥ من مراجعة الأطراف — 0005 §٢٨٧؛ G-15) يطابق الحساب طرفاً طرفاً في
+    كل مصادر الرصيد: الافتتاحي بجهتيه، والآجل، والسداد النقدي والبنكي (مطابق وغير مطابق)، والردّ،
+    والتصحيح (مبلغ وعكس)، والدمج، وسند الصرف، ومستند الشراء ومرتجعه — وبعدد استعلامات ثابت."""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
+    from inventory.models import PurchaseDocument, PurchaseReturn
+    from sales.tests.test_sale import do_push, sale_op
+
+    oc = dict(ctx, owner=ctx["user"])
+    t = ctx["tenant"].id
+    with tenant_context(t):
+
+        def mk(name: str, role: str = "customer") -> Party:
+            return services.create_party(
+                party_id=None, name=name, phone="", created_by=None, distinct_from=None, role=role
+            )
+
+        a, b, c = mk("عميل أ"), mk("عميل ب"), mk("عميل ج")
+        sup = mk("مورد س", "supplier")
+        sup.is_customer = True
+        sup.save()
+        for party, side, amount in (
+            (b, "customer_due", 7000),
+            (c, "customer_due", 5000),
+            (sup, "supplier_owed", 90000),
+            (sup, "customer_due", 1500),
+        ):
+            services.record_opening_balance(
+                party,
+                side=side,
+                amount_minor=amount,
+                reason="افتتاحي",
+                reference="",
+                business_date=None,
+                actor=ctx["user"],
+            )
+    assert do_push(
+        oc, sale_op(oc, invoice="INV-P1", party_id=str(a.id), payments=[("credit", "10000")])
+    ) == ["accepted"]
+    assert do_push(
+        oc, sale_op(oc, invoice="INV-P2", party_id=str(c.id), payments=[("credit", "10000")])
+    ) == ["accepted"]
+    ops = [
+        _receipt_op(ctx, str(a.id), amount="2000", number="P-1"),
+        _receipt_op(ctx, str(a.id), amount="3000", method="bank", reference="T-1", number="P-2"),
+        _receipt_op(ctx, str(a.id), amount="1000", method="bank", reference="T-2", number="P-3"),
+        _receipt_op(ctx, str(b.id), amount="500", kind="refund", reason="ردّ", number="P-4"),
+        _receipt_op(ctx, str(b.id), amount="1500", number="P-5"),
+        _receipt_op(ctx, str(sup.id), amount="20000", kind="payment", number="P-6"),
+    ]
+    for op in ops:
+        assert do_push(oc, op) == ["accepted"]
+    with tenant_context(t):
+        services.match_receipt(PaymentReceipt.objects.get(receipt_number="P-2"), actor=ctx["user"])
+        services.correct_receipt(
+            PaymentReceipt.objects.get(receipt_number="P-1"),
+            kind="amount",
+            reason="خطأ",
+            actor=ctx["user"],
+            new_amount_minor=2500,
+        )
+        services.correct_receipt(
+            PaymentReceipt.objects.get(receipt_number="P-5"),
+            kind="reverse",
+            reason="عكس",
+            actor=ctx["user"],
+        )
+        services.merge_parties(c, b, actor=ctx["user"], reason="مكرر")
+        doc = PurchaseDocument.unscoped.create(
+            tenant_id=t,
+            number="PD-1",
+            supplier_id=sup.id,
+            supplier_name=sup.name,
+            branch=ctx["branch"],
+            status=PurchaseDocument.Status.APPROVED,
+            total_minor=40000,
+            created_by_user_id=ctx["user"].id,
+        )
+        PurchaseReturn.unscoped.create(
+            tenant_id=t,
+            number="PR-1",
+            document=doc,
+            supplier_id=sup.id,
+            supplier_name=sup.name,
+            branch=ctx["branch"],
+            total_minor=6000,
+            accepted_minor=6000,
+            created_by_user_id=ctx["user"].id,
+        )
+        parties = list(Party.objects.all())
+        assert len(services.BULK_BALANCE_PROVIDERS) == len(services.BALANCE_PROVIDERS)
+        assert len(services.BULK_SUPPLIER_OWED_PROVIDERS) == len(services.SUPPLIER_OWED_PROVIDERS)
+        assert len(services.BULK_LAST_SALE_PROVIDERS) == len(services.LAST_SALE_PROVIDERS)
+        with CaptureQueriesContext(connection) as q:
+            figures = services.party_figures(parties)
+        assert len(q.captured_queries) <= 15
+        for p in parties:
+            f = figures[p.id]
+            assert f.balance_minor == services.balance_minor(p), p.name
+            assert f.supplier_owed_minor == services.supplier_owed_minor(p), p.name
+            assert f.last_sale_at == services.last_sale_at(p), p.name
+        # أرقام معروفة لا تطابقاً فقط: أ = 100 − 25 − 30 (المطابق) = 45؛
+        # ب (وارث ج) = 70 + 5 + 50 + 100
+        assert figures[a.id].balance_minor == 4500
+        assert figures[b.id].balance_minor == 7000 + 500 + 5000 + 10000
+        assert figures[sup.id].supplier_owed_minor == 90000 - 20000 + 40000 - 6000
+        assert figures[sup.id].balance_minor == 1500
+
+
 def test_unmatched_transfers_list_match_not_arrived_and_home(ctx: dict[str, Any]) -> None:
     """«تحويلات تنتظر المطابقة» (المرحلة ٤ من مراجعة الأطراف — 0005 §٢٨٦؛ G-04): القائمة للمالك
     بالتحويلات غير المطابقة وحدها؛ «مطابق» يُسقط الدين ويُخرجها؛ «لم يصل» عكسٌ بسبب يُخرجها والدين

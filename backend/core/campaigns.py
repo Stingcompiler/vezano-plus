@@ -102,7 +102,7 @@ def audience(rules: dict[str, Any], *, count_only: bool = False) -> dict[str, An
     """يحصي الجمهور خادمياً: لكل شريحة عددها، ثم الاتحاد بعد إزالة التكرار (بالرقم) واستبعاد من
     أوقف التسويق ومن بلا رقم؛ التفصيل يقول أيّ الشرطين أفرغ القائمة."""
     from parties.models import Party
-    from parties.services import balance_minor
+    from parties.services import party_figures
     from sales.models import Sale
 
     segments = [str(s) for s in (rules.get("segments") or [])]
@@ -134,7 +134,8 @@ def audience(rules: dict[str, Any], *, count_only: bool = False) -> dict[str, An
         .distinct()
     )
     per_segment["bought_90d"] = {p for p in bought if base.filter(id=p).exists()}
-    per_segment["with_debt"] = {p.id for p in base if balance_minor(p) > 0}
+    debt = party_figures(list(base))
+    per_segment["with_debt"] = {pid for pid, f in debt.items() if f.balance_minor > 0}
     per_segment["market_followers"] = set()  # السوق لم يُبنَ بعد — العدد صفر لا رقم مخترع
     chosen: set[uuid.UUID] = set()
     for s in segments:

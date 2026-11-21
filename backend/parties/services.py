@@ -47,11 +47,97 @@ def last_sale_at(party: Party) -> datetime | None:
     return max(stamps) if stamps else None
 
 
+# ------------------------- الحساب الجماعي (المرحلة ٥ من مراجعة الأطراف — 0005 §٢٨٧؛ G-15)
+#: نظائر جماعية لسجلّات الطرف الواحد: تأخذ كل الهويات المطلوبة وتعيد الرقم لكل هوية بعينها
+#: (لا للوارث)؛ `party_figures` يجمعها للوارث بخريطة الهوية. كل وحدة تسجّل نظيرها بجانب سجلّها
+#: الفردي؛ إن اختلف العدد يُحسب كل طرف وحده (لا رقم خاطئ بنظير ناقص). اختبار التطابق يقارنهما.
+BULK_BALANCE_PROVIDERS: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, int]]] = []
+BULK_SUPPLIER_OWED_PROVIDERS: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, int]]] = []
+BULK_LAST_SALE_PROVIDERS: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, datetime]]] = []
+
+
+@dataclass(frozen=True)
+class PartyFigures:
+    balance_minor: int
+    supplier_owed_minor: int
+    last_sale_at: datetime | None
+
+
+def identity_map(parties: list[Party]) -> dict[uuid.UUID, list[uuid.UUID]]:
+    """`identity_ids` لكل طرف باستعلام واحد: الطرف وكل من دُمج فيه تعاقبياً (ACC-78)."""
+    children: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for pid, into in Party.objects.filter(merged_into__isnull=False).values_list(
+        "id", "merged_into_id"
+    ):
+        children.setdefault(into, []).append(pid)
+    out: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for party in parties:
+        ids = [party.id]
+        frontier = [party.id]
+        while frontier:
+            nxt = [c for f in frontier for c in children.get(f, []) if c not in ids]
+            ids.extend(nxt)
+            frontier = nxt
+        out[party.id] = ids
+    return out
+
+
+def party_figures(parties: list[Party]) -> dict[uuid.UUID, PartyFigures]:
+    """رصيد العميل و«له علينا» وآخر بيع لعدة أطراف بعدد ثابت من الاستعلامات — بدل استعلامات لكل
+    طرف في القوائم والرئيسية والتقرير والإشعار اليومي. النتيجة تطابق `balance_minor` و
+    `supplier_owed_minor` و`last_sale_at` طرفاً طرفاً."""
+    parties = list(parties)
+    if not parties:
+        return {}
+    complete = (
+        len(BULK_BALANCE_PROVIDERS) == len(BALANCE_PROVIDERS)
+        and len(BULK_SUPPLIER_OWED_PROVIDERS) == len(SUPPLIER_OWED_PROVIDERS)
+        and len(BULK_LAST_SALE_PROVIDERS) == len(LAST_SALE_PROVIDERS)
+    )
+    if not complete:
+        return {
+            p.id: PartyFigures(balance_minor(p), supplier_owed_minor(p), last_sale_at(p))
+            for p in parties
+        }
+    identity = identity_map(parties)
+    all_ids = sorted({i for ids in identity.values() for i in ids})
+
+    def fold(
+        providers: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, int]]],
+    ) -> dict[uuid.UUID, int]:
+        per_id: dict[uuid.UUID, int] = {}
+        for prov in providers:
+            for k, v in prov(all_ids).items():
+                per_id[k] = per_id.get(k, 0) + int(v)
+        return {pid: sum(per_id.get(i, 0) for i in ids) for pid, ids in identity.items()}
+
+    due = fold(BULK_BALANCE_PROVIDERS)
+    owed = fold(BULK_SUPPLIER_OWED_PROVIDERS)
+    stamps: dict[uuid.UUID, datetime] = {}
+    for prov in BULK_LAST_SALE_PROVIDERS:
+        for k, d in prov(all_ids).items():
+            if k not in stamps or d > stamps[k]:
+                stamps[k] = d
+    out: dict[uuid.UUID, PartyFigures] = {}
+    for pid, ids in identity.items():
+        seen = [stamps[i] for i in ids if i in stamps]
+        out[pid] = PartyFigures(due[pid], owed[pid], max(seen) if seen else None)
+    return out
+
+
+def sum_by(qs: Any, key: str, field: str) -> dict[uuid.UUID, int]:
+    """مجموع حقل لكل هوية باستعلام واحد (GROUP BY) — عون للنظائر الجماعية في الوحدات."""
+    return {
+        row[key]: int(row["s"] or 0) for row in qs.values(key).annotate(s=Sum(field)).order_by()
+    }
+
+
 def _iso(dt: datetime | None) -> str:
     return dt.isoformat().replace("+00:00", "Z") if dt else ""
 
 
-def party_payload(party: Party) -> dict[str, Any]:
+def party_payload(party: Party, figures: PartyFigures | None = None) -> dict[str, Any]:
+    f = figures or PartyFigures(balance_minor(party), 0, last_sale_at(party))
     return {
         "id": str(party.id),
         "name": party.name,
@@ -64,10 +150,10 @@ def party_payload(party: Party) -> dict[str, Any]:
         "is_supplier": party.is_supplier,
         "distinct_from_id": str(party.distinct_from_id) if party.distinct_from_id else "",
         "merged_into": str(party.merged_into_id) if party.merged_into_id else "",
-        "balance_minor": str(balance_minor(party)),
+        "balance_minor": str(f.balance_minor),
         # وقت تغطية الرصيد الخادمي (§١٤.١): ما بعده على الجهاز يُركَّب فوقه ولو أُكِّد لاحقاً (ACC-02)
         "balance_as_of": timezone.now().isoformat(),
-        "last_sale_at": _iso(last_sale_at(party)),
+        "last_sale_at": _iso(f.last_sale_at),
         "is_active": party.is_active,
         "deactivated_at": _iso(party.deactivated_at),
         "updated_at": _iso(party.updated_at),
@@ -187,14 +273,17 @@ def supplier_documents(party: Party) -> int:
     return sum(p(party) for p in SUPPLIER_DOCUMENT_PROVIDERS)
 
 
-def list_payload(party: Party, *, with_balances: bool) -> dict[str, Any]:
+def list_payload(
+    party: Party, *, with_balances: bool, figures: PartyFigures | None = None
+) -> dict[str, Any]:
     """صف قائمة الأطراف: الرصيد وآخر حركة لمن يرى المال؛ الأسماء للجميع (أمين المخزن يرى
     الأسماء)."""
-    row = party_payload(party)
+    row = party_payload(party, figures)
     if not with_balances:
         row["balance_minor"] = ""
         row["balance_as_of"] = ""
-    row["supplier_owed_minor"] = str(supplier_owed_minor(party)) if with_balances else ""
+    owed = figures.supplier_owed_minor if figures else supplier_owed_minor(party)
+    row["supplier_owed_minor"] = str(owed) if with_balances else ""
     row["last_movement_at"] = row["last_sale_at"]
     # صلة السوق: لا ربط تلقائي بالاسم (ACC-118) — تأتي مع MP-08
     row["market_linked"] = False
@@ -356,6 +445,20 @@ def _opening_supplier(party: Party) -> int:
 
 BALANCE_PROVIDERS.append(_opening_customer)
 SUPPLIER_OWED_PROVIDERS.append(_opening_supplier)
+BULK_BALANCE_PROVIDERS.append(
+    lambda ids: sum_by(
+        OpeningBalance.objects.filter(party_id__in=ids, side="customer_due"),
+        "party_id",
+        "amount_minor",
+    )
+)
+BULK_SUPPLIER_OWED_PROVIDERS.append(
+    lambda ids: sum_by(
+        OpeningBalance.objects.filter(party_id__in=ids, side="supplier_owed"),
+        "party_id",
+        "amount_minor",
+    )
+)
 
 
 # ------------------------------------------------------------------- كشف الحساب (PTY-05)
@@ -612,7 +715,8 @@ class EffectiveReceipt:
 def effective_receipt(r: PaymentReceipt) -> EffectiveReceipt:
     method, amount, bdate, reversed_ = r.method, r.amount_minor, r.business_date, False
     reference = r.reference
-    for c in r.corrections.order_by("occurred_at"):
+    # `.all()` يقرأ المجلوب مسبقاً في الحساب الجماعي (prefetch) ولا يكرّر الاستعلام
+    for c in sorted(r.corrections.all(), key=lambda c: (c.occurred_at, str(c.id))):
         if c.kind == "method" and c.new_method:
             method = c.new_method
             reference = c.new_reference
@@ -673,8 +777,27 @@ def _supplier_payments(party: Party) -> int:
     return total
 
 
+def _bulk_receipts(ids: list[uuid.UUID], *, supplier: bool) -> dict[uuid.UUID, int]:
+    """نظير `_receipts_balance` (supplier=False) و`_supplier_payments` (True) لكل هوية."""
+    qs = PaymentReceipt.objects.filter(party_id__in=ids).prefetch_related("corrections")
+    qs = qs.filter(kind="payment") if supplier else qs.exclude(kind="payment")
+    out: dict[uuid.UUID, int] = {}
+    for r in qs:
+        e = effective_receipt(r)
+        if not e.effective:
+            continue
+        if supplier:
+            delta = -e.amount_minor
+        else:
+            delta = -e.amount_minor if r.kind == "receipt" else e.amount_minor
+        out[r.party_id] = out.get(r.party_id, 0) + delta
+    return out
+
+
 BALANCE_PROVIDERS.append(_receipts_balance)
 SUPPLIER_OWED_PROVIDERS.append(_supplier_payments)
+BULK_BALANCE_PROVIDERS.append(lambda ids: _bulk_receipts(ids, supplier=False))
+BULK_SUPPLIER_OWED_PROVIDERS.append(lambda ids: _bulk_receipts(ids, supplier=True))
 MOVEMENT_PROVIDERS.append(lambda party: PaymentReceipt.objects.filter(party=party).exists())
 
 
