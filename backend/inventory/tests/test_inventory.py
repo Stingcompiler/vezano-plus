@@ -393,13 +393,18 @@ def _count_op(c: dict[str, Any], lines: list[tuple[str, str, str, str]]) -> dict
 
 
 def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> None:
-    """INV-05/INV-06: الجلسة توثّق ما عُدّ ولا تُسوّي؛ الفرق بين الدفتري الآن والمعدود؛ حركة وقعت
-    أثناء الجرد تُكتشف (ACC-07)؛ التسوية بصلاحية مالية وسبب لكل فرق (لا سبب عام)؛ حركات `count`
-    بمستند وفاعل وسبب في INV-02؛ العدّ الأصلي لا يُعاد كتابته؛ لا تسوية ثانية."""
+    """INV-05/INV-06: الجلسة توثّق ما عُدّ ولا تُسوّي؛ الفرق بين الدفتري **لحظة العدّ** والمعدود
+    (د-٢، I-03 — 0005 §٢٨٩) فبيعٌ بعد العدّ لا يُمحى؛ الحركة بعد العدّ تُعلَّم (ACC-07)؛ التسوية
+    بصلاحية مالية وسبب لكل فرق (لا سبب عام)؛ حركات `count` بمستند وفاعل وسبب في INV-02؛ العدّ
+    الأصلي لا يُعاد كتابته؛ لا تسوية ثانية؛ الجلسة المسوّاة تُعرض بما سُوّي."""
+    from datetime import datetime
+    from datetime import timezone as dt_tz
+
     from inventory.models import StockMovement
 
     sugar, tea = str(ctx["sugar"].id), str(ctx["tea"].id)
-    # الدفتري: سكر 10 (استلام) ثم بيع 1 أثناء الجرد → 9؛ شاي 5
+    before_count = datetime(2026, 9, 16, 8, 0, tzinfo=dt_tz.utc)
+    # الدفتري لحظة العدّ (10:00): سكر 10، شاي 5؛ ثم بيع سكر 1 الساعة 10:34 بعد عدّه → الآن 9
     with tenant_context(ctx["tenant"].id):
         StockMovement.objects.create(
             tenant=ctx["tenant"],
@@ -407,6 +412,7 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
             item_id=ctx["sugar"].id,
             delta_base_qty_milli=10000,
             reason="receive",
+            occurred_at=before_count,
         )
         StockMovement.objects.create(
             tenant=ctx["tenant"],
@@ -414,11 +420,12 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
             item_id=ctx["tea"].id,
             delta_base_qty_milli=5000,
             reason="receive",
+            occurred_at=before_count,
         )
     # العدّ: سكر 8 (لقطة الجهاز 10)، شاي 5 (لا فرق)
     op = _count_op(ctx, [(sugar, "سكر", "8000", "10000"), (tea, "شاي أسود 250غ", "5000", "5000")])
     assert do_push(ctx, op) == ["accepted"]
-    assert do_push(ctx, _sale(ctx, sugar, invoice="S-9")) == ["accepted"]  # بيع أثناء الجرد
+    assert do_push(ctx, _sale(ctx, sugar, invoice="S-9")) == ["accepted"]  # بيع بعد عدّ السكر
     with tenant_context(ctx["tenant"].id):
         assert catalog_services.branch_balances(ctx["branch"].id) == {sugar: "9000", tea: "5000"}
     c, h = _api(ctx)
@@ -432,11 +439,11 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
     body = r.json()
     assert body["variance_count"] == 1 and body["adjustment"] is None
     rows = {x["item_id"]: x for x in body["rows"]}
-    # الدفتري الآن 9 لا 10: الفرق −1 والحركة أثناء الجرد مُعلنة
-    assert rows[sugar]["book_milli"] == "9000" and rows[sugar]["delta_milli"] == "-1000"
+    # الدفتري لحظة العدّ 10 لا الآن 9: العجز 2 كغ، والبيع بعد العدّ مُعلَن ولا يُحسب عجزاً
+    assert rows[sugar]["book_milli"] == "10000" and rows[sugar]["delta_milli"] == "-2000"
     assert rows[sugar]["moved_since_count"] is True
     assert rows[tea]["delta_milli"] == "0" and rows[tea]["moved_since_count"] is False
-    assert body["effect_minor"] == "-10000"  # −1 كغ × 100.00
+    assert body["effect_minor"] == "-20000"  # −2 كغ × 100.00
     assert body["suggested_reasons"] == ["تالف", "سرقة", "خطأ عدّ", "خطأ استلام"]
     # فرق بلا سبب / سبب عامّ → مرفوض بصفّه
     for reasons, code in (({}, "required"), ({sugar: "تسوية جرد"}, "generic")):
@@ -458,7 +465,7 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
     )
     assert r.status_code == 403 and r.json()["detail"] == "finance_required"
     assert cc.get(f"/api/inventory/count-sessions/{sid}", **ch).json()["can_adjust"] is False  # type: ignore[arg-type]
-    # التسوية بسبب: حركة count −1 بمستند TS-0001 وفاعل وسبب؛ الدفتري 8
+    # التسوية بسبب: حركة count −2 بمستند TS-0001 على الرصيد الحالي 9 → 7 (الرفّ: 8 عُدّت − 1 بيعت)
     r = c.post(
         f"/api/inventory/count-sessions/{sid}",
         {"reasons": {sugar: "عبوات ممزّقة في الرفّ السفلي — أُتلفت"}},
@@ -470,7 +477,7 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
     assert adj["adjustment_number"] == "TS-0001" and adj["line_count"] == 1
     assert r.json()["session"]["status"] == "adjusted"
     with tenant_context(ctx["tenant"].id):
-        assert catalog_services.branch_balances(ctx["branch"].id)[sugar] == "8000"
+        assert catalog_services.branch_balances(ctx["branch"].id)[sugar] == "7000"
     body = c.get(f"/api/inventory/items/{sugar}/movements", **h).json()  # type: ignore[arg-type]
     last = body["rows"][-1]
     assert last["label"] == "تسوية جرد" and last["doc"] == "TS-0001"
@@ -485,7 +492,10 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
     assert r.status_code == 400 and r.json()["errors"][0]["code"] == "already_adjusted"
     after = c.get(f"/api/inventory/count-sessions/{sid}", **h).json()  # type: ignore[arg-type]
     rows = {x["item_id"]: x for x in after["rows"]}
-    assert rows[sugar]["counted_milli"] == "8000" and rows[sugar]["delta_milli"] == "0"
+    # المسوّاة تعرض ما سُوّي فعلاً (لا «0 فروق»)، والعدّ كما أُدخل
+    assert after["variance_count"] == 1
+    assert rows[sugar]["counted_milli"] == "8000" and rows[sugar]["delta_milli"] == "-2000"
+    assert rows[sugar]["book_milli"] == "10000" and rows[sugar]["moved_since_count"] is False
 
 
 def test_damage_quarantine_and_write_off(ctx: dict[str, Any]) -> None:

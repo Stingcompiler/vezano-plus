@@ -217,6 +217,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
             GrowSnapshot,
             PurchaseDocument,
             PurchaseDocumentLine,
+            PurchaseDocumentReceipt,
             PurchaseOrder,
             PurchaseOrderLine,
             PurchaseReturn,
@@ -261,6 +262,7 @@ def wipe_tenants(ids: list[uuid.UUID], *, reset_platform: bool) -> int:
             # الشراء (PUR): المرتجعات ثم المستندات (تشير إلى الاستلام بمفتاح محمي) ثم الأوامر
             PurchaseReturnLine,
             PurchaseReturn,
+            PurchaseDocumentReceipt,
             PurchaseDocumentLine,
             PurchaseDocument,
             PurchaseOrderLine,

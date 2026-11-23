@@ -2974,7 +2974,7 @@
     "/api/inventory/purchasing/documents/{document_id}/{action}": {
       "post": {
         "operationId": "inventory_purchasing_documents_create",
-        "description": "approve · refer · return",
+        "description": "approve · receipts (ربط باستلام قائم — د-١) · refer · return",
         "parameters": [
           {
             "in": "path",
@@ -21346,6 +21346,10 @@
                   "due_at": {
                     "type": "string"
                   },
+                  "linked_receipts": {
+                    "items": {},
+                    "type": "array"
+                  },
                   "payable_minor": {
                     "type": "string"
                   },
@@ -21400,6 +21404,9 @@
                     "id": {
                       "type": "string"
                     },
+                    "is_gift": {
+                      "type": "boolean"
+                    },
                     "item_id": {
                       "type": "string"
                     },
@@ -21446,12 +21453,17 @@
                     "line_total_minor",
                     "est_total_minor",
                     "excess_reason",
+                    "is_gift",
                     "returned_qty_milli",
                     "diff",
                     "line_no"
                   ],
                   "type": "object"
                 },
+                "type": "array"
+              },
+              "linked_receipts": {
+                "items": {},
                 "type": "array"
               },
               "note": {
@@ -21468,6 +21480,10 @@
               },
               "order_number": {
                 "type": "string"
+              },
+              "receipt_candidates": {
+                "items": {},
+                "type": "array"
               },
               "receipt_number": {
                 "type": "string"
@@ -21524,6 +21540,8 @@
               "referred_at",
               "receipt_number",
               "effects",
+              "linked_receipts",
+              "receipt_candidates",
               "blockers",
               "approval"
             ],
@@ -21783,6 +21801,9 @@
                     "id": {
                       "type": "string"
                     },
+                    "is_gift": {
+                      "type": "boolean"
+                    },
                     "item_id": {
                       "type": "string"
                     },
@@ -21829,9 +21850,41 @@
                     "line_total_minor",
                     "est_total_minor",
                     "excess_reason",
+                    "is_gift",
                     "returned_qty_milli",
                     "diff",
                     "line_no"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "linked_receipts": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "occurred_at": {
+                      "type": "string"
+                    },
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_number": {
+                      "type": "string"
+                    },
+                    "supplier_name": {
+                      "type": "string"
+                    },
+                    "user_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "receipt_id",
+                    "receipt_number",
+                    "supplier_name",
+                    "user_name",
+                    "occurred_at"
                   ],
                   "type": "object"
                 },
@@ -21851,6 +21904,10 @@
               },
               "order_number": {
                 "type": "string"
+              },
+              "receipt_candidates": {
+                "items": {},
+                "type": "array"
               },
               "receipt_number": {
                 "type": "string"
@@ -21907,6 +21964,8 @@
               "referred_at",
               "receipt_number",
               "effects",
+              "linked_receipts",
+              "receipt_candidates",
               "blockers",
               "approval"
             ],
@@ -22027,6 +22086,12 @@
                   "due_at": {
                     "type": "string"
                   },
+                  "linked_receipts": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
                   "payable_minor": {
                     "type": "string"
                   },
@@ -22080,6 +22145,9 @@
                     "id": {
                       "type": "string"
                     },
+                    "is_gift": {
+                      "type": "boolean"
+                    },
                     "item_id": {
                       "type": "string"
                     },
@@ -22126,9 +22194,41 @@
                     "line_total_minor",
                     "est_total_minor",
                     "excess_reason",
+                    "is_gift",
                     "returned_qty_milli",
                     "diff",
                     "line_no"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "linked_receipts": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "occurred_at": {
+                      "type": "string"
+                    },
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_number": {
+                      "type": "string"
+                    },
+                    "supplier_name": {
+                      "type": "string"
+                    },
+                    "user_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "receipt_id",
+                    "receipt_number",
+                    "supplier_name",
+                    "user_name",
+                    "occurred_at"
                   ],
                   "type": "object"
                 },
@@ -22148,6 +22248,10 @@
               },
               "order_number": {
                 "type": "string"
+              },
+              "receipt_candidates": {
+                "items": {},
+                "type": "array"
               },
               "receipt_number": {
                 "type": "string"
@@ -22204,6 +22308,8 @@
               "referred_at",
               "receipt_number",
               "effects",
+              "linked_receipts",
+              "receipt_candidates",
               "blockers",
               "approval"
             ],
@@ -23066,6 +23172,18 @@
                     "code": {
                       "type": "string"
                     },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "line_id": {
+                      "type": "string"
+                    },
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_number": {
+                      "type": "string"
+                    },
                     "title": {
                       "type": "string"
                     }
@@ -23098,7 +23216,62 @@
               },
               "effects": {
                 "additionalProperties": false,
-                "properties": {},
+                "properties": {
+                  "branch_name": {
+                    "type": "string"
+                  },
+                  "cost": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "after_minor": {
+                          "type": "string"
+                        },
+                        "before_minor": {
+                          "type": "string"
+                        },
+                        "item_name": {
+                          "type": "string"
+                        },
+                        "unit_name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["item_name", "unit_name", "after_minor", "before_minor"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "due_at": {
+                    "type": "string"
+                  },
+                  "linked_receipts": {
+                    "items": {},
+                    "type": "array"
+                  },
+                  "payable_minor": {
+                    "type": "string"
+                  },
+                  "stock": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "item_name": {
+                          "type": "string"
+                        },
+                        "qty_milli": {
+                          "type": "string"
+                        },
+                        "unit_name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["item_name", "qty_milli", "unit_name"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
                 "type": "object"
               },
               "id": {
@@ -23128,6 +23301,9 @@
                     },
                     "id": {
                       "type": "string"
+                    },
+                    "is_gift": {
+                      "type": "boolean"
                     },
                     "item_id": {
                       "type": "string"
@@ -23175,12 +23351,17 @@
                     "line_total_minor",
                     "est_total_minor",
                     "excess_reason",
+                    "is_gift",
                     "returned_qty_milli",
                     "diff",
                     "line_no"
                   ],
                   "type": "object"
                 },
+                "type": "array"
+              },
+              "linked_receipts": {
+                "items": {},
                 "type": "array"
               },
               "note": {
@@ -23197,6 +23378,37 @@
               },
               "order_number": {
                 "type": "string"
+              },
+              "receipt_candidates": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "occurred_at": {
+                      "type": "string"
+                    },
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_number": {
+                      "type": "string"
+                    },
+                    "supplier_name": {
+                      "type": "string"
+                    },
+                    "user_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "receipt_id",
+                    "receipt_number",
+                    "supplier_name",
+                    "user_name",
+                    "occurred_at"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
               },
               "receipt_number": {
                 "type": "string"
@@ -23253,6 +23465,8 @@
               "referred_at",
               "receipt_number",
               "effects",
+              "linked_receipts",
+              "receipt_candidates",
               "blockers",
               "approval"
             ],
