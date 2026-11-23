@@ -888,7 +888,7 @@ def _receipt_lines(party: Party) -> list[StatementLine]:
                     kind="correction",
                     label=f"يصحّح حركة {r.business_date.isoformat()} — {c.get_kind_display()}",
                     occurred_at=c.occurred_at,
-                    business_date=c.occurred_at.date(),
+                    business_date=timezone.localdate(c.occurred_at),
                     debit_minor=0,
                     credit_minor=0,
                     branch_id=r.branch_id,
@@ -1328,6 +1328,11 @@ def _fmt_minor(v: str) -> str:
     return f"{sign}{n // 100:,}.{n % 100:02d}"
 
 
+def _local_day(dt: datetime) -> date:
+    """يوم العمل لوقتٍ بتوقيت المنشأة (0005 §٢٩١)؛ الوقت بلا منطقة يُقرأ كما هو."""
+    return timezone.localdate(dt) if timezone.is_aware(dt) else dt.date()
+
+
 def render_export_html(e: StatementExport) -> str:
     """المستند نفسه: ترويسة المنشأة والكشف حتى تاريخه ووقت التوليد، السطور بالحقول المختارة،
     والرصيد المستحق. RTL وأرقام لاتينية؛ يُطبع أو يُحفظ PDF من المتصفح."""
@@ -1343,9 +1348,8 @@ def render_export_html(e: StatementExport) -> str:
     head += [esc("عليه"), esc("له"), esc("الرصيد")]
     rows_html: list[str] = []
     for r in snap.get("rows", []):
-        bd = (
-            parse_date(str(r.get("business_date", "")))
-            or (parse_datetime(str(r.get("occurred_at", ""))) or as_of).date()
+        bd = parse_date(str(r.get("business_date", ""))) or _local_day(
+            parse_datetime(str(r.get("occurred_at", ""))) or as_of
         )
         cells = [f"<td class=m>{_day_month(bd)}</td>", f"<td>{esc(str(r.get('label', '')))}</td>"]
         if e.include_invoices:
@@ -1382,7 +1386,7 @@ th,td{{padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:start}}
 @media print{{body{{margin:16mm}}}}
 </style></head><body>
 <h1>{esc(str(snap.get("tenant_name", "")))}</h1>
-<p class=sub>كشف حساب: {esc(str(snap.get("party_name", "")))} · حتى {_day_month(as_of.date())}
+<p class=sub>كشف حساب: {esc(str(snap.get("party_name", "")))} · حتى {_day_month(_local_day(as_of))}
  · وُلِّد <span class=m>{gen:%Y-%m-%d %H:%M}</span></p>
 <table><thead><tr>{"".join(f"<th>{h}</th>" for h in head)}</tr></thead>
 <tbody>{"".join(rows_html)}</tbody></table>

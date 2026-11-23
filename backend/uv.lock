@@ -950,6 +950,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "pywebpush" },
     { name = "segno" },
+    { name = "tzdata" },
 ]
 
 [package.dev-dependencies]
@@ -975,6 +976,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pywebpush", specifier = ">=2.5.0" },
     { name = "segno", specifier = ">=1.6.6" },
+    { name = "tzdata", specifier = ">=2025.2" },
 ]
 
 [package.metadata.requires-dev]

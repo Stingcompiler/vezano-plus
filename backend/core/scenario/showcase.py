@@ -1480,7 +1480,7 @@ def seed_purchasing(ctx: Ctx, start: date, today: date) -> None:
             PurchaseDocument.objects.filter(id=doc.id).update(approved_at=when, created_at=when)
             if doc.receipt_id:
                 GoodsReceipt.objects.filter(id=doc.receipt_id).update(
-                    business_date=when.date(), occurred_at=when, received_at=when
+                    business_date=timezone.localdate(when), occurred_at=when, received_at=when
                 )
                 StockMovement.objects.filter(source_id=doc.receipt_id).update(occurred_at=when)
             first_doc = first_doc or doc

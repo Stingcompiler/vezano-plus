@@ -271,6 +271,69 @@ test.describe("HOME-01", () => {
     });
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
+
+  test("نطاق الأرقام الفعلي، والفترة والفرع يصلان الخادم (مراجعة التقارير R-01/R-02 — 0005 §٢٩١)", async ({
+    page,
+  }) => {
+    const seen: string[] = [];
+    const sales = (amount: string, label: string, scope: string) => ({
+      ...OWNER.kpis[0],
+      label,
+      scope,
+      value: { kind: "money", amount_minor: amount, exponent: 2 },
+    });
+    await loginTo(page, OWNER);
+    await page.unroute("**/api/home**");
+    await page.route("**/api/home**", (route) => {
+      const url = new URL(route.request().url());
+      seen.push(url.search);
+      const branch = url.searchParams.get("branch_id") ?? "";
+      const period = url.searchParams.get("period") ?? "today";
+      const label = period === "7d" ? "صافي مبيعات آخر 7 أيام" : "صافي مبيعات اليوم";
+      const body =
+        branch === "b2"
+          ? {
+              ...OWNER,
+              period,
+              branch_id: "b2",
+              scope: { kind: "branch", branch_id: "b2", branch_name: "بحري", can_choose: true },
+              kpis: [sales(period === "7d" ? "990000" : "396000", label, "بحري")],
+            }
+          : {
+              ...OWNER,
+              period,
+              branch_id: "all",
+              scope: { kind: "all", branch_id: "", branch_name: "", can_choose: true },
+            };
+      return route.fulfill(json(200, body));
+    });
+    const home = page.locator('[data-screen="HOME-01"]');
+    await expect(home.locator(".home-head")).toContainText("· كل الفروع");
+    await page.getByLabel("الفرع").selectOption("b2");
+    await expect(home.locator(".home-head")).toContainText("· أرقام فرع بحري");
+    await expect(home.locator(".home-head")).not.toContainText("كل الفروع ·");
+    await expect(page.locator(".home-kpi__value").first()).toHaveText("3,960 ج.س");
+    await page.getByLabel("الفترة").selectOption("7d");
+    await expect(page.locator(".home-kpi__label").first()).toHaveText("صافي مبيعات آخر 7 أيام");
+    await expect(page.locator(".home-kpi__value").first()).toHaveText("9,900 ج.س");
+    expect(seen.some((q) => q.includes("branch_id=b2") && q.includes("period=7d"))).toBe(true);
+    await page.getByLabel("الفرع").selectOption("all");
+    await expect(home.locator(".home-head")).toContainText("· كل الفروع");
+  });
+
+  test("المدير على فرعه: «أرقام فرع …» ولا مرشّح فرع (0005 §٢٩١)", async ({ page }) => {
+    await loginTo(page, {
+      ...OWNER,
+      user: { display_name: "سارة", role_name: "مدير", branch_name: "الرئيسي", device_name: "" },
+      branch_id: "b1",
+      scope: { kind: "branch", branch_id: "b1", branch_name: "الرئيسي", can_choose: false },
+    });
+    const head = page.locator('[data-screen="HOME-01"] .home-head');
+    await expect(head).toContainText("سارة — مدير · أرقام فرع الرئيسي");
+    await expect(head).not.toContainText("كل الفروع");
+    await expect(page.getByLabel("الفرع")).toHaveCount(0);
+    await expect(page.getByLabel("الفترة")).toBeVisible();
+  });
 });
 
 test.describe("درج التنقل ولوحة المفاتيح (مراجعة 2026-11-10 و-٥)", () => {

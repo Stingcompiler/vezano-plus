@@ -63,8 +63,9 @@ def test_sales_report_matches_home_and_declares_incompleteness(ctx: dict[str, An
     with tenant_context(ctx["tenant"].id):
         viewer = home.viewer_for(ctx["owner"], ctx["device"])
         out = home.home_summary(ctx["tenant"].id, viewer)
-        assert out["sales_today"]["total_minor"] == p["totals"]["revenue_minor"]
-        assert out["sales_today"]["count"] == p["totals"]["invoices"]
+        # الرئيسية صافية كالتقرير (0005 §٢٩١؛ اختبار الفرعين والمرتجع والإلغاء في test_home_scope)
+        assert out["sales"]["net_minor"] == p["totals"]["net_minor"]
+        assert out["sales"]["count"] == p["totals"]["invoices"]
     # جهاز البيع زامن للتوّ ولا معلّق: مكتمل
     assert p["completeness"]["complete"] is True
     # يبلّغ الجهاز عن 3 معلّقة → التقرير يقول «ناقص» ولا يخفيه

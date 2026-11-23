@@ -14,6 +14,8 @@ dependencies = [
     "gunicorn>=26.2.0",
     "boto3>=1.40",
     "maxminddb>=3.2.0",
+    # قاعدة المناطق الزمنية داخل البيئة: صورة slim قد تخلو من /usr/share/zoneinfo، وTIME_ZONE = الخرطوم
+    "tzdata>=2025.2",
 ]
 
 [dependency-groups]

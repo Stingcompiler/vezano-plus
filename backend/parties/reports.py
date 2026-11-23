@@ -32,16 +32,19 @@ def _customer_row(party: Party, balance: int | None = None) -> dict[str, Any] | 
         return None
     lines = [ln for ln in statement_lines(party) if not ln.info]
     payments = [ln for ln in lines if ln.kind in {"payment", "refund"} and ln.credit_minor > 0]
-    last_payment = max((ln.business_date or ln.occurred_at.date() for ln in payments), default=None)
+    last_payment = max(
+        (ln.business_date or timezone.localdate(ln.occurred_at) for ln in payments), default=None
+    )
     debits = [ln for ln in lines if ln.debit_minor > 0]
     # أقدم حركة لم يغطها سداد لاحق: أقدم مدين بعد آخر سداد (أو أقدم مدين إن لم يقع سداد)
     uncovered = [
         ln
         for ln in debits
-        if last_payment is None or (ln.business_date or ln.occurred_at.date()) > last_payment
+        if last_payment is None
+        or (ln.business_date or timezone.localdate(ln.occurred_at)) > last_payment
     ]
     oldest = min(
-        (ln.business_date or ln.occurred_at.date() for ln in uncovered),
+        (ln.business_date or timezone.localdate(ln.occurred_at) for ln in uncovered),
         default=None,
     )
     invoices = [ln for ln in debits if ln.kind == "sale"]
@@ -89,7 +92,7 @@ def _supplier_row(party: Party, owed: int | None = None) -> dict[str, Any] | Non
         source = ""
     # آخر سند صرف فعّال (المرحلة ٣ من مراجعة الأطراف) — كان فارغاً دائماً لأن الدفع لم يُبنَ
     paid = [
-        ln.business_date or ln.occurred_at.date()
+        ln.business_date or timezone.localdate(ln.occurred_at)
         for ln in supplier_statement_lines(party)
         if ln.kind == "payment" and ln.debit_minor > 0
     ]
