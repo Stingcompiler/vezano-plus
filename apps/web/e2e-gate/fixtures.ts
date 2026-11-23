@@ -125,7 +125,7 @@ export async function openShift(page: Page, drawer = "0.00"): Promise<void> {
   // رئيسية بلا أرقام: «افتح وردية»؛ رئيسية بأرقام: مؤشر الذمم/المبيعات → تنقّل البيع → الوردية
   // والصندوق (بلا وردية يحوّل إلى الفتح)
   const open = page.getByRole("button", { name: "افتح وردية" });
-  const kpi = page.getByRole("link", { name: /^(الذمم|مبيعات اليوم|نقد الصناديق)/ });
+  const kpi = page.getByRole("link", { name: /^(الذمم|صافي مبيعات|نقد الصناديق)/ });
   await expect(open.or(kpi).first()).toBeVisible();
   if (await open.count()) {
     await open.click();
@@ -147,17 +147,17 @@ export async function goPos(page: Page): Promise<void> {
     return;
   }
   await goHome(page);
-  // رئيسية الموظف: «بيع جديد»؛ رئيسية المالك: مؤشر «مبيعات اليوم» → الفواتير (تنقّل البيع) → نقطة
-  // البيع؛ وقبل أول بيع «يومٌ لم يبدأ» → شاشة الفتح تعرض الوردية المفتوحة ورابط نقطة البيع
+  // رئيسية الموظف: «بيع جديد»؛ رئيسية المالك: مؤشر «صافي مبيعات اليوم» → تقرير المبيعات (0005
+  // §٢٩١) → نقطة البيع؛ وقبل أول بيع «يومٌ لم يبدأ» → شاشة الفتح تعرض الوردية المفتوحة ورابط نقطة البيع
   const sell = page.getByRole("link", { name: /بيع جديد|افتح نقطة البيع/ });
-  const kpi = page.getByRole("link", { name: /^مبيعات اليوم/ });
+  const kpi = page.getByRole("link", { name: /^صافي مبيعات/ });
   const open = page.getByRole("button", { name: "افتح وردية" });
   await expect(sell.or(kpi).or(open).first()).toBeVisible();
   if (await sell.count()) {
     await sell.click();
   } else if (await kpi.count()) {
     await kpi.click();
-    await expect(page).toHaveURL(/\/pos\/invoices$/);
+    await expect(page).toHaveURL(/\/reports$/);
     await (await revealLink(page, "نقطة البيع")).click();
   } else {
     await open.click();
