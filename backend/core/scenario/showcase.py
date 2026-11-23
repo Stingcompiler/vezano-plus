@@ -1303,17 +1303,26 @@ def seed_transfers(ctx: Ctx, start: date, today: date) -> None:
 
 def seed_count_and_damage(ctx: Ctx, start: date, today: date) -> None:
     """جرد جزئي في بحري بفرقين مسوّيين، وهالك وحجر في الرئيسي."""
-    from inventory.models import CountSession, DamageRecord, StockAdjustment
+    from django.db.models import Sum
+
+    from inventory.models import CountSession, DamageRecord, StockAdjustment, StockMovement
     from inventory.services import branch_balances
 
     bhr = ctx.branches["BHR"]
     keeper = ctx.users["shop:storekeeper"]
     names = ["سكر أبيض 1 كغ", "أرز بسمتي 1 كغ", "زيت فول 1 لتر", "شاي الغزالين 250 غ", "تونة 185 غ"]
+    d = today - timedelta(days=4)
+    # الدفتري لحظة العدّ (0005 §٢٨٩): الرصيد الآن ناقص ما تحرّك بعد وقت العدّ
     with tenant_context(ctx.shop.id):
         bal = branch_balances(bhr.id)
-        system = {n: bal.get(_item(ctx, n).id, 0) for n in names}
+        after = {
+            r["item_id"]: int(r["s"] or 0)
+            for r in StockMovement.objects.filter(branch_id=bhr.id, occurred_at__gt=_dt(d, 6, 30))
+            .values("item_id")
+            .annotate(s=Sum("delta_base_qty_milli"))
+        }
+        system = {n: bal.get(_item(ctx, n).id, 0) - after.get(_item(ctx, n).id, 0) for n in names}
     sid = str(uuid7())
-    d = today - timedelta(days=4)
     ms = [
         _member(
             "inventory.CountSession",
