@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import pytest
@@ -33,10 +34,10 @@ def _patch(c: Client, h: dict[str, str], path: str, body: dict[str, Any]) -> Any
     return c.patch(path, body, content_type="application/json", **h)  # type: ignore[arg-type]
 
 
-def _supplier(ctx: dict[str, Any], name: str = "مطاحن سيقا — وكيل") -> Any:
-    with tenant_context(ctx["tenant"].id):
+def _supplier(c0: dict[str, Any], name: str = "مطاحن سيقا — وكيل") -> Any:
+    with tenant_context(c0["tenant"].id):
         p = party_services.create_party(
-            party_id=None, name=name, phone="0912", created_by=ctx["owner"], distinct_from=None
+            party_id=None, name=name, phone="0912", created_by=c0["owner"], distinct_from=None
         )
         p.is_supplier = True
         p.save(update_fields=["is_supplier"])
@@ -62,19 +63,17 @@ def _draft(c: Client, h: dict[str, str], order_id: str) -> Any:
     return _post(c, h, f"/api/inventory/purchasing/orders/{order_id}/document", {})
 
 
-def _receipt(ctx: dict[str, Any], supplier: Any, item: str, cartons: int, cost: str = "") -> str:
-    op = _receipt_op(
-        ctx, item, qty=str(cartons * 1000), factor="12000", cost=cost, when=_now_iso()
-    )
+def _receipt(c0: dict[str, Any], supplier: Any, item: str, cartons: int, cost: str = "") -> str:
+    op = _receipt_op(c0, item, qty=str(cartons * 1000), factor="12000", cost=cost, when=_now_iso())
     op["members"][0]["payload"]["party_id"] = str(supplier.id)
     op["members"][0]["payload"]["supplier_name"] = supplier.name
-    assert do_push(ctx, op) == ["accepted"]
+    assert do_push(c0, op) == ["accepted"]
     return str(op["members"][0]["id"])
 
 
-def _balance(ctx: dict[str, Any], item: str) -> str:
-    with tenant_context(ctx["tenant"].id):
-        return str(catalog_services.branch_balances(ctx["branch"].id).get(item, "0"))
+def _balance(c0: dict[str, Any], item: str) -> str:
+    with tenant_context(c0["tenant"].id):
+        return str(catalog_services.branch_balances(c0["branch"].id).get(item, "0"))
 
 
 def test_received_order_cancelled_order_remaining_and_zero_price(ctx: dict[str, Any]) -> None:  # noqa: F811
@@ -209,7 +208,7 @@ def test_document_linked_to_existing_receipt_adds_debt_not_stock(ctx: dict[str, 
         assert StockMovement.objects.count() == moves
         assert party_services.supplier_owed_minor(supplier) == 720000
         # سعر الفاتورة يصل إلى التكلفة ويحلّ محلّ تقدير المستلِم لنفس الصنف
-        assert not costed_receipt_lines().filter(receipt_id=rid).exists()
+        assert not costed_receipt_lines().filter(receipt_id=uuid.UUID(rid)).exists()
         assert purchasing.last_purchase_prices([ctx["sugar"].id]) == {
             (ctx["sugar"].id, "carton"): 90000
         }

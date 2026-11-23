@@ -397,13 +397,12 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
     (د-٢، I-03 — 0005 §٢٨٩) فبيعٌ بعد العدّ لا يُمحى؛ الحركة بعد العدّ تُعلَّم (ACC-07)؛ التسوية
     بصلاحية مالية وسبب لكل فرق (لا سبب عام)؛ حركات `count` بمستند وفاعل وسبب في INV-02؛ العدّ
     الأصلي لا يُعاد كتابته؛ لا تسوية ثانية؛ الجلسة المسوّاة تُعرض بما سُوّي."""
-    from datetime import datetime
-    from datetime import timezone as dt_tz
+    from datetime import UTC, datetime
 
     from inventory.models import StockMovement
 
     sugar, tea = str(ctx["sugar"].id), str(ctx["tea"].id)
-    before_count = datetime(2026, 9, 16, 8, 0, tzinfo=dt_tz.utc)
+    before_count = datetime(2026, 9, 16, 8, 0, tzinfo=UTC)
     # الدفتري لحظة العدّ (10:00): سكر 10، شاي 5؛ ثم بيع سكر 1 الساعة 10:34 بعد عدّه → الآن 9
     with tenant_context(ctx["tenant"].id):
         StockMovement.objects.create(
