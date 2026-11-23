@@ -114,9 +114,25 @@ export function InvoiceDetailClient({ saleId }: { saleId: string }) {
       if (local) {
         const op = await storage.read((tx) => tx.getOperation(local.operation_id));
         const st = op?.state ?? "local";
-        setDetail(
-          fromLocal(local, st === "synced" ? "synced" : st === "pending" ? "pending" : "local"),
+        const mine = fromLocal(
+          local,
+          st === "synced" ? "synced" : st === "pending" ? "pending" : "local",
         );
+        setDetail(mine);
+        // المحلي أولاً، ثم يُسأل الخادم عن العكس متى وُجد اتصال: فاتورة ألغاها مستند عكسي من
+        // جهاز آخر لا تُعرض للمرتجع (S-06 — السحب غير موصول بعد)
+        if (st !== "synced" || !navigator.onLine) return;
+        try {
+          const { data, response } = await api().GET("/api/sales/{sale_id}", {
+            params: { path: { sale_id: saleId } },
+          });
+          const body = data as unknown as
+            { sync_state?: string; reversal?: Detail["reversal"] } | undefined;
+          if (response.ok && body?.sync_state === "reversed")
+            setDetail({ ...mine, sync: "reversed", reversal: body.reversal ?? null });
+        } catch {
+          // بلا جواب يبقى المحلي كما هو
+        }
         return;
       }
       if (!navigator.onLine) {

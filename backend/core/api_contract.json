@@ -834,7 +834,8 @@
   ],
   "POST /api/sales/duplicates/decide": [
    "400:validation_error",
-   "403:manager_required"
+   "403:manager_required",
+   "409:sale_has_returns"
   ],
   "POST /api/shifts/{shift_id}/requests": [
    "400:validation_error"
@@ -24199,6 +24200,9 @@
       "items": {
        "additionalProperties": false,
        "properties": {
+        "bank_minor": {
+         "type": "string"
+        },
         "cash_minor": {
          "type": "string"
         },
@@ -24269,6 +24273,7 @@
         "destination",
         "total_minor",
         "cash_minor",
+        "bank_minor",
         "credit_minor",
         "exceeds_original",
         "occurred_at",

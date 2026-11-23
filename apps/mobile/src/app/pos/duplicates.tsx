@@ -85,6 +85,7 @@ export default function Duplicates() {
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [decidedBy, setDecidedBy] = useState<string | null>(null);
+  const [hasReturns, setHasReturns] = useState<string | null>(null);
 
   useEffect(() => {
     void api
@@ -123,6 +124,8 @@ export default function Duplicates() {
         },
       });
       const body = out as unknown as { decided_by_name: string } | undefined;
+      // S-06: فاتورة لها مرتجع لا تُلغى بمستند عكسي (409 sale_has_returns)
+      if (response.status === 409) setHasReturns(pairKey(pair));
       if (!response.ok || !body) return;
       setDecidedBy(body.decided_by_name);
       setData((d) =>
@@ -175,6 +178,12 @@ export default function Duplicates() {
           </AppText>
           <DocRows title={tx(T, "المستند الأول — الأصل")} doc={pair.first} />
           <DocRows title={tx(T, "المستند الثاني — المشتبه به")} doc={pair.second} />
+          {hasReturns === pairKey(pair) ? (
+            <StateView
+              state="validation_error"
+              title={tx(T, "لهذه الفاتورة مرتجع مسجَّل — لا تُلغى بمستند عكسي.")}
+            />
+          ) : null}
           {canDecide ? (
             <>
               <AppText variant="note" muted>

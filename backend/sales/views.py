@@ -167,7 +167,9 @@ class DuplicateDecideView(APIView):
         decision = serializers.ChoiceField(choices=("both_real", "reverse"))
         reason = serializers.CharField(allow_blank=True, required=False, default="")
 
-    @extend_schema(request=DecideSerializer, responses={201: None, 400: None, 403: None, 404: None})
+    @extend_schema(
+        request=DecideSerializer, responses={201: None, 400: None, 403: None, 404: None, 409: None}
+    )
     def post(self, request: Request) -> Response:
         tid = _tenant(request.auth)
         if tid is None:
@@ -197,6 +199,9 @@ class DuplicateDecideView(APIView):
                     actor=v.user,
                 )
             except duplicates.DecisionRejected as e:
+                if e.code == "has_returns":
+                    # فاتورة لها مرتجع لا تُلغى بمستند عكسي: العكس يعيد ما رُدّ مرة ثانية (S-06)
+                    return Response({"detail": "sale_has_returns"}, status=status.HTTP_409_CONFLICT)
                 return Response(
                     {
                         "detail": "validation_error",

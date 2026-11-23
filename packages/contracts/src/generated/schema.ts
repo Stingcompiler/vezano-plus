@@ -17181,6 +17181,7 @@ export interface components {
             }[];
             received_at: string;
             returns: {
+                bank_minor: string;
                 cash_minor: string;
                 condition: string;
                 credit_minor: string;
@@ -30251,6 +30252,13 @@ export interface operations {
             };
             /** @description No response body */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

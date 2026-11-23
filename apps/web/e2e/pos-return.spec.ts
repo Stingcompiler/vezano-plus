@@ -18,12 +18,14 @@ interface Seed {
   /** مرتجع سابق محلي على الشاي بكمية (بالألف). */
   readonly priorTea?: string;
   readonly party?: boolean;
+  /** خصم 10.00 على الفاتورة (780.00 → 770.00 نقداً). */
+  readonly discount?: boolean;
 }
 
 async function seed(page: Page, s: Seed = {}) {
   await openSeedPage(page);
   await page.evaluate(
-    async ({ role, priorTea, party, openedAt }) => {
+    async ({ role, priorTea, party, discount, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");
       const db = await new Promise<IDBDatabase>((res, rej) => {
         req.onsuccess = () => res(req.result);
@@ -111,9 +113,9 @@ async function seed(page: Page, s: Seed = {}) {
             party_id: party ? "p1" : "",
             party_name: party ? "أحمد الطيب — تجريبي" : "",
             subtotal_minor: "78000",
-            discount_minor: "0",
-            total_minor: "78000",
-            cash_minor: party ? "0" : "78000",
+            discount_minor: discount ? "1000" : "0",
+            total_minor: discount ? "77000" : "78000",
+            cash_minor: party ? "0" : discount ? "77000" : "78000",
             bank_minor: "0",
             credit_minor: party ? "78000" : "0",
             received_minor: "",
@@ -213,6 +215,7 @@ async function seed(page: Page, s: Seed = {}) {
       role: s.role ?? "cashier",
       priorTea: s.priorTea ?? "",
       party: s.party ?? false,
+      discount: s.discount ?? false,
       openedAt: new Date().toISOString(),
     },
   );
@@ -286,7 +289,6 @@ test.describe("POS-10", () => {
         "تالفة — إلى الحجر أو الهالك",
         "وجهة الرد",
         "نقداً من الصندوق",
-        "خصماً من ذمة العميل",
         "قيمة المرتجع",
         "الكمية المرتجعة لا تتجاوز",
         "المُباع ناقص المُرتجَع سابقاً",
@@ -356,12 +358,10 @@ test.describe("POS-10", () => {
     await expect(page.locator(".pos-ret__qty").first()).toHaveText("3");
   });
 
-  test("permission_denied: ردّ نقدي فوق حدّ الكاشير — والوجهة تغيّر الحكم", async ({
-    page,
-  }, info) => {
-    await seed(page, { party: true });
+  test("permission_denied: ردّ نقدي فوق حدّ الكاشير", async ({ page }, info) => {
+    await seed(page);
     await login(page, RETURN);
-    // الزيت 300.00 > حدّ الكاشير النقدي 200.00
+    // الزيت 300.00 نقداً > حدّ الكاشير النقدي 200.00
     await plus(page, "زيت 1 لتر").click();
     await expectFrame(page, info, {
       screenId: "POS-10",
@@ -375,9 +375,54 @@ test.describe("POS-10", () => {
     });
     await expect(page.locator("body")).toContainText("الحدّان منفصلان في «الأدوار والصلاحيات».");
     await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeDisabled();
-    await page.getByLabel("خصماً من ذمة العميل").check();
-    await expect(page.locator('[data-screen="POS-10"]')).toHaveAttribute("data-state", "partial");
-    await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeEnabled();
+  });
+
+  test("S-02: فاتورة آجلة — الردّ يُخصم من ذمّة العميل لا من الصندوق (حدّ الذمّة أوسع)", async ({
+    page,
+  }) => {
+    await seed(page, { party: true });
+    const pushed: { kind: string; members: { entity: string; payload?: unknown }[] }[] = [];
+    await pushRoute(page, pushed);
+    await login(page, RETURN);
+    await plus(page, "زيت 1 لتر").click();
+    const root = page.locator('[data-screen="POS-10"]');
+    await expect(root).toHaveAttribute("data-state", "partial");
+    await expect(root).toContainText("الفاتورة آجلة: الردّ يُخصم من ذمّة العميل أولاً.");
+    await expect(root).toContainText("خصماً من ذمة العميل");
+    await expect(root).not.toContainText("نقداً من الصندوق");
+    await page.getByRole("button", { name: "تسجيل المرتجع" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    const head = pushed[0]!.members.find((m) => m.entity === "sales.SaleReturn")!.payload;
+    expect(head).toMatchObject({
+      destination: "credit",
+      total_minor: "30000",
+      credit_minor: "30000",
+      bank_minor: "0",
+      cash_minor: "0",
+    });
+  });
+
+  test("S-01: فاتورة بخصم — المرتجع يردّ ما دُفع لا سعر القائمة", async ({ page }) => {
+    await seed(page, { role: "owner", discount: true });
+    await login(page, RETURN);
+    for (let i = 0; i < 4; i++) await plus(page, "شاي أسود 250غ").click();
+    const root = page.locator('[data-screen="POS-10"]');
+    // الشاي 480.00 من 780.00 بخصم 10.00: نصيبه 6.15 → 473.85 لا 480.00
+    await expect(root).toContainText("قيمة المرتجع بعد خصم الفاتورة");
+    await expect(root).toContainText("473.85");
+    await expect(root).not.toContainText("480.00");
+  });
+
+  test("S-06: فاتورة ألغاها مستند عكسي لا تُردّ", async ({ page }) => {
+    await seed(page);
+    await page.route(/\/api\/sales\/sale-1039(\?.*)?$/, (route) =>
+      route.fulfill(json(200, { id: "sale-1039", sync_state: "reversed", returns: [] })),
+    );
+    await login(page, RETURN);
+    const root = page.locator('[data-screen="POS-10"]');
+    await expect(root).toContainText("هذه الفاتورة أُلغيت بمستند عكسي — لا تُردّ.");
+    await plus(page, "شاي أسود 250غ").click();
+    await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeDisabled();
   });
 
   test("saved_local: مرتجع تالف بلا اتصال — محفوظ محلياً، إلى الحجر لا المخزون، والصندوق لا ينتظر", async ({

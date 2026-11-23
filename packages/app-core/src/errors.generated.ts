@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (229 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (230 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -186,6 +186,7 @@ export const API_ERROR_CODES = [
   "retry_after",
   "revert_refused",
   "role_invalid",
+  "sale_has_returns",
   "same_plan",
   "same_reviewer",
   "scope_required",
@@ -2229,6 +2230,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "manager_required",
+    },
+    {
+      status: 409,
+      code: "sale_has_returns",
     },
   ],
   "POST /api/shifts/{shift_id}/requests": [
