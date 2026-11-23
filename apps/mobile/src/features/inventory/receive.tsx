@@ -355,7 +355,7 @@ export function ReceiveScreen() {
               </AppText>
             ) : null}
             <AppText variant="note" muted>
-              {tx(T, "الاستلام لا يُنشئ ذمّة على المنشأة للمورد — للذمّة سجّل مستند شراء.")}
+              {tx(T, "الاستلام يُدخل المخزون وحده. للذمّة سجّل مستند الشراء واربطه بهذا الاستلام.")}
             </AppText>
             {hints.length > 0 ? (
               <Wrap>
