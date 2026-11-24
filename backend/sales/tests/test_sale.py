@@ -271,7 +271,7 @@ def test_sale_feeds_shift_drawer_party_ledger_and_home(ctx: dict[str, Any]) -> N
         assert party_services.last_sale_at(party) is not None
         viewer = home.viewer_for(ctx["owner"], ctx["device"])
         out = home.home_summary(ctx["tenant"].id, viewer)
-        assert out["sales_today"]["count"] == 0  # business_date 2026-09-16 ليس اليوم بالضرورة
+        assert out["sales"]["count"] == 0  # business_date 2026-09-16 ليس اليوم بالضرورة
         found = home.search(viewer, "INV-B")
         docs = next(g for g in found["groups"] if g["kind"] == "documents")
         assert docs["results"][0]["title"] == "INV-B"

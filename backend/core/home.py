@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from django.utils import timezone
@@ -170,6 +170,30 @@ HOME_PROVIDERS.append(_quarantine_decision)
 HOME_PROVIDERS.append(_market_decisions)
 
 
+#: فترات الرئيسية (HOME-01) — مفاتيح مدى تقرير المبيعات نفسه (`sales.reports.parse_range`)
+HOME_PERIODS = ("today", "7d", "month")
+#: قيمة «كل الفروع» في مرشّح الفرع (الفارغ = الافتراضي: فرع الجهاز أو كل الفروع)
+ALL_BRANCHES = "all"
+
+
+def home_branch(viewer: Viewer, branch_id: str, branches: list[Branch]) -> Branch | None:
+    """نطاق أرقام الرئيسية (مراجعة التقارير R-01/R-02 — 0005 §٢٩١). None = كل الفروع.
+
+    المالك: فرعٌ يختاره، أو «all»، وبلا اختيار فرعُ جهازه إن كان على جهاز فرع وإلا كل الفروع —
+    لا أقدم عضوية له (كانت تعرض فرعاً واحداً تحت «كل الفروع»). غير المالك: فرعه دائماً، والمرشّح
+    لا يوسّع نطاقه. هذا نطاق الرئيسية وحدها: `viewer.branch` لبقية الشاشات والصلاحيات لا يتغيّر."""
+    if not viewer.is_owner:
+        return viewer.branch
+    if branch_id == ALL_BRANCHES:
+        return None
+    chosen = next((b for b in branches if str(b.id) == branch_id), None)
+    if chosen is not None:
+        return chosen
+    if viewer.device is not None and viewer.device.branch_id is not None:
+        return next((b for b in branches if b.id == viewer.device.branch_id), viewer.device.branch)
+    return None
+
+
 def home_summary(
     tenant_id: uuid.UUID, viewer: Viewer, *, period: str = "today", branch_id: str = ""
 ) -> dict[str, Any]:
@@ -180,6 +204,10 @@ def home_summary(
     ).exists()
     # فحص 2026-10-17 F08: «كلها زامنت» بلا أي جهاز ليست حقيقة — العدد يميّز «لا أجهزة بعد»
     devices_total = Device.objects.filter(status=Device.Status.ACTIVE).count()
+    period = period if period in HOME_PERIODS else "today"
+    scope_branch = home_branch(viewer, branch_id, branches)
+    # المزوّدون يرون نطاق الرئيسية في `viewer.branch` (None = كل الفروع) — نسخة للرئيسية وحدها
+    scoped = replace(viewer, branch=scope_branch)
     out: dict[str, Any] = {
         "kind": "owner" if viewer.can_see_finance else "employee",
         "tenant_name": tenant.name,
@@ -190,7 +218,13 @@ def home_summary(
             "device_name": viewer.device.name if viewer.device else "",
         },
         "period": period,
-        "branch_id": branch_id,
+        "branch_id": str(scope_branch.id) if scope_branch is not None else ALL_BRANCHES,
+        "scope": {
+            "kind": "branch" if scope_branch is not None else "all",
+            "branch_id": str(scope_branch.id) if scope_branch is not None else "",
+            "branch_name": scope_branch.name if scope_branch is not None else "",
+            "can_choose": viewer.is_owner,
+        },
         "branches": [{"id": str(b.id), "name": b.name} for b in branches],
         "branches_synced": not devices_pending,
         "devices_total": devices_total,
@@ -205,7 +239,7 @@ def home_summary(
         "shift": None,
     }
     for provider in HOME_PROVIDERS:
-        provider(viewer, out)
+        provider(scoped, out)
     # الأخطر أولاً (ترتيب مستقر داخل كل درجة)
     out["decisions"].sort(key=lambda d: 0 if d.get("severity") == "danger" else 1)
     out["decisions_count"] = len(out["decisions"])

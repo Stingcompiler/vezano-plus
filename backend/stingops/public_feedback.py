@@ -92,7 +92,7 @@ def submit(data: dict[str, Any], *, ip: str) -> dict[str, Any]:
             raise PublicFeedbackRejected("rate_limited", 429)
         if recent.count() >= SITE_PER_HOUR:
             raise PublicFeedbackRejected("rate_limited", 429)
-        seq = PublicFeedback.objects.filter(created_at__date=now.date()).count() + 1
+        seq = PublicFeedback.objects.filter(created_at__date=timezone.localdate(now)).count() + 1
         f: PublicFeedback | None = None
         for attempt in range(5):
             try:

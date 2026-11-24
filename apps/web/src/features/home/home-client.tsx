@@ -19,6 +19,9 @@ import { PlatformAnnouncements } from "./platform-announcements";
 import type { Attention, Decision, HomeSummary, Kpi } from "./types";
 import { readOpenShift } from "@sting/sync-core";
 
+/** قيمة «كل الفروع» في مرشّح الفرع؛ الفارغ = افتراضي الخادم (فرع الجهاز أو كل الفروع). */
+const ALL_BRANCHES = "all";
+
 type OwnerState = "loading" | "ready" | "empty" | "stale" | "offline" | "pending_sync";
 type EmployeeState = "ready" | "empty" | "permission_denied" | "offline" | "stale";
 
@@ -193,6 +196,9 @@ export function HomeClient() {
   }
 
   const isOwner = summary.kind === "owner";
+  // ملخّص مخزَّن قبل 0005 §٢٩١ بلا `scope`: كما كان (كل الفروع، والمرشّح ظاهر)
+  const allBranches = (summary.scope?.kind ?? "all") === "all";
+  const canChooseBranch = summary.scope?.can_choose ?? true;
   const hasNumbers =
     summary.kpis.length > 0 || summary.decisions.length > 0 || summary.attention.length > 0;
   const ownerState: OwnerState = !online
@@ -245,7 +251,9 @@ export function HomeClient() {
                   {greeting()} — {summary.tenant_name}
                 </h2>
                 <p className="acc-card__sub" style={{ color: "var(--color-ink-muted)" }}>
-                  {summary.user.display_name} — {summary.user.role_name} · كل الفروع
+                  {summary.user.display_name} — {summary.user.role_name}{" "}
+                  {/* نطاق الأرقام الفعلي لا نصّ ثابت (مراجعة التقارير R-01 — 0005 §٢٩١) */}
+                  {allBranches ? <>· كل الفروع</> : <>· أرقام فرع {summary.scope?.branch_name}</>}
                 </p>
               </div>
               <div className="home-head__meta">
@@ -267,15 +275,18 @@ export function HomeClient() {
                     { value: "month", label: "هذا الشهر" },
                   ]}
                 />
-                <SelectField
-                  label="الفرع"
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  options={[
-                    { value: "", label: "كل الفروع" },
-                    ...summary.branches.map((b) => ({ value: b.id, label: b.name })),
-                  ]}
-                />
+                {/* الفرع للمالك وحده: المدير والكاشير على فرعهما ولا يوسّعه المرشّح */}
+                {canChooseBranch ? (
+                  <SelectField
+                    label="الفرع"
+                    value={branch || summary.branch_id || ALL_BRANCHES}
+                    onChange={(e) => setBranch(e.target.value)}
+                    options={[
+                      { value: ALL_BRANCHES, label: "كل الفروع" },
+                      ...summary.branches.map((b) => ({ value: b.id, label: b.name })),
+                    ]}
+                  />
+                ) : null}
               </div>
             </header>
 

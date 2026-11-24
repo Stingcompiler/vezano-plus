@@ -284,7 +284,7 @@ def _credit_due_alerts(now: Any) -> None:
     from parties.models import Party
     from parties.services import party_figures, statement_lines
 
-    today = now.date()
+    today = timezone.localdate(now)
     live: set[str] = set()
     parties = list(Party.objects.filter(is_customer=True, merged_into__isnull=True))
     figures = party_figures(parties)  # الكشف لمن عليه دين فقط (0005 §٢٨٧)
@@ -294,7 +294,7 @@ def _credit_due_alerts(now: Any) -> None:
             continue
         lines = [ln for ln in statement_lines(party) if not ln.info]
         paid = [
-            ln.business_date or ln.occurred_at.date()
+            ln.business_date or timezone.localdate(ln.occurred_at)
             for ln in lines
             if ln.kind in {"payment", "refund"} and ln.credit_minor > 0
         ]
@@ -303,7 +303,7 @@ def _credit_due_alerts(now: Any) -> None:
             d
             for ln in lines
             if ln.kind == "sale" and ln.debit_minor > 0
-            for d in [ln.business_date or ln.occurred_at.date()]
+            for d in [ln.business_date or timezone.localdate(ln.occurred_at)]
             if last_payment is None or d > last_payment
         ]
         if not unpaid:
@@ -340,7 +340,7 @@ def _promise_alerts(now: Any) -> None:
     from parties.models import Party
     from parties.services import _day_month, party_figures
 
-    today = now.date()
+    today = timezone.localdate(now)
     live: set[str] = set()
     parties = list(
         Party.objects.filter(is_customer=True, merged_into__isnull=True, promised_on__lt=today)

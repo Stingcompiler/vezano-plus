@@ -93,7 +93,10 @@ AUTH_USER_MODEL = "core.User"
 SILENCED_SYSTEM_CHECKS = ["auth.E003"]
 
 LANGUAGE_CODE = "ar"
-TIME_ZONE = "UTC"
+# يوم العمل بتوقيت المنشأة (مراجعة التقارير R-04 — 0005 §٢٩١): الحفظ في القاعدة UTC دائماً (USE_TZ)،
+# و«اليوم» وحدود الأيام (`localdate`، `__date`، `TruncDate`، `make_aware`) وأوقات الملفات بتوقيت
+# الخرطوم (UTC+2 بلا توقيت صيفي). لا منطقة لكل منشأة بعد: السوق الأول السودان (المواصفة §١).
+TIME_ZONE = "Africa/Khartoum"
 USE_I18N = True
 USE_TZ = True
 

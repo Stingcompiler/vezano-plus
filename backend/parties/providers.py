@@ -39,7 +39,8 @@ def _list(_tenant_id: uuid.UUID) -> list[dict[str, Any]]:
 
 
 def _home_receivables(viewer: home.Viewer, out: dict[str, Any]) -> None:
-    """HOME-01 «الذمم»: مجموع ما على الأطراف (الأرصدة الموجبة) وعددهم — لا رقم بلا ذمم."""
+    """HOME-01 «الذمم»: مجموع ما على الأطراف (الأرصدة الموجبة) وعددهم — لا رقم بلا ذمم.
+    `viewer.branch` نطاق الرئيسية (None = كل الفروع)."""
     if not viewer.can_see_finance:
         return
     total = 0
@@ -57,7 +58,8 @@ def _home_receivables(viewer: home.Viewer, out: dict[str, Any]) -> None:
             "key": "receivables",
             "label": "الذمم",
             "value": {"kind": "money", "amount_minor": str(total), "exponent": 2},
-            "scope": f"{count} طرفاً",
+            # الذمم للمنشأة كلها (الطرف لا يتبع فرعاً): تحت نطاق فرع يُسمّى نطاقها (0005 §٢٩١)
+            "scope": f"{count} طرفاً" if viewer.branch is None else f"{count} طرفاً في المنشأة",
             "note": "",
             "note_kind": "info",
             "as_of": timezone.now().isoformat().replace("+00:00", "Z"),

@@ -7308,11 +7308,20 @@ export interface components {
             margin_locked: boolean;
             period: string;
             quick_actions: string[];
-            sales_today?: {
-                cash_minor: string;
+            sales?: {
                 count: number;
-                credit_minor: string;
-                total_minor: string;
+                end: string;
+                net_minor: string;
+                period: string;
+                returns_minor: string;
+                revenue_minor: string;
+                start: string;
+            };
+            scope: {
+                branch_id: string;
+                branch_name: string;
+                can_choose: boolean;
+                kind: string;
             };
             shift: null;
             tasks: unknown[];
