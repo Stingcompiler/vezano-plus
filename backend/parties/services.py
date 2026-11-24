@@ -1453,3 +1453,46 @@ def offset_balances(
             ref_id=party.id,
         )
     return receipt, payment
+
+
+# ---------------------------------------------------------------- رؤية الذمم بالمصفوفة (0005 §٢٩٢)
+
+
+def branch_party_ids(branch_id: uuid.UUID) -> set[uuid.UUID]:
+    """عملاء الفرع لنطاق «فرعه» في «رؤية ذمم كل العملاء»: من بيع له أو قُبض منه في الفرع، أو أنشأه
+    أحد موظفي الفرع. المدموج يُنسب إلى من دُمج فيه. الرصيد يبقى رصيد العميل كله (ACC-46)."""
+    from django.apps import apps
+
+    from core.models import UserBranchAccess
+
+    sale_model = apps.get_model("sales", "Sale")
+    ids: set[uuid.UUID] = set(
+        sale_model.objects.filter(branch_id=branch_id, party_id__isnull=False).values_list(
+            "party_id", flat=True
+        )
+    )
+    ids |= set(
+        PaymentReceipt.objects.filter(branch_id=branch_id).values_list("party_id", flat=True)
+    )
+    members = list(
+        UserBranchAccess.objects.filter(branch_id=branch_id).values_list("user_id", flat=True)
+    )
+    ids |= set(Party.objects.filter(created_by_user_id__in=members).values_list("id", flat=True))
+    ids |= {
+        m
+        for m in Party.objects.filter(id__in=ids, merged_into__isnull=False).values_list(
+            "merged_into_id", flat=True
+        )
+        if m is not None
+    }
+    return ids
+
+
+def receivables_visible_ids(viewer: Any) -> set[uuid.UUID] | None:
+    """من تُعرض ذممه لصاحب الطلب: None = الكل؛ مجموعة = عملاء فرعه («فرعه»). يُستدعى بعد أن
+    يسمح `can(viewer, "view_receivables")`."""
+    from core.permissions import can
+
+    if not can(viewer, "view_receivables").branch_only:
+        return None
+    return branch_party_ids(viewer.branch.id) if viewer.branch is not None else set()

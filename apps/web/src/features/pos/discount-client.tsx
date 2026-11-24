@@ -94,7 +94,8 @@ export function DiscountClient() {
   const caps = ctx?.discountCaps ?? DEFAULT_CAPS;
   const totals = draft ? cartTotals(draft.lines) : null;
   const subtotal = totals?.subtotalMinor ?? 0n;
-  const unlimited = caps.per_op_minor === "0" && caps.daily_minor === "0" && caps.percent === 0;
+  const unlimited =
+    !caps.forbidden && caps.per_op_minor === "0" && caps.daily_minor === "0" && caps.percent === 0;
 
   const current = (): CartDiscount | null => {
     const raw =
@@ -150,7 +151,7 @@ export function DiscountClient() {
 
   const state: State =
     check && !check.ok
-      ? check.reason === "over_op" || check.reason === "over_daily"
+      ? check.reason === "over_op" || check.reason === "over_daily" || check.reason === "forbidden"
         ? "permission_denied"
         : "validation_error"
       : "ready";
@@ -242,7 +243,14 @@ export function DiscountClient() {
               required
             />
 
-            {state === "permission_denied" && check && !check.ok ? (
+            {state === "permission_denied" && check && !check.ok && check.reason === "forbidden" ? (
+              <Notice kind="locked" title="الخصم ليس من صلاحية دورك">
+                <p className="acc-lead">
+                  يحتاج اعتماد مدير الفرع أو المالك. الفاتورة محفوظة في السلة ولن تُفقد.
+                </p>
+              </Notice>
+            ) : null}
+            {state === "permission_denied" && check && !check.ok && check.reason !== "forbidden" ? (
               <Notice
                 kind="locked"
                 title={check.reason === "over_op" ? "يتجاوز حدّك للعملية" : "يتجاوز حدّك اليومي"}
@@ -282,7 +290,7 @@ export function DiscountClient() {
               </Notice>
             ) : null}
 
-            {!unlimited ? (
+            {!unlimited && !caps.forbidden ? (
               <p className="cat-saving__note">
                 حدّك كـ<strong>{ctx?.roleName || "كاشير"}</strong>:{" "}
                 <span className="sting-mono">{formatMinor(caps.per_op_minor)}</span> للعملية ·{" "}
@@ -311,9 +319,11 @@ export function DiscountClient() {
                   >
                     طلب اعتماد من مدير الفرع
                   </Button>
-                  <Button variant="secondary" onClick={() => void reduce()}>
-                    تخفيض الخصم إلى {capShown}
-                  </Button>
+                  {check.reason !== "forbidden" ? (
+                    <Button variant="secondary" onClick={() => void reduce()}>
+                      تخفيض الخصم إلى {capShown}
+                    </Button>
+                  ) : null}
                 </>
               ) : (
                 <Button

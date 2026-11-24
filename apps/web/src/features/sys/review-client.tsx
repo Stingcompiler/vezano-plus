@@ -70,10 +70,13 @@ interface Detail {
   readonly effect: Effect;
   readonly acceptable: boolean;
   readonly is_owner: boolean;
+  /** من يحسم: خلية «مراجعة تعارض وحجر» في المصفوفة (0005 §٢٩٢). */
+  readonly can_review?: boolean;
 }
 
 interface ListData {
   readonly is_owner: boolean;
+  readonly can_review?: boolean;
   readonly items: readonly Item[];
   readonly as_of: string;
 }
@@ -232,7 +235,12 @@ export function ReviewClient({
     })();
   }, [router, load]);
 
-  const isOwner = detail?.is_owner ?? list?.is_owner ?? ctx?.roleCode === "owner";
+  const isOwner =
+    detail?.can_review ??
+    detail?.is_owner ??
+    list?.can_review ??
+    list?.is_owner ??
+    ctx?.roleCode === "owner";
   const state: State = decided
     ? "success"
     : detail

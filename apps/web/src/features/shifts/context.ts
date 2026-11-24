@@ -5,7 +5,7 @@
  * والجلسة، ويُخزَّن آخر ما أكّده الخادم في meta `shift.context` ليعمل الفتح بلا اتصال.
  */
 import type { StoragePort } from "@sting/platform";
-import type { DiscountCaps } from "@sting/sync-core";
+import type { DiscountCaps, RoleRules } from "@sting/sync-core";
 
 import type { AppContextValue } from "@/lib/app-context";
 
@@ -30,6 +30,8 @@ export interface ShiftContext {
   /** رمز الدور وسقوف الخصم (POS-03؛ G-09 مؤقتاً) — كما قالها الخادم آخر مرة، للعمل بلا اتصال. */
   readonly roleCode?: string | undefined;
   readonly discountCaps?: DiscountCaps | undefined;
+  /** خلايا الدور من مصفوفة الأدوار (0005 §٢٩٢) — تقرّر بها الشاشات ما يقرّره الخادم، بلا اتصال. */
+  readonly permissions?: RoleRules | undefined;
 }
 
 export async function readShiftContext(
@@ -66,6 +68,7 @@ export async function readShiftContext(
     ownerName: cached.ownerName,
     roleCode: cached.roleCode,
     discountCaps: cached.discountCaps,
+    permissions: cached.permissions,
   };
 }
 

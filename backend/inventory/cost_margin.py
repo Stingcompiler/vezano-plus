@@ -18,7 +18,7 @@ from typing import Any
 from django.utils import timezone
 
 from catalog.models import Item, ItemUnit
-from core import audit, home, org
+from core import audit, home, permissions
 from core.models import User
 from core.org_settings import _settings
 from inventory.models import GoodsReceiptLine, PurchaseDocument
@@ -55,9 +55,7 @@ SAMPLE_ROWS: list[dict[str, Any]] = [
 
 
 def can_view(viewer: home.Viewer) -> bool:
-    if viewer.is_owner:
-        return True
-    return org.cell_for(viewer.role_code or "", "cost_margin_view").value == "yes"
+    return permissions.can(viewer, "cost_margin_view").allowed
 
 
 def enabled() -> bool:

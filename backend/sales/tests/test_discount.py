@@ -63,6 +63,7 @@ def test_caps_by_role_reach_device_with_current_shift(ctx: dict[str, Any]) -> No
         "daily_minor": "5000",
         "percent": 10,
         "used_today_minor": "0",
+        "forbidden": False,
     }
     services.DISCOUNT_USAGE_PROVIDERS.append(lambda _uid: 2200)
     try:

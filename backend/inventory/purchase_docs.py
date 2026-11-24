@@ -24,7 +24,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from core import audit, home, org
+from core import audit, home, permissions
 from core.models import User
 from core.tenancy import require_tenant
 from inventory.models import (
@@ -53,9 +53,7 @@ def _iso(dt: Any) -> str:
 
 def approval_limit(viewer: home.Viewer) -> int | None:
     """حدّ الاعتماد من المصفوفة: None = بلا حدّ (المالك)؛ 0 = ممنوع."""
-    if viewer.is_owner:
-        return None
-    return org.limit_minor_for(viewer.role_code or "", "purchase_approve")
+    return permissions.limit_of(permissions.can(viewer, "purchase_approve"))
 
 
 def _doc_number() -> str:

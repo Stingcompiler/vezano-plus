@@ -8,7 +8,7 @@ import { openSeedPage } from "./seed-page";
 /**
  * T1.20 — POS-10 (6). المرتجع يبدأ من الفاتورة الأصل وكل سطر يعرض المُباع والمُرتجَع سابقاً والمتاح
  * (السقف تراكمي — ACC-11)؛ حالة البضاعة تُسأل (ACC-10) ووجهة الردّ معلنة؛ مستند مستقل لا يمحو
- * الأصل (ACC-09)؛ الردّ النقدي فوق حدّ الدور يُمنع والوجهة تغيّر الحكم (G-09)؛ بلا اتصال محفوظ
+ * الأصل (ACC-09)؛ المرتجع فوق حدّ خلية «مرتجع» في المصفوفة يُمنع (0005 §٢٩٢)؛ بلا اتصال محفوظ
  * محلياً والنقد خرج من الصندوق فعلاً (SHIFT-02).
  */
 const json = (status: number, body: unknown) => ({ status, json: body });
@@ -358,28 +358,32 @@ test.describe("POS-10", () => {
     await expect(page.locator(".pos-ret__qty").first()).toHaveText("3");
   });
 
-  test("permission_denied: ردّ نقدي فوق حدّ الكاشير", async ({ page }, info) => {
+  test("permission_denied: مرتجع فوق حدّ الكاشير في خلية «مرتجع» (حتى 500 — 0005 §٢٩٢)", async ({
+    page,
+  }, info) => {
     await seed(page);
     await login(page, RETURN);
-    // الزيت 300.00 نقداً > حدّ الكاشير النقدي 200.00
+    const root = page.locator('[data-screen="POS-10"]');
+    // الزيت 300.00 داخل حدّ الكاشير — لا منع
     await plus(page, "زيت 1 لتر").click();
+    await expect(root).not.toHaveAttribute("data-state", "permission_denied");
+    // + عبوتا شاي 240.00 = 540.00 > 500.00
+    await plus(page, "شاي أسود 250غ").click();
+    await plus(page, "شاي أسود 250غ").click();
     await expectFrame(page, info, {
       screenId: "POS-10",
       state: "permission_denied",
       texts: fromFrame("POS-10", "permission_denied", [
         "ردّ نقدي فوق الحدّ",
         "المرتجع يُخرج نقداً من الصندوق، وحدّه المالي حدّ الدور",
-        "الوجهة تغيّر الحكم",
-        "الرد إلى ذمّة الطرف تخفيضُ دينٍ يحتمل حدّاً أوسع؛ إخراج النقد أضيق. الحدّان منفصلان في",
       ]),
     });
-    await expect(page.locator("body")).toContainText("الحدّان منفصلان في «الأدوار والصلاحيات».");
+    await expect(root).toContainText("500.00");
+    await expect(root).not.toContainText("الحدّان منفصلان");
     await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeDisabled();
   });
 
-  test("S-02: فاتورة آجلة — الردّ يُخصم من ذمّة العميل لا من الصندوق (حدّ الذمّة أوسع)", async ({
-    page,
-  }) => {
+  test("S-02: فاتورة آجلة — الردّ يُخصم من ذمّة العميل لا من الصندوق", async ({ page }) => {
     await seed(page, { party: true });
     const pushed: { kind: string; members: { entity: string; payload?: unknown }[] }[] = [];
     await pushRoute(page, pushed);

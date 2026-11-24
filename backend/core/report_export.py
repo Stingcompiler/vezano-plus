@@ -67,6 +67,11 @@ def _payload(report: str, viewer: home.Viewer, rng: Range, branch_id: Any) -> di
     if report == "sales":
         return sales_reports.sales_report(viewer=viewer, rng=rng, branch_id=branch_id)
     if report == "receivables":
+        from core.permissions import can
+
+        # التصدير بقرار الشاشة نفسه: «رؤية ذمم كل العملاء» ونطاقها (0005 §٢٩٢)
+        if not can(viewer, "view_receivables"):
+            raise ExportRejected("permission_denied")
         return party_reports.receivables_report(viewer=viewer)
     if report == "stock":
         return stock_reports.stock_report(viewer=viewer, rng=rng, branch_id=branch_id)

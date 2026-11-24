@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  decidePermission,
   EMPTY_RETURN_HISTORY,
   type LocalSale,
   type LocalShift,
@@ -46,19 +47,6 @@ import { today } from "./use-sale";
 
 type State =
   "ready" | "partial" | "validation_error" | "permission_denied" | "saved_local" | "success";
-
-/**
- * سقف الردّ النقدي بحسب الدور (G-09 مؤقتاً حتى ORG-02): «المرتجع يُخرج نقداً من الصندوق، وحدّه
- * المالي حدّ الدور». الخصم من الذمّة حدّه أوسع («الوجهة تغيّر الحكم») — القيم من عندي (0005 §٢٣).
- */
-const CASH_REFUND_CAP_MINOR: Record<string, bigint> = {
-  cashier: 20000n,
-  manager: 500000n,
-};
-const CREDIT_REFUND_CAP_MINOR: Record<string, bigint> = {
-  cashier: 100000n,
-  manager: 2000000n,
-};
 
 interface RowState {
   readonly line: LocalSale["lines"][number];
@@ -211,17 +199,14 @@ export function ReturnClient({ saleId }: { saleId: string }) {
   const split = totals?.split ?? { creditMinor: 0n, bankMinor: 0n, cashMinor: 0n };
   const allAvailable = rows.reduce((a, r) => a + r.available, 0n);
   const chosen = rows.reduce((a, r) => a + r.now, 0n);
-  const role = ctx?.roleCode ?? "cashier";
-  const isOwner = ctx?.roleName === "مالك" || role === "owner";
-  // الحدّان منفصلان كما كانا: ما يخرج مالاً (نقداً أو تحويلاً) بحدّ النقد، وخصم الذمّة بحدّه
-  const moneyOut = split.cashMinor + split.bankMinor;
-  const cashCap = isOwner ? null : (CASH_REFUND_CAP_MINOR[role] ?? null);
-  const creditCap = isOwner ? null : (CREDIT_REFUND_CAP_MINOR[role] ?? null);
-  const overCash = cashCap !== null && moneyOut > cashCap;
-  const overCredit = creditCap !== null && split.creditMinor > creditCap;
-  const overCap = overCash || overCredit;
-  const cap = overCash ? cashCap : creditCap;
-  const capValue = overCash ? moneyOut : split.creditMinor;
+  // حدّ المرتجع حدّ واحد من خلية «مرتجع» في مصفوفة الأدوار، على قيمة المرتجع كلها بوجهاتها كلها —
+  // كما يقيسه الخادم `can(viewer, "refund", amount)` (0005 §٢٩٢)؛ «لا» = صفر، والمالك بلا حدّ
+  const refund = decidePermission(ctx?.permissions, ctx?.roleCode, "refund", {
+    amountMinor: total,
+  });
+  const overCap = !refund.allowed;
+  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
+  const capValue = total;
   const creditNoParty = split.creditMinor > 0n && !sale?.party_id;
   // وجهات الدفع الأصلي تُعرض كلها، وما يُردّ إلى كلٍّ منها بجانبها
   const paidCredit = BigInt(sale?.credit_minor || "0") > 0n;
@@ -483,10 +468,6 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                   <Notice kind="locked" title="ردّ نقدي فوق الحدّ">
                     <p className="acc-lead">
                       المرتجع يُخرج نقداً من الصندوق، وحدّه المالي حدّ الدور.
-                    </p>
-                    <p className="acc-lead">
-                      <strong>الوجهة تغيّر الحكم</strong> · الرد إلى ذمّة الطرف تخفيضُ دينٍ يحتمل
-                      حدّاً أوسع؛ إخراج النقد أضيق. الحدّان منفصلان في «الأدوار والصلاحيات».
                     </p>
                     <p className="acc-choice__note">
                       الحدّ{" "}

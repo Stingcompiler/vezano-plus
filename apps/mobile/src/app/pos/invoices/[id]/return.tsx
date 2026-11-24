@@ -1,5 +1,6 @@
 import { formatMinorShort, formatQty, pushPending } from "@sting/app-core";
 import {
+  decidePermission,
   EMPTY_RETURN_HISTORY,
   type LocalSale,
   type LocalShift,
@@ -37,9 +38,6 @@ import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 const T = "POS-10";
-/** سقوف الردّ للدور (G-09 مؤقتاً — كالويب): المالك بلا سقف. */
-const CASH_CAP: Record<string, bigint> = { cashier: 20000n, manager: 500000n };
-const CREDIT_CAP: Record<string, bigint> = { cashier: 100000n, manager: 2000000n };
 
 interface RowState {
   readonly line: LocalSale["lines"][number];
@@ -141,14 +139,12 @@ export default function Return() {
   }
   const total = totals?.totalMinor ?? 0n;
   const split = totals?.split ?? { creditMinor: 0n, bankMinor: 0n, cashMinor: 0n };
-  const role = ctx?.roleCode ?? "cashier";
-  const isOwner = ctx?.roleName === "مالك" || role === "owner";
-  const moneyOut = split.cashMinor + split.bankMinor;
-  const cashCap = isOwner ? null : (CASH_CAP[role] ?? null);
-  const creditCap = isOwner ? null : (CREDIT_CAP[role] ?? null);
-  const overCash = cashCap !== null && moneyOut > cashCap;
-  const overCap = overCash || (creditCap !== null && split.creditMinor > creditCap);
-  const cap = overCash ? cashCap : creditCap;
+  // حدّ واحد من خلية «مرتجع» في المصفوفة على قيمة المرتجع كلها — كالويب والخادم (0005 §٢٩٢)
+  const refund = decidePermission(ctx?.permissions, ctx?.roleCode, "refund", {
+    amountMinor: total,
+  });
+  const overCap = !refund.allowed;
+  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
   const creditNoParty = split.creditMinor > 0n && !sale?.party_id;
   const paidCredit = BigInt(sale?.credit_minor || "0") > 0n;
   const paidBank = BigInt(sale?.bank_minor || "0") > 0n;

@@ -4,6 +4,7 @@ import {
   type CartDraftLine,
   cartTotals,
   type DiscountCaps,
+  type RoleRules,
   type LocalBalance,
   type LocalParty,
   type LocalSale,
@@ -47,6 +48,8 @@ export interface ShiftContext {
   readonly ownerName?: string | undefined;
   readonly roleCode?: string | undefined;
   readonly discountCaps?: DiscountCaps | undefined;
+  /** خلايا الدور من مصفوفة الأدوار (0005 §٢٩٢) — نظير الويب. */
+  readonly permissions?: RoleRules | undefined;
 }
 
 export async function readShiftContext(
@@ -83,6 +86,7 @@ export async function readShiftContext(
     ownerName: cached.ownerName,
     roleCode: cached.roleCode,
     discountCaps: cached.discountCaps,
+    permissions: cached.permissions,
   };
 }
 

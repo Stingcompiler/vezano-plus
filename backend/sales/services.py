@@ -1,4 +1,5 @@
-"""خدمات البيع: سقوف الخصم بحسب الدور (G-09 مؤقتاً حتى ORG-02) وتطبيق حدث تجاوز الخصم."""
+"""خدمات البيع: سقوف الخصم بحسب الدور (مصفوفة ORG-02 عبر `core.permissions`) وتطبيق حدث تجاوز
+الخصم."""
 
 from __future__ import annotations
 
@@ -19,11 +20,13 @@ from sync.appliers import BusinessConflict
 
 @dataclass(frozen=True)
 class DiscountCaps:
-    """حدّ العملية وحدّ اليوم بالوحدة الصغرى ونسبة مئوية؛ صفر = بلا حدّ (المالك)."""
+    """حدّ العملية وحدّ اليوم بالوحدة الصغرى ونسبة مئوية؛ صفر = بلا حدّ (المالك). `forbidden` =
+    «لا» في المصفوفة: لا خصم أصلاً."""
 
     per_op_minor: int
     daily_minor: int
     percent: int
+    forbidden: bool = False
 
 
 #: «القيم تجريبية — تُضبط في ORG-02 مصفوفة الأدوار» (03-D2 POS-03؛ G-09)
@@ -33,27 +36,31 @@ DISCOUNT_CAPS: dict[str, DiscountCaps] = {
     "cashier": DiscountCaps(per_op_minor=1000, daily_minor=5000, percent=10),
 }
 DEFAULT_CAPS = DISCOUNT_CAPS["cashier"]
+#: «لا» = لا خصم (مراجعة 2026-11-22 O-02؛ 0005 §٢٩٢). الحدود 0.01 لا 0: الصفر «بلا حد» عند نسخ
+#: التطبيق التي لا تعرف `forbidden` بعد، فتبقى مانعةً لا مفتوحة.
+FORBIDDEN_CAPS = DiscountCaps(per_op_minor=1, daily_minor=1, percent=1, forbidden=True)
 
 #: «المستخدَم اليوم» — مجموع خصومات المستخدم اليوم؛ تسجّله POS-05 من مبيعاته (حتى ذلك الحين صفر)
 DISCOUNT_USAGE_PROVIDERS: list[Callable[[uuid.UUID], int]] = []
 
 
 def caps_for(role_code: str, is_owner: bool) -> DiscountCaps:
-    """حدّ العملية من مصفوفة الأدوار (ORG-02 · «خصم وتجاوز سعر» — G-09)؛ حدّ اليوم والنسبة يبقيان
-    قيماً تجريبية حتى تُحرَّر مدىً يومياً في المصفوفة (خلية «يومياً» تحلّ محلّ اليومي)."""
-    if is_owner:
-        return DISCOUNT_CAPS["owner"]
-    base = DISCOUNT_CAPS.get(role_code, DEFAULT_CAPS)
-    from core.org import cell_for
+    """سقف الخصم من مصفوفة الأدوار (ORG-02 · «خصم وتجاوز سعر») عبر `core.permissions`: «بلا حد»
+    و«نعم» بلا حدّ؛ «لا» لا خصم؛ «حد مالي» حدّ العملية (أو اليوم إن حُرِّر «يومياً»). النسبة والحدّ
+    الآخر يبقيان قيماً تجريبية حتى تُحرَّر في المصفوفة."""
+    from core import permissions
 
-    cell = cell_for(role_code, "discount")
-    # «لا» = الدور لا يخصم أصلاً (ولا يبيع في الإطار) — يبقى الحدّ التجريبي؛ الصفر محجوز لـ«بلا حدّ»
-    if cell.value == "unlimited":
+    d = permissions.decide(role_code, is_owner, "discount")
+    if d.unrestricted:
         return DISCOUNT_CAPS["owner"]
-    if cell.value == "limit" and cell.limit_minor is not None:
-        if cell.period == "daily":
-            return DiscountCaps(base.per_op_minor, cell.limit_minor, base.percent)
-        return DiscountCaps(cell.limit_minor, base.daily_minor, base.percent)
+    # حدّ صفر = لا خصم (الصفر في السقوف يعني «بلا حد» فلا يُرسَل كذلك)
+    if not d.allowed or (d.value == "limit" and not d.limit_minor):
+        return FORBIDDEN_CAPS
+    base = DISCOUNT_CAPS.get(role_code, DEFAULT_CAPS)
+    if d.value == "limit" and d.limit_minor is not None:
+        if d.period == "daily":
+            return DiscountCaps(base.per_op_minor, d.limit_minor, base.percent)
+        return DiscountCaps(d.limit_minor, base.daily_minor, base.percent)
     return base
 
 
@@ -68,6 +75,7 @@ def caps_payload(role_code: str, is_owner: bool, user_id: uuid.UUID) -> dict[str
         "daily_minor": str(c.daily_minor),
         "percent": c.percent,
         "used_today_minor": str(used_today_minor(user_id)),
+        "forbidden": c.forbidden,
     }
 
 
@@ -137,6 +145,8 @@ def _exceeds_discount_cap(
     people = [seller] if uploader is None or uploader == seller else [seller, uploader]
     for person in people:
         caps = _caps_in_branch(person, branch_id)
+        if caps.forbidden:
+            return True
         if caps.per_op_minor and discount > caps.per_op_minor:
             return True
         if caps.percent and discount * 100 > subtotal * caps.percent:

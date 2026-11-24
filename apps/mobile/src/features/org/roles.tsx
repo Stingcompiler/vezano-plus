@@ -58,51 +58,6 @@ const VALUE_OPTIONS: { value: CellValue; label: string }[] = [
   { value: "propose", label: tx(T, "اقتراح فقط") },
 ];
 
-/** «الإجراء وأثره» (20-D15): كل بند جملة — من يستطيع، وما يقع من أثر. */
-const EFFECTS: { action: string; effect: string; roles: [string, string, string, string] }[] = [
-  {
-    action: tx(T, "بيع نقدي وإصدار فاتورة"),
-    effect: tx(T, "يُسجَّل باسمه وينسب لورديته"),
-    roles: [tx(T, "نعم"), tx(T, "نعم"), tx(T, "نعم"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "بيع بالذمة"),
-    effect: tx(T, "يُنشئ ديناً على طرف — أثره مالي يتجاوز الوردية"),
-    roles: [tx(T, "نعم"), tx(T, "لا"), tx(T, "نعم"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "إلغاء فاتورة بعد إصدارها"),
-    effect: tx(T, "لا حذف؛ مرتجع أو قيد عكسي بسبب مكتوب"),
-    roles: [tx(T, "لا"), tx(T, "لا"), tx(T, "باعتماد"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "تسوية جرد وتعديل كميات"),
-    effect: tx(T, "يغيّر رقم المخزون بلا حركة بيع أو شراء"),
-    roles: [tx(T, "لا"), tx(T, "باعتماد"), tx(T, "نعم"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "اعتماد فارق الوردية"),
-    effect: tx(T, "شهادة بأن العجز أو الزيادة مقبولان — لا يشهد أحد لنفسه"),
-    roles: [tx(T, "لا"), tx(T, "لا"), tx(T, "نعم"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "حسم تعارض نسختين"),
-    effect: tx(T, "يختار أي رقم يصبح الحقيقة في الدفتر"),
-    roles: [tx(T, "لا"), tx(T, "لا"), tx(T, "لا"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "قراءة سجل التدقيق"),
-    effect: tx(T, "نطاق الرؤية يتبع نطاق المسؤولية"),
-    roles: [tx(T, "أفعاله"), tx(T, "أفعاله"), tx(T, "فرعه"), tx(T, "نعم")],
-  },
-  {
-    action: tx(T, "نقل ملكية المنشأة"),
-    effect: tx(T, "ينقل الدفتر كله لشخص آخر"),
-    roles: [tx(T, "لا"), tx(T, "لا"), tx(T, "لا"), tx(T, "نعم")],
-  },
-];
-const EFFECT_ROLES = [tx(T, "كاشير"), tx(T, "أمين مخزن"), tx(T, "مدير فرع"), tx(T, "مالك")];
-
 const key = (roleId: string, k: string) => `${roleId}:${k}`;
 
 /** حمولة التغييرات كما يرسلها الويب (`PUT /api/org/roles`). */
@@ -353,7 +308,6 @@ export function Roles() {
       ) : null}
 
       <View style={{ height: SPACE["4"] }} />
-      <Heading>{tx(T, "الأدوار والصلاحيات — ما يراه كل دور بالضبط")}</Heading>
       <Note>
         <Strong>{tx(T, "لا يمكن إنشاء دور بلا مالك قادر على سحبه.")}</Strong>{" "}
         {tx(
@@ -361,17 +315,6 @@ export function Roles() {
           "ولا يمكن للمالك أن يسحب صلاحيته الأخيرة عن نفسه: المنشأة بلا مالك تصبح دفتراً لا يملك أحد حسم تعارضاته. ودعوة المستخدم تنتهي بمهلة معلنة: الرابط المنتهي يقول «انتهت صلاحية الدعوة» ويطلب إعادة إرسالها، ولا يمنح دخولاً صامتاً.",
         )}
       </Note>
-      <View style={{ height: SPACE["2"] }} />
-      <GroupedList title={tx(T, "الإجراء وأثره")}>
-        {EFFECTS.map((e, i) => (
-          <Item key={e.action} title={e.action} last={i === EFFECTS.length - 1}>
-            <Note>{e.effect}</Note>
-            <AppText variant="note">
-              {e.roles.map((v, j) => `${EFFECT_ROLES[j]}: ${v}`).join(" · ")}
-            </AppText>
-          </Item>
-        ))}
-      </GroupedList>
 
       <Button
         variant="quiet"

@@ -19,6 +19,7 @@ from core import home
 from core.auth.sessions import report_pending
 from core.auth.tokens import AuthContext, RecoveryAuthentication
 from core.models import Device
+from core.permissions import can
 from core.scenario import faults
 from core.tenancy import tenant_context
 from sync.models import BackupCopy, Operation, QuarantinedOperation, SupportReport, SyncState
@@ -207,10 +208,17 @@ class QuarantineListView(APIView):
             return err or Response(status=status.HTTP_403_FORBIDDEN)
         with tenant_context(auth.tenant_id):
             viewer = home.viewer_for(auth.user, auth.device)
-            items = visible_items(viewer.user, auth.device.id if auth.device is not None else None)
+            reviewer = can(viewer, "conflict_review").allowed
+            items = visible_items(
+                viewer.user,
+                auth.device.id if auth.device is not None else None,
+                reviewer=reviewer,
+            )
             return Response(
                 {
                     "is_owner": viewer.is_owner,
+                    # من يحسم: خلية «مراجعة تعارض وحجر» في المصفوفة (0005 §٢٩٢)
+                    "can_review": reviewer,
                     "items": [item_payload(q) for q in items],
                     "as_of": timezone.now().isoformat().replace("+00:00", "Z"),
                 }
@@ -227,12 +235,13 @@ class QuarantineDetailView(APIView):
             return err or Response(status=status.HTTP_403_FORBIDDEN)
         with tenant_context(auth.tenant_id):
             viewer = home.viewer_for(auth.user, auth.device)
+            reviewer = can(viewer, "conflict_review").allowed
             q = QuarantinedOperation.objects.filter(id=item_id).first()
-            if q is None or (
-                not viewer.is_owner and (auth.device is None or q.device != auth.device.id)
-            ):
+            if q is None or (not reviewer and (auth.device is None or q.device != auth.device.id)):
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
-            return Response({**detail_payload(q), "is_owner": viewer.is_owner})
+            return Response(
+                {**detail_payload(q), "is_owner": viewer.is_owner, "can_review": reviewer}
+            )
 
 
 class QuarantineDecideView(APIView):
@@ -260,6 +269,7 @@ class QuarantineDecideView(APIView):
                     decision=s.validated_data["decision"],
                     reason=s.validated_data["reason"],
                     actor=viewer.user,
+                    reviewer=can(viewer, "conflict_review").allowed,
                 )
             except ReviewRejected as e:
                 code = (

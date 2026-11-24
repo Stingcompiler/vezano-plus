@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from catalog.limits import PRICE_MAX_MINOR, FieldError, Rejected, check_integer
-from core import home
+from core import home, permissions
 from core.auth.tokens import AuthContext
 from core.models import Branch
 from core.tenancy import tenant_context
@@ -38,9 +38,24 @@ def _can_withdraw(v: home.Viewer) -> bool:
     return v.is_owner
 
 
-#: التسوية إقرار مالي بقبول الفارق — للمالك وحده؛ المدير يراجع ويعلّق ولا يُسوّي (SHIFT-05)
+#: التسوية إقرار مالي بقبول الفارق — بخلية «إغلاق وردية بعجز» (`close_short`) في المصفوفة: الدور
+#: يُسوّي عجزاً حتى حدّه في فرعه، والمالك بلا حدّ (0005 §٢٩٢). «لا» = يراجع ولا يُسوّي.
 def _can_settle(v: home.Viewer) -> bool:
-    return v.is_owner
+    return permissions.can(v, "close_short").allowed
+
+
+def settle_decision(
+    v: home.Viewer, variance: int | None, branch_id: uuid.UUID
+) -> permissions.Decision:
+    """قرار تسوية وردية بعينها: العجز (لا الزيادة) يُقاس بحدّ الدور؛ وردية بلا عدّ فارقها مجهول
+    فلا يسوّيها إلا من لا حدّ له."""
+    shortage = max(0, -variance) if variance is not None else None
+    d = permissions.can(v, "close_short", shortage, branch_id=branch_id)
+    if d.allowed and shortage is None and d.limit_minor is not None:
+        return permissions.Decision(
+            d.key, False, "over_limit", value=d.value, limit_minor=d.limit_minor, period=d.period
+        )
+    return d
 
 
 class CurrentShiftView(APIView):
@@ -75,6 +90,8 @@ class CurrentShiftView(APIView):
                     "user_name": auth.user.display_name,
                     "role_name": _viewer(request).role_name,
                     "can_withdraw": _can_withdraw(_viewer(request)),
+                    # خلايا الدور من المصفوفة (0005 §٢٩٢) — تُخزَّن على الجهاز فتقرّر الشاشات بلا اتصال
+                    "permissions": permissions.rules_payload(_viewer(request)),
                     "owner_name": services.owner_name(),
                     "role_code": _viewer(request).role_code,
                     # سقوف الخصم بحسب الدور (POS-03؛ G-09 مؤقتاً) — تُخزَّن على الجهاز للعمل بلا اتصال
@@ -169,6 +186,10 @@ class ShiftReviewView(APIView):
             scope_branch = None if v.is_owner else (v.branch.id if v.branch else None)
             if not v.is_owner and scope_branch is None:
                 return Response({"detail": "branch_required"}, status=status.HTTP_403_FORBIDDEN)
+            rows = services.review_rows(scope_branch)
+            for r in rows:
+                variance = int(r["variance_minor"]) if r["variance_minor"] else None
+                r["can_settle"] = settle_decision(v, variance, uuid.UUID(r["branch_id"])).allowed
             return Response(
                 {
                     "scope": "all" if v.is_owner else "branch",
@@ -177,7 +198,7 @@ class ShiftReviewView(APIView):
                     "user_name": v.user.display_name,
                     "branch_name": v.branch.name if v.branch else "",
                     "window_days": services.REVIEW_WINDOW.days,
-                    "shifts": services.review_rows(scope_branch),
+                    "shifts": rows,
                 }
             )
 
@@ -204,6 +225,9 @@ class ShiftReviewActionView(APIView):
             shift = Shift.objects.filter(id=shift_id).select_related("branch").first()
             if shift is None:
                 return Response({"detail": "shift_not_found"}, status=status.HTTP_404_NOT_FOUND)
+            decision = settle_decision(v, services._variance(shift), shift.branch_id)
+            if not decision:
+                return Response(decision.denial(v.role_name), status=status.HTTP_403_FORBIDDEN)
             if shift.state != "closed":
                 return Response({"detail": "shift_open"}, status=status.HTTP_400_BAD_REQUEST)
             try:
@@ -224,7 +248,7 @@ class ShiftReviewActionView(APIView):
                     "reason": adj.reason,
                     "late_item_ids": adj.late_item_ids,
                     "occurred_at": services._iso(adj.occurred_at),
-                    "row": services.review_row(shift),
+                    "row": {**services.review_row(shift), "can_settle": decision.allowed},
                 },
                 status=201,
             )

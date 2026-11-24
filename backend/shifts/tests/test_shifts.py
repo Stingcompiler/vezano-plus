@@ -461,7 +461,8 @@ def test_cash_adjustment_push_kind_is_idempotent_and_requires_reason_with_varian
 
 
 def test_review_scope_manager_sees_own_branch_and_cannot_settle(ctx: dict[str, Any]) -> None:
-    """38-D30 permission_denied: «مدير الفرع يرى فرعه» ولا يُسوّي — التسوية للمالك."""
+    """38-D30: «مدير الفرع يرى فرعه»؛ يُسوّي عجزاً حتى حدّه في «إغلاق وردية بعجز» (مدير 300 —
+    0005 §٢٩٢) في فرعه وحده: وردية الفرع الآخر مرفوضة `other_branch`."""
     sid = str(uuid.uuid4())
     op = shift_open(ctx, sid)
     do_push(ctx, op)
@@ -480,11 +481,12 @@ def test_review_scope_manager_sees_own_branch_and_cannot_settle(ctx: dict[str, A
     h = {"HTTP_AUTHORIZATION": f"Bearer {reg.access}"}
     r = c.get("/api/shifts/review", **h)  # type: ignore[arg-type]
     assert r.status_code == 200
-    assert r.json()["scope"] == "branch" and r.json()["can_settle"] is False
+    assert r.json()["scope"] == "branch" and r.json()["can_settle"] is True
     assert r.json()["branch_name"] == ctx["other_branch"].name
     assert r.json()["shifts"] == []  # وردية الفرع الرئيسي لا تظهر لمدير بحري
     r = c.post(f"/api/shifts/{sid}/review", {"reason": "x"}, content_type="application/json", **h)  # type: ignore[arg-type]
-    assert r.status_code == 403 and r.json()["detail"] == "owner_required"
+    assert r.status_code == 403 and r.json()["detail"] == "permission_denied"
+    assert r.json()["reason"] == "other_branch"
     with tenant_context(ctx["tenant"].id):
         assert Shift.objects.get(id=sid).adjustments.count() == 0
 

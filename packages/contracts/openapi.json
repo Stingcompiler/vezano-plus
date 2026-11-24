@@ -11480,7 +11480,7 @@
     "/api/reports/margin": {
       "get": {
         "operationId": "reports_margin_retrieve",
-        "description": "REP-05: للمالك وحده — «من يرى الهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها\nمحجوبة لغيره (تبقى في القائمة بقفل ظاهر).",
+        "description": "REP-05: بخلية «رؤية التكلفة والهامش» (`cost_margin_view`) كشاشة التكلفة PUR-05 — «من يرى\nالهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها محجوبة لمن لا تسمح له المصفوفة،\nوغير المالك يرى فرعه (مراجعة 2026-11-22 O-11؛ 0005 §٢٩٢).",
         "parameters": [
           {
             "in": "query",
@@ -19251,6 +19251,326 @@
           "period": {
             "type": "string"
           },
+          "permissions": {
+            "additionalProperties": false,
+            "properties": {
+              "campaign_approve": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "campaign_create": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "close_short": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "conflict_review": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "cost_margin_view": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "discount": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "market_publish": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "purchase_approve": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "record_payment": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "refund": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "sell": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "stock_adjust": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "view_receivables": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              }
+            },
+            "required": [
+              "sell",
+              "discount",
+              "refund",
+              "view_receivables",
+              "record_payment",
+              "close_short",
+              "stock_adjust",
+              "campaign_create",
+              "campaign_approve",
+              "purchase_approve",
+              "market_publish",
+              "cost_margin_view",
+              "conflict_review"
+            ],
+            "type": "object"
+          },
           "quick_actions": {
             "items": {
               "type": "string"
@@ -19361,7 +19681,8 @@
           "can_see_finance",
           "margin_locked",
           "shift",
-          "decisions_count"
+          "decisions_count",
+          "permissions"
         ],
         "type": "object"
       },
@@ -47697,6 +48018,9 @@
             },
             "type": "array"
           },
+          "scope": {
+            "type": "string"
+          },
           "summary": {
             "additionalProperties": false,
             "properties": {
@@ -47714,7 +48038,7 @@
             "type": "object"
           }
         },
-        "required": ["kind", "can_see_balances", "role_name", "as_of", "rows", "summary"],
+        "required": ["kind", "can_see_balances", "role_name", "as_of", "rows", "summary", "scope"],
         "type": "object"
       },
       "GetPartiesReceiptsByReceiptIdCorrectResponse": {
@@ -60400,6 +60724,9 @@
               "branch_name": {
                 "type": "string"
               },
+              "can_settle": {
+                "type": "boolean"
+              },
               "closed_at": {
                 "type": "string"
               },
@@ -60520,7 +60847,8 @@
               "open_hours",
               "abandoned",
               "review",
-              "late_items"
+              "late_items",
+              "can_settle"
             ],
             "type": "object"
           },
@@ -60784,6 +61112,9 @@
               "daily_minor": {
                 "type": "string"
               },
+              "forbidden": {
+                "type": "boolean"
+              },
               "per_op_minor": {
                 "type": "string"
               },
@@ -60794,7 +61125,7 @@
                 "type": "string"
               }
             },
-            "required": ["per_op_minor", "daily_minor", "percent", "used_today_minor"],
+            "required": ["per_op_minor", "daily_minor", "percent", "used_today_minor", "forbidden"],
             "type": "object"
           },
           "others_open": {
@@ -60803,6 +61134,326 @@
           },
           "owner_name": {
             "type": "string"
+          },
+          "permissions": {
+            "additionalProperties": false,
+            "properties": {
+              "campaign_approve": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "campaign_create": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "close_short": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "conflict_review": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "cost_margin_view": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "discount": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "market_publish": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "purchase_approve": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "record_payment": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "refund": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "sell": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "stock_adjust": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              },
+              "view_receivables": {
+                "additionalProperties": false,
+                "properties": {
+                  "limit_minor": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "period": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": ["value", "limit_minor", "period"],
+                "type": "object"
+              }
+            },
+            "required": [
+              "sell",
+              "discount",
+              "refund",
+              "view_receivables",
+              "record_payment",
+              "close_short",
+              "stock_adjust",
+              "campaign_create",
+              "campaign_approve",
+              "purchase_approve",
+              "market_publish",
+              "cost_margin_view",
+              "conflict_review"
+            ],
+            "type": "object"
           },
           "previous": {
             "type": "null"
@@ -60830,7 +61481,8 @@
           "discount_caps",
           "current",
           "others_open",
-          "previous"
+          "previous",
+          "permissions"
         ],
         "type": "object"
       },
@@ -60862,6 +61514,9 @@
                 },
                 "branch_name": {
                   "type": "string"
+                },
+                "can_settle": {
+                  "type": "boolean"
                 },
                 "closed_at": {
                   "type": "string"
@@ -60996,7 +61651,8 @@
                 "open_hours",
                 "abandoned",
                 "review",
-                "late_items"
+                "late_items",
+                "can_settle"
               ],
               "type": "object"
             },
@@ -61810,6 +62466,9 @@
           "as_of": {
             "type": "string"
           },
+          "can_review": {
+            "type": "boolean"
+          },
           "is_owner": {
             "type": "boolean"
           },
@@ -61962,13 +62621,16 @@
             "type": "array"
           }
         },
-        "required": ["is_owner", "items", "as_of"],
+        "required": ["is_owner", "items", "as_of", "can_review"],
         "type": "object"
       },
       "GetSyncQuarantineByItemIdResponse": {
         "additionalProperties": false,
         "properties": {
           "acceptable": {
+            "type": "boolean"
+          },
+          "can_review": {
             "type": "boolean"
           },
           "confirmed": {
@@ -62265,7 +62927,7 @@
             "type": "object"
           }
         },
-        "required": ["item", "confirmed", "effect", "acceptable", "is_owner"],
+        "required": ["item", "confirmed", "effect", "acceptable", "is_owner", "can_review"],
         "type": "object"
       },
       "PostSyncQuarantineByItemIdDecideResponse": {

@@ -15,7 +15,7 @@ from typing import Any
 from django.db.models import Sum
 from django.utils import timezone
 
-from core import audit, home, org
+from core import audit, home, permissions
 from core.models import Campaign, CampaignMessage, PortalSubscriber, Tenant, User
 from core.scenario import faults
 from core.subscription import ensure_subscription, has_feature, plan_of
@@ -62,13 +62,11 @@ def _iso(dt: Any) -> str:
 
 
 def can_create(viewer: home.Viewer) -> bool:
-    return viewer.is_owner or org.cell_for(viewer.role_code or "", "campaign_create").value == "yes"
+    return permissions.can(viewer, "campaign_create").allowed
 
 
 def can_approve(viewer: home.Viewer) -> bool:
-    return (
-        viewer.is_owner or org.cell_for(viewer.role_code or "", "campaign_approve").value == "yes"
-    )
+    return permissions.can(viewer, "campaign_approve").allowed
 
 
 def parts_for(text: str) -> int:

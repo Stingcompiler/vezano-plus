@@ -14,7 +14,7 @@ import { openSeedPage } from "./seed-page";
 const json = (status: number, body: unknown) => ({ status, json: body });
 
 interface Seed {
-  readonly role?: "cashier" | "owner";
+  readonly role?: "cashier" | "owner" | "manager" | "storekeeper";
   readonly usedRef?: string;
 }
 
@@ -53,7 +53,7 @@ async function seed(page: Page, s: Seed = {}) {
             devicePrefix: "A2",
             userId: "u1",
             userName: role === "owner" ? "سالم" : "سميرة ع.",
-            roleName: role === "owner" ? "مالك" : "كاشير",
+            roleName: role === "owner" ? "مالك" : role === "manager" ? "مدير فرع" : "كاشير",
             roleCode: role,
             ownerName: "ندى",
           }),
@@ -215,7 +215,8 @@ test.describe("PTY-06", () => {
   test("ready → saving → success: سداد نقدي 40 يخفض 180 إلى 140 فوراً ويدخل درج SHIFT-02", async ({
     page,
   }, info) => {
-    await seed(page);
+    // المدير «نعم» في «تسجيل سداد» — الوسيلتان معروضتان؛ الكاشير «نقداً فقط» (0005 §٢٩٢)
+    await seed(page, { role: "manager" });
     const pushed: { kind: string; members: { payload: Record<string, unknown> }[] }[] = [];
     await pushRoute(page, pushed);
     // المسجَّل أخيراً يعمل أولاً: تأخير الرفع ليُرى «جارٍ الحفظ» ثم يمرّ إلى القبول
@@ -298,7 +299,7 @@ test.describe("PTY-06", () => {
   test("ready (تحويل بنكي): مسجَّل — غير مطابق، الرصيد لا يتغير، ومرجع مستهلَك يُرفض", async ({
     page,
   }, info) => {
-    await seed(page, { usedRef: "TRF-88214" });
+    await seed(page, { role: "manager", usedRef: "TRF-88214" });
     const pushed: { kind: string; members: { payload: Record<string, unknown> }[] }[] = [];
     await pushRoute(page, pushed);
     await login(page, PAY);
@@ -366,6 +367,10 @@ test.describe("PTY-06", () => {
   }, info) => {
     await seed(page);
     await login(page, PAY);
+    // «نقداً فقط» في خلية الكاشير: لا تحويل بنكي (0005 §٢٩٢)
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toContainText("الوسيلة لدورك نقداً فقط.");
+    await expect(page.getByLabel("تحويل بنكي")).toHaveCount(0);
     await page.getByRole("button", { name: "ردّ مبلغ" }).click();
     await expectFrame(page, info, {
       screenId: "PTY-06",
@@ -376,6 +381,20 @@ test.describe("PTY-06", () => {
         "«اطلب من ندى» بالمبلغ والسبب والطرف، فتوافق من جهازها ويُنسب الردّ إليها.",
       ]),
     });
+  });
+
+  test("permission_denied: «لا» في «تسجيل سداد» (أمين المخزن) — لا نموذج (0005 §٢٩٢)", async ({
+    page,
+  }) => {
+    await seed(page, { role: "storekeeper" });
+    await login(page, PAY);
+    const root = page.locator('[data-screen="PTY-06"]');
+    await expect(root).toHaveAttribute("data-state", "permission_denied");
+    await expect(root).toContainText("تسجيل السداد ليس من صلاحية دورك");
+    await expect(root).toContainText(
+      "صلاحية تسجيل السداد يمنحها المالك للدور في «الأدوار والصلاحيات».",
+    );
+    await expect(page.getByRole("button", { name: "ردّ مبلغ" })).toHaveCount(0);
   });
 
   test("validation_error (ردّ): الردّ يطلب سبباً مكتوباً دائماً — ولو نفّذه المالك", async ({

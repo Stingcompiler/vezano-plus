@@ -111,10 +111,13 @@ def item_payload(q: QuarantinedOperation) -> dict[str, Any]:
     }
 
 
-def visible_items(viewer: User, device_id: uuid.UUID | None) -> list[QuarantinedOperation]:
-    """المالك يرى كل ما ينتظر قراراً؛ غيره ما حُجز من جهازه فقط (يراه ويُبلّغ ولا يحسم)."""
+def visible_items(
+    viewer: User, device_id: uuid.UUID | None, *, reviewer: bool
+) -> list[QuarantinedOperation]:
+    """من يحسم (خلية «مراجعة تعارض وحجر» — المالك دائماً) يرى كل ما ينتظر قراراً؛ غيره ما حُجز
+    من جهازه فقط (يراه ويُبلّغ ولا يحسم)."""
     qs = QuarantinedOperation.objects.filter(reviewed_at__isnull=True)
-    if not viewer.is_owner:
+    if not reviewer:
         if device_id is None:
             return []
         qs = qs.filter(device=device_id)
@@ -202,8 +205,11 @@ def detail_payload(q: QuarantinedOperation) -> dict[str, Any]:
     }
 
 
-def decide(q: QuarantinedOperation, *, decision: str, reason: str, actor: User) -> dict[str, Any]:
-    if not actor.is_owner:
+def decide(
+    q: QuarantinedOperation, *, decision: str, reason: str, actor: User, reviewer: bool
+) -> dict[str, Any]:
+    """`reviewer` = قرار `can(viewer, "conflict_review")` من المصفوفة (0005 §٢٩٢)."""
+    if not reviewer:
         raise ReviewRejected("owner_required")
     if decision not in ("accept", "reject"):
         raise ReviewRejected("invalid", "decision")

@@ -158,13 +158,26 @@ export default function Discount() {
         required
       />
       {check && !check.ok && check.reason !== "invalid" ? (
-        <StateView state="permission_denied" title={tx(T, "خصم يتجاوز سقف الدور")}>
-          <AppText variant="secondary">
-            {tx(T, "سقفك")}{" "}
-            <Text style={{ fontFamily: FONT.mono, writingDirection: "ltr" }}>
-              {check.reason === "over_percent" ? `${check.cap}%` : formatMinorShort(check.cap)}
-            </Text>
-          </AppText>
+        <StateView
+          state="permission_denied"
+          title={
+            check.reason === "forbidden"
+              ? tx(T, "الخصم ليس من صلاحية دورك")
+              : tx(T, "خصم يتجاوز سقف الدور")
+          }
+        >
+          {check.reason === "forbidden" ? (
+            <AppText variant="secondary">
+              {tx(T, "يحتاج اعتماد مدير الفرع أو المالك. الفاتورة محفوظة في السلة ولن تُفقد.")}
+            </AppText>
+          ) : (
+            <AppText variant="secondary">
+              {tx(T, "سقفك")}{" "}
+              <Text style={{ fontFamily: FONT.mono, writingDirection: "ltr" }}>
+                {check.reason === "over_percent" ? `${check.cap}%` : formatMinorShort(check.cap)}
+              </Text>
+            </AppText>
+          )}
           {requested ? (
             <AppText variant="note">{tx(T, "طلب تفويضٍ يسجَّل باسم من وافق.")}</AppText>
           ) : (
