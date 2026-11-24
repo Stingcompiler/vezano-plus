@@ -3398,27 +3398,63 @@
       },
       "type": "array"
      },
-     "sales_today": {
+     "sales": {
       "additionalProperties": false,
       "properties": {
-       "cash_minor": {
-        "type": "string"
-       },
        "count": {
         "type": "integer"
        },
-       "credit_minor": {
+       "end": {
         "type": "string"
        },
-       "total_minor": {
+       "net_minor": {
+        "type": "string"
+       },
+       "period": {
+        "type": "string"
+       },
+       "returns_minor": {
+        "type": "string"
+       },
+       "revenue_minor": {
+        "type": "string"
+       },
+       "start": {
         "type": "string"
        }
       },
       "required": [
+       "period",
+       "start",
+       "end",
        "count",
-       "total_minor",
-       "cash_minor",
-       "credit_minor"
+       "revenue_minor",
+       "returns_minor",
+       "net_minor"
+      ],
+      "type": "object"
+     },
+     "scope": {
+      "additionalProperties": false,
+      "properties": {
+       "branch_id": {
+        "type": "string"
+       },
+       "branch_name": {
+        "type": "string"
+       },
+       "can_choose": {
+        "type": "boolean"
+       },
+       "kind": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "kind",
+       "branch_id",
+       "branch_name",
+       "can_choose"
       ],
       "type": "object"
      },
@@ -3463,6 +3499,7 @@
      "user",
      "period",
      "branch_id",
+     "scope",
      "branches",
      "branches_synced",
      "devices_total",

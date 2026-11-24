@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from django.db.models import Count, Sum
+from django.db.models import Count, QuerySet, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -22,7 +22,13 @@ from sales.models import Sale, SaleReturn
 #: بعد ساعة بلا ظهور يُعدّ الجهاز «لم يُزامن» في سطر الاكتمال (0005 §٣٧: مطابقة متقادمة بعد ساعة)
 NOT_SYNCED_AFTER = timedelta(hours=1)
 
-RANGE_LABELS = {"today": "اليوم", "yesterday": "أمس", "7d": "آخر 7 أيام", "30d": "آخر 30 يوماً"}
+RANGE_LABELS = {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "7d": "آخر 7 أيام",
+    "30d": "آخر 30 يوماً",
+    "month": "هذا الشهر",
+}
 
 
 @dataclass(frozen=True)
@@ -49,6 +55,8 @@ def parse_range(key: str, *, start: str | None, end: str | None) -> Range:
         return Range("7d", today - timedelta(days=6), today)
     if key == "30d":
         return Range("30d", today - timedelta(days=29), today)
+    if key == "month":  # فترة «هذا الشهر» في الرئيسية (0005 §٢٩١): من أوله حتى اليوم
+        return Range("month", today.replace(day=1), today)
     if key == "custom" and start:
         try:
             s = date.fromisoformat(start)
@@ -110,9 +118,18 @@ def _completeness(branch_ids: list[uuid.UUID] | None) -> dict[str, Any]:
     }
 
 
-def sales_report(
+@dataclass(frozen=True)
+class Scoped:
+    branch_ids: list[uuid.UUID] | None
+    scope: str
+    sales: QuerySet[Sale, Any]
+    returns: QuerySet[SaleReturn, Any]
+
+
+def scoped_sales(
     *, viewer: home.Viewer, rng: Range, branch_id: Any = None, method: str = "all"
-) -> dict[str, Any]:
+) -> Scoped:
+    """فواتير المدى ومرتجعاته بنطاق المشاهد — مصدر واحد لتقرير المبيعات ورقم الرئيسية."""
     branch_ids, scope = _scope_branch_ids(viewer, branch_id)
     sales = Sale.objects.filter(business_date__gte=rng.start, business_date__lte=rng.end)
     returns = SaleReturn.objects.filter(business_date__gte=rng.start, business_date__lte=rng.end)
@@ -127,18 +144,43 @@ def sales_report(
         sales = sales.filter(bank_minor__gt=0)
     # المستند العكسي لتكرار (POS-12) يُسقط الفاتورة من الإيراد
     sales = sales.filter(reversals__isnull=True)
+    return Scoped(branch_ids, scope, sales, returns)
 
-    agg = sales.aggregate(
+
+def sales_totals(s: Scoped) -> dict[str, Any]:
+    """مجاميع التقرير (`totals`) — الرئيسية تقرأ صافيها من هنا فلا يختلف رقمها عن التقرير
+    (مراجعة التقارير R-03 — 0005 §٢٩١)."""
+    agg = s.sales.aggregate(
         revenue=Sum("total_minor"),
         cash=Sum("cash_minor"),
         credit=Sum("credit_minor"),
         bank=Sum("bank_minor"),
         n=Count("id"),
     )
-    ragg = returns.aggregate(total=Sum("total_minor"), n=Count("id"))
+    ragg = s.returns.aggregate(total=Sum("total_minor"), n=Count("id"))
     revenue = int(agg["revenue"] or 0)
     ret = int(ragg["total"] or 0)
     n = int(agg["n"] or 0)
+    return {
+        "revenue_minor": str(revenue),
+        "returns_minor": str(ret),
+        "net_minor": str(revenue - ret),
+        "invoices": n,
+        "returns_count": int(ragg["n"] or 0),
+        "cash_minor": str(int(agg["cash"] or 0)),
+        "credit_minor": str(int(agg["credit"] or 0)),
+        "bank_minor": str(int(agg["bank"] or 0)),
+        # متوسط الفاتورة: أقرب هللة (نصف لأعلى) — عرض لا قيد
+        "average_minor": str((revenue * 2 + n) // (2 * n)) if n else "0",
+    }
+
+
+def sales_report(
+    *, viewer: home.Viewer, rng: Range, branch_id: Any = None, method: str = "all"
+) -> dict[str, Any]:
+    sc = scoped_sales(viewer=viewer, rng=rng, branch_id=branch_id, method=method)
+    branch_ids, scope, sales, returns = sc.branch_ids, sc.scope, sc.sales, sc.returns
+    totals = sales_totals(sc)
 
     branches = {
         str(b.id): b
@@ -175,9 +217,9 @@ def sales_report(
         )
         b["revenue_minor"] = int(row["r"] or 0)
         b["invoices"] = int(row["n"] or 0)
-    for row in returns.values("branch_id").annotate(r=Sum("total_minor")):
-        if str(row["branch_id"]) in by_branch:
-            by_branch[str(row["branch_id"])]["returns_minor"] = int(row["r"] or 0)
+    for rrow in returns.values("branch_id").annotate(r=Sum("total_minor")):
+        if str(rrow["branch_id"]) in by_branch:
+            by_branch[str(rrow["branch_id"])]["returns_minor"] = int(rrow["r"] or 0)
 
     completeness = _completeness(branch_ids)
     for r in _device_rows(None):
@@ -192,7 +234,7 @@ def sales_report(
             br["pending"] += int(ns["pending"])
             br["complete"] = False
 
-    by_day = [
+    by_day: list[dict[str, Any]] = [
         {
             "date": row["d"].isoformat(),
             "invoices": int(row["n"] or 0),
@@ -239,18 +281,7 @@ def sales_report(
             "label": rng.label,
         },
         "method": method if method in {"cash", "credit", "bank"} else "all",
-        "totals": {
-            "revenue_minor": str(revenue),
-            "returns_minor": str(ret),
-            "net_minor": str(revenue - ret),
-            "invoices": n,
-            "returns_count": int(ragg["n"] or 0),
-            "cash_minor": str(int(agg["cash"] or 0)),
-            "credit_minor": str(int(agg["credit"] or 0)),
-            "bank_minor": str(int(agg["bank"] or 0)),
-            # متوسط الفاتورة: أقرب هللة (نصف لأعلى) — عرض لا قيد
-            "average_minor": str((revenue * 2 + n) // (2 * n)) if n else "0",
-        },
+        "totals": totals,
         "by_branch": [
             {
                 **b,

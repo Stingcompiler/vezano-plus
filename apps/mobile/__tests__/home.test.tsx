@@ -159,6 +159,70 @@ describe("HOME-01 — الرئيسية (0005 §١٧٥)", () => {
     );
     expect(mockPush).toHaveBeenCalledWith("/search");
   });
+
+  it("نطاق الأرقام الفعلي، وشريحتا الفترة والفرع تصلان الخادم كالويب (0005 §٢٩١)", async () => {
+    const TWO: HomeSummary = {
+      ...SUMMARY,
+      branches: [
+        { id: "b1", name: "الرئيسي" },
+        { id: "b2", name: "بحري" },
+      ],
+    };
+    const s = server({
+      "GET /api/home": (req) => {
+        const q = new URL(req.url).searchParams;
+        const b = q.get("branch_id") ?? "";
+        return json(
+          200,
+          b === "b2"
+            ? {
+                ...TWO,
+                period: q.get("period") ?? "today",
+                branch_id: "b2",
+                scope: { kind: "branch", branch_id: "b2", branch_name: "بحري", can_choose: true },
+              }
+            : {
+                ...TWO,
+                branch_id: "all",
+                scope: { kind: "all", branch_id: "", branch_name: "", can_choose: true },
+              },
+        );
+      },
+    });
+    await renderWith(<Home />, s.fetch);
+    expect(await screen.findByText(/· كل الفروع/)).toBeTruthy();
+    await fireEvent.press(screen.getByText("بحري"));
+    expect(await screen.findByText(/· أرقام فرع بحري/)).toBeTruthy();
+    await fireEvent.press(screen.getByText(tx("HOME-01", "آخر 7 أيام")));
+    await waitFor(() =>
+      expect(
+        s.calls.some((r) => {
+          const q = new URL(r.url).searchParams;
+          return q.get("branch_id") === "b2" && q.get("period") === "7d";
+        }),
+      ).toBe(true),
+    );
+  });
+
+  it("المدير على فرعه: «أرقام فرع …» بلا شرائح فرع (0005 §٢٩١)", async () => {
+    const s = server({
+      "GET /api/home": () =>
+        json(200, {
+          ...SUMMARY,
+          user: { ...SUMMARY.user, role_name: "مدير" },
+          branches: [
+            { id: "b1", name: "الرئيسي" },
+            { id: "b2", name: "بحري" },
+          ],
+          branch_id: "b1",
+          scope: { kind: "branch", branch_id: "b1", branch_name: "الرئيسي", can_choose: false },
+        }),
+    });
+    await renderWith(<Home />, s.fetch);
+    expect(await screen.findByText(/· أرقام فرع الرئيسي/)).toBeTruthy();
+    expect(screen.queryByText("بحري")).toBeNull();
+    expect(screen.queryByText(/كل الفروع/)).toBeNull();
+  });
 });
 
 describe("HOME-03 — البحث", () => {

@@ -180,35 +180,50 @@ party_services.MOVEMENT_PROVIDERS.append(
 )
 
 
+#: عنوان بطاقة الرئيسية بالفترة (مراجعة التقارير د-٢ — 0005 §٢٩١): الصافي لا الإجمالي
+HOME_SALES_LABELS = {
+    "today": "صافي مبيعات اليوم",
+    "7d": "صافي مبيعات آخر 7 أيام",
+    "month": "صافي مبيعات هذا الشهر",
+}
+
+
 def _home_sales(viewer: home.Viewer, out: dict[str, Any]) -> None:
-    """HOME-01: مبيعات اليوم في فرع المشاهد (أو كل الفروع) — رقم بمصدره ووقته (R-01)."""
+    """HOME-01: صافي المبيعات للفترة والفرع المختارين — بدالة تقرير المبيعات نفسها فيطابقه حرفياً:
+    الملغى بمستند عكسي خارج، والمرتجعات مطروحة (R-01/R-02/R-03 — 0005 §٢٩١). `viewer.branch` هنا
+    نطاق الرئيسية (None = كل الفروع)."""
     if not viewer.can_see_finance:
         return
-    qs = Sale.objects.filter(business_date=timezone.localdate())
-    if viewer.branch is not None:
-        qs = qs.filter(branch_id=viewer.branch.id)
-    agg = qs.aggregate(total=Sum("total_minor"), cash=Sum("cash_minor"), credit=Sum("credit_minor"))
-    count = qs.count()
-    out["sales_today"] = {
-        "count": count,
-        "total_minor": str(int(agg["total"] or 0)),
-        "cash_minor": str(int(agg["cash"] or 0)),
-        "credit_minor": str(int(agg["credit"] or 0)),
+    from sales.reports import parse_range, sales_totals, scoped_sales
+
+    rng = parse_range(out["period"], start=None, end=None)
+    sc = scoped_sales(
+        viewer=viewer, rng=rng, branch_id=viewer.branch.id if viewer.branch is not None else None
+    )
+    t = sales_totals(sc)
+    out["sales"] = {
+        "period": rng.key,
+        "start": rng.start.isoformat(),
+        "end": rng.end.isoformat(),
+        "count": t["invoices"],
+        "revenue_minor": t["revenue_minor"],
+        "returns_minor": t["returns_minor"],
+        "net_minor": t["net_minor"],
     }
-    if count == 0:
+    if t["invoices"] == 0 and t["returns_count"] == 0:
         return
-    # مؤشر «مبيعات اليوم» (HOME-01): رقم بمصدره ووقته — لا رقم بلا مبيعات (الرئيسية «يومٌ لم يبدأ»)
-    branches = qs.values("branch_id").distinct().count()
+    # مؤشر المبيعات (HOME-01): رقم بمصدره ووقته — لا رقم بلا مبيعات (الرئيسية «يومٌ لم يبدأ»)
+    branches = sc.sales.values("branch_id").distinct().count()
     out["kpis"].append(
         {
             "key": "sales",
-            "label": "مبيعات اليوم",
-            "value": {"kind": "money", "amount_minor": str(int(agg["total"] or 0)), "exponent": 2},
+            "label": HOME_SALES_LABELS.get(rng.key, HOME_SALES_LABELS["today"]),
+            "value": {"kind": "money", "amount_minor": t["net_minor"], "exponent": 2},
             "scope": viewer.branch.name if viewer.branch is not None else f"من {branches} فروع",
             "note": "",
             "note_kind": "info",
             "as_of": timezone.now().isoformat().replace("+00:00", "Z"),
-            "href": "/pos/invoices",
+            "href": "/reports",
             "includes_pending": True,
         }
     )

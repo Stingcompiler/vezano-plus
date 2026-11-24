@@ -332,7 +332,7 @@ def renew(*, actor: User, viewer: home.Viewer, offer: MarketOffer, days: int = 0
     now = timezone.now()
     span = timedelta(days=days) if days > 0 else timedelta(hours=RENEW_HOURS)
     offer.confirmed_at = now
-    offer.valid_until = (now + span).date()
+    offer.valid_until = timezone.localdate(now + span)
     if offer.status == MarketOffer.Status.EXPIRED:
         offer.status = MarketOffer.Status.PUBLISHED
     offer.version += 1

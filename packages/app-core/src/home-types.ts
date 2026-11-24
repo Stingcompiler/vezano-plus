@@ -54,8 +54,17 @@ export interface HomeSummary {
     readonly branch_name: string;
     readonly device_name: string;
   };
+  /** الفترة المحسوبة فعلاً: today | 7d | month. */
   readonly period: string;
+  /** الفرع المحسوب فعلاً: معرّفه، أو «all» لكل الفروع (0005 §٢٩١). */
   readonly branch_id: string;
+  /** نطاق أرقام الرئيسية (مراجعة التقارير R-01): كل الفروع أو فرع بعينه؛ المرشّح للمالك وحده. */
+  readonly scope?: {
+    readonly kind: "all" | "branch";
+    readonly branch_id: string;
+    readonly branch_name: string;
+    readonly can_choose: boolean;
+  };
   readonly branches: readonly { readonly id: string; readonly name: string }[];
   readonly branches_synced: boolean;
   /** الأجهزة الفعّالة — 0 = لا جهاز مسجّل بعد (لا «كلها زامنت»). */

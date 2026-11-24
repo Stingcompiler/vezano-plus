@@ -26,6 +26,8 @@ import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 const T = "HOME-01";
+/** «كل الفروع» في مرشّح الفرع؛ الفارغ = افتراضي الخادم (فرع الجهاز أو كل الفروع) — كالويب. */
+const ALL_BRANCHES = "all";
 const PERIODS = [
   { value: "today", label: tx(T, "اليوم") },
   { value: "7d", label: tx(T, "آخر 7 أيام") },
@@ -175,6 +177,10 @@ export default function Home() {
   }
 
   const isOwner = summary.kind === "owner";
+  // نطاق الأرقام الفعلي كالويب (مراجعة التقارير R-01 — 0005 §٢٩١)؛ ملخّص مخزَّن قبله بلا `scope`
+  const allBranches = (summary.scope?.kind ?? "all") === "all";
+  const canChooseBranch = summary.scope?.can_choose ?? true;
+  const currentBranch = branch || summary.branch_id || ALL_BRANCHES;
   const hasNumbers =
     summary.kpis.length > 0 || summary.decisions.length > 0 || summary.attention.length > 0;
   const stale = failed && Boolean(savedAt);
@@ -260,7 +266,10 @@ export default function Home() {
               {greeting()} — {summary.tenant_name}
             </AppText>
             <AppText variant="secondary" muted style={{ marginBottom: SPACE["2"] }}>
-              {summary.user.display_name} — {summary.user.role_name} {tx(T, "· كل الفروع")}
+              {summary.user.display_name} — {summary.user.role_name}{" "}
+              {allBranches
+                ? tx(T, "· كل الفروع")
+                : `${tx(T, "· أرقام فرع")} ${summary.scope?.branch_name ?? ""}`}
             </AppText>
             <AppText variant="secondary" muted style={{ marginBottom: SPACE["3"] }}>
               <BranchCount n={summary.branches.length} /> ·{" "}
@@ -282,13 +291,18 @@ export default function Home() {
                 />
               ))}
             </View>
-            {summary.branches.length > 1 ? (
+            {/* الفرع للمالك وحده: المدير والكاشير على فرعهما ولا يوسّعه المرشّح */}
+            {canChooseBranch && summary.branches.length > 1 ? (
               <View accessibilityLabel={tx(T, "الفرع")} style={chips}>
-                <Chip on={branch === ""} label={tx(T, "كل الفروع")} onPress={() => setBranch("")} />
+                <Chip
+                  on={currentBranch === ALL_BRANCHES}
+                  label={tx(T, "كل الفروع")}
+                  onPress={() => setBranch(ALL_BRANCHES)}
+                />
                 {summary.branches.map((b) => (
                   <Chip
                     key={b.id}
-                    on={branch === b.id}
+                    on={currentBranch === b.id}
                     label={b.name}
                     onPress={() => setBranch(b.id)}
                   />
