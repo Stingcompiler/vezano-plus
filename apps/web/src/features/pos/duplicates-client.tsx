@@ -126,6 +126,8 @@ export function DuplicatesClient() {
   const [reason, setReason] = useState("");
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
+  // S-06: فاتورة لها مرتجع لا تُلغى بمستند عكسي — الخادم يرفض (409 sale_has_returns)
+  const [hasReturns, setHasReturns] = useState<string | null>(null);
   const [decided, setDecided] = useState<{ key: string; label: string; by: string } | null>(null);
   const appRef = useRef(app);
   appRef.current = app;
@@ -178,6 +180,7 @@ export function DuplicatesClient() {
         },
       });
       const body = out as unknown as { decided_by_name: string } | undefined;
+      if (response.status === 409) setHasReturns(pairKey(pair));
       if (!response.ok || !body) return;
       setDecided({
         key: pairKey(pair),
@@ -270,6 +273,9 @@ export function DuplicatesClient() {
                   المختار، ويُسجَّل بهوية المنفّذ وسببه في سجل التدقيق. الأصل يبقى مقروءاً للأبد.
                 </p>
 
+                {hasReturns === pairKey(pair) ? (
+                  <Notice kind="error" title="لهذه الفاتورة مرتجع مسجَّل — لا تُلغى بمستند عكسي." />
+                ) : null}
                 {canDecide ? (
                   <>
                     <TextField

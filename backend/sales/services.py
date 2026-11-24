@@ -295,6 +295,32 @@ def accepting_exceeding_return() -> Iterator[None]:
         _accepting_exceeding_return.reset(token)
 
 
+def _return_parts_expected(sale: Any, total: int) -> tuple[int, int, int]:
+    """(آجل، تحويل، نقد) كما يجب أن يُردّ المرتجع: من الدفع الأصلي ناقصاً ما رُدّ سابقاً من كل وجهة —
+    الآجل أولاً ثم التحويل ثم النقد (0005 §٢٩٠؛ `core/refund.py`)."""
+    from django.db.models import Sum
+
+    from core.money import DomainError
+    from core.refund import RefundChannels, refund_split
+    from sales.models import SaleReturn
+
+    prior = SaleReturn.unscoped.filter(tenant_id=sale.tenant_id, sale=sale).aggregate(
+        credit=Sum("credit_minor"), bank=Sum("bank_minor"), cash=Sum("cash_minor")
+    )
+    try:
+        split = refund_split(
+            total,
+            RefundChannels(sale.credit_minor, sale.bank_minor, sale.cash_minor),
+            RefundChannels(
+                int(prior["credit"] or 0), int(prior["bank"] or 0), int(prior["cash"] or 0)
+            ),
+        )
+    except DomainError as e:
+        # قيمة تتجاوز ما بقي مدفوعاً من الفاتورة كلها: تجاوزٌ للأصل يقرّره المالك (SYS-03)
+        raise BusinessConflict("return_exceeds_sale", str(sale.id)) from e
+    return split.credit_minor, split.bank_minor, split.cash_minor
+
+
 def apply_sale_return(
     tenant_id: uuid.UUID,
     device_id: uuid.UUID,
@@ -302,8 +328,11 @@ def apply_sale_return(
     entity_id: uuid.UUID,
     payload: Mapping[str, Any],
 ) -> None:
-    """رأس المرتجع: مستند مستقل يشير إلى أصله (ACC-09)؛ الردّ إلى الوجهة المعلنة بقيمته كاملة."""
-    from sales.models import Sale, SaleReturn
+    """رأس المرتجع: مستند مستقل يشير إلى أصله (ACC-09). وجهة الردّ تتبع الدفع الأصلي — الآجل يُخصم من
+    الذمّة أولاً، ثم التحويل، ثم النقد (0005 §٢٩٠): وجهة لا تطابق ذلك، أو مرتجع على فاتورة ألغاها
+    مستند عكسي (S-06)، يُحجر تعارضاً قبل أن يمسّ الصندوق أو الذمّة."""
+    from sales.models import Sale, SaleReturn, SaleReversal
+    from sync.kinds import refund_destination, refund_parts
 
     if SaleReturn.unscoped.filter(tenant_id=tenant_id, id=entity_id).exists():
         return
@@ -311,9 +340,17 @@ def apply_sale_return(
     if sale is None:
         # مرتجع بلا أصل معروف لا يُقبل صامتاً ولا يُسقط: يُحجر بنسخته إلى المراجعة (0005 §١٣٠)
         raise BusinessConflict("return_sale_unknown", str(payload["sale_id"]))
+    if SaleReversal.unscoped.filter(tenant_id=tenant_id, sale=sale).exists():
+        # الفاتورة ألغاها مستند عكسي أعاد مخزونها ونقدها وذمّتها: مرتجعها يُخرج المال مرتين (S-06)
+        raise BusinessConflict("return_sale_reversed", str(sale.id))
     user = User.unscoped.filter(id=payload["user_id"]).first()
     total = int(payload["total_minor"])
-    destination = str(payload["destination"])
+    credit, bank, cash = refund_parts(payload)
+    if not _accepting_exceeding_return.get():
+        expected = _return_parts_expected(sale, total)
+        party_ok = credit == 0 or str(payload.get("party_id") or "") == str(sale.party_id or "")
+        if (credit, bank, cash) != expected or not party_ok:
+            raise BusinessConflict("return_refund_mismatch", str(sale.id))
     SaleReturn.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
@@ -326,13 +363,41 @@ def apply_sale_return(
         user_name=user.display_name if user else "",
         party_id=uuid.UUID(str(payload["party_id"])) if payload.get("party_id") else None,
         condition=str(payload["condition"]),
-        destination=destination,
+        destination=refund_destination(credit, bank, cash),
         total_minor=total,
-        cash_minor=total if destination == "cash" else 0,
-        credit_minor=total if destination == "credit" else 0,
+        cash_minor=cash,
+        bank_minor=bank,
+        credit_minor=credit,
         business_date=parse_date(str(payload["business_date"])) or timezone.localdate(),
         occurred_at=_dt(payload.get("occurred_at")),
     )
+
+
+def return_line_cap_minor(line: Any, net_minor: int, cumulative_qty_milli: int) -> int:
+    """ما يحقّ ردّه تراكمياً من السطر لكمية تراكمية (0005 §٢٩٠): نصيبه من صافي الفاتورة
+    `V(c) = round(N × c ÷ Q)`. فاتورة بلا خصم تقبل أيضاً الكمية × السعر الذي ترسله الأجهزة القديمة،
+    بلا تجاوز قيمة السطر — كما كان السقف قبل التوزيع."""
+    from core.money import line_total_minor
+    from core.refund import return_value_cap_minor
+
+    c = min(cumulative_qty_milli, line.qty_milli)
+    cap = return_value_cap_minor(net_minor, line.qty_milli, c)
+    if net_minor == line.line_total_minor:
+        cap = min(line.line_total_minor, max(cap, line_total_minor(c, line.unit_price_minor)))
+    return cap
+
+
+def sale_net_lines(sale: Any) -> dict[uuid.UUID, int]:
+    """صافي كل سطر بعد توزيع خصم الفاتورة على السطور بنسبة قيمها (`core/refund.py`)."""
+    from core.refund import SaleLineAmount, allocate_invoice_discount
+    from sales.models import SaleLine
+
+    lines = list(SaleLine.unscoped.filter(tenant_id=sale.tenant_id, sale=sale))
+    net = allocate_invoice_discount(
+        [SaleLineAmount(str(ln.id), ln.line_total_minor) for ln in lines],
+        min(sale.discount_minor, sum(ln.line_total_minor for ln in lines)),
+    )
+    return {ln.id: n for ln, n in zip(lines, net, strict=True)}
 
 
 def apply_sale_return_line(
@@ -342,11 +407,12 @@ def apply_sale_return_line(
     entity_id: uuid.UUID,
     payload: Mapping[str, Any],
 ) -> None:
-    """سطر المرتجع: السقف تراكمي عبر كل مرتجعات الفاتورة (ACC-11). التجاوز يُحجر تعارضاً ليقرّره
-    المالك في SYS-03؛ قبوله يحفظ الواقعة موسومة `exceeds_original` دون تعديل الأصل (§٧.٣)."""
+    """سطر المرتجع: السقف تراكمي عبر كل مرتجعات الفاتورة (ACC-11)، كميةً وقيمةً مقابل ما دُفع فعلاً
+    (0005 §٢٩٠). التجاوز يُحجر تعارضاً ليقرّره المالك في SYS-03؛ قبوله يحفظ الواقعة موسومة
+    `exceeds_original` دون تعديل الأصل (§٧.٣)."""
     from django.db.models import Sum
 
-    from sales.models import SaleLine, SaleReturn, SaleReturnLine
+    from sales.models import Sale, SaleLine, SaleReturn, SaleReturnLine
 
     if SaleReturnLine.unscoped.filter(tenant_id=tenant_id, id=entity_id).exists():
         return
@@ -366,7 +432,11 @@ def apply_sale_return_line(
     already = sums["q"] or 0
     already_value = sums["v"] or 0
     over_qty = int(already) + qty > line.qty_milli
-    over_value = int(already_value) + total > line.line_total_minor
+    # القيمة مقابل ما دُفع لا سعر القائمة: نصيب السطر من صافي الفاتورة بعد خصمها، تراكمياً
+    # (مراجعة 2026-11-22 S-01: فاتورة 21,000 بخصم 200 كان مرتجعها الكامل يردّ 21,000)
+    sale = Sale.unscoped.get(tenant_id=tenant_id, id=line.sale_id)
+    net = sale_net_lines(sale).get(line.id, line.line_total_minor)
+    over_value = int(already_value) + total > return_line_cap_minor(line, net, int(already) + qty)
     # تجاوز الأصل تراكمياً (كمية أو قيمة) لا يدخل الصندوق ولا المخزون تلقائياً: يُحجر تعارضاً
     # ليقرّر المالك في SYS-03. كان يُقبل ويُوسم، فمرتجع 5 من فاتورة بوحدة واحدة يُخرج نقد الخمس
     # قبل أي مراجعة (مراجعة 2026-11-10 ع-٦). قبول المالك يطبّقه موسوماً كما كان.

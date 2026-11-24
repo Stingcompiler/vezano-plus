@@ -1,16 +1,18 @@
 "use client";
 
 import {
+  EMPTY_RETURN_HISTORY,
   type LocalSale,
   type LocalShift,
   readOpenShift,
-  readReturnedQty,
+  readReturnHistory,
   readSale,
   type ReturnCondition,
-  type ReturnDestination,
+  type ReturnHistory,
   returnTotals,
   saleFromServer,
   saveReturnLocally,
+  type ServerReturnRow,
   unitDisplay,
 } from "@sting/sync-core";
 import {
@@ -85,13 +87,20 @@ export function ReturnClient({ saleId }: { saleId: string }) {
   const [saleOpId, setSaleOpId] = useState<string | undefined>(undefined);
   const [shift, setShift] = useState<LocalShift | null | undefined>(undefined);
   const [ctx, setCtx] = useState<ShiftContext | null>(null);
-  const [returned, setReturned] = useState<Map<string, bigint>>(new Map());
+  const [history, setHistory] = useState<ReturnHistory>(EMPTY_RETURN_HISTORY);
+  // S-06: فاتورة ألغاها مستند عكسي لا تُردّ — يُسأل الخادم متى وُجد اتصال
+  const [reversed, setReversed] = useState(false);
   const [qty, setQty] = useState<Map<string, bigint>>(new Map());
   const [condition, setCondition] = useState<ReturnCondition>("good");
-  const [destination, setDestination] = useState<ReturnDestination>("cash");
   const [phase, setPhase] = useState<"idle" | "saving" | "saved">("idle");
   const [push, setPush] = useState<"none" | "synced" | "pending" | "failed">("none");
-  const [saved, setSaved] = useState<{ number: string; total: string } | null>(null);
+  const [saved, setSaved] = useState<{
+    number: string;
+    total: string;
+    credit: string;
+    bank: string;
+    cash: string;
+  } | null>(null);
   const [overTyped, setOverTyped] = useState<string | null>(null);
   const ids = useRef<{
     operationId: string;
@@ -110,15 +119,36 @@ export function ReturnClient({ saleId }: { saleId: string }) {
     }
     void (async () => {
       const storage = getStorage();
-      const [s, c, local, ret] = await Promise.all([
+      const [s, c, local] = await Promise.all([
         readOpenShift(storage),
         readShiftContext(storage, app),
         readSale(storage, saleId),
-        readReturnedQty(storage, saleId),
       ]);
       setShift(s);
       setCtx(c);
+      // الخادم يعرف مرتجعات الأجهزة الأخرى والعكس (S-06) — يُسأل متى وُجد اتصال، والمحلي يكفي بدونه
+      type ServerSale = Parameters<typeof saleFromServer>[0] & {
+        readonly sync_state?: string;
+        readonly returns?: readonly ServerReturnRow[];
+      };
+      const fetchServer = async (): Promise<ServerSale | null> => {
+        if (!navigator.onLine) return null;
+        try {
+          const { data, response } = await api().GET("/api/sales/{sale_id}", {
+            params: { path: { sale_id: saleId } },
+          });
+          return response.ok && data ? data : null;
+        } catch {
+          return null;
+        }
+      };
+      const applyServer = async (server: ServerSale | null) => {
+        setReversed(server?.sync_state === "reversed");
+        setHistory(await readReturnHistory(storage, saleId, server?.returns ?? []));
+      };
       if (local) {
+        // المحلي فوراً، والخادم يلحق فيُكمل ما رُدّ من أجهزة أخرى ويكشف العكس
+        setHistory(await readReturnHistory(storage, saleId));
         // معامل الوحدة من حدث البيع إن غاب عن الإسقاط القديم
         const op = await storage.read((tx) => tx.getOperation(local.operation_id));
         const factors = new Map<string, string>();
@@ -136,35 +166,13 @@ export function ReturnClient({ saleId }: { saleId: string }) {
           })),
         });
         setSaleOpId(op ? local.operation_id : undefined);
-        setReturned(ret);
+        const server = await fetchServer();
+        if (server) await applyServer(server);
         return;
       }
-      if (!navigator.onLine) {
-        setSale(null);
-        return;
-      }
-      try {
-        const { data, response } = await api().GET("/api/sales/{sale_id}", {
-          params: { path: { sale_id: saleId } },
-        });
-        const body = data as unknown as
-          | (Parameters<typeof saleFromServer>[0] & {
-              lines: readonly { id: string; returned_qty_milli: string }[];
-            })
-          | undefined;
-        if (!response.ok || !body) {
-          setSale(null);
-          return;
-        }
-        setSale(saleFromServer(body));
-        const fromServer = new Map<string, bigint>();
-        for (const l of body.lines) fromServer.set(l.id, BigInt(l.returned_qty_milli ?? "0"));
-        // المُرتجَع سابقاً = خادمياً + ما على هذا الجهاز ولم يُرفع
-        for (const [k, v] of ret) fromServer.set(k, (fromServer.get(k) ?? 0n) + v);
-        setReturned(fromServer);
-      } catch {
-        setSale(null);
-      }
+      const server = await fetchServer();
+      await applyServer(server);
+      setSale(server ? saleFromServer(server) : null);
     })();
   }, [router, saleId]);
 
@@ -174,7 +182,7 @@ export function ReturnClient({ saleId }: { saleId: string }) {
 
   const rows: RowState[] = (sale?.lines ?? []).map((l) => {
     const sold = BigInt(l.qty_milli);
-    const r = returned.get(l.id) ?? 0n;
+    const r = history.qtyByLine.get(l.id) ?? 0n;
     return {
       line: l,
       sold,
@@ -184,31 +192,49 @@ export function ReturnClient({ saleId }: { saleId: string }) {
     };
   });
   const active = rows.filter((r) => r.now > 0n);
-  const totals =
-    sale && active.length
-      ? returnTotals(
-          sale,
-          active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
-        )
-      : null;
+  const exceeds = rows.some((r) => r.now > r.available);
+  // القيمة ما دُفع بعد خصم الفاتورة، والوجهة من الدفع الأصلي (0005 §٢٩٠) — كما يحسبها الخادم
+  let totals: ReturnType<typeof returnTotals> | null = null;
+  let unpriced = false;
+  if (sale && active.length && !exceeds) {
+    try {
+      totals = returnTotals(
+        sale,
+        active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
+        history,
+      );
+    } catch {
+      unpriced = true;
+    }
+  }
   const total = totals?.totalMinor ?? 0n;
+  const split = totals?.split ?? { creditMinor: 0n, bankMinor: 0n, cashMinor: 0n };
   const allAvailable = rows.reduce((a, r) => a + r.available, 0n);
   const chosen = rows.reduce((a, r) => a + r.now, 0n);
-  const exceeds = rows.some((r) => r.now > r.available);
   const role = ctx?.roleCode ?? "cashier";
   const isOwner = ctx?.roleName === "مالك" || role === "owner";
-  const cap = isOwner
-    ? null
-    : ((destination === "cash" ? CASH_REFUND_CAP_MINOR : CREDIT_REFUND_CAP_MINOR)[role] ?? null);
-  const overCap = cap !== null && total > cap;
-  const creditNoParty = destination === "credit" && !sale?.party_id;
+  // الحدّان منفصلان كما كانا: ما يخرج مالاً (نقداً أو تحويلاً) بحدّ النقد، وخصم الذمّة بحدّه
+  const moneyOut = split.cashMinor + split.bankMinor;
+  const cashCap = isOwner ? null : (CASH_REFUND_CAP_MINOR[role] ?? null);
+  const creditCap = isOwner ? null : (CREDIT_REFUND_CAP_MINOR[role] ?? null);
+  const overCash = cashCap !== null && moneyOut > cashCap;
+  const overCredit = creditCap !== null && split.creditMinor > creditCap;
+  const overCap = overCash || overCredit;
+  const cap = overCash ? cashCap : creditCap;
+  const capValue = overCash ? moneyOut : split.creditMinor;
+  const creditNoParty = split.creditMinor > 0n && !sale?.party_id;
+  // وجهات الدفع الأصلي تُعرض كلها، وما يُردّ إلى كلٍّ منها بجانبها
+  const paidCredit = BigInt(sale?.credit_minor || "0") > 0n;
+  const paidBank = BigInt(sale?.bank_minor || "0") > 0n;
+  const paidCash = BigInt(sale?.cash_minor || "0") > 0n || (!paidCredit && !paidBank);
+  const discounted = BigInt(sale?.discount_minor || "0") > 0n;
 
   const state: State =
     phase === "saved"
       ? push === "synced"
         ? "success"
         : "saved_local"
-      : exceeds || overTyped !== null
+      : exceeds || overTyped !== null || unpriced || reversed
         ? "validation_error"
         : overCap
           ? "permission_denied"
@@ -232,7 +258,7 @@ export function ReturnClient({ saleId }: { saleId: string }) {
 
   const commit = async () => {
     if (!sale || !shift || !ctx || phase !== "idle" || !active.length) return;
-    if (exceeds || overCap || creditNoParty) return;
+    if (exceeds || overCap || creditNoParty || unpriced || reversed) return;
     setPhase("saving");
     if (!ids.current)
       ids.current = {
@@ -248,7 +274,7 @@ export function ReturnClient({ saleId }: { saleId: string }) {
       saleOperationId: saleOpId,
       lines: active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
       condition,
-      destination,
+      history,
       shift,
       branchCode: ctx.branchCode || "BR",
       devicePrefix: ctx.devicePrefix || "X",
@@ -259,7 +285,13 @@ export function ReturnClient({ saleId }: { saleId: string }) {
       occurredAt: new Date().toISOString(),
       memberIds: { lines: ids.current.lines, movements: ids.current.movements },
     });
-    setSaved({ number: ret.return_number, total: ret.total_minor });
+    setSaved({
+      number: ret.return_number,
+      total: ret.total_minor,
+      credit: ret.credit_minor,
+      bank: ret.bank_minor ?? "0",
+      cash: ret.cash_minor,
+    });
     if (!online) {
       setPush("pending");
       setPhase("saved");
@@ -354,6 +386,9 @@ export function ReturnClient({ saleId }: { saleId: string }) {
           <div className="acc-card__body">
             {sale && phase !== "saved" ? (
               <>
+                {reversed ? (
+                  <Notice kind="error" title="هذه الفاتورة أُلغيت بمستند عكسي — لا تُردّ." />
+                ) : null}
                 <Notice kind="info" title="من الفاتورة الأصل">
                   <p className="acc-lead">
                     المرتجع يبدأ باختيار الأصل، وكل سطر يعرض المباع والمرتَجع سابقاً والمتاح رده.
@@ -400,23 +435,49 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                   <strong>حالة البضاعة تُسأل</strong> · صالحة تعود للمخزون؛ تالفة إلى حجر أو هالك —
                   لا تدخل المتاح للبيع.
                 </p>
-                <RadioGroupField
-                  label="وجهة الرد"
-                  name="dest"
-                  value={destination}
-                  onChange={(v) => {
-                    setDestination(v as ReturnDestination);
-                  }}
-                  options={[
-                    { value: "cash", label: "نقداً من الصندوق" },
-                    {
-                      value: "credit",
-                      label: "خصماً من ذمة العميل",
-                      ...(sale.party_id ? {} : { hint: "عميل مسمّى — شرط الأثر الآجل" }),
-                    },
-                  ]}
-                  error={creditNoParty ? "عميل مسمّى — شرط الأثر الآجل" : undefined}
-                />
+                <div className="shift-facts" role="group" aria-label="وجهة الرد">
+                  <div>
+                    <span className="shift-facts__k">وجهة الرد</span>
+                    <span className="shift-facts__v">الردّ يتبع طريقة دفع الفاتورة.</span>
+                  </div>
+                  {paidCredit ? (
+                    <div>
+                      <span className="shift-facts__k">خصماً من ذمة العميل</span>
+                      <span className="shift-facts__v sting-mono">
+                        {formatMinor(split.creditMinor.toString())}
+                      </span>
+                    </div>
+                  ) : null}
+                  {paidBank ? (
+                    <div>
+                      <span className="shift-facts__k">تحويلاً بنكياً</span>
+                      <span className="shift-facts__v sting-mono">
+                        {formatMinor(split.bankMinor.toString())}
+                      </span>
+                    </div>
+                  ) : null}
+                  {paidCash ? (
+                    <div>
+                      <span className="shift-facts__k">نقداً من الصندوق</span>
+                      <span className="shift-facts__v sting-mono">
+                        {formatMinor(split.cashMinor.toString())}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+                {paidCredit ? (
+                  <p className="acc-choice__note">
+                    الفاتورة آجلة: الردّ يُخصم من ذمّة العميل أولاً.
+                  </p>
+                ) : null}
+                {paidCash && (paidCredit || paidBank) ? (
+                  <p className="acc-choice__note">
+                    الردّ نقداً لا يتجاوز ما دُفع نقداً في الفاتورة.
+                  </p>
+                ) : null}
+                {creditNoParty ? (
+                  <p className="acc-choice__note">عميل مسمّى — شرط الأثر الآجل</p>
+                ) : null}
 
                 {state === "permission_denied" ? (
                   <Notice kind="locked" title="ردّ نقدي فوق الحدّ">
@@ -431,14 +492,16 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                       الحدّ{" "}
                       <span className="sting-mono">{formatMinor((cap ?? 0n).toString())}</span> ·
                       قيمة المرتجع{" "}
-                      <span className="sting-mono">{formatMinor(total.toString())}</span>
+                      <span className="sting-mono">{formatMinor(capValue.toString())}</span>
                     </p>
                   </Notice>
                 ) : null}
 
                 <div className="shift-facts">
                   <div>
-                    <span className="shift-facts__k">قيمة المرتجع</span>
+                    <span className="shift-facts__k">
+                      {discounted ? "قيمة المرتجع بعد خصم الفاتورة" : "قيمة المرتجع"}
+                    </span>
                     <span className="shift-facts__v sting-mono">
                       {formatMinor(total.toString())}
                     </span>
@@ -469,15 +532,17 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                     onClick={() => void commit()}
                     loading={phase === "saving"}
                     disabledReason={
-                      !active.length
-                        ? "اختر كمية"
-                        : exceeds || overTyped
-                          ? "كمية تتجاوز المتاح"
-                          : overCap
-                            ? "ردّ نقدي فوق الحدّ"
-                            : creditNoParty
-                              ? "عميل مسمّى — شرط الأثر الآجل"
-                              : undefined
+                      reversed
+                        ? "هذه الفاتورة أُلغيت بمستند عكسي — لا تُردّ."
+                        : !active.length
+                          ? "اختر كمية"
+                          : exceeds || overTyped || unpriced
+                            ? "كمية تتجاوز المتاح"
+                            : overCap
+                              ? "ردّ نقدي فوق الحدّ"
+                              : creditNoParty
+                                ? "عميل مسمّى — شرط الأثر الآجل"
+                                : undefined
                     }
                   >
                     تسجيل المرتجع
@@ -497,11 +562,15 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                   </Notice>
                 ) : (
                   <Notice kind="offline" title="مرتجع بلا اتصال">
-                    <p className="acc-lead">محفوظ محلياً، والنقد خرج من الصندوق فعلاً.</p>
-                    <p className="acc-lead">
-                      <strong>الصندوق لا ينتظر</strong> · حركة الصندوق تُقيَّد لحظتها محلياً — العدّ
-                      في الإغلاق يطابق الواقع لا المزامنة.
-                    </p>
+                    {BigInt(saved.cash) > 0n ? (
+                      <>
+                        <p className="acc-lead">محفوظ محلياً، والنقد خرج من الصندوق فعلاً.</p>
+                        <p className="acc-lead">
+                          <strong>الصندوق لا ينتظر</strong> · حركة الصندوق تُقيَّد لحظتها محلياً —
+                          العدّ في الإغلاق يطابق الواقع لا المزامنة.
+                        </p>
+                      </>
+                    ) : null}
                   </Notice>
                 )}
                 <div className="shift-facts">
@@ -517,12 +586,24 @@ export function ReturnClient({ saleId }: { saleId: string }) {
                     <span className="shift-facts__k">قيمة المرتجع</span>
                     <span className="shift-facts__v sting-mono">{formatMinor(saved.total)}</span>
                   </div>
-                  <div>
-                    <span className="shift-facts__k">وجهة الرد</span>
-                    <span className="shift-facts__v">
-                      {destination === "cash" ? "نقداً من الصندوق" : "خصماً من ذمة العميل"}
-                    </span>
-                  </div>
+                  {BigInt(saved.credit) > 0n ? (
+                    <div>
+                      <span className="shift-facts__k">خصماً من ذمة العميل</span>
+                      <span className="shift-facts__v sting-mono">{formatMinor(saved.credit)}</span>
+                    </div>
+                  ) : null}
+                  {BigInt(saved.bank) > 0n ? (
+                    <div>
+                      <span className="shift-facts__k">تحويلاً بنكياً</span>
+                      <span className="shift-facts__v sting-mono">{formatMinor(saved.bank)}</span>
+                    </div>
+                  ) : null}
+                  {BigInt(saved.cash) > 0n ? (
+                    <div>
+                      <span className="shift-facts__k">نقداً من الصندوق</span>
+                      <span className="shift-facts__v sting-mono">{formatMinor(saved.cash)}</span>
+                    </div>
+                  ) : null}
                   <div>
                     <span className="shift-facts__k">حالة البضاعة</span>
                     <span className="shift-facts__v">

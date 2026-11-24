@@ -11857,6 +11857,9 @@
           },
           "404": {
             "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
           }
         }
       }
@@ -59341,6 +59344,9 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "bank_minor": {
+                  "type": "string"
+                },
                 "cash_minor": {
                   "type": "string"
                 },
@@ -59406,6 +59412,7 @@
                 "destination",
                 "total_minor",
                 "cash_minor",
+                "bank_minor",
                 "credit_minor",
                 "exceeds_original",
                 "occurred_at",

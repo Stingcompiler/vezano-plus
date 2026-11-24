@@ -631,18 +631,51 @@ register(
 
 
 # ---------------------------------------------------------------- sale_return (§٧.٢–٧.٣؛ POS-10)
+#: أجزاء الردّ بوجهاتها (0005 §٢٩٠) — غيابها كلها = جهاز قديم يعلن وجهة واحدة بالقيمة كاملة
+REFUND_PARTS = ("credit_minor", "bank_minor", "cash_minor")
+
+
+def refund_parts(p: Payload) -> tuple[int, int, int]:
+    """(آجل، تحويل، نقد) كما أعلنها الجهاز؛ الجهاز القديم بلا أجزاء → وجهته الواحدة بالقيمة كلها."""
+    if any(p.get(n) not in (None, "") for n in REFUND_PARTS):
+        return int(p["credit_minor"]), int(p["bank_minor"]), int(p["cash_minor"])
+    total = int(p["total_minor"])
+    dest = p["destination"]
+    return (
+        total if dest == "credit" else 0,
+        total if dest == "bank" else 0,
+        total if dest == "cash" else 0,
+    )
+
+
+def refund_destination(credit: int, bank: int, cash: int) -> str:
+    used = [d for d, v in (("credit", credit), ("bank", bank), ("cash", cash)) if v > 0]
+    return used[0] if len(used) == 1 else "mixed"
+
+
 def _validate_sale_return(p: Payload) -> None:
-    """المرتجع مستند مستقل يشير إلى أصله: حالة البضاعة ووجهة الردّ معلنتان، والمجموع مشتق."""
+    """المرتجع مستند مستقل يشير إلى أصله: حالة البضاعة معلنة، والمجموع مشتق، ووجهة الردّ أجزاءٌ
+    (آجل/تحويل/نقد) مجموعها القيمة — صحّتها مقابل الدفع الأصلي يفحصها المُطبِّق (0005 §٢٩٠)."""
     _require(p, "return_id", "return_number", "sale_id", "branch_id", "device_id", "user_id")
     _require(p, "condition", "destination", "total_minor", "business_date", "occurred_at")
     _money(p, "total_minor", unsigned=True)
     if p["condition"] not in ("good", "damaged"):
         raise KindError("condition must be good or damaged")
-    if p["destination"] not in ("cash", "credit"):
-        raise KindError("destination must be cash or credit")
+    if p["destination"] not in ("cash", "credit", "bank", "mixed"):
+        raise KindError("destination must be cash, credit, bank or mixed")
     if int(p["total_minor"]) <= 0:
         raise KindError("total_minor must be positive")
-    if p["destination"] == "credit" and not p.get("party_id"):
+    if any(p.get(n) not in (None, "") for n in REFUND_PARTS):
+        _require(p, *REFUND_PARTS)
+        _money(p, *REFUND_PARTS, unsigned=True)
+    elif p["destination"] not in ("cash", "credit"):
+        raise KindError("bank or mixed refund requires credit_minor, bank_minor and cash_minor")
+    credit, bank, cash = refund_parts(p)
+    if credit + bank + cash != int(p["total_minor"]):
+        raise KindError("refund parts must sum to total_minor")
+    if p["destination"] != refund_destination(credit, bank, cash):
+        raise KindError("destination does not match refund parts")
+    if credit > 0 and not p.get("party_id"):
         raise KindError("credit refund requires party_id")
 
 
@@ -661,6 +694,9 @@ SALE_RETURN = EntitySpec(
         "condition",
         "destination",
         "total_minor",
+        "credit_minor",
+        "bank_minor",
+        "cash_minor",
         "business_date",
         "occurred_at",
     ),
@@ -693,8 +729,8 @@ def _validate_sale_return_line(p: Payload) -> None:
         raise KindError(f"qty/factor: {e.code}") from e
     if qty == 0 or factor == 0:
         raise KindError("qty_milli and factor_milli must be positive")
-    if line_total_minor(qty, int(p["unit_price_minor"])) != int(p["line_total_minor"]):
-        raise KindError("line_total_minor does not match qty × price")
+    # قيمة السطر = نصيبه من صافي الفاتورة بعد توزيع خصمها (0005 §٢٩٠)، لا الكمية × السعر: حقّها
+    # التراكمي مقابل الأصل يفحصه المُطبِّق (`apply_sale_return_line`) ويحجر ما يزيد
 
 
 SALE_RETURN_LINE = EntitySpec(
@@ -752,8 +788,8 @@ QUARANTINE_MOVEMENT = EntitySpec(
 
 
 def _validate_sale_return_operation(members: Mapping[str, list[Payload]]) -> None:
-    """§٧.٢: صالحة → المخزون +الكمية بالوحدة الأساسية؛ تالفة → الحجر لا المخزون؛ الردّ نقداً أو
-    خصماً من الذمّة بقيمة المرتجع كاملة — كلها مشتقة من السطور لا مرسلة."""
+    """§٧.٢: صالحة → المخزون +الكمية بالوحدة الأساسية؛ تالفة → الحجر لا المخزون؛ أجزاء الردّ
+    مجموعها قيمة المرتجع — كلها مشتقة من السطور لا مرسلة."""
     head = members["sales.SaleReturn"][0]
     lines = members.get("sales.SaleReturnLine", [])
     stock = members.get("inventory.StockMovement", [])

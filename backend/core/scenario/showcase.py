@@ -32,6 +32,7 @@ from django.utils import timezone
 
 from core.ids import uuid7
 from core.money import line_total_minor
+from core.refund import SaleLineAmount, allocate_invoice_discount, return_line_value_minor
 from core.tenancy import platform_context, tenant_context
 
 TAG = "تجريبي"
@@ -789,7 +790,15 @@ def _return_op(
     ctx.returned.add(sale["sale_id"])
     ln = sale["lines"][0]
     qty = ln["qty"] if ln["qty"] <= 1000 else 1000
-    lt = line_total_minor(qty, ln["price"])
+    # القيمة نصيب السطر من صافي الفاتورة بعد خصمها، والوجهة من دفعها (0005 §٢٩٠)
+    nets = allocate_invoice_discount(
+        [
+            SaleLineAmount(x["line_id"], line_total_minor(x["qty"], x["price"]))
+            for x in sale["lines"]
+        ],
+        int(sale["head"].get("discount_minor", 0) or 0),
+    )
+    lt = return_line_value_minor(nets[0], ln["qty"], 0, qty)
     damaged = rnd.random() < 0.3
     rid = str(uuid7())
     occurred = _iso(d, 17, rnd.randint(0, 59))

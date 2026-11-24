@@ -23,7 +23,10 @@ export type DomainErrorCode =
   | "settlement_mismatch"
   | "party_required"
   | "value_required"
-  | "empty_operation";
+  | "empty_operation"
+  | "discount_exceeds_subtotal"
+  | "return_exceeds_sale"
+  | "refund_exceeds_paid";
 
 /** خطأ مجال: الرمز للبرمجة والاختبار؛ نص الواجهة يأتي من الإطار المرسوم لا من هنا. */
 export class DomainError extends Error {

@@ -231,11 +231,17 @@ class DuplicateReport(TenantScoped):
 
 class SaleReturn(TenantScoped):
     """مرتجع كلي أو جزئي (POS-10؛ §٧.٢–٧.٣، ACC-09/10/11): مستند مستقل يشير إلى أصله والأصل باقٍ
-    كما كان. حالة البضاعة (صالحة → المخزون، تالفة → الحجر) ووجهة الرد (نقداً من الصندوق أو خصماً
-    من ذمّة العميل) معلنتان. التجاوز التراكمي للأصل يُكشف مركزياً ويُوسم ولا يُمحى."""
+    كما كان. حالة البضاعة (صالحة → المخزون، تالفة → الحجر) معلنة، ووجهة الرد تتبع الدفع الأصلي:
+    الآجل يُخصم من الذمّة أولاً، ثم التحويل، ثم النقد (0005 §٢٩٠). التجاوز التراكمي للأصل يُكشف
+    مركزياً ويُوسم ولا يُمحى."""
 
     CONDITION = (("good", "صالحة — تعود للمخزون"), ("damaged", "تالفة — إلى الحجر أو الهالك"))
-    DESTINATION = (("cash", "نقداً من الصندوق"), ("credit", "خصماً من ذمة العميل"))
+    DESTINATION = (
+        ("cash", "نقداً من الصندوق"),
+        ("credit", "خصماً من ذمة العميل"),
+        ("bank", "تحويلاً بنكياً"),
+        ("mixed", "مختلط"),
+    )
 
     sale = models.ForeignKey(Sale, on_delete=models.PROTECT, related_name="returns")
     return_number = models.CharField(max_length=40)
@@ -249,6 +255,8 @@ class SaleReturn(TenantScoped):
     destination = models.CharField(max_length=8, choices=DESTINATION)
     total_minor = models.BigIntegerField()
     cash_minor = models.BigIntegerField(default=0)
+    #: الردّ تحويلاً — خارج الدرج (0005 §٢٩٠: الوجهة تتبع الدفع الأصلي)
+    bank_minor = models.BigIntegerField(default=0)
     credit_minor = models.BigIntegerField(default=0)
     #: سطرٌ ردّ أكثر من المُباع ناقص المُرتجَع سابقاً وقت الوصول — يُراجع مركزياً (ACC-11)
     exceeds_original = models.BooleanField(default=False)
