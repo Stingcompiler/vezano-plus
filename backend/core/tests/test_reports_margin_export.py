@@ -62,6 +62,25 @@ def test_margin_phase_locked_then_empty_then_ready(ctx: dict[str, Any]) -> None:
     assert cc.get("/api/reports/margin", **ch).status_code == 403  # type: ignore[arg-type]
 
 
+def test_margin_costs_a_carton_as_its_pieces(ctx: dict[str, Any]) -> None:  # noqa: F811
+    """I-04 (0005 §٢٨٩): التكلفة لوحدة الأساس والبيع بالكرتونة — الكرتونة (12 كغ) تكلّف 12 كغ لا
+    كيلواً واحداً."""
+    sugar = str(ctx["sugar"].id)
+    assert do_push(ctx, _receipt_op(ctx, sugar, qty="40000", factor="12000", cost="90000")) == [
+        "accepted"
+    ]  # كرتونة بـ900.00 → الكيلو 75.00
+    sale = _sale(ctx, sugar, invoice="S-1", qty="1000", price="110000", factor="12000")
+    assert do_push(ctx, sale) == ["accepted"]
+    c, h = _api(ctx)
+    assert _put_settings(c, h, {"cost_policy": "weighted_average"}).status_code == 200
+    p = c.get("/api/reports/margin?range=custom&start=2026-09-16&end=2026-09-16", **h).json()  # type: ignore[arg-type]
+    assert p["state"] == "ready"
+    (row,) = p["rows"]
+    # كرتونة بـ1,100.00 تكلفتها 12 × 75.00 = 900.00 → الهامش 200.00 = 18.18% (لا 93%)
+    assert row["sales_minor"] == "110000" and row["cost_minor"] == "90000"
+    assert row["margin_minor"] == "20000" and row["margin_bp"] == 1818
+
+
 def test_export_preview_generate_limit_and_download(ctx: dict[str, Any]) -> None:  # noqa: F811
     from core.models import ReportExport
 

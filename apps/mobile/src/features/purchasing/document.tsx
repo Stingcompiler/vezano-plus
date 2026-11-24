@@ -1,7 +1,7 @@
 import { formatMinor } from "@sting/app-core";
 import type { StateCode } from "@sting/design";
 import { tx } from "@sting/texts";
-import { AppText, Button, ROW_RTL, Screen, SPACE, TextField } from "@sting/ui-native";
+import { AppText, Button, Chip, ROW_RTL, Screen, SPACE, TextField } from "@sting/ui-native";
 import { useRouter } from "expo-router";
 import { Fragment, type ReactNode, useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
@@ -38,16 +38,32 @@ export interface DocLine {
   est_unit_price_minor: string;
   line_total_minor: string;
   excess_reason: string;
+  is_gift: boolean;
   returned_qty_milli: string;
   diff: "" | "qty" | "price";
 }
 
 interface Blocker {
-  code: "invoice_number_required" | "excess_reason_required";
+  code:
+    | "invoice_number_required"
+    | "excess_reason_required"
+    | "price_required"
+    | "receipt_link_required";
   line_id?: string;
   item_name?: string;
   received_qty_milli?: string;
   ordered_qty_milli?: string;
+  receipt_id?: string;
+  receipt_number?: string;
+}
+
+/** استلام INV-04 قائم (د-١ — 0005 §٢٨٩): مرشّح للربط أو مربوط بالمستند. */
+interface ReceiptBrief {
+  receipt_id: string;
+  receipt_number: string;
+  supplier_name: string;
+  user_name: string;
+  occurred_at: string;
 }
 
 export interface Doc {
@@ -74,12 +90,15 @@ export interface Doc {
     cost?: { item_name: string; before_minor: string; after_minor: string; unit_name: string }[];
     branch_name?: string;
     payable_minor?: string;
+    linked_receipts?: string[];
   };
+  linked_receipts: ReceiptBrief[];
+  receipt_candidates: ReceiptBrief[];
   blockers: Blocker[];
   approval: { viewer_name: string; limit_minor: string; over_limit: boolean; can_approve: boolean };
 }
 
-type Edits = Record<string, { qty?: string; price?: string; reason?: string }>;
+type Edits = Record<string, { qty?: string; price?: string; reason?: string; gift?: boolean }>;
 type DocBody = { document: Doc };
 
 /** «+8 كراتين سكر و+6 أرز في المخزن الرئيسي.» — الأرقام mono. */
@@ -154,6 +173,7 @@ export function DocumentScreen({
         received_qty_milli: e.qty !== undefined ? String(toMilli(e.qty)) : l.received_qty_milli,
         unit_price_minor: e.price !== undefined ? String(toMinor(e.price)) : l.unit_price_minor,
         excess_reason: e.reason ?? l.excess_reason,
+        is_gift: e.gift ?? l.is_gift,
       };
     });
 
@@ -174,11 +194,11 @@ export function DocumentScreen({
     return null;
   };
 
-  const act = async (action: "approve" | "refer") => {
+  const act = async (action: "approve" | "refer" | "receipts", payload: object = {}) => {
     if (!doc) return;
     const { data: d, response } = await api.POST(
       "/api/inventory/purchasing/documents/{document_id}/{action}",
-      { params: { path: { document_id: doc.id, action } }, body: {} as never },
+      { params: { path: { document_id: doc.id, action } }, body: payload as never },
     );
     const body = d as unknown as DocBody | undefined;
     if (response.ok && body) applyDoc(body.document);
@@ -208,6 +228,12 @@ export function DocumentScreen({
     run(async () => {
       await save();
       await act("refer");
+    });
+  /** «اربط بالاستلام» أو «شحنتان مختلفتان» — يُحفظ ما كُتب أولاً، ثم القرار على الاستلام. */
+  const decideReceipt = (receiptId: string, kind: "link" | "distinct") =>
+    run(async () => {
+      await save();
+      await act("receipts", { [kind]: [receiptId] });
     });
   const saveDraft = () =>
     run(async () => {
@@ -239,6 +265,26 @@ export function DocumentScreen({
   const invoiceMissing = doc?.blockers.some((b) => b.code === "invoice_number_required");
   const excessOf = (lineId: string) =>
     doc?.blockers.find((b) => b.code === "excess_reason_required" && b.line_id === lineId);
+  const priceMissing = (lineId: string) =>
+    doc?.blockers.some((b) => b.code === "price_required" && b.line_id === lineId);
+  // المستند المربوط باستلام: الكمية ما استُلم، ولا يدخل المخزون مرة ثانية (د-١)
+  const linkedNumbers = doc
+    ? doc.status === "approved"
+      ? (doc.effects.linked_receipts ?? [])
+      : (doc.linked_receipts ?? []).map((r) => r.receipt_number)
+    : [];
+  const linkedLine = linkedNumbers.length ? (
+    <Lead>
+      <Strong>{tx(T, "المخزون")}</Strong> {tx(T, "· دخل من الاستلام")}{" "}
+      {linkedNumbers.map((n, i) => (
+        <Fragment key={n}>
+          {i > 0 ? `${tx(T, "،")} ` : ""}
+          <M>{n}</M>
+        </Fragment>
+      ))}{" "}
+      {tx(T, "— لا يدخل مرة ثانية.")}
+    </Lead>
+  ) : null;
   const lineNote = (l: DocLine): ReactNode =>
     l.diff === "qty" ? (
       <>
@@ -296,6 +342,7 @@ export function DocumentScreen({
                 </>
               ) : null}
             </Note>
+            {doc.status !== "approved" ? linkedLine : null}
             {doc.diff_count && doc.status !== "approved" ? (
               <Lead>
                 {tx(T, "من يعتمد يوقّع على")} <M>{formatMinor(doc.total_minor)}</M>{" "}
@@ -304,6 +351,37 @@ export function DocumentScreen({
             ) : null}
           </Block>
         ) : null}
+
+        {doc && doc.status !== "approved"
+          ? (doc.receipt_candidates ?? []).map((rc) => (
+              <Notice
+                key={rc.receipt_id}
+                state="stale"
+                title={
+                  <>
+                    {tx(T, "يوجد استلام")} <M>{rc.receipt_number}</M> {tx(T, "من")}{" "}
+                    {rc.supplier_name} {tx(T, "بالأصناف نفسها.")}
+                  </>
+                }
+              >
+                <Lead>{tx(T, "اربطه بدل إدخال المخزون مرة ثانية.")}</Lead>
+                <Button
+                  label={tx(T, "اربط بالاستلام")}
+                  financial
+                  loading={busy}
+                  disabledReason={offlineReason}
+                  onPress={() => void decideReceipt(rc.receipt_id, "link")}
+                />
+                <Button
+                  label={tx(T, "شحنتان مختلفتان")}
+                  variant="secondary"
+                  loading={busy}
+                  disabledReason={offlineReason}
+                  onPress={() => void decideReceipt(rc.receipt_id, "distinct")}
+                />
+              </Notice>
+            ))
+          : null}
 
         {doc && state === "permission_denied" && denied === null ? (
           <Notice
@@ -343,7 +421,9 @@ export function DocumentScreen({
           </Notice>
         ) : null}
 
-        {doc && state === "validation_error" ? (
+        {doc &&
+        state === "validation_error" &&
+        doc.blockers.some((b) => b.code !== "receipt_link_required") ? (
           <Notice state="validation_error" title={tx(T, "مستند بلا رقم فاتورة المورد")}>
             <Lead>
               {tx(
@@ -368,6 +448,13 @@ export function DocumentScreen({
                   <M>{qty(b.received_qty_milli ?? "0")}</M> {tx(T, "مقابل")}{" "}
                   <M>{qty(b.ordered_qty_milli ?? "0")}</M>{" "}
                   {tx(T, "مطلوبة يحتاج سطراً: هديّة، أم خطأ المورد، أم تعديل متّفق عليه هاتفياً.")}
+                </Lead>
+              ))}
+            {doc.blockers
+              .filter((b) => b.code === "price_required")
+              .map((b) => (
+                <Lead key={b.line_id}>
+                  <Strong>{b.item_name}</Strong> {tx(T, "· سعر الوحدة مطلوب للاعتماد.")}
                 </Lead>
               ))}
             <Note>
@@ -397,10 +484,19 @@ export function DocumentScreen({
               />
             }
           >
-            <Lead>{tx(T, "تحرّك المخزون وتحرّكت الذمّة الآن.")}</Lead>
-            <Lead>
-              <Strong>{tx(T, "المخزون")}</Strong> · {stockSentence(doc.effects)}
-            </Lead>
+            {linkedLine ? (
+              <>
+                <Lead>{tx(T, "تحرّكت الذمّة الآن.")}</Lead>
+                {linkedLine}
+              </>
+            ) : (
+              <>
+                <Lead>{tx(T, "تحرّك المخزون وتحرّكت الذمّة الآن.")}</Lead>
+                <Lead>
+                  <Strong>{tx(T, "المخزون")}</Strong> · {stockSentence(doc.effects)}
+                </Lead>
+              </>
+            )}
             {(doc.effects.cost ?? [])
               .filter((c) => c.before_minor !== c.after_minor && c.before_minor !== "0")
               .map((c) => (
@@ -480,13 +576,19 @@ export function DocumentScreen({
                     </>
                   ) : (
                     <>
-                      <TextField
-                        label={`${tx(T, "الكمية المستلمة —")} ${l.item_name}`}
-                        mono
-                        keyboardType="decimal-pad"
-                        value={e.qty ?? qty(l.received_qty_milli).replace(/,/g, "")}
-                        onChangeText={(v) => setEdit({ qty: v })}
-                      />
+                      {linkedNumbers.length ? (
+                        <AppText variant="secondary" muted>
+                          {tx(T, "استُلم")} <M>{qty(l.received_qty_milli)}</M> {l.unit_name}
+                        </AppText>
+                      ) : (
+                        <TextField
+                          label={`${tx(T, "الكمية المستلمة —")} ${l.item_name}`}
+                          mono
+                          keyboardType="decimal-pad"
+                          value={e.qty ?? qty(l.received_qty_milli).replace(/,/g, "")}
+                          onChangeText={(v) => setEdit({ qty: v })}
+                        />
+                      )}
                       <Note>
                         {l.unit_name} {tx(T, "· المطلوب")} <M>{qty(l.ordered_qty_milli)}</M>
                       </Note>
@@ -505,13 +607,27 @@ export function DocumentScreen({
                           }
                         />
                       ) : null}
-                      <TextField
-                        label={`${tx(T, "سعر")} ${l.unit_name} — ${l.item_name}`}
-                        mono
-                        keyboardType="decimal-pad"
-                        value={e.price ?? formatMinor(l.unit_price_minor).replace(/,/g, "")}
-                        onChangeText={(v) => setEdit({ price: v })}
-                      />
+                      {!(e.gift ?? l.is_gift) ? (
+                        <TextField
+                          label={`${tx(T, "سعر")} ${l.unit_name} — ${l.item_name}`}
+                          mono
+                          keyboardType="decimal-pad"
+                          value={e.price ?? formatMinor(l.unit_price_minor).replace(/,/g, "")}
+                          onChangeText={(v) => setEdit({ price: v })}
+                          error={
+                            attempted && priceMissing(l.id) && e.price === undefined
+                              ? tx(T, "سعر الوحدة مطلوب للاعتماد.")
+                              : undefined
+                          }
+                        />
+                      ) : null}
+                      {(e.gift ?? l.is_gift) || Number(e.price ?? l.unit_price_minor) === 0 ? (
+                        <Chip
+                          label={tx(T, "هدية من المورد — بلا سعر")}
+                          on={e.gift ?? l.is_gift}
+                          onPress={() => setEdit({ gift: !(e.gift ?? l.is_gift) })}
+                        />
+                      ) : null}
                       {l.est_unit_price_minor ? (
                         <Note>
                           {tx(T, "في الأمر")} <M>{formatMinor(l.est_unit_price_minor)}</M>

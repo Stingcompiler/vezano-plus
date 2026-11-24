@@ -5,7 +5,14 @@
  *
  * تنبيه Dexie: كل `await` داخل المُسقِط على المعاملة مباشرةً.
  */
-import { lineTotalMinor, parseUnitFactor, toBaseQtyMilli } from "@sting/domain";
+import {
+  allocateInvoiceDiscount,
+  parseUnitFactor,
+  type RefundChannels,
+  refundSplit,
+  returnLineValueMinor,
+  toBaseQtyMilli,
+} from "@sting/domain";
 import type { StoragePort, StoredOperation } from "@sting/platform";
 
 import { saveOperation } from "./local-save";
@@ -18,7 +25,31 @@ export const RETURN_PREFIX = "entity:sales.SaleReturn:";
 export const RETURN_SEQ_META = "return_seq";
 
 export type ReturnCondition = "good" | "damaged";
-export type ReturnDestination = "cash" | "credit";
+/** وجهة الردّ مشتقة من الدفع الأصلي (0005 §٢٩٠): وجهة واحدة أو «مختلط». */
+export type ReturnDestination = "cash" | "credit" | "bank" | "mixed";
+
+/**
+ * ما رُدّ سابقاً على الفاتورة: الكمية لكل سطر (السقف التراكمي — ACC-11) والمردود من كل وجهة (الآجل
+ * والتحويل والنقد) — من مرتجعات هذا الجهاز ومرتجعات الخادم معاً، بلا عدّ المستند مرتين.
+ */
+export interface ReturnHistory {
+  readonly qtyByLine: ReadonlyMap<string, bigint>;
+  readonly refunded: RefundChannels;
+}
+
+export const EMPTY_RETURN_HISTORY: ReturnHistory = {
+  qtyByLine: new Map(),
+  refunded: { creditMinor: 0n, bankMinor: 0n, cashMinor: 0n },
+};
+
+/** مرتجع كما يعيده الخادم في `GET /api/sales/{id}` (`returns`). */
+export interface ServerReturnRow {
+  readonly id: string;
+  readonly cash_minor: string;
+  readonly bank_minor?: string | undefined;
+  readonly credit_minor: string;
+  readonly lines: readonly { readonly sale_line_id: string; readonly qty_milli: string }[];
+}
 
 export interface ReturnLineInput {
   /** سطر البيع الأصلي. */
@@ -34,7 +65,8 @@ export interface ReturnInput {
   readonly saleOperationId?: string | undefined;
   readonly lines: readonly ReturnLineInput[];
   readonly condition: ReturnCondition;
-  readonly destination: ReturnDestination;
+  /** ما رُدّ سابقاً على الفاتورة — يحدّد قيمة السطور ووجهة الردّ. */
+  readonly history: ReturnHistory;
   readonly shift: LocalShift;
   readonly branchCode: string;
   readonly devicePrefix: string;
@@ -65,6 +97,8 @@ export interface LocalReturn {
   readonly destination: ReturnDestination;
   readonly total_minor: string;
   readonly cash_minor: string;
+  /** غائب في إسقاطات ما قبل 0005 §٢٩٠ = صفر. */
+  readonly bank_minor?: string | undefined;
   readonly credit_minor: string;
   readonly lines: readonly {
     readonly id: string;
@@ -98,21 +132,108 @@ export function formatReturnNumber(
   return `RET-${parts.branchCode}-${parts.devicePrefix}-${parts.yearTwoDigits}-${String(seq).padStart(6, "0")}`;
 }
 
-/** قيمة المرتجع من سطوره: الكمية × سعر السطر الأصلي بتقريب المجال — لا تُعاد تسعير البضاعة. */
+export interface ReturnTotals {
+  readonly lineTotals: Map<string, bigint>;
+  readonly totalMinor: bigint;
+  /** الآجل ← التحويل ← النقد من الدفع الأصلي ناقصاً ما رُدّ سابقاً (0005 §٢٩٠). */
+  readonly split: RefundChannels;
+  readonly destination: ReturnDestination;
+}
+
+/** «خصماً من الذمّة» أو «تحويلاً» أو «نقداً» حين تكون الوجهة واحدة، وإلا «مختلط». */
+export function refundDestination(split: RefundChannels): ReturnDestination {
+  const used = (
+    [
+      ["credit", split.creditMinor],
+      ["bank", split.bankMinor],
+      ["cash", split.cashMinor],
+    ] as const
+  ).filter(([, v]) => v > 0n);
+  return used.length === 1 ? used[0]![0] : "mixed";
+}
+
+/**
+ * قيمة المرتجع ما دفعه الزبون لا سعر القائمة (مراجعة 2026-11-22 S-01؛ 0005 §٢٩٠): خصم الفاتورة يُوزَّع
+ * على السطور بنسبة قيمها، وقيمة كل سطر تراكمية V(p+q) − V(p) فلا يتجاوز الجزئي المدفوع أبداً. ووجهة
+ * الردّ من الدفع الأصلي (S-02). نفس الحساب في الخادم (`core/refund.py`) — يحجر ما يخالفه.
+ */
 export function returnTotals(
   sale: LocalSale,
   lines: readonly ReturnLineInput[],
-): { readonly lineTotals: Map<string, bigint>; readonly totalMinor: bigint } {
+  history: ReturnHistory = EMPTY_RETURN_HISTORY,
+): ReturnTotals {
+  const gross = sale.lines.map((l) => ({ key: l.id, totalMinor: BigInt(l.line_total_minor) }));
+  const subtotal = gross.reduce((a, l) => a + l.totalMinor, 0n);
+  const discount = BigInt(sale.discount_minor || "0");
+  const nets = allocateInvoiceDiscount(gross, discount < subtotal ? discount : subtotal);
+  const netById = new Map(sale.lines.map((l, i) => [l.id, nets[i]!] as const));
   const lineTotals = new Map<string, bigint>();
   let total = 0n;
   for (const l of lines) {
     const orig = sale.lines.find((x) => x.id === l.saleLineId);
     if (!orig) throw new Error("unknown_sale_line");
-    const t = lineTotalMinor(BigInt(l.qtyMilli), BigInt(orig.unit_price_minor));
+    const t = returnLineValueMinor(
+      netById.get(orig.id) ?? 0n,
+      BigInt(orig.qty_milli),
+      history.qtyByLine.get(orig.id) ?? 0n,
+      BigInt(l.qtyMilli),
+    );
     lineTotals.set(l.saleLineId, t);
     total += t;
   }
-  return { lineTotals, totalMinor: total };
+  const split = refundSplit(
+    total,
+    {
+      creditMinor: BigInt(sale.credit_minor || "0"),
+      bankMinor: BigInt(sale.bank_minor || "0"),
+      cashMinor: BigInt(sale.cash_minor || "0"),
+    },
+    history.refunded,
+  );
+  return { lineTotals, totalMinor: total, split, destination: refundDestination(split) };
+}
+
+/** يدمج مرتجعات الجهاز ومرتجعات الخادم بالمعرّف (المرفوع يظهر في الاثنين ويُعدّ مرة واحدة). */
+export function returnHistory(
+  local: readonly LocalReturn[],
+  server: readonly ServerReturnRow[] = [],
+): ReturnHistory {
+  const byId = new Map<string, ServerReturnRow>();
+  for (const r of server) byId.set(r.id, r);
+  for (const r of local)
+    if (!byId.has(r.id))
+      byId.set(r.id, {
+        id: r.id,
+        cash_minor: r.cash_minor,
+        bank_minor: r.bank_minor ?? "0",
+        credit_minor: r.credit_minor,
+        lines: r.lines,
+      });
+  const qtyByLine = new Map<string, bigint>();
+  let creditMinor = 0n;
+  let bankMinor = 0n;
+  let cashMinor = 0n;
+  for (const r of byId.values()) {
+    creditMinor += BigInt(r.credit_minor || "0");
+    bankMinor += BigInt(r.bank_minor || "0");
+    cashMinor += BigInt(r.cash_minor || "0");
+    for (const l of r.lines)
+      qtyByLine.set(l.sale_line_id, (qtyByLine.get(l.sale_line_id) ?? 0n) + BigInt(l.qty_milli));
+  }
+  return { qtyByLine, refunded: { creditMinor, bankMinor, cashMinor } };
+}
+
+/** ما رُدّ سابقاً على الفاتورة: مرتجعات هذا الجهاز مدموجةً بما يعرفه الخادم (إن جُلب). */
+export async function readReturnHistory(
+  storage: StoragePort,
+  saleId: string,
+  server: readonly ServerReturnRow[] = [],
+): Promise<ReturnHistory> {
+  const rows = await storage.read((tx) => tx.listProjections(RETURN_PREFIX));
+  const local = rows
+    .map((r) => r.value as unknown as LocalReturn)
+    .filter((r) => r.sale_id === saleId);
+  return returnHistory(local, server);
 }
 
 /** يبني أعضاء العملية: الحركات مشتقة من حالة البضاعة (صالح → مخزون، تالف → حجر). */
@@ -122,8 +243,12 @@ export function returnDraft(input: ReturnInput, returnNumber: string): Operation
   if (input.memberIds.lines.length < active.length) throw new Error("member ids must match lines");
   if (input.memberIds.movements.length < active.length)
     throw new Error("member ids must match movements");
-  if (input.destination === "credit" && !input.sale.party_id) throw new Error("party_required");
-  const { lineTotals, totalMinor } = returnTotals(input.sale, active);
+  const { lineTotals, totalMinor, split, destination } = returnTotals(
+    input.sale,
+    active,
+    input.history,
+  );
+  if (split.creditMinor > 0n && !input.sale.party_id) throw new Error("party_required");
   const head = {
     return_id: input.returnId,
     return_number: returnNumber,
@@ -134,8 +259,11 @@ export function returnDraft(input: ReturnInput, returnNumber: string): Operation
     user_id: input.userId,
     ...(input.sale.party_id ? { party_id: input.sale.party_id } : {}),
     condition: input.condition,
-    destination: input.destination,
+    destination,
     total_minor: totalMinor.toString(),
+    credit_minor: split.creditMinor.toString(),
+    bank_minor: split.bankMinor.toString(),
+    cash_minor: split.cashMinor.toString(),
     business_date: input.businessDate,
     occurred_at: input.occurredAt,
   };
@@ -226,7 +354,11 @@ export async function saveReturnLocally(
   };
   const provisional = returnDraft(input, formatReturnNumber(parts, 0));
   const active = input.lines.filter((l) => BigInt(l.qtyMilli) > 0n);
-  const { lineTotals, totalMinor } = returnTotals(input.sale, active);
+  const { lineTotals, totalMinor, split, destination } = returnTotals(
+    input.sale,
+    active,
+    input.history,
+  );
   const out = await saveOperation(storage, provisional, async (tx, op) => {
     const seq = Number((await tx.getMeta(RETURN_SEQ_META)) ?? "0") + 1;
     await tx.putMeta(RETURN_SEQ_META, String(seq));
@@ -251,10 +383,11 @@ export async function saveReturnLocally(
       party_id: input.sale.party_id,
       party_name: input.sale.party_name,
       condition: input.condition,
-      destination: input.destination,
+      destination,
       total_minor: totalMinor.toString(),
-      cash_minor: input.destination === "cash" ? totalMinor.toString() : "0",
-      credit_minor: input.destination === "credit" ? totalMinor.toString() : "0",
+      cash_minor: split.cashMinor.toString(),
+      bank_minor: split.bankMinor.toString(),
+      credit_minor: split.creditMinor.toString(),
       lines: active.map((l, i) => {
         const orig = input.sale.lines.find((x) => x.id === l.saleLineId)!;
         return {
@@ -344,7 +477,11 @@ export async function readReturnCashRows(
     kind: "refund",
     note: `على ${r.invoice_number}`,
     inCashMinor: BigInt(r.cash_minor) > 0n ? (-BigInt(r.cash_minor)).toString() : null,
-    outCashMinor: BigInt(r.credit_minor) > 0n ? r.credit_minor : null,
+    // خصم الذمّة والردّ تحويلاً خارج الدرج (0005 §٢٩٠)
+    outCashMinor:
+      BigInt(r.credit_minor) + BigInt(r.bank_minor ?? "0") > 0n
+        ? (BigInt(r.credit_minor) + BigInt(r.bank_minor ?? "0")).toString()
+        : null,
     sync: syncOf(ops.get(r.operation_id)),
   }));
 }

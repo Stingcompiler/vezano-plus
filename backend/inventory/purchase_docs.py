@@ -6,6 +6,12 @@
 تُعرض الرقمان والإحالة إلى المالك تُبقي المستند مسوّدة. المرتجع يُبنى على مستند بعينه بسعره، لا
 يتجاوز المستلَم ناقص ما رُدّ، بسبب لكل سطر، ويخفّض الذمّة والمخزون معاً — إشعار دائن لا نقد؛ ردّ
 المورد الجزئي يُسجَّل نصاً ويبقى المرتجع مفتوحاً بالمرفوض. الاعتماد لا يُلغى — يُعكس بمستند مضادّ.
+
+د-١ (0005 §٢٨٩): الاستلام وحده يُدخل المخزون، والمستند يضيف السعر والذمّة. مستند لمورد له استلام
+INV-04 قائم بالأصناف نفسها لا يُعتمد حتى يُربط به («اربط بالاستلام») أو يُقال إنه شحنة أخرى؛
+المستند المربوط كمياته من الاستلام واعتماده بلا حركة مخزون. المستند بلا استلام (المالك يعمل وحده)
+يُدخل المخزون والذمّة معاً كما كان. أمرٌ مستلَم كاملاً لا يولّد مستنداً ثانياً، والمستند الثاني للأمر
+يقترح الباقي وحده. السعر صفر لا يُعتمد إلا «هدية من المورد».
 """
 
 from __future__ import annotations
@@ -15,7 +21,7 @@ from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from core import audit, home, permissions
@@ -26,12 +32,19 @@ from inventory.models import (
     GoodsReceiptLine,
     PurchaseDocument,
     PurchaseDocumentLine,
+    PurchaseDocumentReceipt,
     PurchaseOrder,
     PurchaseReturn,
     PurchaseReturnLine,
     StockMovement,
 )
 from inventory.purchasing import OrderRejected, can_create
+from inventory.receipt_costs import costed_receipt_lines
+
+#: نافذة البحث عن استلام قائم قبل إنشاء الأمر (أو المستند) — كما في ربط السوق
+CANDIDATE_WINDOW_DAYS = 7
+LINKED = PurchaseDocumentReceipt.Kind.LINKED
+DISTINCT = PurchaseDocumentReceipt.Kind.DISTINCT
 
 
 def _iso(dt: Any) -> str:
@@ -54,13 +67,173 @@ def _ret_number() -> str:
 def _weighted_avg_cost(item_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     """متوسط التكلفة المرجّح لوحدة الأساس (بأجزاء الألف) — للإعلان عن أثر الاعتماد."""
     acc: dict[uuid.UUID, tuple[int, int]] = {}
-    for ln in GoodsReceiptLine.objects.filter(item_id__in=item_ids, unit_cost_minor__isnull=False):
+    for ln in costed_receipt_lines().filter(item_id__in=item_ids, unit_cost_minor__isnull=False):
         if ln.base_qty_milli <= 0 or ln.unit_cost_minor is None:
             continue
         c = ln.unit_cost_minor * 1000 * 1000 // max(int(ln.factor_milli), 1)
         a, q = acc.get(ln.item_id, (0, 0))
         acc[ln.item_id] = (a + c * ln.base_qty_milli, q + ln.base_qty_milli)
     return {i: (a // q if q else 0) for i, (a, q) in acc.items()}
+
+
+# ------------------------------------------------------------- د-١ ربط المستند بالاستلام القائم
+
+
+def _supplier_identity(d: PurchaseDocument) -> list[uuid.UUID]:
+    from parties.models import Party
+    from parties.services import identity_ids
+
+    party = Party.objects.filter(id=d.supplier_id).first()
+    return identity_ids(party) if party is not None else [d.supplier_id]
+
+
+def _claimed_items(receipt_id: uuid.UUID, document_id: uuid.UUID) -> set[uuid.UUID]:
+    """أصناف استلامٍ سعّرها مستند آخر مربوط به — الاستلام الواحد قد يغطي أمرين."""
+    return set(
+        PurchaseDocumentLine.objects.filter(
+            document__receipt_links__receipt_id=receipt_id,
+            document__receipt_links__kind=LINKED,
+        )
+        .exclude(document_id=document_id)
+        .values_list("item_id", flat=True)
+    )
+
+
+def receipt_candidates(d: PurchaseDocument) -> list[GoodsReceipt]:
+    """استلامات INV-04 قد تكون الشحنة نفسها: الفرع والمورد نفسهما، وصنف مشترك لم يسعّره مستند آخر،
+    منذ إنشاء الأمر بنافذة أسبوع، ولم يُقرَّر فيها لهذا المستند. استلام المستندات (`PD-`) واستلام
+    رُبط بشحنة سوق خارجها."""
+    if d.status == PurchaseDocument.Status.APPROVED:
+        return []
+    items = set(d.lines.values_list("item_id", flat=True))
+    if not items:
+        return []
+    from market.models import MarketDocumentLink
+
+    decided = set(d.receipt_links.values_list("receipt_id", flat=True))
+    market = set(
+        MarketDocumentLink.objects.filter(local_entity="inventory.GoodsReceipt").values_list(
+            "local_id", flat=True
+        )
+    )
+    base = d.order.created_at if d.order is not None else d.created_at
+    out: list[GoodsReceipt] = []
+    for rc in (
+        GoodsReceipt.objects.filter(
+            branch_id=d.branch_id,
+            occurred_at__gte=base - timedelta(days=CANDIDATE_WINDOW_DAYS),
+        )
+        .filter(
+            Q(party_id__in=_supplier_identity(d))
+            | Q(party_id__isnull=True, supplier_name=d.supplier_name)
+        )
+        .exclude(receipt_number__startswith="PD-")
+        .exclude(id__in=decided | market)
+        .order_by("occurred_at", "id")
+    ):
+        got = set(rc.lines.values_list("item_id", flat=True))
+        if (got & items) - _claimed_items(rc.id, d.id):
+            out.append(rc)
+    return out
+
+
+def linked_receipts(d: PurchaseDocument) -> list[GoodsReceipt]:
+    return [
+        x.receipt
+        for x in d.receipt_links.filter(kind=LINKED)
+        .select_related("receipt")
+        .order_by("decided_at")
+    ]
+
+
+def _lines_total(d: PurchaseDocument) -> int:
+    return sum(ln.unit_price_minor * ln.received_qty_milli // 1000 for ln in d.lines.all())
+
+
+def _apply_linked_quantities(d: PurchaseDocument) -> None:
+    """المستند المربوط كمياته ما استُلم فعلاً (بوحدة سطره)؛ صنفٌ لم يُستلم صفر — لا مخزون ولا ذمّة
+    لما لم يصل، ويبقى باقيه على الأمر لمستند تالٍ."""
+    items = set(d.lines.values_list("item_id", flat=True))
+    got: dict[uuid.UUID, int] = {}
+    for link in d.receipt_links.filter(kind=LINKED).select_related("receipt"):
+        claimed = _claimed_items(link.receipt_id, d.id)
+        for rl in link.receipt.lines.all():
+            if rl.item_id in items and rl.item_id not in claimed:
+                got[rl.item_id] = got.get(rl.item_id, 0) + int(rl.base_qty_milli)
+    for ln in d.lines.order_by("line_no"):
+        b = got.pop(ln.item_id, 0)
+        ln.base_qty_milli = b
+        ln.received_qty_milli = b * 1000 // max(int(ln.factor_milli), 1)
+        ln.save(update_fields=["base_qty_milli", "received_qty_milli"])
+    d.total_minor = _lines_total(d)
+    d.save(update_fields=["total_minor", "updated_at"])
+
+
+def _receipt_brief(rc: GoodsReceipt) -> dict[str, Any]:
+    return {
+        "receipt_id": str(rc.id),
+        "receipt_number": rc.receipt_number,
+        "supplier_name": rc.supplier_name,
+        "user_name": rc.user_name,
+        "occurred_at": _iso(rc.occurred_at),
+    }
+
+
+def link_receipts(
+    *,
+    actor: User,
+    viewer: home.Viewer,
+    document: PurchaseDocument,
+    link: list[str],
+    distinct: list[str],
+) -> PurchaseDocument:
+    """«اربط بالاستلام» أو «شحنتان مختلفتان» — قرار باسم صاحبه على استلام مرشّح فقط."""
+    if not can_create(viewer):
+        raise OrderRejected("permission_denied")
+    if document.status == PurchaseDocument.Status.APPROVED:
+        raise OrderRejected("document_locked")
+    candidates = {str(rc.id): rc for rc in receipt_candidates(document)}
+    wanted = [(str(r), LINKED) for r in link] + [(str(r), DISTINCT) for r in distinct]
+    if not wanted:
+        raise OrderRejected("receipt_required", "receipt_id")
+    for rid, _kind in wanted:
+        if rid not in candidates:
+            raise OrderRejected("receipt_not_candidate", "receipt_id", {"receipt_id": rid})
+    with transaction.atomic():
+        for rid, kind in wanted:
+            PurchaseDocumentReceipt.objects.create(
+                tenant_id=document.tenant_id,
+                document=document,
+                receipt=candidates[rid],
+                kind=kind,
+                decided_by_name=actor.display_name,
+            )
+        if any(k == LINKED for _r, k in wanted):
+            _apply_linked_quantities(document)
+    for rid, kind in wanted:
+        number = candidates[rid].receipt_number
+        audit.record(
+            kind=(
+                "purchase_document.receipt_linked"
+                if kind == LINKED
+                else "purchase_document.receipt_distinct"
+            ),
+            title=(
+                f"ربط مستند الشراء {document.number} بالاستلام {number}"
+                if kind == LINKED
+                else f"الاستلام {number} شحنة غير مستند الشراء {document.number}"
+            ),
+            actor=actor,
+            branch=document.branch,
+            detail=(
+                "المخزون دخل من الاستلام — الاعتماد لا يُدخله مرة ثانية"
+                if kind == LINKED
+                else "قرار المستخدم: شحنتان مختلفتان"
+            ),
+            ref_entity="inventory.PurchaseDocument",
+            ref_id=document.id,
+        )
+    return document
 
 
 # ------------------------------------------------------------------------ PUR-03 المستند
@@ -89,6 +262,7 @@ def line_payload(ln: PurchaseDocumentLine) -> dict[str, Any]:
         if ln.est_unit_price_minor is not None
         else "",
         "excess_reason": ln.excess_reason,
+        "is_gift": ln.is_gift,
         "returned_qty_milli": str(int(returned)),
         # الفرق عن الأمر: كمية أو سعر
         "diff": (
@@ -107,6 +281,7 @@ def line_payload(ln: PurchaseDocumentLine) -> dict[str, Any]:
 
 def document_payload(d: PurchaseDocument, viewer: home.Viewer | None = None) -> dict[str, Any]:
     lines = [line_payload(ln) for ln in d.lines.order_by("line_no")]
+    candidates = receipt_candidates(d)
     est_total = sum(int(x["est_total_minor"]) for x in lines if x["est_total_minor"])
     limit = approval_limit(viewer) if viewer is not None else None
     return {
@@ -136,7 +311,9 @@ def document_payload(d: PurchaseDocument, viewer: home.Viewer | None = None) -> 
         "referred_at": _iso(d.referred_at),
         "receipt_number": d.receipt.receipt_number if d.receipt is not None else "",
         "effects": d.effects or {},
-        "blockers": blockers(d),
+        "linked_receipts": [_receipt_brief(rc) for rc in linked_receipts(d)],
+        "receipt_candidates": [_receipt_brief(rc) for rc in candidates],
+        "blockers": blockers(d, candidates=candidates),
         "approval": {
             "viewer_name": viewer.user.display_name if viewer is not None else "",
             "limit_minor": str(limit) if limit is not None else "",
@@ -150,8 +327,15 @@ def document_payload(d: PurchaseDocument, viewer: home.Viewer | None = None) -> 
     }
 
 
-def blockers(d: PurchaseDocument) -> list[dict[str, Any]]:
-    """ما يمنع الاعتماد — الحفظ كمسوّدة متاح دائماً: رقم فاتورة المورد، وزيادة بلا سبب."""
+def blockers(
+    d: PurchaseDocument,
+    *,
+    market: bool = False,
+    candidates: list[GoodsReceipt] | None = None,
+) -> list[dict[str, Any]]:
+    """ما يمنع الاعتماد — الحفظ كمسوّدة متاح دائماً: رقم فاتورة المورد، وزيادة بلا سبب، وسعر صفر
+    بلا «هدية» (I-05)، واستلام قائم لم يُقرَّر فيه (I-02). مستند السوق له حارسه (`_duplicate_receipts`)
+    وسعره من الشحنة، فلا يمرّ بالمانعَين الأخيرين."""
     out: list[dict[str, Any]] = []
     if not d.supplier_invoice_number.strip():
         out.append({"code": "invoice_number_required", "title": "رقم الفاتورة"})
@@ -167,19 +351,54 @@ def blockers(d: PurchaseDocument) -> list[dict[str, Any]]:
                     "ordered_qty_milli": str(ln.ordered_qty_milli),
                 }
             )
+        if not market and ln.received_qty_milli > 0 and ln.unit_price_minor == 0 and not ln.is_gift:
+            out.append(
+                {
+                    "code": "price_required",
+                    "title": "سعر الوحدة",
+                    "line_id": str(ln.id),
+                    "item_name": ln.item_name,
+                }
+            )
+    if not market:
+        for rc in receipt_candidates(d) if candidates is None else candidates:
+            out.append(
+                {
+                    "code": "receipt_link_required",
+                    "title": "الاستلام",
+                    "receipt_id": str(rc.id),
+                    "receipt_number": rc.receipt_number,
+                }
+            )
     return out
 
 
 def draft_from_order(*, actor: User, viewer: home.Viewer, order: PurchaseOrder) -> PurchaseDocument:
-    """يبدأ مستنداً من الأمر (أو يعيد مسوّدته القائمة): السطور بكمياتها المطلوبة وأسعارها
-    التقديرية."""
+    """يبدأ مستنداً من الأمر (أو يعيد مسوّدته القائمة) بالباقي وحده بأسعاره التقديرية (I-01):
+    الملغى لا مستند له، والمستلَم كاملاً يعيد مستنده المعتمد الأخير ولا يولّد ثانياً."""
     if not can_create(viewer):
         raise OrderRejected("permission_denied")
+    if order.status == PurchaseOrder.Status.CANCELLED:
+        raise OrderRejected("order_cancelled")
     existing: PurchaseDocument | None = order.documents.exclude(
         status=PurchaseDocument.Status.APPROVED
     ).first()
     if existing is not None:
         return existing
+    remaining = [
+        (ol, ol.base_qty_milli - ol.received_base_qty_milli)
+        for ol in order.lines.order_by("line_no")
+        if ol.base_qty_milli - ol.received_base_qty_milli > 0
+    ]
+    if not remaining:
+        last: PurchaseDocument | None = (
+            order.documents.filter(status=PurchaseDocument.Status.APPROVED)
+            .order_by("-approved_at")
+            .first()
+        )
+        if last is not None:
+            return last
+        raise OrderRejected("order_received")
     with transaction.atomic():
         d: PurchaseDocument = PurchaseDocument.objects.create(
             tenant_id=require_tenant(),
@@ -192,8 +411,13 @@ def draft_from_order(*, actor: User, viewer: home.Viewer, order: PurchaseOrder) 
             created_by_name=actor.display_name,
         )
         total = 0
-        for i, ol in enumerate(order.lines.order_by("line_no"), start=1):
+        for i, (ol, base) in enumerate(remaining, start=1):
             price = ol.est_unit_price_minor or 0
+            q = (
+                ol.qty_milli
+                if ol.received_base_qty_milli == 0
+                else base * 1000 // max(int(ol.factor_milli), 1)
+            )
             PurchaseDocumentLine.objects.create(
                 tenant_id=d.tenant_id,
                 document=d,
@@ -203,14 +427,14 @@ def draft_from_order(*, actor: User, viewer: home.Viewer, order: PurchaseOrder) 
                 unit_code=ol.unit_code,
                 unit_name=ol.unit_name,
                 factor_milli=ol.factor_milli,
-                ordered_qty_milli=ol.qty_milli,
-                received_qty_milli=ol.qty_milli,
-                base_qty_milli=ol.base_qty_milli,
+                ordered_qty_milli=q,
+                received_qty_milli=q,
+                base_qty_milli=base,
                 unit_price_minor=price,
                 est_unit_price_minor=ol.est_unit_price_minor,
                 line_no=i,
             )
-            total += price * ol.qty_milli // 1000
+            total += price * q // 1000
         d.total_minor = total
         d.save(update_fields=["total_minor"])
     return d
@@ -236,6 +460,8 @@ def save_draft(
         if note is not None:
             document.note = note.strip()
         by_id = {str(ln.id): ln for ln in document.lines.all()}
+        # المربوط باستلام: الكمية ما استُلم ولا تُكتب هنا (د-١)
+        linked = document.receipt_links.filter(kind=LINKED).exists()
         for raw in lines:
             ln = by_id.get(str(raw.get("id", "")))
             if ln is None:
@@ -247,14 +473,15 @@ def save_draft(
                 raise OrderRejected("line_invalid", "lines", {"line_id": str(ln.id)}) from e
             if qty < 0 or price < 0:
                 raise OrderRejected("line_invalid", "lines", {"line_id": str(ln.id)})
-            ln.received_qty_milli = qty
-            ln.base_qty_milli = qty * ln.factor_milli // 1000
-            ln.unit_price_minor = price
+            if "is_gift" in raw:
+                ln.is_gift = raw.get("is_gift") in (True, 1, "1", "true")
+            if not linked:
+                ln.received_qty_milli = qty
+                ln.base_qty_milli = qty * ln.factor_milli // 1000
+            ln.unit_price_minor = 0 if ln.is_gift else price
             ln.excess_reason = str(raw.get("excess_reason", ln.excess_reason)).strip()
             ln.save()
-        document.total_minor = sum(
-            ln.unit_price_minor * ln.received_qty_milli // 1000 for ln in document.lines.all()
-        )
+        document.total_minor = _lines_total(document)
         document.save()
     return document
 
@@ -294,12 +521,19 @@ def refer(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> Pu
     return document
 
 
-def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> PurchaseDocument:
-    """الاعتماد مرة واحدة بالهوية: استلام INV-04 بحركاته، ذمّة المورد، وأثره يُعلَن صراحةً."""
+def approve(
+    *, actor: User, viewer: home.Viewer, document: PurchaseDocument, market: bool = False
+) -> PurchaseDocument:
+    """الاعتماد مرة واحدة بالهوية: ذمّة المورد وأثرها يُعلَن صراحةً. المخزون (د-١): المستند المربوط
+    باستلام قائم لا يُنشئ حركة — دخل المخزون من الاستلام، ويُكتب سطر تكلفة `PD-n` بلا حركة فيصل
+    سعر الفاتورة إلى التكلفة؛ المستند بلا استلام يُنشئ استلام `PD-n` بحركاته كما كان."""
     if document.status == PurchaseDocument.Status.APPROVED:
         return document  # متكرّر الأثر — لا اعتماد ثانٍ ولا استلام ثانٍ
     if not can_create(viewer):
         raise OrderRejected("permission_denied")
+    linked = [] if market else linked_receipts(document)
+    if linked:
+        _apply_linked_quantities(document)
     limit = approval_limit(viewer)
     if limit is not None and document.total_minor > limit:
         raise OrderRejected(
@@ -307,7 +541,7 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
             "",
             {"limit_minor": str(limit), "total_minor": str(document.total_minor)},
         )
-    blk = blockers(document)
+    blk = blockers(document, market=market)
     if blk:
         raise OrderRejected("blocked", "", {"blockers": blk})
     item_ids = list(document.lines.values_list("item_id", flat=True))
@@ -324,7 +558,12 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
             device_id=viewer.device.id if viewer.device else uuid.UUID(int=0),
             user_id=actor.id,
             user_name=actor.display_name,
-            note=document.note,
+            note=(
+                "سطر تكلفة بلا حركة — المخزون من الاستلام "
+                + "، ".join(rc.receipt_number for rc in linked)
+                if linked
+                else document.note
+            )[:300],
             business_date=timezone.localdate(),
             occurred_at=now,
         )
@@ -341,7 +580,8 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
                 base_qty_milli=ln.base_qty_milli,
                 unit_cost_minor=ln.unit_price_minor,
             )
-            if ln.base_qty_milli > 0:
+            # د-١: المربوط دخل مخزونه من الاستلام — لا حركة ثانية
+            if not linked and ln.base_qty_milli > 0:
                 StockMovement.objects.create(
                     tenant_id=document.tenant_id,
                     branch=document.branch,
@@ -352,13 +592,14 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
                     source_id=receipt.id,
                     occurred_at=now,
                 )
-            stock_effects.append(
-                {
-                    "item_name": ln.item_name,
-                    "qty_milli": str(ln.received_qty_milli),
-                    "unit_name": ln.unit_name,
-                }
-            )
+            if not linked:
+                stock_effects.append(
+                    {
+                        "item_name": ln.item_name,
+                        "qty_milli": str(ln.received_qty_milli),
+                        "unit_name": ln.unit_name,
+                    }
+                )
             ol = ln.order_line
             if ol is not None:
                 ol.received_base_qty_milli += ln.base_qty_milli
@@ -380,6 +621,7 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
         document.receipt = receipt
         document.effects = {
             "stock": stock_effects,
+            "linked_receipts": [rc.receipt_number for rc in linked],
             "cost": cost_effects,
             "branch_name": document.branch.name,
             "payable_minor": str(document.total_minor),
@@ -398,6 +640,11 @@ def approve(*, actor: User, viewer: home.Viewer, document: PurchaseDocument) -> 
         branch=document.branch,
         detail=(
             f"الإجمالي {document.total_minor} · فاتورة المورد {document.supplier_invoice_number}"
+            + (
+                " · المخزون من الاستلام " + "، ".join(rc.receipt_number for rc in linked)
+                if linked
+                else ""
+            )
         ),
         ref_entity="inventory.PurchaseDocument",
         ref_id=document.id,

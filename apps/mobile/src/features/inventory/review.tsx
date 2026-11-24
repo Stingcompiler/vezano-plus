@@ -44,6 +44,7 @@ interface Adjustment {
   readonly adjustment_number: string;
   readonly decided_by_name: string;
   readonly line_count: number;
+  readonly lines?: readonly { readonly item_id: string; readonly reason: string }[];
 }
 interface Review {
   readonly session: {
@@ -180,6 +181,9 @@ export function ReviewScreen({ sessionId }: { sessionId: string }) {
   const missing = diffs.filter((r) => !(reasons[r.id] ?? "").trim() || serverMissing.has(r.id));
   const canAdjust = review?.can_adjust ?? false;
   const already = review?.session.status === "adjusted" ? review.adjustment : null;
+  // I-03 (0005 §٢٨٩): الجلسة المسوّاة تعرض أسباب تسويتها كما قُرّرت
+  const decidedReason = (itemId: string) =>
+    reasons[itemId] || already?.lines?.find((x) => x.item_id === itemId)?.reason || "";
 
   const state: State = done
     ? "success"
@@ -237,9 +241,14 @@ export function ReviewScreen({ sessionId }: { sessionId: string }) {
             {tx(T, "جلسة جرد")} <M>{ddmm(s.closed_at)}</M> — <M>{review?.variance_count ?? 0}</M>{" "}
             {tx(T, "فروق من")} <M>{s.counted_items}</M> {tx(T, "صنفاً")}
           </AppText>
-          <AppText variant="note" muted>
-            {tx(T, "العدّ الفعلي محفوظ كما أُدخل. الرصيد لم يتغيّر بعد — يتغيّر عند التسوية فقط.")}
-          </AppText>
+          {!already ? (
+            <AppText variant="note" muted>
+              {tx(
+                T,
+                "العدّ الفعلي محفوظ كما أُدخل. الرصيد لم يتغيّر بعد — يتغيّر عند التسوية فقط.",
+              )}
+            </AppText>
+          ) : null}
           <AppText
             variant="secondary"
             style={{
@@ -328,7 +337,7 @@ export function ReviewScreen({ sessionId }: { sessionId: string }) {
                   </AppText>
                 ) : null}
                 {r.deltaMilli === 0n ? null : already ? (
-                  <AppText variant="secondary">{reasons[r.id] || "—"}</AppText>
+                  <AppText variant="secondary">{decidedReason(r.id) || "—"}</AppText>
                 ) : (
                   <>
                     <TextField

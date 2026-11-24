@@ -9,14 +9,14 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from django.db.models import Count, Sum
+from django.db.models import Count, F, Sum
 from django.utils import timezone
 
 from core import home
 from core.models import Branch
 from core.org_settings import _settings
 from core.subscription import has_feature
-from inventory.models import GoodsReceiptLine
+from inventory.receipt_costs import costed_receipt_lines
 from sales.models import Sale, SaleLine
 from sales.reports import Range
 
@@ -33,7 +33,8 @@ def cost_policy() -> str:
 def _unit_costs(policy: str, item_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
     """تكلفة الوحدة الأساسية (بأجزاء الألف من الوحدة) لكل صنف من سطور الاستلام ذات التكلفة."""
     lines = (
-        GoodsReceiptLine.objects.filter(item_id__in=item_ids, unit_cost_minor__isnull=False)
+        costed_receipt_lines()
+        .filter(item_id__in=item_ids, unit_cost_minor__isnull=False)
         .select_related("receipt")
         .order_by("receipt__occurred_at", "id")
     )
@@ -126,11 +127,13 @@ def margin_report(*, viewer: home.Viewer, rng: Range) -> dict[str, Any]:
     }
     per_branch: dict[str, dict[str, int]] = {}
     per_group: dict[str, dict[str, int]] = {}
+    # I-04 (0005 §٢٨٩): التكلفة لوحدة الأساس، والسطر بوحدة البيع — الكرتونة (معامل 12) تكلّف 12 حبّة
+    # لا حبّة واحدة: الكمية الأساسية = Σ (الكمية × المعامل) ÷ 1000
     for r in lines.values("item_id", "sale__branch_id").annotate(
-        q=Sum("qty_milli"), t=Sum("line_total_minor")
+        bq=Sum(F("qty_milli") * F("factor_milli")), t=Sum("line_total_minor")
     ):
         iid = r["item_id"]
-        q, t = int(r["q"] or 0), int(r["t"] or 0)
+        q, t = int(r["bq"] or 0) // 1000, int(r["t"] or 0)
         cost = costs[iid] * q // 1000 // 1000
         b = per_branch.setdefault(str(r["sale__branch_id"]), {"sales": 0, "cost": 0})
         b["sales"] += t

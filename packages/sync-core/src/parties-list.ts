@@ -7,6 +7,7 @@ import type { StoragePort } from "@sting/platform";
 
 import { type LocalParty, PARTY_PREFIX } from "./parties-local";
 import { type LocalReceipt, RECEIPT_PREFIX } from "./receipt-local";
+import { type LocalReturn, RETURN_PREFIX } from "./return-local";
 import { type LocalSale, SALE_PREFIX } from "./sale-local";
 
 export const PARTIES_MATCH_META = "parties.matched_at";
@@ -88,6 +89,26 @@ export async function readPendingCreditByParty(
       const cur = out.get(r.party_id) ?? { pendingMinor: 0n, count: 0 };
       const effect = r.kind === "receipt" ? -BigInt(r.amount_minor) : BigInt(r.amount_minor);
       out.set(r.party_id, { pendingMinor: cur.pendingMinor + effect, count: cur.count + 1 });
+    }
+    // المرتجع خصماً من الذمّة غير المغطّى يخفّض المعلّق (الآجل يُردّ أولاً — 0005 §٢٩٠)
+    const returns = (await tx.listProjections(RETURN_PREFIX))
+      .map((r) => r.value as unknown as LocalReturn)
+      .filter((r) => r.party_id && BigInt(r.credit_minor || "0") > 0n);
+    for (const r of returns) {
+      let asOf = asOfByParty.get(r.party_id);
+      if (asOf === undefined) {
+        const row = await tx.getProjection(PARTY_PREFIX + r.party_id);
+        asOf = (row?.value as { balance_as_of?: string } | undefined)?.balance_as_of ?? "";
+        asOfByParty.set(r.party_id, asOf);
+      }
+      const op = await tx.getOperation(r.operation_id);
+      const covered = op?.state === "synced" && (!asOf || r.occurred_at <= asOf);
+      if (covered) continue;
+      const cur = out.get(r.party_id) ?? { pendingMinor: 0n, count: 0 };
+      out.set(r.party_id, {
+        pendingMinor: cur.pendingMinor - BigInt(r.credit_minor),
+        count: cur.count + 1,
+      });
     }
     return out;
   });

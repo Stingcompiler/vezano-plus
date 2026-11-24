@@ -194,7 +194,7 @@ def detail_payload(q: QuarantinedOperation) -> dict[str, Any]:
     acceptable = q.reason == QuarantinedOperation.Reason.CONFLICTED and (
         (kind in ("payment_receipt", "refund") and confirmed is not None)
         # مرتجع تجاوز أصله (مراجعة 2026-11-10 ع-٦): القبول يطبّقه موسوماً — النقد خرج فعلاً
-        or (kind == "sale_return" and q.code == EXCEEDING_RETURN)
+        or (kind == "sale_return" and q.code in ACCEPTABLE_RETURN_CODES)
     )
     return {
         "item": item_payload(q),
@@ -249,6 +249,10 @@ def decide(
 
 
 EXCEEDING_RETURN = "return_exceeds_sale"
+#: وجهة ردّ تخالف الدفع الأصلي (0005 §٢٩٠): قبول المالك هو الاستثناء المأذون — يُطبَّق كما أعلنه
+#: الجهاز (نقداً لفاتورة آجلة مثلاً) بقرار مسجَّل بسببه
+REFUND_MISMATCH = "return_refund_mismatch"
+ACCEPTABLE_RETURN_CODES = (EXCEEDING_RETURN, REFUND_MISMATCH)
 
 
 def _accept_exceeding_return(q: QuarantinedOperation, *, actor: User) -> dict[str, Any]:
@@ -280,7 +284,7 @@ def _accept(q: QuarantinedOperation, *, reason: str, actor: User) -> dict[str, A
     detail = detail_payload(q)
     if not detail["acceptable"]:
         raise ReviewRejected("manual_merge_required")
-    if q.code == EXCEEDING_RETURN:
+    if q.code in ACCEPTABLE_RETURN_CODES:
         return _accept_exceeding_return(q, actor=actor)
     head = _head(_members(q.original), "parties.PaymentReceipt")
     chead = _head(detail["confirmed"]["members"], "parties.PaymentReceipt")

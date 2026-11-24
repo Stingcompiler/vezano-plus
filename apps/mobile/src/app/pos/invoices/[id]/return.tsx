@@ -1,15 +1,17 @@
 import { formatMinorShort, formatQty, pushPending } from "@sting/app-core";
 import {
   decidePermission,
+  EMPTY_RETURN_HISTORY,
   type LocalSale,
   type LocalShift,
   readOpenShift,
-  readReturnedQty,
+  readReturnHistory,
   readSale,
   type ReturnCondition,
-  type ReturnDestination,
+  type ReturnHistory,
   returnTotals,
   saveReturnLocally,
+  type ServerReturnRow,
   unitDisplay,
 } from "@sting/sync-core";
 import { tx } from "@sting/texts";
@@ -65,13 +67,14 @@ export default function Return() {
   const [saleOpId, setSaleOpId] = useState<string | undefined>(undefined);
   const [shift, setShift] = useState<LocalShift | null | undefined>(undefined);
   const [ctx, setCtx] = useState<ShiftContext | null>(null);
-  const [returned, setReturned] = useState<Map<string, bigint>>(new Map());
+  const [history, setHistory] = useState<ReturnHistory>(EMPTY_RETURN_HISTORY);
+  // S-06: فاتورة ألغاها مستند عكسي لا تُردّ — يُسأل الخادم متى وُجد اتصال
+  const [reversed, setReversed] = useState(false);
   const [qty, setQty] = useState<Map<string, bigint>>(new Map());
   const [condition, setCondition] = useState<ReturnCondition>("good");
-  const [destination, setDestination] = useState<ReturnDestination>("cash");
   const [phase, setPhase] = useState<"idle" | "saving" | "saved">("idle");
   const [push, setPush] = useState<"none" | "synced" | "pending" | "failed">("none");
-  const [saved, setSaved] = useState<{ number: string; total: string } | null>(null);
+  const [saved, setSaved] = useState<{ number: string; total: string; cash: string } | null>(null);
   const [over, setOver] = useState(false);
   const ids = useRef<{
     operationId: string;
@@ -83,21 +86,31 @@ export default function Return() {
   useEffect(() => {
     void (async () => {
       const storage = await getStorage();
-      const [s, c, local, ret] = await Promise.all([
+      const [s, c, local] = await Promise.all([
         readOpenShift(storage),
         readShiftContext(storage, { deviceId: session.deviceId, userId: session.userId }),
         readSale(storage, id),
-        readReturnedQty(storage, id),
       ]);
       setShift(s);
       setCtx(c);
       if (!local) return setSale(null);
+      // الخادم يعرف مرتجعات الأجهزة الأخرى والعكس؛ بلا اتصال يكفي المحلي
+      let server: { sync_state?: string; returns?: readonly ServerReturnRow[] } | null = null;
+      try {
+        const { data, response } = await api.GET("/api/sales/{sale_id}", {
+          params: { path: { sale_id: id } },
+        });
+        if (response.ok && data) server = data;
+      } catch {
+        server = null;
+      }
+      setReversed(server?.sync_state === "reversed");
+      setHistory(await readReturnHistory(storage, id, server?.returns ?? []));
       const op = await storage.read((t) => t.getOperation(local.operation_id));
       setSale(local);
       setSaleOpId(op ? local.operation_id : undefined);
-      setReturned(ret);
     })();
-  }, [id, session.deviceId, session.userId]);
+  }, [api, id, session.deviceId, session.userId]);
 
   useEffect(() => {
     if (sale === null || shift === null)
@@ -106,24 +119,37 @@ export default function Return() {
 
   const rows: RowState[] = (sale?.lines ?? []).map((l) => {
     const sold = BigInt(l.qty_milli);
-    const r = returned.get(l.id) ?? 0n;
+    const r = history.qtyByLine.get(l.id) ?? 0n;
     return { line: l, available: sold - r > 0n ? sold - r : 0n, now: qty.get(l.id) ?? 0n };
   });
   const active = rows.filter((r) => r.now > 0n);
-  const total =
-    sale && active.length
-      ? returnTotals(
-          sale,
-          active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
-        ).totalMinor
-      : 0n;
-  // حدّ المرتجع من خلية «مرتجع» في مصفوفة الأدوار — كالويب والخادم (0005 §٢٩٢)
+  // القيمة ما دُفع بعد خصم الفاتورة، والوجهة من الدفع الأصلي (0005 §٢٩٠) — كالويب والخادم
+  let totals: ReturnType<typeof returnTotals> | null = null;
+  let unpriced = false;
+  if (sale && active.length) {
+    try {
+      totals = returnTotals(
+        sale,
+        active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
+        history,
+      );
+    } catch {
+      unpriced = true;
+    }
+  }
+  const total = totals?.totalMinor ?? 0n;
+  const split = totals?.split ?? { creditMinor: 0n, bankMinor: 0n, cashMinor: 0n };
+  // حدّ واحد من خلية «مرتجع» في المصفوفة على قيمة المرتجع كلها — كالويب والخادم (0005 §٢٩٢)
   const refund = decidePermission(ctx?.permissions, ctx?.roleCode, "refund", {
     amountMinor: total,
   });
-  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
   const overCap = !refund.allowed;
-  const creditNoParty = destination === "credit" && !sale?.party_id;
+  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
+  const creditNoParty = split.creditMinor > 0n && !sale?.party_id;
+  const paidCredit = BigInt(sale?.credit_minor || "0") > 0n;
+  const paidBank = BigInt(sale?.bank_minor || "0") > 0n;
+  const paidCash = BigInt(sale?.cash_minor || "0") > 0n || (!paidCredit && !paidBank);
+  const discounted = BigInt(sale?.discount_minor || "0") > 0n;
   const allAvailable = rows.reduce((a, r) => a + r.available, 0n);
   const chosen = rows.reduce((a, r) => a + r.now, 0n);
 
@@ -132,7 +158,7 @@ export default function Return() {
       ? push === "synced"
         ? "success"
         : "saved_local"
-      : over
+      : over || unpriced || reversed
         ? "validation_error"
         : overCap
           ? "permission_denied"
@@ -150,8 +176,8 @@ export default function Return() {
   };
 
   const commit = async () => {
-    if (!sale || !shift || !ctx || phase !== "idle" || !active.length || overCap || creditNoParty)
-      return;
+    if (!sale || !shift || !ctx || phase !== "idle" || !active.length) return;
+    if (overCap || creditNoParty || unpriced || reversed) return;
     setPhase("saving");
     ids.current ??= {
       operationId: newId(),
@@ -167,7 +193,7 @@ export default function Return() {
       saleOperationId: saleOpId,
       lines: active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
       condition,
-      destination,
+      history,
       shift,
       branchCode: ctx.branchCode || "BR",
       devicePrefix: ctx.devicePrefix || "X",
@@ -178,7 +204,7 @@ export default function Return() {
       occurredAt: new Date().toISOString(),
       memberIds: { lines: ids.current.lines, movements: ids.current.movements },
     });
-    setSaved({ number: ret.return_number, total: ret.total_minor });
+    setSaved({ number: ret.return_number, total: ret.total_minor, cash: ret.cash_minor });
     try {
       const out = await pushPending({ api, storage, requestId: newId });
       setPush(
@@ -215,7 +241,7 @@ export default function Return() {
           <AppText variant="secondary">
             {tx(T, "قيمة المرتجع")} <M>{formatMinorShort(saved.total)}</M>
           </AppText>
-          {push !== "synced" ? (
+          {push !== "synced" && BigInt(saved.cash) > 0n ? (
             <AppText variant="note">{tx(T, "محفوظ محلياً، والنقد خرج من الصندوق فعلاً.")}</AppText>
           ) : null}
         </StateView>
@@ -232,6 +258,12 @@ export default function Return() {
       <AppText variant="note" muted style={{ marginBottom: SPACE["3"] }}>
         {tx(T, "الأصل يبقى كما هو؛ هذا مستند مرتجع مستقل")}
       </AppText>
+      {reversed ? (
+        <StateView
+          state="validation_error"
+          title={tx(T, "هذه الفاتورة أُلغيت بمستند عكسي — لا تُردّ.")}
+        />
+      ) : null}
 
       <GroupedList title={tx(T, "سطور الأصل")}>
         {rows.map((r, i) => (
@@ -298,28 +330,42 @@ export default function Return() {
           onPress={() => setCondition("damaged")}
         />
       </View>
-      <AppText variant="secondary" muted style={{ marginBottom: SPACE["1"] }}>
-        {tx(T, "وجهة الرد")}
+      <AppText variant="note" muted style={{ marginBottom: SPACE["1"] }}>
+        {tx(T, "الردّ يتبع طريقة دفع الفاتورة.")}
       </AppText>
-      <View
-        style={{
-          flexDirection: ROW_RTL,
-          gap: SPACE["2"],
-          marginBottom: SPACE["3"],
-          flexWrap: "wrap",
-        }}
-      >
-        <Chip
-          label={tx(T, "نقداً من الصندوق")}
-          on={destination === "cash"}
-          onPress={() => setDestination("cash")}
-        />
-        <Chip
-          label={tx(T, "خصماً من ذمة العميل")}
-          on={destination === "credit"}
-          onPress={() => setDestination("credit")}
-        />
-      </View>
+      <GroupedList title={tx(T, "وجهة الرد")}>
+        {paidCredit ? (
+          <ListRow
+            title={tx(T, "خصماً من ذمة العميل")}
+            trailing={<M>{formatMinorShort(split.creditMinor.toString())}</M>}
+            last={!paidBank && !paidCash}
+          />
+        ) : null}
+        {paidBank ? (
+          <ListRow
+            title={tx(T, "تحويلاً بنكياً")}
+            trailing={<M>{formatMinorShort(split.bankMinor.toString())}</M>}
+            last={!paidCash}
+          />
+        ) : null}
+        {paidCash ? (
+          <ListRow
+            title={tx(T, "نقداً من الصندوق")}
+            trailing={<M>{formatMinorShort(split.cashMinor.toString())}</M>}
+            last
+          />
+        ) : null}
+      </GroupedList>
+      {paidCredit ? (
+        <AppText variant="note" muted style={{ marginBottom: SPACE["2"] }}>
+          {tx(T, "الفاتورة آجلة: الردّ يُخصم من ذمّة العميل أولاً.")}
+        </AppText>
+      ) : null}
+      {paidCash && (paidCredit || paidBank) ? (
+        <AppText variant="note" muted style={{ marginBottom: SPACE["2"] }}>
+          {tx(T, "الردّ نقداً لا يتجاوز ما دُفع نقداً في الفاتورة.")}
+        </AppText>
+      ) : null}
 
       {overCap ? (
         <StateView state="permission_denied" title={tx(T, "ردّ نقدي فوق الحدّ")}>
@@ -331,7 +377,7 @@ export default function Return() {
 
       <GroupedList>
         <ListRow
-          title={tx(T, "قيمة المرتجع")}
+          title={discounted ? tx(T, "قيمة المرتجع بعد خصم الفاتورة") : tx(T, "قيمة المرتجع")}
           trailing={<M>{formatMinorShort(total.toString())}</M>}
           last
         />
@@ -341,13 +387,15 @@ export default function Return() {
         financial
         loading={phase === "saving"}
         disabledReason={
-          !active.length
-            ? tx(T, "اختر كمية")
-            : overCap
-              ? tx(T, "ردّ نقدي فوق الحدّ")
-              : creditNoParty
-                ? tx(T, "عميل مسمّى — شرط الأثر الآجل")
-                : undefined
+          reversed
+            ? tx(T, "هذه الفاتورة أُلغيت بمستند عكسي — لا تُردّ.")
+            : !active.length
+              ? tx(T, "اختر كمية")
+              : overCap
+                ? tx(T, "ردّ نقدي فوق الحدّ")
+                : creditNoParty
+                  ? tx(T, "عميل مسمّى — شرط الأثر الآجل")
+                  : undefined
         }
         onPress={() => void commit()}
       />

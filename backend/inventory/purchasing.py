@@ -74,8 +74,11 @@ def next_number() -> str:
 def last_purchase_prices(item_ids: list[uuid.UUID]) -> dict[tuple[uuid.UUID, str], int]:
     """آخر سعر شراء معروف لكل (صنف، وحدة شراء) من سطور الاستلام ذات التكلفة."""
     out: dict[tuple[uuid.UUID, str], int] = {}
+    from inventory.receipt_costs import costed_receipt_lines
+
     for ln in (
-        GoodsReceiptLine.objects.filter(item_id__in=item_ids, unit_cost_minor__isnull=False)
+        costed_receipt_lines()
+        .filter(item_id__in=item_ids, unit_cost_minor__isnull=False)
         .select_related("receipt")
         .order_by("receipt__occurred_at", "id")
     ):

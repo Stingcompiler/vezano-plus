@@ -157,6 +157,7 @@ def return_payload(r: SaleReturn) -> dict[str, Any]:
         "destination": r.destination,
         "total_minor": str(r.total_minor),
         "cash_minor": str(r.cash_minor),
+        "bank_minor": str(r.bank_minor),
         "credit_minor": str(r.credit_minor),
         "exceeds_original": r.exceeds_original,
         "occurred_at": r.occurred_at.isoformat(),
@@ -350,6 +351,9 @@ def decide(
         if decision == "reverse":
             if SaleReversal.objects.filter(sale=second).exists():
                 raise DecisionRejected("already_reversed")
+            # العكس يعيد كل كمية الفاتورة ونقدها وذمّتها: بعد مرتجع يُخرج ما رُدّ مرتين (S-06)
+            if SaleReturn.objects.filter(sale=second).exists():
+                raise DecisionRejected("has_returns")
             rev: SaleReversal = SaleReversal.objects.create(
                 tenant_id=tenant_id,
                 sale=second,
