@@ -54,11 +54,24 @@ export default function InvoiceDetail() {
       if (local) {
         const op = await storage.read((t) => t.getOperation(local.operation_id));
         const st = op?.state ?? "local";
-        return setDetail({
+        setDetail({
           sale: local,
           sync: st === "synced" ? "synced" : st === "pending" ? "pending" : "local",
           source: "local",
         });
+        // المحلي أولاً، ثم يُسأل الخادم عن العكس: فاتورة ألغاها مستند عكسي لا تُعرض للمرتجع (S-06)
+        if (st !== "synced") return;
+        try {
+          const { data, response } = await api.GET("/api/sales/{sale_id}", {
+            params: { path: { sale_id: id } },
+          });
+          const body = data as unknown as { sync_state?: string } | undefined;
+          if (response.ok && body?.sync_state === "reversed")
+            setDetail({ sale: local, sync: "reversed", source: "local" });
+        } catch {
+          // بلا جواب يبقى المحلي كما هو
+        }
+        return;
       }
       try {
         const { data, response } = await api.GET("/api/sales/{sale_id}", {
@@ -143,11 +156,15 @@ export default function InvoiceDetail() {
         variant="secondary"
         onPress={() => router.push({ pathname: "/pos/receipt/[id]", params: { id: s.id } })}
       />
-      <Button
-        label={tx(T, "مرتجع كلي أو جزئي")}
-        variant="secondary"
-        onPress={() => router.push({ pathname: "/pos/invoices/[id]/return", params: { id: s.id } })}
-      />
+      {sync !== "reversed" ? (
+        <Button
+          label={tx(T, "مرتجع كلي أو جزئي")}
+          variant="secondary"
+          onPress={() =>
+            router.push({ pathname: "/pos/invoices/[id]/return", params: { id: s.id } })
+          }
+        />
+      ) : null}
     </Screen>
   );
 }

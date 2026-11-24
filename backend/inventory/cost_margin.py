@@ -23,6 +23,7 @@ from core.models import User
 from core.org_settings import _settings
 from inventory.models import GoodsReceiptLine, PurchaseDocument
 from inventory.purchasing import OrderRejected
+from inventory.receipt_costs import costed_receipt_lines
 from sales.margin import cost_policy
 
 SAMPLE_ROWS: list[dict[str, Any]] = [
@@ -141,9 +142,8 @@ def report(viewer: home.Viewer) -> dict[str, Any]:
     for iu in ItemUnit.objects.filter(item_id__in=item_ids).select_related("unit"):
         units_by_item.setdefault(iu.item_id, {})[iu.unit.code] = int(iu.factor_milli)
     lines = list(
-        GoodsReceiptLine.objects.filter(
-            item_id__in=item_ids, unit_cost_minor__isnull=False, base_qty_milli__gt=0
-        )
+        costed_receipt_lines()
+        .filter(item_id__in=item_ids, unit_cost_minor__isnull=False, base_qty_milli__gt=0)
         .select_related("receipt")
         .order_by("receipt__occurred_at", "receipt__received_at", "id")
     )

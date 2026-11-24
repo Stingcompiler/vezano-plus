@@ -35,7 +35,10 @@ test.describe("البوابة — الأموال والمخزون", () => {
     await a.page.getByRole("button", { name: "مرتجع كلي أو جزئي" }).click();
     await expect(a.page).toHaveURL(/\/return$/);
     await a.page.getByRole("button", { name: "زيادة سكر" }).click();
-    await a.page.getByLabel("نقداً من الصندوق").check();
+    // الوجهة تتبع الدفع الأصلي (0005 §٢٩٠): فاتورة نقدية تُردّ نقداً بلا اختيار
+    await expect(a.page.getByRole("group", { name: "وجهة الرد" })).toContainText(
+      "نقداً من الصندوق",
+    );
     await a.page.getByRole("button", { name: "تسجيل المرتجع" }).click();
     await expect(a.page.locator('[data-screen="POS-10"]')).toHaveAttribute("data-state", "success");
     await syncNow(a.page);

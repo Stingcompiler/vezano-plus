@@ -216,6 +216,120 @@ test.describe("PUR-03", () => {
     await expect(page.getByRole("button", { name: "اعتمد باسم ندى" })).toHaveCount(0);
   });
 
+  test("المرحلة ١ (0005 §٢٨٩): استلام قائم يُربط فلا يدخل المخزون مرتين، والسعر الصفر لا يُعتمد إلا هدية", async ({
+    page,
+  }) => {
+    const RC = {
+      receipt_id: "r1",
+      receipt_number: "RCV-KRT-A2-26-000004",
+      supplier_name: "مؤسسة الرياض",
+      user_name: "عثمان",
+      occurred_at: new Date().toISOString(),
+    };
+    const zeroRice = LINES.map((l) =>
+      l.id === "l3" ? { ...l, unit_price_minor: "0", line_total_minor: "0", is_gift: false } : l,
+    );
+    let gift = false;
+    let linked = false;
+    const build = () =>
+      doc({
+        lines: zeroRice.map((l) => (l.id === "l3" ? { ...l, is_gift: gift } : l)),
+        receipt_candidates: linked ? [] : [RC],
+        linked_receipts: linked ? [RC] : [],
+        blockers: [
+          ...(gift
+            ? []
+            : [
+                {
+                  code: "price_required",
+                  title: "سعر الوحدة",
+                  line_id: "l3",
+                  item_name: "أرز بسمتي",
+                },
+              ]),
+          ...(linked
+            ? []
+            : [
+                {
+                  code: "receipt_link_required",
+                  title: "الاستلام",
+                  receipt_id: "r1",
+                  receipt_number: RC.receipt_number,
+                },
+              ]),
+        ],
+      });
+    const patches: { lines: { id: string; is_gift?: boolean }[] }[] = [];
+    const decisions: unknown[] = [];
+    await page.route("**/api/inventory/purchasing/orders/o1/document", (route) =>
+      route.fulfill(
+        json(200, {
+          document: doc({ lines: zeroRice, receipt_candidates: [RC], linked_receipts: [] }),
+        }),
+      ),
+    );
+    await page.route("**/api/inventory/purchasing/documents/d1", (route) => {
+      const body = route.request().postDataJSON() as { lines: { id: string; is_gift?: boolean }[] };
+      patches.push(body);
+      gift = body.lines.find((l) => l.id === "l3")?.is_gift === true;
+      return route.fulfill(json(200, { document: build() }));
+    });
+    await page.route("**/api/inventory/purchasing/documents/d1/receipts", (route) => {
+      decisions.push(route.request().postDataJSON());
+      linked = true;
+      return route.fulfill(json(200, { document: build() }));
+    });
+    await page.route("**/api/inventory/purchasing/documents/d1/approve", (route) =>
+      route.fulfill(
+        json(200, {
+          document: {
+            ...APPROVED,
+            linked_receipts: [RC],
+            receipt_candidates: [],
+            effects: {
+              stock: [],
+              linked_receipts: [RC.receipt_number],
+              cost: [],
+              branch_name: "المخزن الرئيسي",
+              payable_minor: "441500",
+            },
+          },
+        }),
+      ),
+    );
+    await login(page, "/purchasing/orders/o1/document");
+    const root = page.locator('[data-screen="PUR-03"]');
+    // الاستلام القائم معروض قبل الاعتماد بفعلين صريحين
+    await expect(root).toContainText(
+      "يوجد استلام RCV-KRT-A2-26-000004 من مؤسسة الرياض بالأصناف نفسها.",
+    );
+    await expect(root).toContainText("اربطه بدل إدخال المخزون مرة ثانية.");
+    await expect(page.getByRole("button", { name: "شحنتان مختلفتان" })).toBeVisible();
+    // السعر صفر: يُمنع الاعتماد بسببه
+    await page.getByRole("button", { name: "اعتمد باسم ندى" }).click();
+    await expect(root).toHaveAttribute("data-state", "validation_error");
+    await expect(root).toContainText("أرز بسمتي · سعر الوحدة مطلوب للاعتماد.");
+    await expect(root).toContainText("سعر الوحدة مطلوب للاعتماد.");
+    // «هدية من المورد — بلا سعر» ثم «اربط بالاستلام»: يُحفظ ما كُتب ثم يُربط
+    await page.getByRole("switch", { name: "هدية من المورد — بلا سعر" }).click();
+    await page.getByRole("button", { name: "اربط بالاستلام" }).click();
+    await expect(root).toContainText(
+      "المخزون · دخل من الاستلام RCV-KRT-A2-26-000004 — لا يدخل مرة ثانية.",
+    );
+    expect(decisions).toEqual([{ link: ["r1"] }]);
+    expect(patches.at(-1)?.lines.find((l) => l.id === "l3")?.is_gift).toBe(true);
+    // الكمية في المستند المربوط من الاستلام — لا تُكتب
+    await expect(page.getByLabel("الكمية المستلمة — سكر ناعم")).toHaveCount(0);
+    await expect(root).not.toContainText("يوجد استلام");
+    await page.getByRole("button", { name: "اعتمد باسم ندى" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    await expect(root).toContainText("تحرّكت الذمّة الآن.");
+    await expect(root).not.toContainText("تحرّك المخزون وتحرّكت الذمّة الآن.");
+    await expect(root).toContainText(
+      "المخزون · دخل من الاستلام RCV-KRT-A2-26-000004 — لا يدخل مرة ثانية.",
+    );
+  });
+
   test("permission_denied: فوق الحدّ نُظهر الرقمين، والإحالة تُبقيه مسوّدة وما أُدخل يبقى", async ({
     page,
   }, info) => {

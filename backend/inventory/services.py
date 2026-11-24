@@ -627,16 +627,40 @@ def _sale_price(item_id: uuid.UUID) -> int:
 
 
 def session_variances(session: Any) -> dict[str, Any]:
-    """INV-06: الدفتري لحظة المراجعة (رصيد الفرع الآن) مقابل المعدود كما أُدخل؛ فرقٌ ≠ 0 يحتاج
-    سبباً؛ حركة وقعت على جهاز آخر أثناء الجرد تُكتشف بمقارنة لقطة العدّ بالدفتري الآن (ACC-07).
+    """INV-06: الدفتري **لحظة العدّ** مقابل المعدود كما أُدخل (د-٢، I-03 — 0005 §٢٨٩)؛ فرقٌ ≠ 0
+    يحتاج سبباً. الدفتري لحظة العدّ = رصيد الفرع الآن ناقص كل حركة وقعت بعد وقت عدّ السطر — فبيعٌ بعد
+    العدّ لا يُمحى بالتسوية، والحركة تُطبَّق على الرصيد الحالي. حركة وقعت بعد العدّ تُعلَّم
+    (`moved_since_count`). الجلسة المسوّاة تُعرض بسطور تسويتها كما قُرّرت، لا بحساب جديد.
     الأثر المالي بسعر البيع (افتراض حتى تُبنى التكلفة)."""
     balances = branch_balances(session.branch_id)
+    lines = list(session.lines.order_by("counted_at", "id"))
+    adj = session.adjustments.order_by("-occurred_at").first()
+    decided = (
+        {ln.item_id: ln for ln in adj.lines.all()}
+        if adj is not None and session.status == "adjusted"
+        else None
+    )
+    since_count: dict[uuid.UUID, list[tuple[Any, int]]] = {}
+    if lines:
+        first = min(ln.counted_at for ln in lines)
+        for m in StockMovement.objects.filter(
+            branch_id=session.branch_id,
+            item_id__in=[ln.item_id for ln in lines],
+            occurred_at__gt=first,
+        ).values_list("item_id", "occurred_at", "delta_base_qty_milli"):
+            since_count.setdefault(m[0], []).append((m[1], int(m[2])))
     rows: list[dict[str, Any]] = []
     effect = 0
     variances = 0
-    for ln in session.lines.order_by("counted_at", "id"):
-        book = balances.get(ln.item_id, 0)
+    for ln in lines:
+        now_book = balances.get(ln.item_id, 0)
+        after = sum(d for at, d in since_count.get(ln.item_id, []) if at > ln.counted_at)
+        book = now_book - after
         delta = ln.counted_qty_milli - book
+        if decided is not None:
+            done = decided.get(ln.item_id)
+            book = done.book_qty_milli if done is not None else ln.counted_qty_milli
+            delta = done.delta_milli if done is not None else 0
         price = _sale_price(ln.item_id)
         value = delta * price // 1000
         if delta != 0:
@@ -655,11 +679,9 @@ def session_variances(session: Any) -> dict[str, Any]:
                 ),
                 "delta_milli": str(delta),
                 "value_minor": str(value),
-                "moved_since_count": ln.system_qty_milli is not None
-                and ln.system_qty_milli != book,
+                "moved_since_count": decided is None and after != 0,
             }
         )
-    adj = session.adjustments.order_by("-occurred_at").first()
     return {
         "session": {
             "id": str(session.id),

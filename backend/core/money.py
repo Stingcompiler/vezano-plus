@@ -27,6 +27,9 @@ DomainErrorCode = Literal[
     "party_required",
     "value_required",
     "empty_operation",
+    "discount_exceeds_subtotal",
+    "return_exceeds_sale",
+    "refund_exceeds_paid",
 ]
 
 
