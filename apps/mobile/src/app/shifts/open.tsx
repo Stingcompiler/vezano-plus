@@ -1,5 +1,11 @@
 import { formatMinor, hhmm, parseMoneyInput, pushPending } from "@sting/app-core";
-import { type LocalShift, openShiftLocally, readOpenShift } from "@sting/sync-core";
+import {
+  type DiscountCaps,
+  type LocalShift,
+  openShiftLocally,
+  readOpenShift,
+  type RoleRules,
+} from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
   AppText,
@@ -73,6 +79,8 @@ export default function OpenShift() {
           can_withdraw: boolean;
           owner_name: string;
           role_code?: string;
+          discount_caps?: DiscountCaps;
+          permissions?: RoleRules;
           branch_code?: string;
           previous: Previous | null;
         };
@@ -87,6 +95,8 @@ export default function OpenShift() {
           canWithdraw: d.can_withdraw,
           ownerName: d.owner_name,
           roleCode: d.role_code,
+          discountCaps: d.discount_caps,
+          permissions: d.permissions,
           branchCode: d.branch_code || stored?.branchCode,
           devicePrefix: stored?.devicePrefix,
         };

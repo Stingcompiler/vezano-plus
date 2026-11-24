@@ -61,7 +61,9 @@ def margin_report(*, viewer: home.Viewer, rng: Range) -> dict[str, Any]:
     sales = Sale.objects.filter(
         business_date__gte=rng.start, business_date__lte=rng.end, reversals__isnull=True
     )
-    if not compare and viewer.branch is not None:
+    # المقارنة بين الفروع للمالك؛ غيره ممن تسمح له المصفوفة بالهامش يرى فرعه (0005 §٢٩٢)
+    own_branch = not compare or not viewer.is_owner
+    if own_branch and viewer.branch is not None:
         sales = sales.filter(branch_id=viewer.branch.id)
     by_branch = {
         str(r["branch_id"]): int(r["s"] or 0)
@@ -69,7 +71,7 @@ def margin_report(*, viewer: home.Viewer, rng: Range) -> dict[str, Any]:
     }
     branches = {str(b.id): b.name for b in Branch.objects.order_by("name")}
     base = {
-        "scope": "all" if compare else "branch",
+        "scope": "branch" if own_branch else "all",
         "branch_compare": compare,
         "range": {
             "key": rng.key,

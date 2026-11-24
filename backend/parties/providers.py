@@ -39,12 +39,20 @@ def _list(_tenant_id: uuid.UUID) -> list[dict[str, Any]]:
 
 
 def _home_receivables(viewer: home.Viewer, out: dict[str, Any]) -> None:
-    """HOME-01 «الذمم»: مجموع ما على الأطراف (الأرصدة الموجبة) وعددهم — لا رقم بلا ذمم."""
-    if not viewer.can_see_finance:
+    """HOME-01 «الذمم»: مجموع ما على الأطراف (الأرصدة الموجبة) وعددهم — لا رقم بلا ذمم. بخلية
+    «رؤية ذمم كل العملاء» ونطاقها (0005 §٢٩٢)."""
+    from core.permissions import can
+    from parties.services import receivables_visible_ids
+
+    if not can(viewer, "view_receivables"):
         return
     total = 0
     count = 0
-    figures = party_figures(list(Party.objects.filter(merged_into__isnull=True)))
+    qs = Party.objects.filter(merged_into__isnull=True)
+    visible = receivables_visible_ids(viewer)
+    if visible is not None:
+        qs = qs.filter(id__in=visible)
+    figures = party_figures(list(qs))
     for f in figures.values():
         b = f.balance_minor
         if b > 0:

@@ -53,51 +53,6 @@ const VALUE_OPTIONS: { value: CellValue; label: string }[] = [
   { value: "propose", label: "اقتراح فقط" },
 ];
 
-/** «الإجراء وأثره» (20-D15): كل بند جملة — من يستطيع، وما يقع من أثر. */
-const EFFECTS: { action: string; effect: string; roles: [string, string, string, string] }[] = [
-  {
-    action: "بيع نقدي وإصدار فاتورة",
-    effect: "يُسجَّل باسمه وينسب لورديته",
-    roles: ["نعم", "نعم", "نعم", "نعم"],
-  },
-  {
-    action: "بيع بالذمة",
-    effect: "يُنشئ ديناً على طرف — أثره مالي يتجاوز الوردية",
-    roles: ["نعم", "لا", "نعم", "نعم"],
-  },
-  {
-    action: "إلغاء فاتورة بعد إصدارها",
-    effect: "لا حذف؛ مرتجع أو قيد عكسي بسبب مكتوب",
-    roles: ["لا", "لا", "باعتماد", "نعم"],
-  },
-  {
-    action: "تسوية جرد وتعديل كميات",
-    effect: "يغيّر رقم المخزون بلا حركة بيع أو شراء",
-    roles: ["لا", "باعتماد", "نعم", "نعم"],
-  },
-  {
-    action: "اعتماد فارق الوردية",
-    effect: "شهادة بأن العجز أو الزيادة مقبولان — لا يشهد أحد لنفسه",
-    roles: ["لا", "لا", "نعم", "نعم"],
-  },
-  {
-    action: "حسم تعارض نسختين",
-    effect: "يختار أي رقم يصبح الحقيقة في الدفتر",
-    roles: ["لا", "لا", "لا", "نعم"],
-  },
-  {
-    action: "قراءة سجل التدقيق",
-    effect: "نطاق الرؤية يتبع نطاق المسؤولية",
-    roles: ["أفعاله", "أفعاله", "فرعه", "نعم"],
-  },
-  {
-    action: "نقل ملكية المنشأة",
-    effect: "ينقل الدفتر كله لشخص آخر",
-    roles: ["لا", "لا", "لا", "نعم"],
-  },
-];
-const EFFECT_ROLES = ["كاشير", "أمين مخزن", "مدير فرع", "مالك"];
-
 /**
  * ORG-02 — مصفوفة الأدوار والصلاحيات (07-D3 ready · 20-D15 validation_error · 39-D31
  * permission_denied/success): الصلاحية تُمنح للدور والنطاق للمستخدم في الفرع؛ الحدود المالية قيم
@@ -380,39 +335,12 @@ export function RolesClient() {
               </>
             ) : null}
 
-            <h3 className="cat-head__title">الأدوار والصلاحيات — ما يراه كل دور بالضبط</h3>
             <p className="acc-choice__note">
               <strong>لا يمكن إنشاء دور بلا مالك قادر على سحبه.</strong> ولا يمكن للمالك أن يسحب
               صلاحيته الأخيرة عن نفسه: المنشأة بلا مالك تصبح دفتراً لا يملك أحد حسم تعارضاته. ودعوة
               المستخدم تنتهي بمهلة معلنة: الرابط المنتهي يقول «انتهت صلاحية الدعوة» ويطلب إعادة
               إرسالها، ولا يمنح دخولاً صامتاً.
             </p>
-            <div className="org-effects">
-              <div className="org-effects__row">
-                <strong>الإجراء وأثره</strong>
-                <span className="org-effects__roles">
-                  {EFFECT_ROLES.map((r) => (
-                    <span key={r}>{r}</span>
-                  ))}
-                </span>
-              </div>
-              {EFFECTS.map((e) => (
-                <div key={e.action} className="org-effects__row">
-                  <div>
-                    <strong>{e.action}</strong>
-                    <p className="acc-choice__note">{e.effect}</p>
-                  </div>
-                  <span className="org-effects__roles">
-                    {e.roles.map((v, i) => (
-                      <span key={i}>
-                        {EFFECT_ROLES[i]}: {v}
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </div>
-
             <div className="cat-form__actions">
               <Button variant="quiet" onClick={() => router.push("/org/users")}>
                 المستخدمون والدعوات

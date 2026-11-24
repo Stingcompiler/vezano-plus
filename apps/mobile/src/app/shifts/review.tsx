@@ -38,6 +38,8 @@ interface ServerRow {
   readonly variance_minor: string;
   readonly abandoned: boolean;
   readonly review: { approved_by_name: string; reason: string } | null;
+  /** حدّ «إغلاق وردية بعجز» لهذا العجز (0005 §٢٩٢) — غيابه = قرار الشاشة كله. */
+  readonly can_settle?: boolean;
 }
 interface ReviewData {
   readonly scope: "all" | "branch";
@@ -195,6 +197,8 @@ export default function Review() {
               {tx(T, "إقرار المراجعة باسم")} {selected.review.approved_by_name}:{" "}
               {selected.review.reason}
             </AppText>
+          ) : data?.can_settle && selected.can_settle === false ? (
+            <AppText variant="note">{tx(T, "العجز فوق حدّك")}</AppText>
           ) : data?.can_settle ? (
             <>
               <TextField

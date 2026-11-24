@@ -19,12 +19,19 @@ from catalog.models import Item
 from core import home
 from core.auth.tokens import AuthContext
 from core.models import Branch
+from core.permissions import can
 from core.tenancy import tenant_context
 from inventory import services
 
 
 def _tenant(auth: Any) -> uuid.UUID | None:
     return auth.tenant_id if isinstance(auth, AuthContext) else None
+
+
+def _can_adjust(viewer: home.Viewer, branch_id: uuid.UUID | None) -> bool:
+    """تسوية الجرد واعتماد الافتتاحية بخلية «تسوية جرد» (`stock_adjust`) في المصفوفة: «نعم» في كل
+    فرع، و«فرعه» في فرعه، و«اقتراح فقط» يعدّ ويرسل ولا يعتمد (0005 §٢٩٢)."""
+    return can(viewer, "stock_adjust", branch_id=branch_id).allowed
 
 
 def _uuid(value: Any) -> uuid.UUID | None:
@@ -171,7 +178,7 @@ class OpeningsView(APIView):
             return Response(
                 {
                     "branch_id": str(branch_id),
-                    "can_approve": viewer.is_owner,
+                    "can_approve": _can_adjust(viewer, branch_id),
                     "openings": [services.opening_payload(o) for o in rows],
                     "opened_item_ids": [str(i) for i in services.opened_items(branch_id)],
                     "moved_item_ids": [str(i) for i in services.branch_balances(branch_id)],
@@ -205,7 +212,7 @@ class OpeningsView(APIView):
                     branch=branch,
                     lines=list(d["lines"]),
                     actor=viewer.user,
-                    approve=viewer.is_owner,
+                    approve=_can_adjust(viewer, branch.id),
                 )
             except services.OpeningRejected as e:
                 return Response(
@@ -235,11 +242,12 @@ class OpeningApproveView(APIView):
             from inventory.models import StockOpening
 
             viewer = home.viewer_for(auth.user, auth.device)
-            if not viewer.is_owner:
-                return Response({"detail": "owner_required"}, status=status.HTTP_403_FORBIDDEN)
             opening = StockOpening.objects.filter(id=opening_id).select_related("branch").first()
             if opening is None:
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            decision = can(viewer, "stock_adjust", branch_id=opening.branch_id)
+            if not decision:
+                return Response(decision.denial(viewer.role_name), status=status.HTTP_403_FORBIDDEN)
             try:
                 services.approve_opening(opening, actor=viewer.user)
             except services.OpeningRejected as e:
@@ -278,7 +286,7 @@ class CountSessionsView(APIView):
             return Response(
                 {
                     "branch_id": str(branch_id),
-                    "can_adjust": viewer.can_see_finance,
+                    "can_adjust": _can_adjust(viewer, branch_id),
                     "sessions": [
                         {
                             "id": str(s.id),
@@ -321,7 +329,7 @@ class CountSessionReviewView(APIView):
             if not viewer.is_owner and session.branch_id != own:
                 return Response({"detail": "branch_forbidden"}, status=status.HTTP_403_FORBIDDEN)
             body = services.session_variances(session)
-            body["can_adjust"] = viewer.can_see_finance
+            body["can_adjust"] = _can_adjust(viewer, session.branch_id)
             return Response(body)
 
     @extend_schema(request=AdjustSerializer, responses={201: None, 400: None, 403: None, 404: None})
@@ -337,11 +345,12 @@ class CountSessionReviewView(APIView):
             from inventory.models import CountSession
 
             viewer = home.viewer_for(auth.user, auth.device)
-            if not viewer.can_see_finance:
-                return Response({"detail": "finance_required"}, status=status.HTTP_403_FORBIDDEN)
             session = CountSession.objects.filter(id=session_id).select_related("branch").first()
             if session is None:
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            decision = can(viewer, "stock_adjust", branch_id=session.branch_id)
+            if not decision:
+                return Response(decision.denial(viewer.role_name), status=status.HTTP_403_FORBIDDEN)
             try:
                 adj = services.adjust_session(session, reasons=reasons, actor=viewer.user)
             except services.AdjustmentRejected as e:

@@ -5,6 +5,7 @@ import {
   type CatalogRow,
   catalogRows,
   cartTotals,
+  decidePermission,
   filterLocalItems,
   holdCart,
   type LocalBalance,
@@ -49,6 +50,7 @@ import { BarcodeScanner } from "@/components/barcode-scanner";
 import { UnitSheet } from "@/components/unit-sheet";
 import { newId } from "@/lib/crypto";
 import { refreshCatalog } from "@/lib/catalog-refresh";
+import { useShiftContext } from "@/lib/pos";
 import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
@@ -89,6 +91,7 @@ export default function Pos() {
   const [barcodeMiss, setBarcodeMiss] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [held, setHeld] = useState<number | null>(null);
+  const shiftCtx = useShiftContext();
   const [cartOpen, setCartOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -243,8 +246,11 @@ export default function Pos() {
     setCartOpen(false);
   };
 
+  // «البيع وإصدار الفاتورة» من مصفوفة الأدوار — كالويب والخادم (0005 §٢٩٢)
+  const sellDenied =
+    shiftCtx !== null && !decidePermission(shiftCtx.permissions, shiftCtx.roleCode, "sell").allowed;
   const state =
-    shift === null
+    shift === null || sellDenied
       ? "permission_denied"
       : items !== null && active.length === 0
         ? "empty"
@@ -253,13 +259,22 @@ export default function Pos() {
           : "ready";
   const payDisabled = !lines.length
     ? tx(T, "السلة فارغة")
-    : shift
-      ? undefined
-      : tx(T, "لا وردية مفتوحة");
+    : sellDenied
+      ? tx(T, "البيع ليس من صلاحية دورك")
+      : shift
+        ? undefined
+        : tx(T, "لا وردية مفتوحة");
 
   return (
     <View style={{ flex: 1, backgroundColor: c.surfacePage }}>
       <Screen screenId={T} state={state} title={tx(T, "نقطة البيع")}>
+        {sellDenied ? (
+          <StateView state="permission_denied" title={tx(T, "البيع ليس من صلاحية دورك")}>
+            <AppText variant="secondary">
+              {tx(T, "صلاحية البيع يمنحها المالك للدور في «الأدوار والصلاحيات».")}
+            </AppText>
+          </StateView>
+        ) : null}
         {shift === null ? (
           <StateView state="phase_locked" title={tx(T, "لا وردية مفتوحة")}>
             <AppText variant="secondary">

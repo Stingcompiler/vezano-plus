@@ -224,14 +224,13 @@ def cell_for(role_code: str, key: str) -> Cell:
     return Cell(rp.value, rp.limit_minor, rp.period)
 
 
-def limit_minor_for(role_code: str, key: str) -> int | None:
-    """الحدّ المالي للدور: None = بلا حدّ (المالك «بلا حد»)؛ صفر = ممنوع."""
-    c = cell_for(role_code, key)
-    if c.value == "unlimited" or c.value == "yes":
-        return None
-    if c.value == "limit":
-        return c.limit_minor or 0
-    return 0
+def cells_for_role(role_code: str) -> dict[str, Cell]:
+    """خلايا دور للمفاتيح كلها باستعلام واحد — المحفوظ وإلا الافتراض."""
+    saved = {
+        rp.key: Cell(rp.value, rp.limit_minor, rp.period)
+        for rp in RolePermission.objects.filter(role__code=role_code)
+    }
+    return {p.key: saved.get(p.key) or p.defaults.get(role_code, _n()) for p in PERMISSIONS}
 
 
 def _cell_label(c: Cell, style: str = "upto") -> str:

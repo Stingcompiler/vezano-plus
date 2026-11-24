@@ -8,6 +8,7 @@ import {
   type CatalogRow,
   cartTotals,
   catalogRows,
+  decidePermission,
   filterLocalItems,
   type LocalBalance,
   type LocalItem,
@@ -261,8 +262,11 @@ export function PosClient() {
   }, [lines]);
 
   const notDownloaded = items !== null && active.length === 0 && deviceReady === false;
+  // «البيع وإصدار الفاتورة» من مصفوفة الأدوار — القرار نفسه الذي يرسله الخادم (0005 §٢٩٢)
+  const sellDenied =
+    ctx !== null && !decidePermission(ctx.permissions, ctx.roleCode, "sell").allowed;
   const state: State =
-    shift === null
+    shift === null || sellDenied
       ? "permission_denied"
       : items !== null && active.length === 0 && deviceReady !== false
         ? "empty"
@@ -337,7 +341,13 @@ export function PosClient() {
     lineTotalMinor: (totals.lineTotals.get(l.id) ?? 0n).toString(),
   }));
 
-  const payDisabled = !lines.length ? "السلة فارغة" : shift ? undefined : "لا وردية مفتوحة";
+  const payDisabled = !lines.length
+    ? "السلة فارغة"
+    : sellDenied
+      ? "البيع ليس من صلاحية دورك"
+      : shift
+        ? undefined
+        : "لا وردية مفتوحة";
   const emptyKind =
     items !== null && active.length === 0
       ? notDownloaded
@@ -658,7 +668,12 @@ export function PosClient() {
           ) : null}
         </div>
 
-        {state === "permission_denied" ? (
+        {state === "permission_denied" && sellDenied ? (
+          <Notice kind="locked" title="البيع ليس من صلاحية دورك">
+            <p className="acc-lead">صلاحية البيع يمنحها المالك للدور في «الأدوار والصلاحيات».</p>
+          </Notice>
+        ) : null}
+        {state === "permission_denied" && !sellDenied ? (
           <Notice
             kind="locked"
             title="لا وردية مفتوحة"

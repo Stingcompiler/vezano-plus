@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from core import home
 from core.auth.tokens import AuthContext
 from core.models import TenantSubscription
+from core.permissions import can
 from core.tenancy import platform_context, require_tenant, tenant_context
 from parties import reports as party_reports
 from sales import reports as sales_reports
@@ -111,11 +112,10 @@ class ReceivablesReportView(APIView):
         q = request.query_params
         with tenant_context(tid):
             v = _viewer(request.auth)
-            if not v.can_see_finance:
-                return Response(
-                    {"detail": "permission_denied", "role_name": v.role_name},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            # «رؤية ذمم كل العملاء» من المصفوفة؛ «فرعه» يحصر التقرير في عملاء فرعه (0005 §٢٩٢)
+            decision = can(v, "view_receivables")
+            if not decision:
+                return Response(decision.denial(v.role_name), status=status.HTTP_403_FORBIDDEN)
             payload = party_reports.receivables_report(
                 viewer=v, side=str(q.get("side", "customers"))
             )
@@ -204,8 +204,9 @@ class CashReportView(APIView):
 
 
 class MarginReportView(APIView):
-    """REP-05: للمالك وحده — «من يرى الهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها
-    محجوبة لغيره (تبقى في القائمة بقفل ظاهر)."""
+    """REP-05: بخلية «رؤية التكلفة والهامش» (`cost_margin_view`) كشاشة التكلفة PUR-05 — «من يرى
+    الهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها محجوبة لمن لا تسمح له المصفوفة،
+    وغير المالك يرى فرعه (مراجعة 2026-11-22 O-11؛ 0005 §٢٩٢)."""
 
     permission_classes = (IsAuthenticated,)
 
@@ -226,11 +227,9 @@ class MarginReportView(APIView):
         q = request.query_params
         with tenant_context(tid):
             v = _viewer(request.auth)
-            if not v.is_owner:
-                return Response(
-                    {"detail": "permission_denied", "role_name": v.role_name},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            decision = can(v, "cost_margin_view")
+            if not decision:
+                return Response(decision.denial(v.role_name), status=status.HTTP_403_FORBIDDEN)
             rng = sales_reports.parse_range(
                 str(q.get("range", "30d")), start=q.get("start"), end=q.get("end")
             )

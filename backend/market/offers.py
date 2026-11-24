@@ -12,7 +12,7 @@ from typing import Any
 from django.utils import timezone
 
 from catalog.models import Item
-from core import audit, home, org
+from core import audit, home, permissions
 from core.models import Tenant, User
 from core.subscription import has_feature
 from core.tenancy import require_tenant
@@ -52,9 +52,7 @@ def can_edit(viewer: home.Viewer) -> bool:
 
 def can_publish(viewer: home.Viewer) -> bool:
     """النشر النهائي بصلاحية أعلى إن ضُبط كذلك في ORG-02 (`market_publish`)."""
-    if viewer.is_owner:
-        return True
-    return org.cell_for(viewer.role_code or "", "market_publish").value == "yes"
+    return permissions.can(viewer, "market_publish").allowed
 
 
 def refresh_expiry(qs: Any = None) -> None:

@@ -1,6 +1,7 @@
 import { formatMinorShort, pushPending } from "@sting/app-core";
 import {
   bankReferenceUsed,
+  decidePermission,
   type LocalParty,
   type LocalReceipt,
   type LocalShift,
@@ -119,8 +120,15 @@ export default function Payment() {
       .then(setRefUsed);
   }, [method, reference]);
 
+  // «تسجيل سداد» من مصفوفة الأدوار — كالويب والخادم (0005 §٢٩٢)
+  const pay = decidePermission(ctx?.permissions, ctx?.roleCode, "record_payment");
+  const payDenied = ctx !== null && !pay.allowed;
+  const cashOnly = pay.value === "cash_only";
   const isOwner = ctx?.roleName === tx(T, "مالك") || ctx?.roleCode === "owner";
-  const canRefund = isOwner || ctx?.roleCode === "manager";
+  const canRefund = isOwner || pay.unrestricted;
+  useEffect(() => {
+    if (cashOnly && method === "bank") setMethod("cash");
+  }, [cashOnly, method]);
   const serverBalance = BigInt(party?.balance_minor || "0");
   const before = serverBalance + pending;
   const amountMinor = parseAmount(amount);
@@ -142,20 +150,21 @@ export default function Payment() {
         : amountMinor;
   const after = before + effect;
 
-  const state: State = denied
-    ? "permission_denied"
-    : phase === "saving"
-      ? "saving"
-      : phase === "saved"
-        ? push === "synced"
-          ? "success"
-          : "saved_local"
-        : attempted && invalid
-          ? "validation_error"
-          : "ready";
+  const state: State =
+    denied || payDenied
+      ? "permission_denied"
+      : phase === "saving"
+        ? "saving"
+        : phase === "saved"
+          ? push === "synced"
+            ? "success"
+            : "saved_local"
+          : attempted && invalid
+            ? "validation_error"
+            : "ready";
 
   const commit = async () => {
-    if (!party || !shift || !ctx || phase !== "idle") return;
+    if (!party || !shift || !ctx || phase !== "idle" || payDenied) return;
     setAttempted(true);
     if (invalid) return;
     setPhase("saving");
@@ -218,7 +227,7 @@ export default function Payment() {
             {tx(T, "التحويل البنكي لا يُسقط الذمة حتى المطابقة.")}
           </AppText>
 
-          {phase !== "saved" ? (
+          {phase !== "saved" && !payDenied ? (
             <Segments
               value={kind}
               onChange={(k) => {
@@ -235,7 +244,7 @@ export default function Payment() {
               ]}
             />
           ) : null}
-          {phase !== "saved" ? (
+          {phase !== "saved" && !payDenied ? (
             <AppText
               variant="note"
               muted
@@ -245,7 +254,14 @@ export default function Payment() {
             </AppText>
           ) : null}
 
-          {state === "permission_denied" ? (
+          {payDenied ? (
+            <StateView state="permission_denied" title={tx(T, "تسجيل السداد ليس من صلاحية دورك")}>
+              <AppText variant="secondary">
+                {tx(T, "صلاحية تسجيل السداد يمنحها المالك للدور في «الأدوار والصلاحيات».")}
+              </AppText>
+            </StateView>
+          ) : null}
+          {state === "permission_denied" && !payDenied ? (
             <StateView state="permission_denied" title={tx(T, "الكاشير يقبض ولا يردّ")}>
               <AppText variant="secondary">
                 {tx(
@@ -260,7 +276,7 @@ export default function Payment() {
             </StateView>
           ) : null}
 
-          {phase !== "saved" ? (
+          {phase !== "saved" && !payDenied ? (
             <>
               <AppText variant="title" style={{ marginBottom: SPACE["2"] }}>
                 {kind === "receipt" ? tx(T, "سداد من") : tx(T, "ردّ مبلغ إلى")} {party.name}
@@ -327,11 +343,20 @@ export default function Payment() {
               <Segments
                 value={method}
                 onChange={setMethod}
-                options={[
-                  ["cash", tx(T, "نقداً")],
-                  ["bank", tx(T, "تحويل بنكي")],
-                ]}
+                options={
+                  cashOnly
+                    ? [["cash", tx(T, "نقداً")]]
+                    : [
+                        ["cash", tx(T, "نقداً")],
+                        ["bank", tx(T, "تحويل بنكي")],
+                      ]
+                }
               />
+              {cashOnly ? (
+                <AppText variant="note" muted>
+                  {tx(T, "الوسيلة لدورك نقداً فقط.")}
+                </AppText>
+              ) : null}
               {method === "bank" ? (
                 <>
                   <TextField

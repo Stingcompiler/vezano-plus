@@ -1,5 +1,6 @@
 import { formatMinorShort, formatQty, pushPending } from "@sting/app-core";
 import {
+  decidePermission,
   type LocalSale,
   type LocalShift,
   readOpenShift,
@@ -35,9 +36,6 @@ import { useSession } from "@/lib/session";
 import { getStorage } from "@/lib/storage";
 
 const T = "POS-10";
-/** سقوف الردّ للدور (G-09 مؤقتاً — كالويب): المالك بلا سقف. */
-const CASH_CAP: Record<string, bigint> = { cashier: 20000n, manager: 500000n };
-const CREDIT_CAP: Record<string, bigint> = { cashier: 100000n, manager: 2000000n };
 
 interface RowState {
   readonly line: LocalSale["lines"][number];
@@ -119,10 +117,12 @@ export default function Return() {
           active.map((r) => ({ saleLineId: r.line.id, qtyMilli: r.now.toString() })),
         ).totalMinor
       : 0n;
-  const role = ctx?.roleCode ?? "cashier";
-  const isOwner = ctx?.roleName === "مالك" || role === "owner";
-  const cap = isOwner ? null : ((destination === "cash" ? CASH_CAP : CREDIT_CAP)[role] ?? null);
-  const overCap = cap !== null && total > cap;
+  // حدّ المرتجع من خلية «مرتجع» في مصفوفة الأدوار — كالويب والخادم (0005 §٢٩٢)
+  const refund = decidePermission(ctx?.permissions, ctx?.roleCode, "refund", {
+    amountMinor: total,
+  });
+  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
+  const overCap = !refund.allowed;
   const creditNoParty = destination === "credit" && !sale?.party_id;
   const allAvailable = rows.reduce((a, r) => a + r.available, 0n);
   const chosen = rows.reduce((a, r) => a + r.now, 0n);

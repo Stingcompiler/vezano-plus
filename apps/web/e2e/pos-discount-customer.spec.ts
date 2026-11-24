@@ -24,13 +24,15 @@ interface Seed {
   readonly parties?: readonly PartySeed[];
   readonly usedToday?: string;
   readonly role?: string;
+  /** «لا» في خلية الخصم بالمصفوفة (0005 §٢٩٢). */
+  readonly forbidden?: boolean;
 }
 
 /** وردية مفتوحة وسلة فيها شاي × 1 (240.00) وسقوف الكاشير كما قالها الخادم آخر مرة. */
 async function seed(page: Page, s: Seed = {}) {
   await openSeedPage(page);
   await page.evaluate(
-    async ({ parties, usedToday, role, openedAt }) => {
+    async ({ parties, usedToday, role, forbidden, openedAt }) => {
       const req = indexedDB.open("sting-bootstrap");
       const db = await new Promise<IDBDatabase>((res, rej) => {
         req.onsuccess = () => res(req.result);
@@ -59,6 +61,7 @@ async function seed(page: Page, s: Seed = {}) {
               daily_minor: "5000",
               percent: 10,
               used_today_minor: usedToday,
+              ...(forbidden ? { forbidden: true } : {}),
             },
           }),
         });
@@ -132,6 +135,7 @@ async function seed(page: Page, s: Seed = {}) {
       parties: s.parties ?? [],
       usedToday: s.usedToday ?? "2200",
       role: s.role ?? "كاشير",
+      forbidden: s.forbidden ?? false,
       openedAt: new Date().toISOString(),
     },
   );
@@ -207,6 +211,25 @@ const AHMAD2: PartySeed = {
 };
 
 test.describe("POS-03", () => {
+  test("permission_denied: «لا» في خلية الخصم تعني صفراً — منع ومسار اعتماد بلا «تخفيض» (0005 §٢٩٢)", async ({
+    page,
+  }) => {
+    await seed(page, { forbidden: true });
+    await login(page, "/pos/discount");
+    const root = page.locator('[data-screen="POS-03"]');
+    await expect(root).not.toContainText("حدّك كـ");
+    await page.getByLabel("قيمة الخصم").fill("0.50");
+    await page.getByLabel("السبب — إلزامي").fill("عميل دائم");
+    await page.getByRole("button", { name: "تطبيق الخصم" }).click();
+    await expect(root).toHaveAttribute("data-state", "permission_denied");
+    await expect(root).toContainText("الخصم ليس من صلاحية دورك");
+    await expect(root).toContainText(
+      "يحتاج اعتماد مدير الفرع أو المالك. الفاتورة محفوظة في السلة ولن تُفقد.",
+    );
+    await expect(page.getByRole("button", { name: "طلب اعتماد من مدير الفرع" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /تخفيض الخصم/ })).toHaveCount(0);
+  });
+
   test("ready: مبلغ/نسبة وسبب إلزامي وحدّ الدور معلن — الخصم يُطبَّق على السلة", async ({
     page,
   }, info) => {

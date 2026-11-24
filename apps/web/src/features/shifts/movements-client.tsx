@@ -10,6 +10,7 @@ import {
   saveCashMovement,
   type ShiftCash,
   type DiscountCaps,
+  type RoleRules,
   readReceiptCashRows,
   readReturnCashRows,
   readSaleCashRows,
@@ -146,6 +147,7 @@ export function MovementsClient() {
           owner_name: string;
           role_code?: string;
           discount_caps?: DiscountCaps;
+          permissions?: RoleRules;
           branch_code?: string;
           user_name: string;
         };
@@ -161,6 +163,7 @@ export function MovementsClient() {
           ownerName: d.owner_name,
           roleCode: d.role_code,
           discountCaps: d.discount_caps,
+          permissions: d.permissions,
           branchCode: d.branch_code || local?.branchCode,
           devicePrefix: local?.devicePrefix,
         };

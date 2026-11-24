@@ -69,6 +69,16 @@ export interface HomeSummary {
   readonly quick_actions: readonly ("sale" | "payment" | "return")[];
   readonly can_see_finance: boolean;
   readonly margin_locked: boolean;
+  /**
+   * خلايا دور المستخدم من مصفوفة الأدوار (0005 §٢٩٢) — `{value, limit_minor, period}` لكل مفتاح؛
+   * يقرّر بها `decidePermission` في `@sting/sync-core` ما يقرّره الخادم.
+   */
+  readonly permissions?: Readonly<
+    Record<
+      string,
+      { readonly value: string; readonly limit_minor: string | null; readonly period: string }
+    >
+  >;
   readonly shift: { readonly open_since: string; readonly device_name?: string } | null;
 }
 export interface SearchResult {

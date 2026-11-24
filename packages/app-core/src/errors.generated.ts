@@ -1012,6 +1012,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       status: 403,
       code: "finance_required",
     },
+    {
+      status: 403,
+      code: "permission_denied",
+    },
   ],
   "POST /api/inventory/items/{item_id}/damage": [
     {
@@ -1037,6 +1041,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "owner_required",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
     },
   ],
   "POST /api/inventory/purchasing/documents/{document_id}/{action}": [
@@ -2249,6 +2257,10 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "owner_required",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
     },
   ],
   "POST /api/support/backups": [

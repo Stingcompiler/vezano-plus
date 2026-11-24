@@ -3,6 +3,7 @@
 import {
   bankReferenceUsed,
   type LocalParty,
+  decidePermission,
   type LocalReceipt,
   type LocalShift,
   readLocalParties,
@@ -116,8 +117,16 @@ export function PaymentClient({ partyId }: { partyId: string }) {
     void bankReferenceUsed(getStorage(), reference).then(setRefUsed);
   }, [method, reference]);
 
+  // «تسجيل سداد» من مصفوفة الأدوار (0005 §٢٩٢): «لا» يمنع، «نقداً فقط» يقبض نقداً، والردّ (إخراج
+  // المال) لمن خليته «نعم» — القرار نفسه في الخادم
+  const pay = decidePermission(ctx?.permissions, ctx?.roleCode, "record_payment");
+  const payDenied = ctx !== null && !pay.allowed;
+  const cashOnly = pay.value === "cash_only";
   const isOwner = ctx?.roleName === "مالك" || ctx?.roleCode === "owner";
-  const canRefund = isOwner || ctx?.roleCode === "manager";
+  const canRefund = isOwner || pay.unrestricted;
+  useEffect(() => {
+    if (cashOnly && method === "bank") setMethod("cash");
+  }, [cashOnly, method]);
   const serverBalance = BigInt(party?.balance_minor || "0");
   const before = serverBalance + pending;
   const amountMinor = parseAmount(amount);
@@ -138,20 +147,21 @@ export function PaymentClient({ partyId }: { partyId: string }) {
         : amountMinor;
   const after = before + effect;
 
-  const state: State = denied
-    ? "permission_denied"
-    : phase === "saving"
-      ? "saving"
-      : phase === "saved"
-        ? push === "synced"
-          ? "success"
-          : "saved_local"
-        : attempted && invalid
-          ? "validation_error"
-          : "ready";
+  const state: State =
+    denied || payDenied
+      ? "permission_denied"
+      : phase === "saving"
+        ? "saving"
+        : phase === "saved"
+          ? push === "synced"
+            ? "success"
+            : "saved_local"
+          : attempted && invalid
+            ? "validation_error"
+            : "ready";
 
   const commit = async () => {
-    if (!party || !shift || !ctx || phase !== "idle") return;
+    if (!party || !shift || !ctx || phase !== "idle" || payDenied) return;
     setAttempted(true);
     if (invalid) return;
     setPhase("saving");
@@ -212,7 +222,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
           </div>
           {party ? (
             <div className="acc-card__body">
-              {phase !== "saved" ? (
+              {phase !== "saved" && !payDenied ? (
                 <div className="pos-chips" role="group" aria-label="نوع السند">
                   <button
                     type="button"
@@ -239,7 +249,14 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                 </div>
               ) : null}
 
-              {state === "permission_denied" ? (
+              {payDenied ? (
+                <Notice kind="locked" title="تسجيل السداد ليس من صلاحية دورك">
+                  <p className="acc-lead">
+                    صلاحية تسجيل السداد يمنحها المالك للدور في «الأدوار والصلاحيات».
+                  </p>
+                </Notice>
+              ) : null}
+              {state === "permission_denied" && !payDenied ? (
                 <Notice kind="locked" title="الكاشير يقبض ولا يردّ">
                   <p className="acc-lead">
                     القبض يزيد النقد والردّ يُخرجه. الفعلان متعاكسان في الأثر فلا يتساويان في
@@ -252,7 +269,7 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                 </Notice>
               ) : null}
 
-              {phase !== "saved" ? (
+              {phase !== "saved" && !payDenied ? (
                 <>
                   <h3 className="pos-credit__title">
                     {kind === "receipt" ? "سداد من" : "ردّ مبلغ إلى"} {party.name}
@@ -289,11 +306,16 @@ export function PaymentClient({ partyId }: { partyId: string }) {
                     name="m1"
                     value={method}
                     onChange={(v) => setMethod(v as ReceiptMethod)}
-                    options={[
-                      { value: "cash", label: "نقداً" },
-                      { value: "bank", label: "تحويل بنكي" },
-                    ]}
+                    options={
+                      cashOnly
+                        ? [{ value: "cash", label: "نقداً" }]
+                        : [
+                            { value: "cash", label: "نقداً" },
+                            { value: "bank", label: "تحويل بنكي" },
+                          ]
+                    }
                   />
+                  {cashOnly ? <p className="acc-choice__note">الوسيلة لدورك نقداً فقط.</p> : null}
                   {method === "bank" ? (
                     <>
                       <TextField

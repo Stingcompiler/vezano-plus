@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  decidePermission,
   type LocalSale,
   type LocalShift,
   readOpenShift,
@@ -44,19 +45,6 @@ import { today } from "./use-sale";
 
 type State =
   "ready" | "partial" | "validation_error" | "permission_denied" | "saved_local" | "success";
-
-/**
- * سقف الردّ النقدي بحسب الدور (G-09 مؤقتاً حتى ORG-02): «المرتجع يُخرج نقداً من الصندوق، وحدّه
- * المالي حدّ الدور». الخصم من الذمّة حدّه أوسع («الوجهة تغيّر الحكم») — القيم من عندي (0005 §٢٣).
- */
-const CASH_REFUND_CAP_MINOR: Record<string, bigint> = {
-  cashier: 20000n,
-  manager: 500000n,
-};
-const CREDIT_REFUND_CAP_MINOR: Record<string, bigint> = {
-  cashier: 100000n,
-  manager: 2000000n,
-};
 
 interface RowState {
   readonly line: LocalSale["lines"][number];
@@ -195,12 +183,12 @@ export function ReturnClient({ saleId }: { saleId: string }) {
   const allAvailable = rows.reduce((a, r) => a + r.available, 0n);
   const chosen = rows.reduce((a, r) => a + r.now, 0n);
   const exceeds = rows.some((r) => r.now > r.available);
-  const role = ctx?.roleCode ?? "cashier";
-  const isOwner = ctx?.roleName === "مالك" || role === "owner";
-  const cap = isOwner
-    ? null
-    : ((destination === "cash" ? CASH_REFUND_CAP_MINOR : CREDIT_REFUND_CAP_MINOR)[role] ?? null);
-  const overCap = cap !== null && total > cap;
+  // حدّ المرتجع من خلية «مرتجع» في مصفوفة الأدوار — القرار نفسه في الخادم (0005 §٢٩٢)؛ «لا» = صفر
+  const refund = decidePermission(ctx?.permissions, ctx?.roleCode, "refund", {
+    amountMinor: total,
+  });
+  const cap = refund.unrestricted ? null : (refund.limitMinor ?? 0n);
+  const overCap = !refund.allowed;
   const creditNoParty = destination === "credit" && !sale?.party_id;
 
   const state: State =

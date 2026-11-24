@@ -15,6 +15,7 @@ from parties.services import (
     balance_minor,
     identity_ids,
     party_figures,
+    receivables_visible_ids,
     statement_lines,
     supplier_documents,
     supplier_owed_minor,
@@ -109,6 +110,10 @@ def receivables_report(*, viewer: home.Viewer, side: str = "customers") -> dict[
     rows: list[dict[str, Any]] = []
     qs = Party.objects.filter(merged_into__isnull=True).order_by("name_normalized")
     qs = qs.filter(is_supplier=True) if side == "suppliers" else qs.filter(is_customer=True)
+    # «فرعه» في «رؤية ذمم كل العملاء»: عملاء فرعه وحدهم (0005 §٢٩٢؛ مراجعة 2026-11-22 O-01)
+    visible = receivables_visible_ids(viewer) if side == "customers" else None
+    if visible is not None:
+        qs = qs.filter(id__in=visible)
     parties = list(qs)
     figures = party_figures(parties)  # الرصيد لكل طرف باستعلامات ثابتة؛ الكشف لمن عليه فقط (§٢٨٧)
     for party in parties:
@@ -124,7 +129,7 @@ def receivables_report(*, viewer: home.Viewer, side: str = "customers") -> dict[
     total = sum(int(r["balance_minor"]) for r in rows)
     return {
         "side": side,
-        "scope": "all",
+        "scope": "all" if visible is None else "branch",
         "rows": rows,
         "totals": {"balance_minor": str(total), "parties": len(rows)},
         "computed_at": timezone.now().isoformat().replace("+00:00", "Z"),

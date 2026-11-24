@@ -15,7 +15,7 @@ from typing import Any
 
 from django.utils import timezone
 
-from core import audit, home, org
+from core import audit, home, permissions
 from core.models import Tenant, User
 from core.tenancy import platform_context, require_tenant
 from market.models import MarketAccount, MarketOffer, MarketOrder, MarketProfile
@@ -47,12 +47,7 @@ def _iso(dt: Any) -> str:
 def order_limit(viewer: home.Viewer) -> int | None:
     """الإرسال توقيع على مبلغ (`purchase_approve`): المالك بلا سقف؛ المحدود بسقفه؛ «لا» = بلا
     إرسال."""
-    if viewer.is_owner:
-        return None
-    cell = org.cell_for(viewer.role_code or "", "purchase_approve")
-    if cell.value == "no":
-        return 0
-    return cell.limit_minor if cell.value == "limit" else None
+    return permissions.limit_of(permissions.can(viewer, "purchase_approve"))
 
 
 # ------------------------------------------------------------------ التحقق من البنود (ORD-01)

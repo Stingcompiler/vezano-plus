@@ -19,9 +19,10 @@ from django.utils import timezone
 
 from core.models import Branch, Device, Role, Session, Tenant, User, UserBranchAccess
 
-# ---------- الأدوار والصلاحيات (حتى مصفوفة G-09) ----------
+# ---------- الأدوار والصلاحيات ----------
 
-SELL_ROLES = {"owner", "manager", "cashier"}
+#: «يرى المال» (تقارير المبيعات والصندوق والمخزون، والمعلّق على الأجهزة) — ليس من مفاتيح المصفوفة.
+#: البيع والذمم والسداد وغيرها من `core.permissions.can` (مصفوفة ORG-02 · 0005 §٢٩٢).
 FINANCE_ROLES = {"owner", "manager"}
 
 
@@ -36,7 +37,9 @@ class Viewer:
 
     @property
     def can_sell(self) -> bool:
-        return self.is_owner or self.role_code in SELL_ROLES
+        from core.permissions import can
+
+        return can(self, "sell").allowed
 
     @property
     def can_see_finance(self) -> bool:
@@ -120,8 +123,11 @@ def counted(n: int, one: str, two: str, few: str, many: str) -> str:
 
 
 def _quarantine_decision(viewer: Viewer, out: dict[str, Any]) -> None:
-    """«قرارات تنتظرك»: عمليات محجوزة (تعارض أو رفض) لم تُحسم — المالك يقرّر (SYS-03)."""
-    if not viewer.is_owner:
+    """«قرارات تنتظرك»: عمليات محجوزة (تعارض أو رفض) لم تُحسم — لمن يحسمها في المصفوفة
+    (`conflict_review`، SYS-03)."""
+    from core.permissions import can
+
+    if not can(viewer, "conflict_review"):
         return
     from sync.models import QuarantinedOperation
 
@@ -173,6 +179,8 @@ HOME_PROVIDERS.append(_market_decisions)
 def home_summary(
     tenant_id: uuid.UUID, viewer: Viewer, *, period: str = "today", branch_id: str = ""
 ) -> dict[str, Any]:
+    from core.permissions import can, rules_payload
+
     tenant = Tenant.objects.get(id=tenant_id)
     branches = list(Branch.objects.filter(is_active=True).order_by("created_at"))
     devices_pending = Session.objects.filter(
@@ -199,8 +207,14 @@ def home_summary(
         "kpis": [],
         "attention": [],
         "tasks": [],
-        "quick_actions": ["sale", "payment", "return"] if viewer.can_sell else [],
+        # الأفعال السريعة بقرار المصفوفة نفسه الذي تقرّره شاشاتها (0005 §٢٩٢)
+        "quick_actions": [
+            a
+            for a, key in (("sale", "sell"), ("payment", "record_payment"), ("return", "refund"))
+            if can(viewer, key)
+        ],
         "can_see_finance": viewer.can_see_finance,
+        "permissions": rules_payload(viewer),
         "margin_locked": True,
         "shift": None,
     }

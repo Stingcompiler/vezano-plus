@@ -333,7 +333,7 @@ def test_openings_review_approve_once_per_item(
     with tenant_context(ctx["tenant"].id):
         assert catalog_services.branch_balances(other.id) == {}
     r = cc.post(f"/api/inventory/openings/{oid}/approve", **ch)  # type: ignore[arg-type]
-    assert r.status_code == 403 and r.json()["detail"] == "owner_required"
+    assert r.status_code == 403 and r.json()["detail"] == "permission_denied"
     r = c.get(f"/api/inventory/openings?branch_id={other.id}", **h)  # type: ignore[arg-type]
     assert r.status_code == 200 and r.json()["can_approve"] is True
     assert [o["status"] for o in r.json()["openings"]] == ["submitted"]
@@ -456,7 +456,7 @@ def test_count_session_review_and_adjust_with_reasons(ctx: dict[str, Any]) -> No
         content_type="application/json",
         **ch,  # type: ignore[arg-type]
     )
-    assert r.status_code == 403 and r.json()["detail"] == "finance_required"
+    assert r.status_code == 403 and r.json()["detail"] == "permission_denied"
     assert cc.get(f"/api/inventory/count-sessions/{sid}", **ch).json()["can_adjust"] is False  # type: ignore[arg-type]
     # التسوية بسبب: حركة count −1 بمستند TS-0001 وفاعل وسبب؛ الدفتري 8
     r = c.post(

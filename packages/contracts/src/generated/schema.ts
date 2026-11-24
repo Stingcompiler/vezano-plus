@@ -4769,8 +4769,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description REP-05: للمالك وحده — «من يرى الهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها
-         *     محجوبة لغيره (تبقى في القائمة بقفل ظاهر).
+         * @description REP-05: بخلية «رؤية التكلفة والهامش» (`cost_margin_view`) كشاشة التكلفة PUR-05 — «من يرى
+         *     الهامش يرى التكلفة بالطرح، فالحجب الجزئي وهم»؛ الشاشة كلها محجوبة لمن لا تسمح له المصفوفة،
+         *     وغير المالك يرى فرعه (مراجعة 2026-11-22 O-11؛ 0005 §٢٩٢).
          */
         get: operations["reports_margin_retrieve"];
         put?: never;
@@ -7307,6 +7308,73 @@ export interface components {
             kpis: unknown[];
             margin_locked: boolean;
             period: string;
+            permissions: {
+                campaign_approve: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                campaign_create: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                close_short: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                conflict_review: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                cost_margin_view: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                discount: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                market_publish: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                purchase_approve: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                record_payment: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                refund: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                sell: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                stock_adjust: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                view_receivables: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+            };
             quick_actions: string[];
             sales_today?: {
                 cash_minor: string;
@@ -14234,6 +14302,7 @@ export interface components {
                 supplier_owed_minor: string;
                 updated_at: string;
             }[];
+            scope: string;
             summary: {
                 count: number;
                 total_due_minor: string;
@@ -17428,6 +17497,7 @@ export interface components {
                 abandoned: boolean;
                 branch_id: string;
                 branch_name: string;
+                can_settle: boolean;
                 closed_at: string;
                 count_status: string;
                 counted_by_name: string;
@@ -17519,12 +17589,80 @@ export interface components {
             device_name: string;
             discount_caps: {
                 daily_minor: string;
+                forbidden: boolean;
                 per_op_minor: string;
                 percent: number;
                 used_today_minor: string;
             };
             others_open: unknown[];
             owner_name: string;
+            permissions: {
+                campaign_approve: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                campaign_create: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                close_short: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                conflict_review: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                cost_margin_view: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                discount: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                market_publish: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                purchase_approve: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                record_payment: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                refund: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                sell: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                stock_adjust: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+                view_receivables: {
+                    limit_minor: string | null;
+                    period: string;
+                    value: string;
+                };
+            };
             previous: null;
             role_code: string;
             role_name: string;
@@ -17540,6 +17678,7 @@ export interface components {
                 abandoned: boolean;
                 branch_id: string;
                 branch_name: string;
+                can_settle: boolean;
                 closed_at: string;
                 count_status: string;
                 counted_by_name: string;
@@ -17785,6 +17924,7 @@ export interface components {
         };
         GetSyncQuarantineResponse: {
             as_of: string;
+            can_review: boolean;
             is_owner: boolean;
             items: {
                 code: string;
@@ -17825,6 +17965,7 @@ export interface components {
         };
         GetSyncQuarantineByItemIdResponse: {
             acceptable: boolean;
+            can_review: boolean;
             confirmed: {
                 actor_name: string;
                 device_id: string;

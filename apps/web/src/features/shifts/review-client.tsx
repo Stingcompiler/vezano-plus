@@ -79,6 +79,8 @@ interface ServerRow {
   readonly abandoned: boolean;
   readonly review: Review | null;
   readonly late_items: readonly LateItem[];
+  /** حدّ «إغلاق وردية بعجز» لهذا العجز (0005 §٢٩٢) — غيابه = قرار الشاشة كله. */
+  readonly can_settle?: boolean;
 }
 
 interface ReviewData {
@@ -109,6 +111,7 @@ interface Row {
   readonly varianceMinor: string;
   readonly review: Review | null;
   readonly lateItems: readonly LateItem[];
+  readonly withinLimit: boolean;
 }
 
 /** «حركتين معلقتين» / «4 ساعات» — صيغ العدد تتبع المعدود؛ الرقم لاتيني في mono. */
@@ -171,6 +174,7 @@ function toRow(s: ServerRow): Row {
     varianceMinor: s.variance_minor,
     review: s.review,
     lateItems: s.late_items,
+    withinLimit: s.can_settle ?? true,
   };
 }
 
@@ -197,6 +201,7 @@ function localRow(s: ClosedShift): Row {
     varianceMinor: variance,
     review: null,
     lateItems: [],
+    withinLimit: true,
   };
 }
 
@@ -713,7 +718,7 @@ function ReviewCard({
         </p>
       ) : null}
 
-      {needsReason && canSettle ? (
+      {needsReason && canSettle && r.withinLimit ? (
         <TextField
           label="السبب"
           hint="إلزامي"
@@ -731,7 +736,13 @@ function ReviewCard({
             loading={busy}
             financial
             disabledReason={
-              !canSettle ? "التسوية للمالك" : needsReason && !reason.trim() ? "السبب" : undefined
+              !canSettle
+                ? "التسوية للمالك"
+                : !r.withinLimit
+                  ? "العجز فوق حدّك"
+                  : needsReason && !reason.trim()
+                    ? "السبب"
+                    : undefined
             }
           >
             إقرار المراجعة

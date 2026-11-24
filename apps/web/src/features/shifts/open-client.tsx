@@ -5,6 +5,7 @@ import {
   openShiftLocally,
   readOpenShift,
   type DiscountCaps,
+  type RoleRules,
 } from "@sting/sync-core";
 import {
   Button,
@@ -122,6 +123,7 @@ export function OpenShiftClient() {
           owner_name: string;
           role_code?: string;
           discount_caps?: DiscountCaps;
+          permissions?: RoleRules;
           branch_code?: string;
           previous: Previous | null;
         };
@@ -137,6 +139,7 @@ export function OpenShiftClient() {
           ownerName: d.owner_name,
           roleCode: d.role_code,
           discountCaps: d.discount_caps,
+          permissions: d.permissions,
           branchCode: d.branch_code || local?.branchCode,
           devicePrefix: local?.devicePrefix,
         };

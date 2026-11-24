@@ -356,28 +356,36 @@ test.describe("POS-10", () => {
     await expect(page.locator(".pos-ret__qty").first()).toHaveText("3");
   });
 
-  test("permission_denied: ردّ نقدي فوق حدّ الكاشير — والوجهة تغيّر الحكم", async ({
+  test("permission_denied: مرتجع فوق حدّ الكاشير في خلية «مرتجع» (حتى 500 — 0005 §٢٩٢)", async ({
     page,
   }, info) => {
     await seed(page, { party: true });
     await login(page, RETURN);
-    // الزيت 300.00 > حدّ الكاشير النقدي 200.00
+    // الزيت 300.00 داخل حدّ الكاشير (حتى 500 في المصفوفة) — لا منع
     await plus(page, "زيت 1 لتر").click();
+    await expect(page.locator('[data-screen="POS-10"]')).not.toHaveAttribute(
+      "data-state",
+      "permission_denied",
+    );
+    // + عبوتا شاي 240.00 = 540.00 > 500.00
+    await plus(page, "شاي أسود 250غ").click();
+    await plus(page, "شاي أسود 250غ").click();
     await expectFrame(page, info, {
       screenId: "POS-10",
       state: "permission_denied",
       texts: fromFrame("POS-10", "permission_denied", [
         "ردّ نقدي فوق الحدّ",
         "المرتجع يُخرج نقداً من الصندوق، وحدّه المالي حدّ الدور",
-        "الوجهة تغيّر الحكم",
-        "الرد إلى ذمّة الطرف تخفيضُ دينٍ يحتمل حدّاً أوسع؛ إخراج النقد أضيق. الحدّان منفصلان في",
       ]),
     });
-    await expect(page.locator("body")).toContainText("الحدّان منفصلان في «الأدوار والصلاحيات».");
+    await expect(page.locator('[data-screen="POS-10"]')).toContainText("500.00");
     await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeDisabled();
+    // الحدّ واحد في المصفوفة لأي وجهة
     await page.getByLabel("خصماً من ذمة العميل").check();
-    await expect(page.locator('[data-screen="POS-10"]')).toHaveAttribute("data-state", "partial");
-    await expect(page.getByRole("button", { name: "تسجيل المرتجع" })).toBeEnabled();
+    await expect(page.locator('[data-screen="POS-10"]')).toHaveAttribute(
+      "data-state",
+      "permission_denied",
+    );
   });
 
   test("saved_local: مرتجع تالف بلا اتصال — محفوظ محلياً، إلى الحجر لا المخزون، والصندوق لا ينتظر", async ({

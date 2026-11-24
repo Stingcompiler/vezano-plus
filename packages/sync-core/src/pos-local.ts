@@ -302,19 +302,23 @@ export function cartTotals(lines: readonly CartDraftLine[], discount?: CartDisco
 
 // ─── الخصم وسقوف الدور (POS-03؛ §٧.٤؛ G-09 مؤقتاً) ──────────────────────────
 
-/** سقوف الدور كما يعيدها الخادم مع `shifts/current`؛ صفر = بلا حدّ. */
+/**
+ * سقوف الدور كما يعيدها الخادم مع `shifts/current`؛ صفر = بلا حدّ. `forbidden` = «لا» في خلية الخصم
+ * بالمصفوفة: لا خصم أصلاً (0005 §٢٩٢).
+ */
 export interface DiscountCaps {
   readonly per_op_minor: string;
   readonly daily_minor: string;
   readonly percent: number;
   readonly used_today_minor: string;
+  readonly forbidden?: boolean | undefined;
 }
 
 export type DiscountCheck =
   | { readonly ok: true; readonly minor: bigint }
   | {
       readonly ok: false;
-      readonly reason: "invalid" | "over_op" | "over_percent" | "over_daily";
+      readonly reason: "invalid" | "forbidden" | "over_op" | "over_percent" | "over_daily";
       readonly cap: string;
       readonly minor: bigint;
     };
@@ -328,8 +332,11 @@ export function checkDiscount(
   if (!/^(0|[1-9][0-9]*)$/.test(d.value) || BigInt(d.value) === 0n)
     return { ok: false, reason: "invalid", cap: "", minor: 0n };
   const minor = discountMinorOf(d, subtotal);
+  if (d.mode === "percent" && BigInt(d.value) > 100n)
+    return { ok: false, reason: "invalid", cap: "", minor };
+  // «لا» في المصفوفة = لا خصم: يُعرض المنع ومسار الاعتماد، لا «تخفيض إلى الحدّ»
+  if (caps.forbidden) return { ok: false, reason: "forbidden", cap: "0", minor };
   if (d.mode === "percent") {
-    if (BigInt(d.value) > 100n) return { ok: false, reason: "invalid", cap: "", minor };
     if (caps.percent > 0 && Number(d.value) > caps.percent)
       return { ok: false, reason: "over_percent", cap: String(caps.percent), minor };
   } else {

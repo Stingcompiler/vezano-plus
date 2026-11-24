@@ -21,6 +21,7 @@ from catalog.limits import FieldError, Rejected
 from core import home
 from core.auth.tokens import AuthContext
 from core.models import Branch
+from core.permissions import can
 from core.tenancy import platform_context, tenant_context
 from parties import services
 from parties.models import Party, PartyMerge, PaymentReceipt, StatementExport
@@ -28,6 +29,12 @@ from parties.models import Party, PartyMerge, PaymentReceipt, StatementExport
 
 def _tenant(auth: Any) -> uuid.UUID | None:
     return auth.tenant_id if isinstance(auth, AuthContext) else None
+
+
+def _sees_balances(viewer: home.Viewer) -> bool:
+    """الأرصدة بخلية «رؤية ذمم كل العملاء» (`view_receivables`) في المصفوفة: «نعم» و«فرعه» يريان؛
+    «عميل البيع فقط» يرى رصيد من يبيع له وقت البيع لا القائمة؛ «لا» لا يرى (0005 §٢٩٢)."""
+    return can(viewer, "view_receivables").allowed
 
 
 class PartiesView(APIView):
@@ -56,9 +63,8 @@ class PartiesView(APIView):
             parties = [services.party_payload(p) for p in rows]
             # البحث للاختيار لا للكشف: الرصيد لمن يرى المال، كما كشف الحساب وقائمة العملاء
             # (مراجعة 2026-11-05 بند ٨)
-            if (
-                isinstance(auth, AuthContext)
-                and not home.viewer_for(auth.user, auth.device).can_see_finance
+            if isinstance(auth, AuthContext) and not _sees_balances(
+                home.viewer_for(auth.user, auth.device)
             ):
                 for row in parties:
                     row["balance_minor"] = ""
@@ -125,12 +131,16 @@ class PartyListView(APIView):
         kind = "suppliers" if request.query_params.get("kind") == "suppliers" else "customers"
         with tenant_context(tid):
             viewer = home.viewer_for(auth.user, auth.device)
-            finance = viewer.can_see_finance
+            finance = _sees_balances(viewer)
             if kind == "customers" and not finance:
                 return Response({"detail": "finance_required"}, status=status.HTTP_403_FORBIDDEN)
             # المدموج يختفي من القوائم ويبقى في السجل (ACC-78)
             qs = Party.objects.filter(is_active=True, merged_into__isnull=True)
             qs = qs.filter(is_supplier=True) if kind == "suppliers" else qs.filter(is_customer=True)
+            # «فرعه»: عملاء فرعه وحدهم؛ الموردون أسماءً للجميع كما كانوا
+            visible = services.receivables_visible_ids(viewer) if kind == "customers" else None
+            if visible is not None:
+                qs = qs.filter(id__in=visible)
             parties = list(qs.order_by("name_normalized"))
             figures = services.party_figures(parties)  # استعلامات ثابتة لا لكل طرف (§٢٨٧)
             rows = [
@@ -147,6 +157,7 @@ class PartyListView(APIView):
                 {
                     "kind": kind,
                     "can_see_balances": finance,
+                    "scope": "all" if visible is None else "branch",
                     "role_name": viewer.role_name,
                     "as_of": timezone.now().isoformat(),
                     "rows": rows,
@@ -182,14 +193,15 @@ class PartyCardView(APIView):
         note = serializers.CharField(allow_blank=True, required=False, default="", max_length=300)
 
     def _card(self, party: Party, viewer: home.Viewer) -> dict[str, Any]:
-        row = services.list_payload(party, with_balances=viewer.can_see_finance)
+        sees = _sees_balances(viewer)
+        row = services.list_payload(party, with_balances=sees)
         row["can_edit"] = _can_edit(viewer)
         row["can_open_balance"] = viewer.is_owner
         row["has_movements"] = services.has_movements(party)
         # الرصيد الافتتاحي مبلغ: يُحجب كما يُحجب الرصيد نفسه (مراجعة 2026-11-10 ع-٧)
         row["opening_balances"] = (
             [services.opening_payload(ob) for ob in party.opening_balances.order_by("occurred_at")]
-            if viewer.can_see_finance
+            if sees
             else []
         )
         row["potential_duplicates"] = [
@@ -198,7 +210,7 @@ class PartyCardView(APIView):
         # وعد السداد معلومة مالية: يُحجب كما يُحجب الرصيد (0005 §٢٨٨)
         row["promise"] = (
             services.promise_payload(party)
-            if viewer.can_see_finance
+            if sees
             else {"promised_on": "", "note": "", "set_by_name": "", "set_at": ""}
         )
         return row
@@ -476,12 +488,16 @@ class PartyStatementView(APIView):
         rng = str(request.query_params.get("range", "30"))
         with tenant_context(tid):
             viewer = home.viewer_for(auth.user, auth.device)
-            if not viewer.can_see_finance:
+            decision = can(viewer, "view_receivables")
+            if not decision:
                 return Response({"detail": "finance_required"}, status=status.HTTP_403_FORBIDDEN)
             party = Party.objects.filter(id=party_id).first()
             if party is None:
                 return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
-            visible = None if viewer.is_owner else ([viewer.branch.id] if viewer.branch else [])
+            # «نعم» يرى سطور الفروع كلها؛ «فرعه» سطور فرعه والرصيد المؤسسي كاملاً (ACC-46)
+            visible = (
+                None if decision.unrestricted else ([viewer.branch.id] if viewer.branch else [])
+            )
             since = None if rng == "all" else timezone.now() - timedelta(days=30)
             # كشف المورد بجهته (المرحلة ٣ من مراجعة الأطراف؛ 0005 §٢٨٤): «له علينا» لا «عليه»
             if request.query_params.get("side") == "supplier":
