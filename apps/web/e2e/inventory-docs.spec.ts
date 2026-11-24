@@ -502,6 +502,11 @@ test.describe("INV-04", () => {
       styles: [[".cat-head__title", "color", "brand.strong"]],
     });
     await expect(page.locator("body")).not.toContainText("لا سدّاً يمنع");
+    // د-١ (0005 §٢٨٩): الملاحظة تطابق السلوك — الاستلام يُدخل المخزون، والمستند يُربط به لا يُدخله ثانيةً
+    await expect(page.locator("body")).toContainText(
+      "الاستلام يُدخل المخزون وحده. للذمّة سجّل مستند الشراء واربطه بهذا الاستلام.",
+    );
+    await expect(page.locator("body")).not.toContainText("للذمّة سجّل مستند شراء.");
     const root = page.locator('[data-screen="INV-04"]');
     await expect(root).toContainText("40 كرتونة 12×1كغ = 480 كيس");
     await page.getByRole("button", { name: "تسجيل الاستلام" }).click();

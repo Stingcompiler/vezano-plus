@@ -1247,7 +1247,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description approve · refer · return */
+        /** @description approve · receipts (ربط باستلام قائم — د-١) · refer · return */
         post: operations["inventory_purchasing_documents_create"];
         delete?: never;
         options?: never;
@@ -7853,6 +7853,7 @@ export interface components {
                         unit_name: string;
                     }[];
                     due_at: string;
+                    linked_receipts?: unknown[];
                     payable_minor: string;
                     stock: {
                         item_name: string;
@@ -7869,6 +7870,7 @@ export interface components {
                     excess_reason: string;
                     factor_milli: string;
                     id: string;
+                    is_gift: boolean;
                     item_id: string;
                     item_name: string;
                     line_no: number;
@@ -7880,11 +7882,13 @@ export interface components {
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
+                linked_receipts: unknown[];
                 note: string;
                 number: string;
                 order_estimated_minor: string;
                 order_id: string;
                 order_number: string;
+                receipt_candidates: unknown[];
                 receipt_number: string;
                 referred_at: string;
                 referred_to_name: string;
@@ -7965,6 +7969,7 @@ export interface components {
                     excess_reason: string;
                     factor_milli: string;
                     id: string;
+                    is_gift: boolean;
                     item_id: string;
                     item_name: string;
                     line_no: number;
@@ -7976,11 +7981,19 @@ export interface components {
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
+                linked_receipts: {
+                    occurred_at: string;
+                    receipt_id: string;
+                    receipt_number: string;
+                    supplier_name: string;
+                    user_name: string;
+                }[];
                 note: string;
                 number: string;
                 order_estimated_minor: string;
                 order_id: string;
                 order_number: string;
+                receipt_candidates: unknown[];
                 receipt_number: string;
                 referred_at: string;
                 referred_to_name: string;
@@ -8026,6 +8039,7 @@ export interface components {
                         unit_name: string;
                     }[];
                     due_at?: string;
+                    linked_receipts?: string[];
                     payable_minor?: string;
                     stock?: {
                         item_name: string;
@@ -8042,6 +8056,7 @@ export interface components {
                     excess_reason: string;
                     factor_milli: string;
                     id: string;
+                    is_gift: boolean;
                     item_id: string;
                     item_name: string;
                     line_no: number;
@@ -8053,11 +8068,19 @@ export interface components {
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
+                linked_receipts: {
+                    occurred_at: string;
+                    receipt_id: string;
+                    receipt_number: string;
+                    supplier_name: string;
+                    user_name: string;
+                }[];
                 note: string;
                 number: string;
                 order_estimated_minor: string;
                 order_id: string;
                 order_number: string;
+                receipt_candidates: unknown[];
                 receipt_number: string;
                 referred_at: string;
                 referred_to_name: string;
@@ -8279,6 +8302,10 @@ export interface components {
                 approved_by_name: string;
                 blockers: {
                     code: string;
+                    item_name?: string;
+                    line_id?: string;
+                    receipt_id?: string;
+                    receipt_number?: string;
                     title: string;
                 }[];
                 branch_id: string;
@@ -8288,7 +8315,23 @@ export interface components {
                 diff_count: number;
                 due_at: string;
                 due_days: number;
-                effects: Record<string, never>;
+                effects: {
+                    branch_name?: string;
+                    cost?: {
+                        after_minor: string;
+                        before_minor: string;
+                        item_name: string;
+                        unit_name: string;
+                    }[];
+                    due_at?: string;
+                    linked_receipts?: unknown[];
+                    payable_minor?: string;
+                    stock?: {
+                        item_name: string;
+                        qty_milli: string;
+                        unit_name: string;
+                    }[];
+                };
                 id: string;
                 lines: {
                     base_qty_milli: string;
@@ -8298,6 +8341,7 @@ export interface components {
                     excess_reason: string;
                     factor_milli: string;
                     id: string;
+                    is_gift: boolean;
                     item_id: string;
                     item_name: string;
                     line_no: number;
@@ -8309,11 +8353,19 @@ export interface components {
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
+                linked_receipts: unknown[];
                 note: string;
                 number: string;
                 order_estimated_minor: string;
                 order_id: string;
                 order_number: string;
+                receipt_candidates: {
+                    occurred_at: string;
+                    receipt_id: string;
+                    receipt_number: string;
+                    supplier_name: string;
+                    user_name: string;
+                }[];
                 receipt_number: string;
                 referred_at: string;
                 referred_to_name: string;

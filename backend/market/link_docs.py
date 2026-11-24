@@ -407,7 +407,7 @@ def convert(
                 unit_price_minor=r["price_minor"],
                 line_no=i,
             )
-        purchase_docs.approve(actor=actor, viewer=viewer, document=doc)
+        purchase_docs.approve(actor=actor, viewer=viewer, document=doc, market=True)
         link = MarketDocumentLink.objects.create(
             tenant_id=require_tenant(),
             kind=MarketDocumentLink.Kind.RECEIPT,

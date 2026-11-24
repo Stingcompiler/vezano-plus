@@ -50,6 +50,7 @@ interface Adjustment {
   readonly adjustment_number: string;
   readonly decided_by_name: string;
   readonly line_count: number;
+  readonly lines?: readonly { readonly item_id: string; readonly reason: string }[];
 }
 
 interface Review {
@@ -199,6 +200,9 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
   const missing = diffs.filter((r) => !(reasons[r.id] ?? "").trim() || serverMissing.has(r.id));
   const canAdjust = review?.can_adjust ?? false;
   const already = review?.session.status === "adjusted" ? review.adjustment : null;
+  // I-03 (0005 §٢٨٩): الجلسة المسوّاة تعرض أسباب تسويتها كما قُرّرت
+  const decidedReason = (itemId: string) =>
+    reasons[itemId] || already?.lines?.find((x) => x.item_id === itemId)?.reason || "";
 
   const state: State = done
     ? "success"
@@ -281,7 +285,7 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
         r.deltaMilli === 0n ? (
           "—"
         ) : already ? (
-          <span>{reasons[r.id] || "—"}</span>
+          <span>{decidedReason(r.id) || "—"}</span>
         ) : (
           <TextField
             label={`السبب — ${r.name}`}
@@ -331,9 +335,11 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
                     <span className="sting-mono">{review?.variance_count ?? 0}</span> فروق من{" "}
                     <span className="sting-mono">{s.counted_items}</span> صنفاً
                   </h3>
-                  <div className="acc-choice__note">
-                    العدّ الفعلي محفوظ كما أُدخل. الرصيد لم يتغيّر بعد — يتغيّر عند التسوية فقط.
-                  </div>
+                  {!already ? (
+                    <div className="acc-choice__note">
+                      العدّ الفعلي محفوظ كما أُدخل. الرصيد لم يتغيّر بعد — يتغيّر عند التسوية فقط.
+                    </div>
+                  ) : null}
                 </div>
                 <span className="inv-head__chip">
                   <Status

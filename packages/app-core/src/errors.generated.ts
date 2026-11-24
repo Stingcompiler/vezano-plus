@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (230 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (232 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -140,6 +140,7 @@ export const API_ERROR_CODES = [
   "open_shift",
   "operator_required",
   "operator_scope_publish_only",
+  "order_cancelled",
   "out_of_scope",
   "over_limit",
   "owner_locked",
@@ -174,6 +175,7 @@ export const API_ERROR_CODES = [
   "rate_limited",
   "reason_required",
   "reasons_required",
+  "receipt_not_candidate",
   "reconciling",
   "reference_required",
   "reference_used",
@@ -1047,7 +1049,15 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
     {
       status: 400,
+      code: "document_locked",
+    },
+    {
+      status: 400,
       code: "lines_invalid",
+    },
+    {
+      status: 400,
+      code: "receipt_not_candidate",
     },
     {
       status: 403,
@@ -1062,6 +1072,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "permission_denied",
+    },
+  ],
+  "POST /api/inventory/purchasing/orders/{order_id}/document": [
+    {
+      status: 400,
+      code: "order_cancelled",
     },
   ],
   "POST /api/inventory/purchasing/orders/{order_id}/{action}": [
