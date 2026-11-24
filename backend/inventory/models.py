@@ -242,7 +242,8 @@ class StockAdjustment(TenantScoped):
 
 
 class StockAdjustmentLine(TenantScoped):
-    """فرق مسوًّى بسببه المكتوب: الدفتري لحظة التسوية والمعدود والفرق."""
+    """فرق مسوًّى بسببه المكتوب: الدفتري لحظة العدّ (منذ 0005 §٢٨٩؛ قبلها لحظة التسوية) والمعدود
+    والفرق المطبَّق على الرصيد."""
 
     adjustment = models.ForeignKey(StockAdjustment, on_delete=models.CASCADE, related_name="lines")
     item_id = models.UUIDField()
@@ -544,6 +545,8 @@ class PurchaseDocumentLine(TenantScoped):
     est_unit_price_minor = models.BigIntegerField(null=True, blank=True)
     #: سبب الزيادة عن الأمر — إلزامي حين المستلَم > المطلوب
     excess_reason = models.CharField(max_length=300, blank=True, default="")
+    #: «هدية من المورد — بلا سعر» (I-05، 0005 §٢٨٩): السعر صفر مقصود لا منسيّ
+    is_gift = models.BooleanField(default=False)
     line_no = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -553,6 +556,37 @@ class PurchaseDocumentLine(TenantScoped):
 
     def __str__(self) -> str:
         return f"{self.document_id}:{self.item_name}"
+
+
+class PurchaseDocumentReceipt(TenantScoped):
+    """د-١ (0005 §٢٨٩): الاستلام وحده يُدخل المخزون، ومستند الشراء يضيف السعر والذمّة.
+
+    `linked`: المستند يسعّر استلاماً قائماً (INV-04) — كمياته من الاستلام، واعتماده لا يُنشئ حركة
+    مخزون. `distinct`: قال المستخدم إن الاستلام شحنة أخرى، فلا يُعرض عليه ثانيةً لهذا المستند.
+    الاستلام نفسه لا يُعدَّل: سجلّ أمين المخزن يبقى كما كُتب."""
+
+    class Kind(models.TextChoices):
+        LINKED = "linked", "مربوط"
+        DISTINCT = "distinct", "شحنة مختلفة"
+
+    document = models.ForeignKey(
+        PurchaseDocument, on_delete=models.CASCADE, related_name="receipt_links"
+    )
+    receipt = models.ForeignKey(
+        GoodsReceipt, on_delete=models.CASCADE, related_name="document_links"
+    )
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    decided_by_name = models.CharField(max_length=200, blank=True, default="")
+    decided_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "id"], name="inventory_pdocrcpt_tenant_id"),
+            models.UniqueConstraint(fields=["document", "receipt"], name="inventory_pdocrcpt_once"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.document_id}:{self.receipt_id}:{self.kind}"
 
 
 class PurchaseReturn(TenantScoped):

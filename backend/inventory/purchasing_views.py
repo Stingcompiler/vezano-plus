@@ -268,7 +268,7 @@ class PurchaseDocumentDetailView(APIView):
 
 
 class PurchaseDocumentActionView(APIView):
-    """approve · refer · return"""
+    """approve · receipts (ربط باستلام قائم — د-١) · refer · return"""
 
     permission_classes = (IsAuthenticated,)
 
@@ -297,6 +297,14 @@ class PurchaseDocumentActionView(APIView):
                         )
                         d.refresh_from_db()
                     purchase_docs.approve(actor=auth.user, viewer=v, document=d)
+                elif action == "receipts":
+                    purchase_docs.link_receipts(
+                        actor=auth.user,
+                        viewer=v,
+                        document=d,
+                        link=[str(x) for x in body.get("link") or []],
+                        distinct=[str(x) for x in body.get("distinct") or []],
+                    )
                 elif action == "refer":
                     purchase_docs.refer(actor=auth.user, viewer=v, document=d)
                 elif action == "return":

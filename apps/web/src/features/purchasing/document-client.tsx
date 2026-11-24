@@ -1,8 +1,17 @@
 "use client";
 
-import { Button, formatMinor, formatQty, Frame, Notice, Status, TextField } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  formatQty,
+  Frame,
+  Notice,
+  Status,
+  SwitchField,
+  TextField,
+} from "@sting/ui-web";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import "@/features/acc/acc.css";
 import "@/features/home/home.css";
@@ -27,16 +36,32 @@ export interface DocLine {
   est_unit_price_minor: string;
   line_total_minor: string;
   excess_reason: string;
+  is_gift: boolean;
   returned_qty_milli: string;
   diff: "" | "qty" | "price";
 }
 
 interface Blocker {
-  code: "invoice_number_required" | "excess_reason_required";
+  code:
+    | "invoice_number_required"
+    | "excess_reason_required"
+    | "price_required"
+    | "receipt_link_required";
   line_id?: string;
   item_name?: string;
   received_qty_milli?: string;
   ordered_qty_milli?: string;
+  receipt_id?: string;
+  receipt_number?: string;
+}
+
+/** استلام INV-04 قائم (د-١ — 0005 §٢٨٩): مرشّح للربط أو مربوط بالمستند. */
+export interface ReceiptBrief {
+  receipt_id: string;
+  receipt_number: string;
+  supplier_name: string;
+  user_name: string;
+  occurred_at: string;
 }
 
 export interface Doc {
@@ -63,7 +88,10 @@ export interface Doc {
     cost?: { item_name: string; before_minor: string; after_minor: string; unit_name: string }[];
     branch_name?: string;
     payable_minor?: string;
+    linked_receipts?: string[];
   };
+  linked_receipts: ReceiptBrief[];
+  receipt_candidates: ReceiptBrief[];
   blockers: Blocker[];
   approval: {
     viewer_name: string;
@@ -96,7 +124,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
   const [denied, setDenied] = useState(false);
   const [invoice, setInvoice] = useState("");
   const [edits, setEdits] = useState<
-    Record<string, { qty?: string; price?: string; reason?: string }>
+    Record<string, { qty?: string; price?: string; reason?: string; gift?: boolean }>
   >({});
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -149,6 +177,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
             ? String(Math.round(Number(e.price || "0") * 100))
             : l.unit_price_minor,
         excess_reason: e.reason ?? l.excess_reason,
+        is_gift: e.gift ?? l.is_gift,
       };
     });
 
@@ -187,6 +216,26 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
     }
   };
 
+  /** «اربط بالاستلام» أو «شحنتان مختلفتان» — يُحفظ ما كُتب أولاً، ثم القرار على الاستلام. */
+  const decideReceipt = async (receiptId: string, kind: "link" | "distinct") => {
+    if (!doc || busy) return;
+    setBusy(true);
+    try {
+      await save();
+      const { data, response } = await api().POST(
+        "/api/inventory/purchasing/documents/{document_id}/{action}",
+        {
+          params: { path: { document_id: doc.id, action: "receipts" } },
+          body: { [kind]: [receiptId] } as never,
+        },
+      );
+      const body = data as unknown as { document: Doc } | undefined;
+      if (response.ok && body) applyDoc(body.document);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const refer = async () => {
     if (!doc || busy) return;
     setBusy(true);
@@ -217,6 +266,26 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
   const invoiceMissing = doc?.blockers.some((b) => b.code === "invoice_number_required");
   const excessOf = (lineId: string) =>
     doc?.blockers.find((b) => b.code === "excess_reason_required" && b.line_id === lineId);
+  const priceMissing = (lineId: string) =>
+    doc?.blockers.some((b) => b.code === "price_required" && b.line_id === lineId);
+  // المستند المربوط باستلام: الكمية ما استُلم، ولا يدخل المخزون مرة ثانية (د-١)
+  const linkedNumbers = doc
+    ? doc.status === "approved"
+      ? (doc.effects.linked_receipts ?? [])
+      : (doc.linked_receipts ?? []).map((r) => r.receipt_number)
+    : [];
+  const linkedLine = linkedNumbers.length ? (
+    <p className="acc-lead">
+      <strong>المخزون</strong> · دخل من الاستلام{" "}
+      {linkedNumbers.map((n, i) => (
+        <Fragment key={n}>
+          {i > 0 ? "، " : ""}
+          <span className="sting-mono">{n}</span>
+        </Fragment>
+      ))}{" "}
+      — لا يدخل مرة ثانية.
+    </p>
+  ) : null;
   const lineNote = (l: DocLine) =>
     l.diff === "qty"
       ? `${qty(l.ordered_qty_milli)} ${l.unit_name}`
@@ -266,6 +335,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                     </>
                   ) : null}
                 </p>
+                {doc.status !== "approved" ? linkedLine : null}
                 {doc.diff_count && doc.status !== "approved" ? (
                   <p className="acc-lead">
                     من يعتمد يوقّع على{" "}
@@ -275,6 +345,39 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                 ) : null}
               </div>
             ) : null}
+
+            {doc && doc.status !== "approved"
+              ? (doc.receipt_candidates ?? []).map((rc) => (
+                  <Notice
+                    key={rc.receipt_id}
+                    kind="warning"
+                    title={
+                      <>
+                        يوجد استلام <span className="sting-mono">{rc.receipt_number}</span> من{" "}
+                        {rc.supplier_name} بالأصناف نفسها.
+                      </>
+                    }
+                  >
+                    <p className="acc-lead">اربطه بدل إدخال المخزون مرة ثانية.</p>
+                    <div className="acc-actions">
+                      <Button
+                        pos
+                        onClick={() => void decideReceipt(rc.receipt_id, "link")}
+                        loading={busy}
+                      >
+                        اربط بالاستلام
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => void decideReceipt(rc.receipt_id, "distinct")}
+                        loading={busy}
+                      >
+                        شحنتان مختلفتان
+                      </Button>
+                    </div>
+                  </Notice>
+                ))
+              : null}
 
             {doc && state === "permission_denied" && !denied ? (
               <Notice
@@ -309,7 +412,9 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
               </Notice>
             ) : null}
 
-            {doc && state === "validation_error" ? (
+            {doc &&
+            state === "validation_error" &&
+            doc.blockers.some((b) => b.code !== "receipt_link_required") ? (
               <Notice kind="error" title="مستند بلا رقم فاتورة المورد">
                 <p className="acc-lead">
                   الاستلام مكتمل والاعتماد ممنوع: رقم فاتورة المورد فارغ، وصنفٌ استُلم بكمية تفوق
@@ -329,6 +434,13 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                       <span className="sting-mono">{qty(b.received_qty_milli ?? "0")}</span> مقابل{" "}
                       <span className="sting-mono">{qty(b.ordered_qty_milli ?? "0")}</span> مطلوبة
                       يحتاج سطراً: هديّة، أم خطأ المورد، أم تعديل متّفق عليه هاتفياً.
+                    </p>
+                  ))}
+                {doc.blockers
+                  .filter((b) => b.code === "price_required")
+                  .map((b) => (
+                    <p className="acc-lead" key={b.line_id}>
+                      <strong>{b.item_name}</strong> · سعر الوحدة مطلوب للاعتماد.
                     </p>
                   ))}
                 <p className="acc-choice__note">
@@ -351,10 +463,19 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                   </Button>
                 }
               >
-                <p className="acc-lead">تحرّك المخزون وتحرّكت الذمّة الآن.</p>
-                <p className="acc-lead">
-                  <strong>المخزون</strong> · {stockSentence(doc.effects)}
-                </p>
+                {linkedLine ? (
+                  <>
+                    <p className="acc-lead">تحرّكت الذمّة الآن.</p>
+                    {linkedLine}
+                  </>
+                ) : (
+                  <>
+                    <p className="acc-lead">تحرّك المخزون وتحرّكت الذمّة الآن.</p>
+                    <p className="acc-lead">
+                      <strong>المخزون</strong> · {stockSentence(doc.effects)}
+                    </p>
+                  </>
+                )}
                 {(doc.effects.cost ?? [])
                   .filter((c) => c.before_minor !== c.after_minor && c.before_minor !== "0")
                   .map((c) => (
@@ -432,7 +553,7 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                             <strong>{l.item_name}</strong> — {lineNote(l)}
                           </td>
                           <td>
-                            {doc.status === "approved" ? (
+                            {doc.status === "approved" || linkedNumbers.length ? (
                               <>
                                 <span className="sting-mono">{qty(l.received_qty_milli)}</span>{" "}
                                 {l.unit_name}
@@ -475,22 +596,46 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                             {doc.status === "approved" ? (
                               <span className="sting-mono">{formatMinor(l.unit_price_minor)}</span>
                             ) : (
-                              <TextField
-                                label={`سعر ${l.unit_name} — ${l.item_name}`}
-                                mono
-                                value={e.price ?? formatMinor(l.unit_price_minor).replace(/,/g, "")}
-                                onChange={(ev) =>
-                                  setEdits((p) => ({
-                                    ...p,
-                                    [l.id]: { ...p[l.id], price: ev.target.value },
-                                  }))
-                                }
-                                hint={
-                                  l.est_unit_price_minor
-                                    ? `في الأمر ${formatMinor(l.est_unit_price_minor)}`
-                                    : undefined
-                                }
-                              />
+                              <>
+                                {!(e.gift ?? l.is_gift) ? (
+                                  <TextField
+                                    label={`سعر ${l.unit_name} — ${l.item_name}`}
+                                    mono
+                                    value={
+                                      e.price ?? formatMinor(l.unit_price_minor).replace(/,/g, "")
+                                    }
+                                    onChange={(ev) =>
+                                      setEdits((p) => ({
+                                        ...p,
+                                        [l.id]: { ...p[l.id], price: ev.target.value },
+                                      }))
+                                    }
+                                    hint={
+                                      l.est_unit_price_minor
+                                        ? `في الأمر ${formatMinor(l.est_unit_price_minor)}`
+                                        : undefined
+                                    }
+                                    error={
+                                      attempted && priceMissing(l.id) && e.price === undefined
+                                        ? "سعر الوحدة مطلوب للاعتماد."
+                                        : undefined
+                                    }
+                                  />
+                                ) : null}
+                                {(e.gift ?? l.is_gift) ||
+                                Number(e.price ?? l.unit_price_minor) === 0 ? (
+                                  <SwitchField
+                                    label="هدية من المورد — بلا سعر"
+                                    checked={e.gift ?? l.is_gift}
+                                    onChange={(v) =>
+                                      setEdits((p) => ({
+                                        ...p,
+                                        [l.id]: { ...p[l.id], gift: v },
+                                      }))
+                                    }
+                                  />
+                                ) : null}
+                              </>
                             )}
                           </td>
                           <td>
