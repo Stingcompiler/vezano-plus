@@ -7448,7 +7448,7 @@ export interface components {
             }[];
         };
         GetHomeResponse: {
-            attention: ({
+            attention: {
                 action: string;
                 detail: string;
                 href: string;
@@ -7456,7 +7456,7 @@ export interface components {
                 minutes: number;
                 title: string;
                 title_count: number;
-            } | unknown)[];
+            }[];
             branch_id: string;
             branches: {
                 id: string;
@@ -7465,31 +7465,11 @@ export interface components {
             branches_synced: boolean;
             can_see_finance: boolean;
             coverage_at: string;
-            decisions: (unknown | {
-                action: string;
-                detail: string;
-                href: string;
-                id: string;
-                severity: string;
-                title: string;
-            })[];
+            decisions: unknown[];
             decisions_count: number;
             devices_total: number;
             kind: string;
-            kpis: (unknown | {
-                as_of: string;
-                href: string;
-                key: string;
-                label: string;
-                note: string;
-                note_kind: string;
-                scope: string;
-                value: {
-                    amount_minor: string;
-                    exponent: number;
-                    kind: string;
-                };
-            })[];
+            kpis: unknown[];
             margin_locked: boolean;
             period: string;
             permissions: {

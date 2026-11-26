@@ -548,7 +548,7 @@ test.describe("SHIFT-03 السحب بإذن المالك", () => {
 
 // ─── APR-01 «طلبات تنتظرك» ──────────────────────────────────────────────────
 
-function item(over: Record<string, unknown>) {
+function item(over: { readonly id: string } & Record<string, unknown>) {
   return {
     status: "pending",
     reason: "زبون دائم",

@@ -19690,37 +19690,32 @@
         "properties": {
           "attention": {
             "items": {
-              "anyOf": [
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "action": {
-                      "type": "string"
-                    },
-                    "detail": {
-                      "type": "string"
-                    },
-                    "href": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "minutes": {
-                      "type": "integer"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "title_count": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": ["id", "title_count", "title", "minutes", "detail", "action", "href"],
-                  "type": "object"
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string"
                 },
-                {}
-              ]
+                "detail": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "minutes": {
+                  "type": "integer"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "title_count": {
+                  "type": "integer"
+                }
+              },
+              "required": ["id", "title_count", "title", "minutes", "detail", "action", "href"],
+              "type": "object"
             },
             "type": "array"
           },
@@ -19753,36 +19748,7 @@
             "type": "string"
           },
           "decisions": {
-            "items": {
-              "anyOf": [
-                {},
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "action": {
-                      "type": "string"
-                    },
-                    "detail": {
-                      "type": "string"
-                    },
-                    "href": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "severity": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["id", "title", "detail", "action", "href", "severity"],
-                  "type": "object"
-                }
-              ]
-            },
+            "items": {},
             "type": "array"
           },
           "decisions_count": {
@@ -19795,64 +19761,7 @@
             "type": "string"
           },
           "kpis": {
-            "items": {
-              "anyOf": [
-                {},
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "as_of": {
-                      "type": "string"
-                    },
-                    "href": {
-                      "type": "string"
-                    },
-                    "key": {
-                      "type": "string"
-                    },
-                    "label": {
-                      "type": "string"
-                    },
-                    "note": {
-                      "type": "string"
-                    },
-                    "note_kind": {
-                      "type": "string"
-                    },
-                    "scope": {
-                      "type": "string"
-                    },
-                    "value": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "amount_minor": {
-                          "type": "string"
-                        },
-                        "exponent": {
-                          "type": "integer"
-                        },
-                        "kind": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["kind", "amount_minor", "exponent"],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "key",
-                    "label",
-                    "value",
-                    "scope",
-                    "note",
-                    "note_kind",
-                    "as_of",
-                    "href"
-                  ],
-                  "type": "object"
-                }
-              ]
-            },
+            "items": {},
             "type": "array"
           },
           "margin_locked": {
