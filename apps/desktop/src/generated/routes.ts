@@ -3,172 +3,174 @@ import type { PageModule } from "../page-host";
 
 import * as P0 from "@/app/account/pin/page";
 import * as P1 from "@/app/account/sessions/page";
-import * as P2 from "@/app/catalog/[id]/page";
-import * as P3 from "@/app/catalog/[id]/price/page";
-import * as P4 from "@/app/catalog/[id]/units/page";
-import * as P5 from "@/app/catalog/groups/page";
-import * as P6 from "@/app/catalog/import/page";
-import * as P7 from "@/app/catalog/labels/page";
-import * as P8 from "@/app/catalog/new/page";
-import * as P9 from "@/app/catalog/page";
-import * as P10 from "@/app/create-org/page";
-import * as P11 from "@/app/demo/track/page";
-import * as P12 from "@/app/dev/probe/page";
-import * as P13 from "@/app/feedback/page";
-import * as P14 from "@/app/forbidden/page";
-import * as P15 from "@/app/grow/promote/page";
-import * as P16 from "@/app/grow/replenish/page";
-import * as P17 from "@/app/grow/suppliers/page";
-import * as P18 from "@/app/install/page";
-import * as P19 from "@/app/inventory/count/[id]/review/page";
-import * as P20 from "@/app/inventory/count/page";
-import * as P21 from "@/app/inventory/items/[id]/damage/page";
-import * as P22 from "@/app/inventory/items/[id]/page";
-import * as P23 from "@/app/inventory/openings/page";
-import * as P24 from "@/app/inventory/page";
-import * as P25 from "@/app/inventory/receive/page";
-import * as P26 from "@/app/inventory/transfers/[id]/receive/page";
-import * as P27 from "@/app/inventory/transfers/new/page";
-import * as P28 from "@/app/inventory/transfers/page";
-import * as P29 from "@/app/invite/[token]/page";
-import * as P30 from "@/app/legal/page";
-import * as P31 from "@/app/link-expired/page";
-import * as P32 from "@/app/lock/page";
-import * as P33 from "@/app/login/page";
-import * as P34 from "@/app/market/cart/page";
-import * as P35 from "@/app/market/checkout/page";
-import * as P36 from "@/app/market/directory/page";
-import * as P37 from "@/app/market/following/page";
-import * as P38 from "@/app/market/i/[token]/page";
-import * as P39 from "@/app/market/link/documents/page";
-import * as P40 from "@/app/market/link/items/page";
-import * as P41 from "@/app/market/link/parties/page";
-import * as P42 from "@/app/market/link/receipts/page";
-import * as P43 from "@/app/market/link/returns/page";
-import * as P44 from "@/app/market/lists/[id]/page";
-import * as P45 from "@/app/market/lists/new/page";
-import * as P46 from "@/app/market/lists/page";
-import * as P47 from "@/app/market/offers/[id]/page";
-import * as P48 from "@/app/market/offers/new/page";
-import * as P49 from "@/app/market/offers/page";
-import * as P50 from "@/app/market/offers/public/[id]/page";
-import * as P51 from "@/app/market/orders/[id]/cancel-remaining/page";
-import * as P52 from "@/app/market/orders/[id]/compare/page";
-import * as P53 from "@/app/market/orders/[id]/disputes/page";
-import * as P54 from "@/app/market/orders/[id]/page";
-import * as P55 from "@/app/market/orders/[id]/payment/page";
-import * as P56 from "@/app/market/orders/[id]/quote/page";
-import * as P57 from "@/app/market/orders/[id]/receive/page";
-import * as P58 from "@/app/market/orders/[id]/restore/page";
-import * as P59 from "@/app/market/orders/[id]/return/page";
-import * as P60 from "@/app/market/orders/[id]/ship/page";
-import * as P61 from "@/app/market/orders/incoming/page";
-import * as P62 from "@/app/market/orders/page";
-import * as P63 from "@/app/market/orders/recover/page";
-import * as P64 from "@/app/market/page";
-import * as P65 from "@/app/market/profile/page";
-import * as P66 from "@/app/market/renewals/page";
-import * as P67 from "@/app/market/report/page";
-import * as P68 from "@/app/market/reports/[id]/page";
-import * as P69 from "@/app/market/reports/page";
-import * as P70 from "@/app/market/search/page";
-import * as P71 from "@/app/market/seller/page";
-import * as P72 from "@/app/market/share/page";
-import * as P73 from "@/app/market/suppliers/[id]/page";
-import * as P74 from "@/app/market/unavailable/page";
-import * as P75 from "@/app/notify/campaigns/[id]/approve/page";
-import * as P76 from "@/app/notify/campaigns/[id]/page";
-import * as P77 from "@/app/notify/campaigns/new/page";
-import * as P78 from "@/app/notify/campaigns/page";
-import * as P79 from "@/app/notify/inbox/[id]/page";
-import * as P80 from "@/app/notify/inbox/page";
-import * as P81 from "@/app/notify/page";
-import * as P82 from "@/app/notify/preferences/page";
-import * as P83 from "@/app/onboarding/page";
-import * as P84 from "@/app/org/apps/page";
-import * as P85 from "@/app/org/audit/page";
-import * as P86 from "@/app/org/branches/page";
-import * as P87 from "@/app/org/devices/page";
-import * as P88 from "@/app/org/roles/page";
-import * as P89 from "@/app/org/settings/page";
-import * as P90 from "@/app/org/subscription/expiry/page";
-import * as P91 from "@/app/org/subscription/page";
-import * as P92 from "@/app/org/subscription/receipts/[id]/page";
-import * as P93 from "@/app/org/subscription/renew/page";
-import * as P94 from "@/app/org/users/[id]/revoke/page";
-import * as P95 from "@/app/org/users/page";
-import * as P96 from "@/app/page";
-import * as P97 from "@/app/parties/[id]/merge/page";
-import * as P98 from "@/app/parties/[id]/offset/page";
-import * as P99 from "@/app/parties/[id]/opening/page";
-import * as P100 from "@/app/parties/[id]/page";
-import * as P101 from "@/app/parties/[id]/pay/page";
-import * as P102 from "@/app/parties/[id]/payment/page";
-import * as P103 from "@/app/parties/[id]/statement/page";
-import * as P104 from "@/app/parties/[id]/statement/share/page";
-import * as P105 from "@/app/parties/[id]/supplier-statement/page";
-import * as P106 from "@/app/parties/new/page";
-import * as P107 from "@/app/parties/new-supplier/page";
-import * as P108 from "@/app/parties/page";
-import * as P109 from "@/app/parties/receipts/[receiptId]/correct/page";
-import * as P110 from "@/app/parties/receipts/matching/page";
-import * as P111 from "@/app/parties/suppliers/page";
-import * as P112 from "@/app/plans/page";
-import * as P113 from "@/app/portal/[slug]/inbox/page";
-import * as P114 from "@/app/portal/[slug]/page";
-import * as P115 from "@/app/portal/[slug]/status/page";
-import * as P116 from "@/app/portal/[slug]/subscribe/page";
-import * as P117 from "@/app/portal/prefs/page";
-import * as P118 from "@/app/pos/customer/page";
-import * as P119 from "@/app/pos/discount/page";
-import * as P120 from "@/app/pos/duplicates/page";
-import * as P121 from "@/app/pos/invoices/[id]/page";
-import * as P122 from "@/app/pos/invoices/[id]/return/page";
-import * as P123 from "@/app/pos/invoices/page";
-import * as P124 from "@/app/pos/page";
-import * as P125 from "@/app/pos/pay/credit/page";
-import * as P126 from "@/app/pos/pay/mixed/page";
-import * as P127 from "@/app/pos/pay/page";
-import * as P128 from "@/app/pos/receipt/[id]/page";
-import * as P129 from "@/app/pos/receipt/[id]/problem/page";
-import * as P130 from "@/app/print/page";
-import * as P131 from "@/app/purchasing/cost-margin/page";
-import * as P132 from "@/app/purchasing/documents/[id]/page";
-import * as P133 from "@/app/purchasing/documents/[id]/return/page";
-import * as P134 from "@/app/purchasing/orders/[id]/document/page";
-import * as P135 from "@/app/purchasing/orders/[id]/page";
-import * as P136 from "@/app/purchasing/orders/new/page";
-import * as P137 from "@/app/purchasing/orders/page";
-import * as P138 from "@/app/purchasing/returns/[id]/page";
-import * as P139 from "@/app/register/page";
-import * as P140 from "@/app/reports/cash/page";
-import * as P141 from "@/app/reports/export/page";
-import * as P142 from "@/app/reports/margin/page";
-import * as P143 from "@/app/reports/page";
-import * as P144 from "@/app/reports/receivables/page";
-import * as P145 from "@/app/reports/stock/page";
-import * as P146 from "@/app/search/page";
-import * as P147 from "@/app/select-org/page";
-import * as P148 from "@/app/session-expired/page";
-import * as P149 from "@/app/setup-device/page";
-import * as P150 from "@/app/shifts/close/page";
-import * as P151 from "@/app/shifts/current/page";
-import * as P152 from "@/app/shifts/movements/page";
-import * as P153 from "@/app/shifts/open/page";
-import * as P154 from "@/app/shifts/review/page";
-import * as P155 from "@/app/status/page";
-import * as P156 from "@/app/support/page";
-import * as P157 from "@/app/sync/backup/page";
-import * as P158 from "@/app/sync/epoch/page";
-import * as P159 from "@/app/sync/import/page";
-import * as P160 from "@/app/sync/operations/[id]/page";
-import * as P161 from "@/app/sync/page";
-import * as P162 from "@/app/sync/recovery/page";
-import * as P163 from "@/app/sync/restore/page";
-import * as P164 from "@/app/sync/review/page";
-import * as P165 from "@/app/sync/storage/page";
-import * as P166 from "@/app/sync/update/page";
-import * as P167 from "@/app/welcome/page";
+import * as P2 from "@/app/approvals/page";
+import * as P3 from "@/app/catalog/[id]/page";
+import * as P4 from "@/app/catalog/[id]/price/page";
+import * as P5 from "@/app/catalog/[id]/units/page";
+import * as P6 from "@/app/catalog/groups/page";
+import * as P7 from "@/app/catalog/import/page";
+import * as P8 from "@/app/catalog/labels/page";
+import * as P9 from "@/app/catalog/new/page";
+import * as P10 from "@/app/catalog/page";
+import * as P11 from "@/app/create-org/page";
+import * as P12 from "@/app/demo/track/page";
+import * as P13 from "@/app/dev/probe/page";
+import * as P14 from "@/app/feedback/page";
+import * as P15 from "@/app/forbidden/page";
+import * as P16 from "@/app/grow/promote/page";
+import * as P17 from "@/app/grow/replenish/page";
+import * as P18 from "@/app/grow/suppliers/page";
+import * as P19 from "@/app/install/page";
+import * as P20 from "@/app/inventory/count/[id]/review/page";
+import * as P21 from "@/app/inventory/count/page";
+import * as P22 from "@/app/inventory/items/[id]/damage/page";
+import * as P23 from "@/app/inventory/items/[id]/page";
+import * as P24 from "@/app/inventory/openings/page";
+import * as P25 from "@/app/inventory/page";
+import * as P26 from "@/app/inventory/receive/page";
+import * as P27 from "@/app/inventory/transfers/[id]/receive/page";
+import * as P28 from "@/app/inventory/transfers/new/page";
+import * as P29 from "@/app/inventory/transfers/page";
+import * as P30 from "@/app/invite/[token]/page";
+import * as P31 from "@/app/legal/page";
+import * as P32 from "@/app/link-expired/page";
+import * as P33 from "@/app/lock/page";
+import * as P34 from "@/app/login/page";
+import * as P35 from "@/app/market/cart/page";
+import * as P36 from "@/app/market/checkout/page";
+import * as P37 from "@/app/market/directory/page";
+import * as P38 from "@/app/market/following/page";
+import * as P39 from "@/app/market/i/[token]/page";
+import * as P40 from "@/app/market/link/documents/page";
+import * as P41 from "@/app/market/link/items/page";
+import * as P42 from "@/app/market/link/parties/page";
+import * as P43 from "@/app/market/link/receipts/page";
+import * as P44 from "@/app/market/link/returns/page";
+import * as P45 from "@/app/market/lists/[id]/page";
+import * as P46 from "@/app/market/lists/new/page";
+import * as P47 from "@/app/market/lists/page";
+import * as P48 from "@/app/market/offers/[id]/page";
+import * as P49 from "@/app/market/offers/new/page";
+import * as P50 from "@/app/market/offers/page";
+import * as P51 from "@/app/market/offers/public/[id]/page";
+import * as P52 from "@/app/market/orders/[id]/cancel-remaining/page";
+import * as P53 from "@/app/market/orders/[id]/compare/page";
+import * as P54 from "@/app/market/orders/[id]/disputes/page";
+import * as P55 from "@/app/market/orders/[id]/page";
+import * as P56 from "@/app/market/orders/[id]/payment/page";
+import * as P57 from "@/app/market/orders/[id]/quote/page";
+import * as P58 from "@/app/market/orders/[id]/receive/page";
+import * as P59 from "@/app/market/orders/[id]/restore/page";
+import * as P60 from "@/app/market/orders/[id]/return/page";
+import * as P61 from "@/app/market/orders/[id]/ship/page";
+import * as P62 from "@/app/market/orders/incoming/page";
+import * as P63 from "@/app/market/orders/page";
+import * as P64 from "@/app/market/orders/recover/page";
+import * as P65 from "@/app/market/page";
+import * as P66 from "@/app/market/profile/page";
+import * as P67 from "@/app/market/renewals/page";
+import * as P68 from "@/app/market/report/page";
+import * as P69 from "@/app/market/reports/[id]/page";
+import * as P70 from "@/app/market/reports/page";
+import * as P71 from "@/app/market/search/page";
+import * as P72 from "@/app/market/seller/page";
+import * as P73 from "@/app/market/share/page";
+import * as P74 from "@/app/market/suppliers/[id]/page";
+import * as P75 from "@/app/market/unavailable/page";
+import * as P76 from "@/app/notify/campaigns/[id]/approve/page";
+import * as P77 from "@/app/notify/campaigns/[id]/page";
+import * as P78 from "@/app/notify/campaigns/new/page";
+import * as P79 from "@/app/notify/campaigns/page";
+import * as P80 from "@/app/notify/inbox/[id]/page";
+import * as P81 from "@/app/notify/inbox/page";
+import * as P82 from "@/app/notify/page";
+import * as P83 from "@/app/notify/preferences/page";
+import * as P84 from "@/app/onboarding/page";
+import * as P85 from "@/app/org/apps/page";
+import * as P86 from "@/app/org/audit/page";
+import * as P87 from "@/app/org/branches/page";
+import * as P88 from "@/app/org/devices/page";
+import * as P89 from "@/app/org/roles/page";
+import * as P90 from "@/app/org/settings/page";
+import * as P91 from "@/app/org/subscription/expiry/page";
+import * as P92 from "@/app/org/subscription/page";
+import * as P93 from "@/app/org/subscription/receipts/[id]/page";
+import * as P94 from "@/app/org/subscription/renew/page";
+import * as P95 from "@/app/org/users/[id]/revoke/page";
+import * as P96 from "@/app/org/users/page";
+import * as P97 from "@/app/page";
+import * as P98 from "@/app/parties/[id]/merge/page";
+import * as P99 from "@/app/parties/[id]/offset/page";
+import * as P100 from "@/app/parties/[id]/opening/page";
+import * as P101 from "@/app/parties/[id]/page";
+import * as P102 from "@/app/parties/[id]/pay/page";
+import * as P103 from "@/app/parties/[id]/payment/page";
+import * as P104 from "@/app/parties/[id]/statement/page";
+import * as P105 from "@/app/parties/[id]/statement/share/page";
+import * as P106 from "@/app/parties/[id]/supplier-statement/page";
+import * as P107 from "@/app/parties/new/page";
+import * as P108 from "@/app/parties/new-supplier/page";
+import * as P109 from "@/app/parties/page";
+import * as P110 from "@/app/parties/receipts/[receiptId]/correct/page";
+import * as P111 from "@/app/parties/receipts/matching/page";
+import * as P112 from "@/app/parties/suppliers/page";
+import * as P113 from "@/app/plans/page";
+import * as P114 from "@/app/portal/[slug]/inbox/page";
+import * as P115 from "@/app/portal/[slug]/page";
+import * as P116 from "@/app/portal/[slug]/status/page";
+import * as P117 from "@/app/portal/[slug]/subscribe/page";
+import * as P118 from "@/app/portal/prefs/page";
+import * as P119 from "@/app/pos/customer/page";
+import * as P120 from "@/app/pos/discount/page";
+import * as P121 from "@/app/pos/duplicates/page";
+import * as P122 from "@/app/pos/held/page";
+import * as P123 from "@/app/pos/invoices/[id]/page";
+import * as P124 from "@/app/pos/invoices/[id]/return/page";
+import * as P125 from "@/app/pos/invoices/page";
+import * as P126 from "@/app/pos/page";
+import * as P127 from "@/app/pos/pay/credit/page";
+import * as P128 from "@/app/pos/pay/mixed/page";
+import * as P129 from "@/app/pos/pay/page";
+import * as P130 from "@/app/pos/receipt/[id]/page";
+import * as P131 from "@/app/pos/receipt/[id]/problem/page";
+import * as P132 from "@/app/print/page";
+import * as P133 from "@/app/purchasing/cost-margin/page";
+import * as P134 from "@/app/purchasing/documents/[id]/page";
+import * as P135 from "@/app/purchasing/documents/[id]/return/page";
+import * as P136 from "@/app/purchasing/orders/[id]/document/page";
+import * as P137 from "@/app/purchasing/orders/[id]/page";
+import * as P138 from "@/app/purchasing/orders/new/page";
+import * as P139 from "@/app/purchasing/orders/page";
+import * as P140 from "@/app/purchasing/returns/[id]/page";
+import * as P141 from "@/app/register/page";
+import * as P142 from "@/app/reports/cash/page";
+import * as P143 from "@/app/reports/export/page";
+import * as P144 from "@/app/reports/margin/page";
+import * as P145 from "@/app/reports/page";
+import * as P146 from "@/app/reports/receivables/page";
+import * as P147 from "@/app/reports/stock/page";
+import * as P148 from "@/app/search/page";
+import * as P149 from "@/app/select-org/page";
+import * as P150 from "@/app/session-expired/page";
+import * as P151 from "@/app/setup-device/page";
+import * as P152 from "@/app/shifts/close/page";
+import * as P153 from "@/app/shifts/current/page";
+import * as P154 from "@/app/shifts/movements/page";
+import * as P155 from "@/app/shifts/open/page";
+import * as P156 from "@/app/shifts/review/page";
+import * as P157 from "@/app/status/page";
+import * as P158 from "@/app/support/page";
+import * as P159 from "@/app/sync/backup/page";
+import * as P160 from "@/app/sync/epoch/page";
+import * as P161 from "@/app/sync/import/page";
+import * as P162 from "@/app/sync/operations/[id]/page";
+import * as P163 from "@/app/sync/page";
+import * as P164 from "@/app/sync/recovery/page";
+import * as P165 from "@/app/sync/restore/page";
+import * as P166 from "@/app/sync/review/page";
+import * as P167 from "@/app/sync/storage/page";
+import * as P168 from "@/app/sync/update/page";
+import * as P169 from "@/app/welcome/page";
 
 export interface DesktopRoute {
   readonly path: string;
@@ -178,170 +180,172 @@ export interface DesktopRoute {
 export const ROUTES: readonly DesktopRoute[] = [
   { path: "/account/pin", mod: P0 },
   { path: "/account/sessions", mod: P1 },
-  { path: "/catalog/:id", mod: P2 },
-  { path: "/catalog/:id/price", mod: P3 },
-  { path: "/catalog/:id/units", mod: P4 },
-  { path: "/catalog/groups", mod: P5 },
-  { path: "/catalog/import", mod: P6 },
-  { path: "/catalog/labels", mod: P7 },
-  { path: "/catalog/new", mod: P8 },
-  { path: "/catalog", mod: P9 },
-  { path: "/create-org", mod: P10 },
-  { path: "/demo/track", mod: P11 },
-  { path: "/dev/probe", mod: P12 },
-  { path: "/feedback", mod: P13 },
-  { path: "/forbidden", mod: P14 },
-  { path: "/grow/promote", mod: P15 },
-  { path: "/grow/replenish", mod: P16 },
-  { path: "/grow/suppliers", mod: P17 },
-  { path: "/install", mod: P18 },
-  { path: "/inventory/count/:id/review", mod: P19 },
-  { path: "/inventory/count", mod: P20 },
-  { path: "/inventory/items/:id/damage", mod: P21 },
-  { path: "/inventory/items/:id", mod: P22 },
-  { path: "/inventory/openings", mod: P23 },
-  { path: "/inventory", mod: P24 },
-  { path: "/inventory/receive", mod: P25 },
-  { path: "/inventory/transfers/:id/receive", mod: P26 },
-  { path: "/inventory/transfers/new", mod: P27 },
-  { path: "/inventory/transfers", mod: P28 },
-  { path: "/invite/:token", mod: P29 },
-  { path: "/legal", mod: P30 },
-  { path: "/link-expired", mod: P31 },
-  { path: "/lock", mod: P32 },
-  { path: "/login", mod: P33 },
-  { path: "/market/cart", mod: P34 },
-  { path: "/market/checkout", mod: P35 },
-  { path: "/market/directory", mod: P36 },
-  { path: "/market/following", mod: P37 },
-  { path: "/market/i/:token", mod: P38 },
-  { path: "/market/link/documents", mod: P39 },
-  { path: "/market/link/items", mod: P40 },
-  { path: "/market/link/parties", mod: P41 },
-  { path: "/market/link/receipts", mod: P42 },
-  { path: "/market/link/returns", mod: P43 },
-  { path: "/market/lists/:id", mod: P44 },
-  { path: "/market/lists/new", mod: P45 },
-  { path: "/market/lists", mod: P46 },
-  { path: "/market/offers/:id", mod: P47 },
-  { path: "/market/offers/new", mod: P48 },
-  { path: "/market/offers", mod: P49 },
-  { path: "/market/offers/public/:id", mod: P50 },
-  { path: "/market/orders/:id/cancel-remaining", mod: P51 },
-  { path: "/market/orders/:id/compare", mod: P52 },
-  { path: "/market/orders/:id/disputes", mod: P53 },
-  { path: "/market/orders/:id", mod: P54 },
-  { path: "/market/orders/:id/payment", mod: P55 },
-  { path: "/market/orders/:id/quote", mod: P56 },
-  { path: "/market/orders/:id/receive", mod: P57 },
-  { path: "/market/orders/:id/restore", mod: P58 },
-  { path: "/market/orders/:id/return", mod: P59 },
-  { path: "/market/orders/:id/ship", mod: P60 },
-  { path: "/market/orders/incoming", mod: P61 },
-  { path: "/market/orders", mod: P62 },
-  { path: "/market/orders/recover", mod: P63 },
-  { path: "/market", mod: P64 },
-  { path: "/market/profile", mod: P65 },
-  { path: "/market/renewals", mod: P66 },
-  { path: "/market/report", mod: P67 },
-  { path: "/market/reports/:id", mod: P68 },
-  { path: "/market/reports", mod: P69 },
-  { path: "/market/search", mod: P70 },
-  { path: "/market/seller", mod: P71 },
-  { path: "/market/share", mod: P72 },
-  { path: "/market/suppliers/:id", mod: P73 },
-  { path: "/market/unavailable", mod: P74 },
-  { path: "/notify/campaigns/:id/approve", mod: P75 },
-  { path: "/notify/campaigns/:id", mod: P76 },
-  { path: "/notify/campaigns/new", mod: P77 },
-  { path: "/notify/campaigns", mod: P78 },
-  { path: "/notify/inbox/:id", mod: P79 },
-  { path: "/notify/inbox", mod: P80 },
-  { path: "/notify", mod: P81 },
-  { path: "/notify/preferences", mod: P82 },
-  { path: "/onboarding", mod: P83 },
-  { path: "/org/apps", mod: P84 },
-  { path: "/org/audit", mod: P85 },
-  { path: "/org/branches", mod: P86 },
-  { path: "/org/devices", mod: P87 },
-  { path: "/org/roles", mod: P88 },
-  { path: "/org/settings", mod: P89 },
-  { path: "/org/subscription/expiry", mod: P90 },
-  { path: "/org/subscription", mod: P91 },
-  { path: "/org/subscription/receipts/:id", mod: P92 },
-  { path: "/org/subscription/renew", mod: P93 },
-  { path: "/org/users/:id/revoke", mod: P94 },
-  { path: "/org/users", mod: P95 },
-  { path: "/", mod: P96 },
-  { path: "/parties/:id/merge", mod: P97 },
-  { path: "/parties/:id/offset", mod: P98 },
-  { path: "/parties/:id/opening", mod: P99 },
-  { path: "/parties/:id", mod: P100 },
-  { path: "/parties/:id/pay", mod: P101 },
-  { path: "/parties/:id/payment", mod: P102 },
-  { path: "/parties/:id/statement", mod: P103 },
-  { path: "/parties/:id/statement/share", mod: P104 },
-  { path: "/parties/:id/supplier-statement", mod: P105 },
-  { path: "/parties/new", mod: P106 },
-  { path: "/parties/new-supplier", mod: P107 },
-  { path: "/parties", mod: P108 },
-  { path: "/parties/receipts/:receiptId/correct", mod: P109 },
-  { path: "/parties/receipts/matching", mod: P110 },
-  { path: "/parties/suppliers", mod: P111 },
-  { path: "/plans", mod: P112 },
-  { path: "/portal/:slug/inbox", mod: P113 },
-  { path: "/portal/:slug", mod: P114 },
-  { path: "/portal/:slug/status", mod: P115 },
-  { path: "/portal/:slug/subscribe", mod: P116 },
-  { path: "/portal/prefs", mod: P117 },
-  { path: "/pos/customer", mod: P118 },
-  { path: "/pos/discount", mod: P119 },
-  { path: "/pos/duplicates", mod: P120 },
-  { path: "/pos/invoices/:id", mod: P121 },
-  { path: "/pos/invoices/:id/return", mod: P122 },
-  { path: "/pos/invoices", mod: P123 },
-  { path: "/pos", mod: P124 },
-  { path: "/pos/pay/credit", mod: P125 },
-  { path: "/pos/pay/mixed", mod: P126 },
-  { path: "/pos/pay", mod: P127 },
-  { path: "/pos/receipt/:id", mod: P128 },
-  { path: "/pos/receipt/:id/problem", mod: P129 },
-  { path: "/print", mod: P130 },
-  { path: "/purchasing/cost-margin", mod: P131 },
-  { path: "/purchasing/documents/:id", mod: P132 },
-  { path: "/purchasing/documents/:id/return", mod: P133 },
-  { path: "/purchasing/orders/:id/document", mod: P134 },
-  { path: "/purchasing/orders/:id", mod: P135 },
-  { path: "/purchasing/orders/new", mod: P136 },
-  { path: "/purchasing/orders", mod: P137 },
-  { path: "/purchasing/returns/:id", mod: P138 },
-  { path: "/register", mod: P139 },
-  { path: "/reports/cash", mod: P140 },
-  { path: "/reports/export", mod: P141 },
-  { path: "/reports/margin", mod: P142 },
-  { path: "/reports", mod: P143 },
-  { path: "/reports/receivables", mod: P144 },
-  { path: "/reports/stock", mod: P145 },
-  { path: "/search", mod: P146 },
-  { path: "/select-org", mod: P147 },
-  { path: "/session-expired", mod: P148 },
-  { path: "/setup-device", mod: P149 },
-  { path: "/shifts/close", mod: P150 },
-  { path: "/shifts/current", mod: P151 },
-  { path: "/shifts/movements", mod: P152 },
-  { path: "/shifts/open", mod: P153 },
-  { path: "/shifts/review", mod: P154 },
-  { path: "/status", mod: P155 },
-  { path: "/support", mod: P156 },
-  { path: "/sync/backup", mod: P157 },
-  { path: "/sync/epoch", mod: P158 },
-  { path: "/sync/import", mod: P159 },
-  { path: "/sync/operations/:id", mod: P160 },
-  { path: "/sync", mod: P161 },
-  { path: "/sync/recovery", mod: P162 },
-  { path: "/sync/restore", mod: P163 },
-  { path: "/sync/review", mod: P164 },
-  { path: "/sync/storage", mod: P165 },
-  { path: "/sync/update", mod: P166 },
-  { path: "/welcome", mod: P167 },
+  { path: "/approvals", mod: P2 },
+  { path: "/catalog/:id", mod: P3 },
+  { path: "/catalog/:id/price", mod: P4 },
+  { path: "/catalog/:id/units", mod: P5 },
+  { path: "/catalog/groups", mod: P6 },
+  { path: "/catalog/import", mod: P7 },
+  { path: "/catalog/labels", mod: P8 },
+  { path: "/catalog/new", mod: P9 },
+  { path: "/catalog", mod: P10 },
+  { path: "/create-org", mod: P11 },
+  { path: "/demo/track", mod: P12 },
+  { path: "/dev/probe", mod: P13 },
+  { path: "/feedback", mod: P14 },
+  { path: "/forbidden", mod: P15 },
+  { path: "/grow/promote", mod: P16 },
+  { path: "/grow/replenish", mod: P17 },
+  { path: "/grow/suppliers", mod: P18 },
+  { path: "/install", mod: P19 },
+  { path: "/inventory/count/:id/review", mod: P20 },
+  { path: "/inventory/count", mod: P21 },
+  { path: "/inventory/items/:id/damage", mod: P22 },
+  { path: "/inventory/items/:id", mod: P23 },
+  { path: "/inventory/openings", mod: P24 },
+  { path: "/inventory", mod: P25 },
+  { path: "/inventory/receive", mod: P26 },
+  { path: "/inventory/transfers/:id/receive", mod: P27 },
+  { path: "/inventory/transfers/new", mod: P28 },
+  { path: "/inventory/transfers", mod: P29 },
+  { path: "/invite/:token", mod: P30 },
+  { path: "/legal", mod: P31 },
+  { path: "/link-expired", mod: P32 },
+  { path: "/lock", mod: P33 },
+  { path: "/login", mod: P34 },
+  { path: "/market/cart", mod: P35 },
+  { path: "/market/checkout", mod: P36 },
+  { path: "/market/directory", mod: P37 },
+  { path: "/market/following", mod: P38 },
+  { path: "/market/i/:token", mod: P39 },
+  { path: "/market/link/documents", mod: P40 },
+  { path: "/market/link/items", mod: P41 },
+  { path: "/market/link/parties", mod: P42 },
+  { path: "/market/link/receipts", mod: P43 },
+  { path: "/market/link/returns", mod: P44 },
+  { path: "/market/lists/:id", mod: P45 },
+  { path: "/market/lists/new", mod: P46 },
+  { path: "/market/lists", mod: P47 },
+  { path: "/market/offers/:id", mod: P48 },
+  { path: "/market/offers/new", mod: P49 },
+  { path: "/market/offers", mod: P50 },
+  { path: "/market/offers/public/:id", mod: P51 },
+  { path: "/market/orders/:id/cancel-remaining", mod: P52 },
+  { path: "/market/orders/:id/compare", mod: P53 },
+  { path: "/market/orders/:id/disputes", mod: P54 },
+  { path: "/market/orders/:id", mod: P55 },
+  { path: "/market/orders/:id/payment", mod: P56 },
+  { path: "/market/orders/:id/quote", mod: P57 },
+  { path: "/market/orders/:id/receive", mod: P58 },
+  { path: "/market/orders/:id/restore", mod: P59 },
+  { path: "/market/orders/:id/return", mod: P60 },
+  { path: "/market/orders/:id/ship", mod: P61 },
+  { path: "/market/orders/incoming", mod: P62 },
+  { path: "/market/orders", mod: P63 },
+  { path: "/market/orders/recover", mod: P64 },
+  { path: "/market", mod: P65 },
+  { path: "/market/profile", mod: P66 },
+  { path: "/market/renewals", mod: P67 },
+  { path: "/market/report", mod: P68 },
+  { path: "/market/reports/:id", mod: P69 },
+  { path: "/market/reports", mod: P70 },
+  { path: "/market/search", mod: P71 },
+  { path: "/market/seller", mod: P72 },
+  { path: "/market/share", mod: P73 },
+  { path: "/market/suppliers/:id", mod: P74 },
+  { path: "/market/unavailable", mod: P75 },
+  { path: "/notify/campaigns/:id/approve", mod: P76 },
+  { path: "/notify/campaigns/:id", mod: P77 },
+  { path: "/notify/campaigns/new", mod: P78 },
+  { path: "/notify/campaigns", mod: P79 },
+  { path: "/notify/inbox/:id", mod: P80 },
+  { path: "/notify/inbox", mod: P81 },
+  { path: "/notify", mod: P82 },
+  { path: "/notify/preferences", mod: P83 },
+  { path: "/onboarding", mod: P84 },
+  { path: "/org/apps", mod: P85 },
+  { path: "/org/audit", mod: P86 },
+  { path: "/org/branches", mod: P87 },
+  { path: "/org/devices", mod: P88 },
+  { path: "/org/roles", mod: P89 },
+  { path: "/org/settings", mod: P90 },
+  { path: "/org/subscription/expiry", mod: P91 },
+  { path: "/org/subscription", mod: P92 },
+  { path: "/org/subscription/receipts/:id", mod: P93 },
+  { path: "/org/subscription/renew", mod: P94 },
+  { path: "/org/users/:id/revoke", mod: P95 },
+  { path: "/org/users", mod: P96 },
+  { path: "/", mod: P97 },
+  { path: "/parties/:id/merge", mod: P98 },
+  { path: "/parties/:id/offset", mod: P99 },
+  { path: "/parties/:id/opening", mod: P100 },
+  { path: "/parties/:id", mod: P101 },
+  { path: "/parties/:id/pay", mod: P102 },
+  { path: "/parties/:id/payment", mod: P103 },
+  { path: "/parties/:id/statement", mod: P104 },
+  { path: "/parties/:id/statement/share", mod: P105 },
+  { path: "/parties/:id/supplier-statement", mod: P106 },
+  { path: "/parties/new", mod: P107 },
+  { path: "/parties/new-supplier", mod: P108 },
+  { path: "/parties", mod: P109 },
+  { path: "/parties/receipts/:receiptId/correct", mod: P110 },
+  { path: "/parties/receipts/matching", mod: P111 },
+  { path: "/parties/suppliers", mod: P112 },
+  { path: "/plans", mod: P113 },
+  { path: "/portal/:slug/inbox", mod: P114 },
+  { path: "/portal/:slug", mod: P115 },
+  { path: "/portal/:slug/status", mod: P116 },
+  { path: "/portal/:slug/subscribe", mod: P117 },
+  { path: "/portal/prefs", mod: P118 },
+  { path: "/pos/customer", mod: P119 },
+  { path: "/pos/discount", mod: P120 },
+  { path: "/pos/duplicates", mod: P121 },
+  { path: "/pos/held", mod: P122 },
+  { path: "/pos/invoices/:id", mod: P123 },
+  { path: "/pos/invoices/:id/return", mod: P124 },
+  { path: "/pos/invoices", mod: P125 },
+  { path: "/pos", mod: P126 },
+  { path: "/pos/pay/credit", mod: P127 },
+  { path: "/pos/pay/mixed", mod: P128 },
+  { path: "/pos/pay", mod: P129 },
+  { path: "/pos/receipt/:id", mod: P130 },
+  { path: "/pos/receipt/:id/problem", mod: P131 },
+  { path: "/print", mod: P132 },
+  { path: "/purchasing/cost-margin", mod: P133 },
+  { path: "/purchasing/documents/:id", mod: P134 },
+  { path: "/purchasing/documents/:id/return", mod: P135 },
+  { path: "/purchasing/orders/:id/document", mod: P136 },
+  { path: "/purchasing/orders/:id", mod: P137 },
+  { path: "/purchasing/orders/new", mod: P138 },
+  { path: "/purchasing/orders", mod: P139 },
+  { path: "/purchasing/returns/:id", mod: P140 },
+  { path: "/register", mod: P141 },
+  { path: "/reports/cash", mod: P142 },
+  { path: "/reports/export", mod: P143 },
+  { path: "/reports/margin", mod: P144 },
+  { path: "/reports", mod: P145 },
+  { path: "/reports/receivables", mod: P146 },
+  { path: "/reports/stock", mod: P147 },
+  { path: "/search", mod: P148 },
+  { path: "/select-org", mod: P149 },
+  { path: "/session-expired", mod: P150 },
+  { path: "/setup-device", mod: P151 },
+  { path: "/shifts/close", mod: P152 },
+  { path: "/shifts/current", mod: P153 },
+  { path: "/shifts/movements", mod: P154 },
+  { path: "/shifts/open", mod: P155 },
+  { path: "/shifts/review", mod: P156 },
+  { path: "/status", mod: P157 },
+  { path: "/support", mod: P158 },
+  { path: "/sync/backup", mod: P159 },
+  { path: "/sync/epoch", mod: P160 },
+  { path: "/sync/import", mod: P161 },
+  { path: "/sync/operations/:id", mod: P162 },
+  { path: "/sync", mod: P163 },
+  { path: "/sync/recovery", mod: P164 },
+  { path: "/sync/restore", mod: P165 },
+  { path: "/sync/review", mod: P166 },
+  { path: "/sync/storage", mod: P167 },
+  { path: "/sync/update", mod: P168 },
+  { path: "/welcome", mod: P169 },
 ];

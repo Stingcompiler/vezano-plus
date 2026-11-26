@@ -8,6 +8,7 @@ import {
   decidePermission,
   filterLocalItems,
   holdCart,
+  readHeldCarts,
   type LocalBalance,
   type LocalItem,
   looksLikeBarcode,
@@ -38,6 +39,7 @@ import {
   Screen,
   SPACE,
   StateView,
+  TextField,
   TOUCH,
   useColors,
   ThemedText as Text,
@@ -91,6 +93,9 @@ export default function Pos() {
   const [barcodeMiss, setBarcodeMiss] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [held, setHeld] = useState<number | null>(null);
+  // S-03 (0005 §٢٩٣): معلّقات هذا الجهاز واسم اختياري للمعلّقة التالية
+  const [heldCount, setHeldCount] = useState(0);
+  const [holdLabel, setHoldLabel] = useState("");
   const shiftCtx = useShiftContext();
   const [cartOpen, setCartOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -101,13 +106,15 @@ export default function Pos() {
       let alive = true;
       void (async () => {
         const storage = await getStorage();
-        const [its, draft, bal, at, s] = await Promise.all([
+        const [its, draft, bal, at, s, hs] = await Promise.all([
           readLocalItems(storage),
           readCartDraft(storage),
           readLocalBalances(storage),
           readBalanceMatchedAt(storage),
           readOpenShift(storage),
+          readHeldCarts(storage),
         ]);
+        setHeldCount(hs.length);
         setItems(its);
         setLines(draft.lines);
         setDiscount(draft.discount);
@@ -238,7 +245,13 @@ export default function Pos() {
     }
   };
   const hold = async () => {
-    const n = await holdCart(await getStorage(), lines);
+    const n = await holdCart(
+      await getStorage(),
+      { lines, discount, customer },
+      { label: holdLabel },
+    );
+    setHoldLabel("");
+    setHeldCount(n);
     setLines([]);
     setDiscount(undefined);
     setCustomer(undefined);
@@ -406,6 +419,17 @@ export default function Pos() {
           <AppText variant="note" muted>
             {tx(T, "عُلّقت —")} <N>{held}</N> {tx(T, "في المعلّقات")}
           </AppText>
+        ) : heldCount ? (
+          <AppText variant="note" muted>
+            <N>{heldCount}</N> {tx(T, "في المعلّقات")}
+          </AppText>
+        ) : null}
+        {heldCount ? (
+          <Button
+            label={tx("POS-13", "المعلّقات")}
+            variant="quiet"
+            onPress={() => router.push("/pos/held")}
+          />
         ) : null}
 
         {cartOpen && lines.length ? (
@@ -473,6 +497,12 @@ export default function Pos() {
               label={customer ? customer.name : tx(T, "اختيار العميل")}
               variant="secondary"
               onPress={() => router.push("/pos/customer")}
+            />
+            <TextField
+              label={tx(T, "اسم أو ملاحظة (اختياري)")}
+              value={holdLabel}
+              onChangeText={setHoldLabel}
+              maxLength={60}
             />
             <Button
               label={tx(T, "تعليق الفاتورة")}

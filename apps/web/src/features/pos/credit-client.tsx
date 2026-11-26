@@ -1,6 +1,6 @@
 "use client";
 
-import { recordCreditOverride } from "@sting/sync-core";
+import { type PinVerifierRow, recordCreditOverride } from "@sting/sync-core";
 import { Button, formatMinor, Frame, Notice, SyncIndicator, TextField } from "@sting/ui-web";
 import { useRef, useState } from "react";
 
@@ -9,6 +9,9 @@ import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
 import "@/features/shifts/shifts.css";
+import "@/features/approvals/approvals.css";
+import { ApproverPin } from "@/features/approvals/approver-pin";
+import { ApprovalOutcome, useApprovalStatus } from "@/features/approvals/use-approval";
 import { hhmm } from "@/features/home/format";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
@@ -41,6 +44,11 @@ export function CreditClient() {
   const [attempted, setAttempted] = useState(false);
   const [statementDenied, setStatementDenied] = useState(false);
   const overrideIds = useRef({ operationId: "", overrideId: "" });
+  // تجاوز الحدّ: مدير حاضر يعتمده برمزه، وإلا ينتظر في «طلبات تنتظرك» (0005 §٢٩٣)
+  const [pinOpen, setPinOpen] = useState(false);
+  const [approver, setApprover] = useState<PinVerifierRow | null>(null);
+  const [overrideSent, setOverrideSent] = useState<string | null>(null);
+  const decision = useApprovalStatus("credit", approver ? null : overrideSent);
 
   const total = totals.totalMinor;
   const serverBalance = BigInt(party?.balance_minor ?? "0");
@@ -83,7 +91,11 @@ export function CreditClient() {
         balanceAfterMinor: after.toString(),
         reason,
         occurredAt: new Date().toISOString(),
+        ...(approver
+          ? { pinApproval: { approverUserId: approver.user_id, verifierVersion: approver.version } }
+          : {}),
       });
+      setOverrideSent(overrideIds.current.overrideId);
       if (online) void pushPending();
     }
     await sale.pushAfterSave();
@@ -203,8 +215,32 @@ export function CreditClient() {
                     <Button variant="secondary" onClick={() => sale.router.push("/pos/pay/mixed")}>
                       تحويل الفارق نقداً في دفع مختلط
                     </Button>
+                    {approver ? (
+                      <p className="acc-lead" role="status">
+                        اعتمده {approver.display_name}.
+                      </p>
+                    ) : !pinOpen ? (
+                      <Button variant="secondary" onClick={() => setPinOpen(true)}>
+                        اعتماد مدير حاضر
+                      </Button>
+                    ) : null}
                   </Notice>
-                ) : (
+                ) : null}
+                {overLimit && phase !== "saved" && pinOpen && !approver && ctx ? (
+                  <ApproverPin
+                    request={{
+                      kind: "credit",
+                      amountMinor: after - limit,
+                      branchId: ctx.branchId,
+                      requesterId: ctx.userId,
+                    }}
+                    onApproved={(a) => {
+                      setApprover(a);
+                      setPinOpen(false);
+                    }}
+                  />
+                ) : null}
+                {overLimit && phase !== "saved" ? null : (
                   <p className="cat-saving__note">
                     <strong>لو تجاوز البيع الحد</strong> · يظهر تنبيه بالمبلغ الزائد ويُطلب سبب، ثم
                     يُكمَل البيع. الحد أداة انتباه لا قفل — والمالك يستطيع تركه «غير محدد» لأي عميل.
@@ -222,6 +258,11 @@ export function CreditClient() {
 
                 {phase === "saved" && sale.sale ? (
                   <>
+                    {overrideSent && !approver ? (
+                      <div className="apr-status">
+                        <ApprovalOutcome item={decision} />
+                      </div>
+                    ) : null}
                     <Notice kind="success" title="آجل بلا اتصال">
                       <p className="acc-lead">الدين تكوَّن محلياً ولم يره الخادم.</p>
                       <p className="acc-lead">

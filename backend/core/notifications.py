@@ -140,7 +140,7 @@ def refresh() -> None:
             category="operational",
             title=f"وردية {s.user_name or s.device_name} مفتوحة منذ {days} {_days_word(days)}",
             body="صندوق بلا عدّ. الإقفال الإداري يحتاج حضورك.",
-            href="/shifts/review",
+            href=f"/shifts/review?close={s.id}",
             screen="SHIFT-05",
             needs_action=True,
             branch_id=s.branch_id,
@@ -192,6 +192,9 @@ def refresh() -> None:
         _resolve_stale("quarantine_pending", {"quarantine_pending"})
     else:
         _resolve_stale("quarantine_pending", set())
+    # ٣ب) «طلبات تنتظرك» (S-04؛ 0005 §٢٩٣): طلب سحب أو خصم أو تجاوز حدّ ائتمان بلا قرار — إشعار
+    #     لكل طلب يزول حين يُقرَّر فيه. للمالك (ومدير الفرع يرى عنوانه ويقرّر من الصندوق نفسه)
+    _approval_alerts()
     # ٤) الاشتراك والحدود — 0005 §١١٥ (تذكيرات متدرّجة، مهلة، إيقاف، سعر مقبل، حدود)
     sub = ensure_subscription()
     _subscription_alerts(sub, now)
@@ -216,6 +219,31 @@ def refresh() -> None:
             owner_only=True,
             dedupe_key="plan_upgrade:dual",
         )
+
+
+def _approval_alerts() -> None:
+    from core import approvals
+
+    live: set[str] = set()
+    for item in approvals.inbox_all():
+        key = f"approval_pending:{item['kind']}:{item['id']}"
+        live.add(key)
+        emit(
+            kind="approval_pending",
+            category="operational",
+            title=(
+                f"طلب {approvals.KIND_WORDS[item['kind']]} {_money(int(item['amount_minor']))}"
+                f" من {item['requested_by_name']}"
+            ),
+            body=item["reason"],
+            href="/approvals",
+            screen="APR-01",
+            needs_action=True,
+            owner_only=True,
+            branch_id=uuid.UUID(item["branch_id"]),
+            dedupe_key=key,
+        )
+    _resolve_stale("approval_pending", live)
 
 
 #: مراحل تذكير التجديد بالأيام المتبقية — كل مرحلة إشعار واحد يحلّ محل سابقه

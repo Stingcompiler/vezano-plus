@@ -10,6 +10,7 @@ import {
   saveCashMovement,
   type ShiftCash,
   type DiscountCaps,
+  type PinVerifierRow,
   type RoleRules,
   readReceiptCashRows,
   readReturnCashRows,
@@ -31,6 +32,9 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/shifts/shifts.css";
+import "@/features/approvals/approvals.css";
+import { ApproverPin } from "@/features/approvals/approver-pin";
+import { ApprovalOutcome, useApprovalStatus } from "@/features/approvals/use-approval";
 import { AppNav } from "@/features/home/app-nav";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
@@ -41,6 +45,15 @@ import { pushPending } from "@/lib/sync";
 import { type ShiftContext, readShiftContext, storeShiftContext } from "./context";
 
 type State = "ready" | "validation_error" | "permission_denied" | "success";
+
+/** طلب السحب المرسل إلى «طلبات تنتظرك» يبقى معروفاً إن غادر الكاشير الشاشة (0005 §٢٩٣). */
+const PENDING_META = "shift.withdrawal_request";
+interface PendingWithdrawal {
+  readonly request_id: string;
+  readonly shift_id: string;
+  readonly amount_minor: string;
+  readonly reason: string;
+}
 
 /** أنواع الحركة كما في الإطار: إيداع / سحب / مصروف. */
 const KINDS: readonly { readonly k: CashMovementKind; readonly t: string }[] = [
@@ -100,6 +113,9 @@ export function MovementsClient() {
   const [errors, setErrors] = useState<FieldErr[]>([]);
   const [denied, setDenied] = useState(false);
   const [requested, setRequested] = useState(false);
+  const [pending, setPending] = useState<PendingWithdrawal | null>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+  const decision = useApprovalStatus("withdrawal", pending?.request_id ?? null);
   const [saved, setSaved] = useState<LocalCashMovement | null>(null);
   const [busy, setBusy] = useState(false);
   const opIds = useRef({ movementId: "", operationId: "" });
@@ -134,6 +150,13 @@ export function MovementsClient() {
       const local = await readShiftContext(storage, app);
       setCtx(local);
       if (!s) return;
+      const rawPending = await storage.read((tx) => tx.getMeta(PENDING_META));
+      const p = rawPending ? (JSON.parse(rawPending) as PendingWithdrawal) : null;
+      if (p && p.shift_id === s.id) {
+        setPending(p);
+        setRequested(true);
+        setDenied(true);
+      }
       await reload(s);
       if (!online || !app.tokens) return;
       try {
@@ -208,6 +231,54 @@ export function MovementsClient() {
     return errs;
   };
 
+  /** سحب بإذن المالك: برمزه هنا الآن، أو بطلب وافق عليه في «طلبات تنتظرك» (0005 §٢٩٣). */
+  const recordWithdrawal = async (
+    auth:
+      | { readonly via: "pin"; readonly approver: PinVerifierRow }
+      | { readonly via: "inbox"; readonly request: PendingWithdrawal; readonly by: string },
+  ) => {
+    if (busy || !shift || !ctx) return;
+    const amountMinor = auth.via === "inbox" ? auth.request.amount_minor : parseMoneyInput(amount);
+    const why = auth.via === "inbox" ? auth.request.reason : reason.trim();
+    if (!amountMinor) return;
+    setBusy(true);
+    try {
+      const { movement } = await saveCashMovement(getStorage(), {
+        ...opIds.current,
+        shift,
+        kind: "withdrawal",
+        amountMinor,
+        reason: why,
+        actorUserId: ctx.userId,
+        actorName: ctx.userName,
+        authorizedByUserId: auth.via === "pin" ? auth.approver.user_id : auth.by,
+        occurredAt: new Date().toISOString(),
+        ...(auth.via === "pin"
+          ? {
+              pinApproval: {
+                approverUserId: auth.approver.user_id,
+                verifierVersion: auth.approver.version,
+              },
+            }
+          : { approvalRequestId: auth.request.request_id }),
+      });
+      opIds.current = { movementId: crypto.randomUUID(), operationId: crypto.randomUUID() };
+      if (auth.via === "inbox")
+        await getStorage().transaction((tx) => tx.putMeta(PENDING_META, ""));
+      setPending(null);
+      setRequested(false);
+      setPinOpen(false);
+      setDenied(false);
+      setSaved(movement);
+      setAmount("");
+      setReason("");
+      await reload(shift);
+      if (online && app.tokens) await pushPending();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const record = async (reverses?: LocalCashMovement) => {
     if (busy || !shift || !ctx) return;
     const errs = reverses ? [] : validate();
@@ -262,11 +333,22 @@ export function MovementsClient() {
     }
     setBusy(true);
     try {
-      const { response } = await api().POST("/api/shifts/{shift_id}/requests", {
+      const { data, response } = await api().POST("/api/shifts/{shift_id}/requests", {
         params: { path: { shift_id: shift.id } },
         body: { kind: "withdrawal", amount_minor: minor, reason: reason.trim() },
       });
-      if (response.ok) setRequested(true);
+      const body = data as unknown as { id: string } | undefined;
+      if (response.ok && body) {
+        const p: PendingWithdrawal = {
+          request_id: body.id,
+          shift_id: shift.id,
+          amount_minor: minor,
+          reason: reason.trim(),
+        };
+        await getStorage().transaction((tx) => tx.putMeta(PENDING_META, JSON.stringify(p)));
+        setPending(p);
+        setRequested(true);
+      }
     } finally {
       setBusy(false);
     }
@@ -406,17 +488,7 @@ export function MovementsClient() {
               ) : null}
 
               {state === "permission_denied" && ctx ? (
-                <Notice
-                  kind="locked"
-                  title="الكاشير يودع ولا يسحب"
-                  action={
-                    requested ? null : (
-                      <Button onClick={() => void requestFromOwner()} loading={busy}>
-                        اطلب من {ctx.ownerName || "المالك"}
-                      </Button>
-                    )
-                  }
-                >
+                <Notice kind="locked" title="الكاشير يودع ولا يسحب">
                   <p className="acc-lead">
                     الإيداع والمصروف مفتوحان ل{ctx.userName}، والسحب للمالك وحده — لأنه يُخرج النقد
                     من دورة المحل إلى خارجها.
@@ -424,12 +496,56 @@ export function MovementsClient() {
                   <p className="acc-lead">
                     الحركة تُنسب لمن أذن بها لا لمن أدخلها، وكلاهما مذكور في السطر.
                   </p>
-                  {requested ? (
-                    <p className="acc-lead" role="status">
-                      أُرسل الطلب إلى {ctx.ownerName || "المالك"} بالمبلغ والسبب.
-                    </p>
-                  ) : null}
+                  {requested ? <ApprovalOutcome item={decision} /> : null}
+                  <div className="acc-actions">
+                    {requested && decision?.status !== "rejected" ? null : (
+                      <Button
+                        onClick={() => void requestFromOwner()}
+                        loading={busy}
+                        disabledReason={!online ? "بلا اتصال" : undefined}
+                      >
+                        اطلب من {ctx.ownerName || "المالك"}
+                      </Button>
+                    )}
+                    {!pinOpen && !requested ? (
+                      <Button variant="secondary" onClick={() => setPinOpen(true)}>
+                        اعتماد المالك بالرمز
+                      </Button>
+                    ) : null}
+                    {pending && decision?.status === "approved" ? (
+                      <Button
+                        financial
+                        loading={busy}
+                        onClick={() =>
+                          void recordWithdrawal({
+                            via: "inbox",
+                            request: pending,
+                            by: decision.decided_by_user_id,
+                          })
+                        }
+                      >
+                        سجّل السحب المعتمد
+                      </Button>
+                    ) : null}
+                  </div>
                 </Notice>
+              ) : null}
+
+              {state === "permission_denied" && pinOpen && ctx && shift ? (
+                parseMoneyInput(amount) && validate().length === 0 ? (
+                  <ApproverPin
+                    ownerOnly
+                    request={{
+                      kind: "withdrawal",
+                      amountMinor: BigInt(parseMoneyInput(amount) ?? "0"),
+                      branchId: shift.branch_id,
+                      requesterId: ctx.userId,
+                    }}
+                    onApproved={(approver) => recordWithdrawal({ via: "pin", approver })}
+                  />
+                ) : (
+                  <p className="c-field__hint">اكتب المبلغ والسبب أولاً.</p>
+                )
               ) : null}
 
               {state === "success" && saved && cash ? (

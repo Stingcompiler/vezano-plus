@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (232 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (234 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -192,6 +192,7 @@ export const API_ERROR_CODES = [
   "same_plan",
   "same_reviewer",
   "scope_required",
+  "self_approval",
   "self_role",
   "seller_not_verified",
   "send_failed",
@@ -199,6 +200,7 @@ export const API_ERROR_CODES = [
   "service_areas_required",
   "session_expired",
   "session_revoked",
+  "shift_closed",
   "shift_open",
   "shop_unknown",
   "similar_party",
@@ -744,6 +746,24 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "permission_denied",
+    },
+  ],
+  "POST /api/approvals/{kind}/{request_id}/decide": [
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
+    },
+    {
+      status: 403,
+      code: "self_approval",
+    },
+    {
+      status: 409,
+      code: "already_decided",
     },
   ],
   "POST /api/auth/account/login": [
@@ -2258,6 +2278,20 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 409,
       code: "sale_has_returns",
+    },
+  ],
+  "POST /api/shifts/{shift_id}/admin-close": [
+    {
+      status: 400,
+      code: "shift_closed",
+    },
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
     },
   ],
   "POST /api/shifts/{shift_id}/requests": [

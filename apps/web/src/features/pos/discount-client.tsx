@@ -7,6 +7,7 @@ import {
   checkDiscount,
   type DiscountCaps,
   type DiscountCheck,
+  type PinVerifierRow,
   readCartDraft,
   requestDiscountOverride,
   writeCartDraft,
@@ -19,6 +20,9 @@ import "@/features/acc/acc.css";
 import "@/features/home/home.css";
 import "@/features/catalog/catalog.css";
 import "@/features/pos/pos.css";
+import "@/features/approvals/approvals.css";
+import { ApproverPin } from "@/features/approvals/approver-pin";
+import { ApprovalOutcome, useApprovalStatus } from "@/features/approvals/use-approval";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { useApp } from "@/lib/app-context";
 import { useOnline } from "@/lib/online";
@@ -28,6 +32,13 @@ import { pushPending } from "@/lib/sync";
 import { PosNav } from "./pos-nav";
 
 type State = "ready" | "validation_error" | "permission_denied";
+
+/** طلب الاعتماد المرسل إلى «طلبات تنتظرك» يبقى معروفاً إن غادر الكاشير الشاشة وعاد (0005 §٢٩٣). */
+const PENDING_META = "pos.discount_request";
+interface PendingRequest {
+  readonly request_id: string;
+  readonly discount: CartDiscount;
+}
 
 /** سقوف افتراضية حين لم يقل الخادم شيئاً بعد (كاشير — G-09 مؤقتاً). */
 const DEFAULT_CAPS: DiscountCaps = {
@@ -65,7 +76,10 @@ export function DiscountClient() {
   const [reason, setReason] = useState("");
   const [check, setCheck] = useState<DiscountCheck | null>(null);
   const [requested, setRequested] = useState(false);
+  const [pending, setPending] = useState<PendingRequest | null>(null);
+  const [pinOpen, setPinOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const decision = useApprovalStatus("discount", pending?.request_id ?? null);
   const opIds = useRef({ operationId: "", requestId: "" });
   const appRef = useRef(app);
   appRef.current = app;
@@ -78,9 +92,23 @@ export function DiscountClient() {
     }
     void (async () => {
       const storage = getStorage();
-      const [d, c] = await Promise.all([readCartDraft(storage), readShiftContext(storage, app)]);
+      const [d, c, rawPending] = await Promise.all([
+        readCartDraft(storage),
+        readShiftContext(storage, app),
+        storage.read((tx) => tx.getMeta(PENDING_META)),
+      ]);
       setDraft(d);
       setCtx(c);
+      const p = rawPending ? (JSON.parse(rawPending) as PendingRequest) : null;
+      if (p && d.lines.length) {
+        setPending(p);
+        setRequested(true);
+        setMode(p.discount.mode);
+        setValue(
+          p.discount.mode === "amount" ? formatMinor(p.discount.value, 2, false) : p.discount.value,
+        );
+        setReason(p.discount.reason);
+      }
       if (d.discount) {
         setMode(d.discount.mode);
         setValue(
@@ -132,7 +160,8 @@ export function DiscountClient() {
     if (!d || !check || check.ok || busy) return;
     setBusy(true);
     try {
-      if (!opIds.current.operationId)
+      // طلب رُفض: طلب جديد بهوية جديدة
+      if (!opIds.current.operationId || decision?.status === "rejected")
         opIds.current = { operationId: crypto.randomUUID(), requestId: crypto.randomUUID() };
       await requestDiscountOverride(getStorage(), {
         ...opIds.current,
@@ -140,13 +169,67 @@ export function DiscountClient() {
         discount: d,
         cap: check.cap,
         cartTotalMinor: subtotal.toString(),
+        discountMinor: check.minor.toString(),
         occurredAt: new Date().toISOString(),
       });
+      const p: PendingRequest = { request_id: opIds.current.requestId, discount: d };
+      await getStorage().transaction((tx) => tx.putMeta(PENDING_META, JSON.stringify(p)));
+      setPending(p);
       setRequested(true);
       if (online) void pushPending();
     } finally {
       setBusy(false);
     }
+  };
+
+  /** مدير حاضر اعتمد برمزه: الطلب يُسجَّل معتمداً باسمه والخصم يدخل السلة (0005 §٢٩٣). */
+  const approvedOnSpot = async (approver: PinVerifierRow) => {
+    const d = current();
+    if (!d || !check || check.ok || !draft) return;
+    const ids = { operationId: crypto.randomUUID(), requestId: crypto.randomUUID() };
+    await requestDiscountOverride(getStorage(), {
+      ...ids,
+      branchId: ctx?.branchId ?? appRef.current.session.branchId ?? "",
+      discount: d,
+      cap: check.cap,
+      cartTotalMinor: subtotal.toString(),
+      discountMinor: check.minor.toString(),
+      occurredAt: new Date().toISOString(),
+      pinApproval: { approverUserId: approver.user_id, verifierVersion: approver.version },
+    });
+    await writeCartDraft(getStorage(), {
+      ...draft,
+      discount: {
+        ...d,
+        approval: {
+          request_id: ids.requestId,
+          approved_by_user_id: approver.user_id,
+          approved_by_name: approver.display_name,
+          via: "pin",
+        },
+      },
+    });
+    if (online) void pushPending();
+    router.push("/pos");
+  };
+
+  /** الطلب وافق عليه المالك أو المدير من «طلبات تنتظرك»: الخصم المطلوب يدخل السلة باسمه. */
+  const applyApproved = async () => {
+    if (!pending || !draft || decision?.status !== "approved") return;
+    await writeCartDraft(getStorage(), {
+      ...draft,
+      discount: {
+        ...pending.discount,
+        approval: {
+          request_id: pending.request_id,
+          approved_by_user_id: decision.decided_by_user_id,
+          approved_by_name: decision.decided_by_name,
+          via: "inbox",
+        },
+      },
+    });
+    await getStorage().transaction((tx) => tx.putMeta(PENDING_META, ""));
+    router.push("/pos");
   };
 
   const state: State =
@@ -287,7 +370,27 @@ export function DiscountClient() {
             {requested ? (
               <Notice kind="info" title="طلب اعتماد من مدير الفرع">
                 <p className="acc-lead">طلب تفويضٍ يسجَّل باسم من وافق.</p>
+                <ApprovalOutcome item={decision} />
+                {decision?.status === "approved" ? (
+                  <div className="acc-actions">
+                    <Button financial onClick={() => void applyApproved()}>
+                      طبّق الخصم المعتمد
+                    </Button>
+                  </div>
+                ) : null}
               </Notice>
+            ) : null}
+
+            {pinOpen && check && !check.ok && check.reason !== "invalid" && ctx ? (
+              <ApproverPin
+                request={{
+                  kind: "discount",
+                  amountMinor: check.minor,
+                  branchId: ctx.branchId,
+                  requesterId: ctx.userId,
+                }}
+                onApproved={approvedOnSpot}
+              />
             ) : null}
 
             {!unlimited && !caps.forbidden ? (
@@ -310,7 +413,7 @@ export function DiscountClient() {
                     onClick={() => void requestApproval()}
                     loading={busy}
                     disabledReason={
-                      requested
+                      requested && decision?.status !== "rejected"
                         ? "طلب تفويضٍ يسجَّل باسم من وافق"
                         : !reason.trim()
                           ? "السبب — إلزامي"
@@ -319,6 +422,15 @@ export function DiscountClient() {
                   >
                     طلب اعتماد من مدير الفرع
                   </Button>
+                  {!pinOpen ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setPinOpen(true)}
+                      disabledReason={!reason.trim() ? "السبب — إلزامي" : undefined}
+                    >
+                      اعتماد مدير حاضر
+                    </Button>
+                  ) : null}
                   {check.reason !== "forbidden" ? (
                     <Button variant="secondary" onClick={() => void reduce()}>
                       تخفيض الخصم إلى {capShown}

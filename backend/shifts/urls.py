@@ -3,6 +3,7 @@ from django.urls import path
 from shifts.views import (
     CurrentShiftView,
     MovementRequestView,
+    ShiftAdminCloseView,
     ShiftReviewActionView,
     ShiftReviewView,
     ShiftView,
@@ -15,6 +16,11 @@ urlpatterns = [
         "shifts/<uuid:shift_id>/review",
         ShiftReviewActionView.as_view(),
         name="shifts-review-action",
+    ),
+    path(
+        "shifts/<uuid:shift_id>/admin-close",
+        ShiftAdminCloseView.as_view(),
+        name="shifts-admin-close",
     ),
     path("shifts/<uuid:shift_id>", ShiftView.as_view(), name="shifts-shift"),
     path(

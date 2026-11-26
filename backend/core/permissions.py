@@ -195,10 +195,15 @@ def limit_of(d: Decision) -> int | None:
 def rules_payload(viewer: Viewer) -> dict[str, dict[str, Any]]:
     """خلايا دور صاحب الطلب للمفاتيح الثلاثة عشر — تحملها الرئيسية وسياق الوردية ليقرّر الويب
     والجوال بالقاعدة نفسها (وبلا اتصال). المالك «نعم» في كل شيء."""
-    if viewer.is_owner:
+    return rules_for(viewer.is_owner, viewer.role_code)
+
+
+def rules_for(is_owner: bool, role_code: str) -> dict[str, dict[str, Any]]:
+    """خلايا دور بعينه — تنزل أيضاً مع متحققات PIN فيقرّر الجهاز حدّ المعتمد الحاضر (0005 §٢٩٣)."""
+    if is_owner:
         return {
             p.key: {"value": _owner(p.key).value, "limit_minor": None, "period": ""}
             for p in org.PERMISSIONS
         }
-    cells = org.cells_for_role(viewer.role_code or "")
+    cells = org.cells_for_role(role_code or "")
     return {key: cell.as_dict() for key, cell in cells.items()}

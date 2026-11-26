@@ -151,6 +151,38 @@ def _quarantine_decision(viewer: Viewer, out: dict[str, Any]) -> None:
         )
 
 
+def _approvals_decision(viewer: Viewer, out: dict[str, Any]) -> None:
+    """«طلبات تنتظرك» (S-04؛ 0005 §٢٩٣): سحب وخصم وتجاوز حدّ ائتمان بانتظار من يملك قرارها."""
+    if not viewer.can_see_finance:
+        return
+    from core import approvals
+
+    branch_id = None if viewer.is_owner or viewer.branch is None else viewer.branch.id
+    items = [i for i in approvals.inbox(viewer.user, branch_id) if i.get("can_decide")]
+    if not items:
+        return
+    first = items[0]
+    out["decisions"].append(
+        {
+            "id": "approvals",
+            "title": counted(
+                len(items),
+                "طلب ينتظر قرارك",
+                "طلبان ينتظران قرارك",
+                "طلبات تنتظر قرارك",
+                "طلباً ينتظر قرارك",
+            ),
+            "detail": (
+                f"طلب {approvals.KIND_WORDS[first['kind']]}"
+                f" {money_short(int(first['amount_minor']))} من {first['requested_by_name']}"
+            ),
+            "action": "طلبات تنتظرك",
+            "href": "/approvals",
+            "severity": "warn",
+        }
+    )
+
+
 def _market_decisions(viewer: Viewer, out: dict[str, Any]) -> None:
     """عروض أسعار من الموردين تنتظر قبول المشتري (الطلب ملك المشتري)."""
     if not viewer.can_see_finance:
@@ -173,6 +205,7 @@ def _market_decisions(viewer: Viewer, out: dict[str, Any]) -> None:
 
 
 HOME_PROVIDERS.append(_quarantine_decision)
+HOME_PROVIDERS.append(_approvals_decision)
 HOME_PROVIDERS.append(_market_decisions)
 
 

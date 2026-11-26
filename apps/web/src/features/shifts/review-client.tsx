@@ -1,7 +1,16 @@
 "use client";
 
 import { type ClosedShift, readPendingClosedShifts } from "@sting/sync-core";
-import { Button, formatMinor, Frame, Notice, Status, Table, TextField } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  Frame,
+  Notice,
+  parseMoneyInput,
+  Status,
+  Table,
+  TextField,
+} from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -81,6 +90,12 @@ interface ServerRow {
   readonly late_items: readonly LateItem[];
   /** حدّ «إغلاق وردية بعجز» لهذا العجز (0005 §٢٩٢) — غيابه = قرار الشاشة كله. */
   readonly can_settle?: boolean;
+  /** الإقفال الإداري للوردية المفتوحة (S-05؛ 0005 §٢٩٣): هل يحقّ، وحدّ العجز («» = بلا حدّ). */
+  readonly can_admin_close?: boolean;
+  readonly close_limit_minor?: string;
+  readonly close_kind?: string;
+  readonly closed_by_name?: string;
+  readonly close_reason?: string;
 }
 
 interface ReviewData {
@@ -112,6 +127,11 @@ interface Row {
   readonly review: Review | null;
   readonly lateItems: readonly LateItem[];
   readonly withinLimit: boolean;
+  readonly canAdminClose: boolean;
+  readonly closeLimitMinor: string;
+  readonly adminClosed: boolean;
+  readonly closedByName: string;
+  readonly closeReason: string;
 }
 
 /** «حركتين معلقتين» / «4 ساعات» — صيغ العدد تتبع المعدود؛ الرقم لاتيني في mono. */
@@ -175,6 +195,11 @@ function toRow(s: ServerRow): Row {
     review: s.review,
     lateItems: s.late_items,
     withinLimit: s.can_settle ?? true,
+    canAdminClose: s.can_admin_close ?? false,
+    closeLimitMinor: s.close_limit_minor ?? "",
+    adminClosed: s.close_kind === "admin",
+    closedByName: s.closed_by_name ?? "",
+    closeReason: s.close_reason ?? "",
   };
 }
 
@@ -202,6 +227,11 @@ function localRow(s: ClosedShift): Row {
     review: null,
     lateItems: [],
     withinLimit: true,
+    canAdminClose: false,
+    closeLimitMinor: "",
+    adminClosed: false,
+    closedByName: "",
+    closeReason: "",
   };
 }
 
@@ -227,6 +257,11 @@ export function ReviewShiftsClient() {
   const [touched, setTouched] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  // S-05: «افتح الإقفال» في الرئيسية يفتح الإقفال الإداري لهذه الوردية (`?close=<id>`)
+  const [closeId, setCloseId] = useState<string | null>(null);
+  const [counted, setCounted] = useState("");
+  const [closeDenied, setCloseDenied] = useState(false);
+  const deepLinked = useRef(false);
   const appRef = useRef(app);
   appRef.current = app;
   const now = new Date();
@@ -263,7 +298,11 @@ export function ReviewShiftsClient() {
   const canSettle = data?.can_settle ?? false;
   const firstConflict = rows.find(unreviewedLate) ?? null;
   const selected =
-    (touched ? rows.find((r) => r.id === selectedId) : (firstConflict ?? null)) ?? null;
+    (touched
+      ? rows.find((r) => r.id === selectedId)
+      : closeId
+        ? rows.find((r) => r.id === closeId && r.canAdminClose)
+        : (firstConflict ?? null)) ?? null;
   const abandoned = rows.filter((r) => r.abandoned);
   const attention = serverRows.some(
     (r) => r.abandoned || !r.counted || hasVariance(r) || unreviewedLate(r),
@@ -309,11 +348,50 @@ export function ReviewShiftsClient() {
     }
   };
 
+  useEffect(() => {
+    if (deepLinked.current || typeof window === "undefined") return;
+    deepLinked.current = true;
+    const id = new URLSearchParams(window.location.search).get("close");
+    if (id) setCloseId(id);
+  }, []);
+
   const openRow = (r: Row) => {
-    if (r.source !== "server" || r.open) return;
+    if (r.source !== "server" || (r.open && !r.canAdminClose)) return;
     setTouched(true);
     setSelectedId(r.id);
     setReason("");
+    setCounted("");
+    setCloseDenied(false);
+  };
+
+  /** «إقفال إداري بعدّ حاضر» (S-05): المعدود وسببه باسم من عدّ — بحدّ «إغلاق وردية بعجز». */
+  const adminClose = async () => {
+    if (!selected || busy) return;
+    const minor = parseMoneyInput(counted);
+    if (minor === null || !reason.trim()) return;
+    setBusy(true);
+    try {
+      const { data: out, response } = await api().POST("/api/shifts/{shift_id}/admin-close", {
+        params: { path: { shift_id: selected.id } },
+        body: { counted_cash_minor: minor, reason: reason.trim() },
+      });
+      const body = out as unknown as { row: ServerRow } | undefined;
+      if (response.status === 403) {
+        setCloseDenied(true);
+        return;
+      }
+      if (!response.ok || !body) return;
+      const updated = body.row;
+      setData((d) =>
+        d ? { ...d, shifts: d.shifts.map((s) => (s.id === updated.id ? updated : s)) } : d,
+      );
+      setTouched(true);
+      setSelectedId(updated.id);
+      setReason("");
+      setCounted("");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const columns = [
@@ -322,7 +400,7 @@ export function ReviewShiftsClient() {
       header: "الوردية والمسؤول",
       render: (r: Row) => (
         <div>
-          {r.source === "server" && !r.open ? (
+          {r.source === "server" && (!r.open || r.canAdminClose) ? (
             <Button variant="quiet" className="shift-row__open" onClick={() => openRow(r)}>
               <span className="shift-row__kind">{r.userName}</span>
             </Button>
@@ -464,7 +542,20 @@ export function ReviewShiftsClient() {
               </Notice>
             ) : null}
 
-            {selected ? (
+            {selected?.open ? (
+              <AdminCloseCard
+                row={selected}
+                now={now}
+                counted={counted}
+                onCounted={setCounted}
+                reason={reason}
+                onReason={setReason}
+                busy={busy}
+                denied={closeDenied}
+                onClose={() => void adminClose()}
+              />
+            ) : null}
+            {selected && !selected.open ? (
               <ReviewCard
                 row={selected}
                 now={now}
@@ -513,8 +604,19 @@ export function ReviewShiftsClient() {
   );
 }
 
-/** عمود «الحالة» (15-D10): شارة وملاحظة تشرح ما تراه لا حكماً على شخص. */
+/** عمود «الحالة» (15-D10)؛ المقفلة إدارياً تُوسم «مقفلة بإجراء إداري» ومن عدّها (S-05). */
 function RowStatus({ row: r }: { row: Row }) {
+  if (!r.adminClosed) return <RowStatusInner row={r} />;
+  return (
+    <div className="shift-status">
+      <RowStatusInner row={r} />
+      <div className="acc-choice__note">مقفلة بإجراء إداري · عدّه: {r.closedByName}</div>
+    </div>
+  );
+}
+
+/** شارة وملاحظة تشرح ما تراه لا حكماً على شخص. */
+function RowStatusInner({ row: r }: { row: Row }) {
   if (r.source === "local")
     return (
       <div className="shift-status">
@@ -702,6 +804,13 @@ function ReviewCard({
         </div>
       ) : null}
 
+      {r.adminClosed ? (
+        <p className="cat-saving__note">
+          مقفلة بإجراء إداري · عدّه: <strong>{r.closedByName}</strong>
+          {r.closeReason ? <> — {r.closeReason}</> : null}
+        </p>
+      ) : null}
+
       {r.review ? (
         <p className="cat-saving__note">
           {hasVariance(r) ? (
@@ -753,6 +862,123 @@ function ReviewCard({
             فتح المستند المتأخر
           </Button>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * «إقفال إداري بعدّ حاضر» (S-05؛ 0005 §٢٩٣؛ المسار نصّه في 15-D10): وردية مفتوحة لا يُقفلها جهازها.
+ * من حضر يعدّ الدرج ويكتب المعدود وسببه؛ المتوقَّع من الخادم لحظتها، والفارق يُنسب للوردية. العجز
+ * فوق حدّ «إغلاق وردية بعجز» يُقفلها المالك.
+ */
+function AdminCloseCard({
+  row: r,
+  now,
+  counted,
+  onCounted,
+  reason,
+  onReason,
+  busy,
+  denied,
+  onClose,
+}: {
+  row: Row;
+  now: Date;
+  counted: string;
+  onCounted: (v: string) => void;
+  reason: string;
+  onReason: (v: string) => void;
+  busy: boolean;
+  denied: boolean;
+  onClose: () => void;
+}) {
+  const minor = parseMoneyInput(counted);
+  const variance =
+    minor !== null && r.expectedMinor ? BigInt(minor) - BigInt(r.expectedMinor) : null;
+  const shortage = variance !== null && variance < 0n ? -variance : 0n;
+  const overLimit = denied || (r.closeLimitMinor !== "" && shortage > BigInt(r.closeLimitMinor));
+  return (
+    <section className="shift-review" aria-label="إقفال إداري بعدّ حاضر">
+      <div className="shift-review__head">
+        إقفال إداري بعدّ حاضر · {r.userName} · <DayLabel iso={r.openedAt} now={now} />{" "}
+        <Mono>{hhmm(r.openedAt)}</Mono>
+      </div>
+      <div className="shift-facts">
+        <div>
+          <span className="shift-facts__k">المتوقع</span>
+          <span className="shift-facts__v sting-mono">{formatMinor(r.expectedMinor || "0")}</span>
+        </div>
+        <div>
+          <span className="shift-facts__k">
+            <strong>الفارق</strong>
+          </span>
+          <span
+            className={`shift-facts__v sting-mono ${
+              variance === null
+                ? ""
+                : variance < 0n
+                  ? "shift-var--short"
+                  : variance > 0n
+                    ? "shift-var--over"
+                    : "shift-var--ok"
+            }`}
+          >
+            {variance === null ? "—" : signed(variance.toString())}
+          </span>
+        </div>
+      </div>
+      <div className="cat-price__field">
+        <TextField
+          label="المعدود"
+          mono
+          inputMode="decimal"
+          value={counted}
+          onChange={(e) => onCounted(e.target.value)}
+          disabledReason={busy ? "جارٍ الحفظ" : undefined}
+          required
+        />
+      </div>
+      <TextField
+        label="السبب"
+        hint="إلزامي"
+        value={reason}
+        onChange={(e) => onReason(e.target.value)}
+        disabledReason={busy ? "جارٍ الحفظ" : undefined}
+        required
+      />
+      {overLimit ? (
+        <Notice kind="locked" title="العجز فوق حدّك">
+          <p className="acc-lead">
+            {r.closeLimitMinor ? (
+              <>
+                حدّك <Mono>{formatMinor(r.closeLimitMinor)}</Mono>.{" "}
+              </>
+            ) : null}
+            يُقفلها المالك.
+          </p>
+        </Notice>
+      ) : null}
+      <p className="cat-saving__note">
+        يُسجَّل الإقفال باسمك وسببه، وتُوسم الوردية «مقفلة بإجراء إداري».
+      </p>
+      <div className="cat-form__actions">
+        <Button
+          onClick={onClose}
+          loading={busy}
+          financial
+          disabledReason={
+            overLimit
+              ? "العجز فوق حدّك"
+              : minor === null
+                ? "المعدود"
+                : !reason.trim()
+                  ? "السبب"
+                  : undefined
+          }
+        >
+          إقفال إداري
+        </Button>
       </div>
     </section>
   );

@@ -17,6 +17,7 @@ from catalog.limits import PRICE_MAX_MINOR, FieldError, Rejected, check_integer
 from core import home, permissions
 from core.auth.tokens import AuthContext
 from core.models import Branch
+from core.shift import expected_cash_minor
 from core.tenancy import tenant_context
 from sales.services import caps_payload
 from shifts import services
@@ -170,6 +171,69 @@ class MovementRequestView(APIView):
             )
 
 
+def admin_close_decision(
+    v: home.Viewer, shift: Shift, counted_minor: int | None
+) -> permissions.Decision:
+    """الإقفال الإداري (S-05؛ د-٥): بحدّ «إغلاق وردية بعجز» في فرع الوردية — العجز المعدود (لا
+    الزيادة) يُقاس بالحدّ، وما فوقه للمالك وحده (المالك بلا حدّ). بلا مبلغ = هل يحقّ له أصلاً."""
+    shortage = None
+    if counted_minor is not None:
+        expected = expected_cash_minor(services.cash_totals(shift))
+        shortage = max(0, expected - counted_minor)
+    return permissions.can(v, "close_short", shortage, branch_id=shift.branch_id)
+
+
+class ShiftAdminCloseView(APIView):
+    """«إقفال إداري بعدّ حاضر» لوردية مفتوحة (مهجورة غالباً): المعدود وسببه باسم من عدّ."""
+
+    permission_classes = (IsAuthenticated,)
+
+    class AdminCloseSerializer(serializers.Serializer[dict[str, Any]]):
+        counted_cash_minor = serializers.CharField()
+        reason = serializers.CharField(allow_blank=True, required=False, default="")
+
+    @extend_schema(
+        request=AdminCloseSerializer, responses={200: None, 400: None, 403: None, 404: None}
+    )
+    def post(self, request: Request, shift_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        if tid is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        s = self.AdminCloseSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        with tenant_context(tid):
+            v = _viewer(request)
+            shift = Shift.objects.filter(id=shift_id).select_related("branch").first()
+            if shift is None:
+                return Response({"detail": "shift_not_found"}, status=status.HTTP_404_NOT_FOUND)
+            raw = str(s.validated_data["counted_cash_minor"])
+            errs = check_integer("counted_cash_minor", raw, 0, PRICE_MAX_MINOR)
+            if errs:
+                return Response(Rejected(errs).as_response(), status=status.HTTP_400_BAD_REQUEST)
+            counted = int(raw)
+            decision = admin_close_decision(v, shift, counted)
+            if not decision:
+                return Response(decision.denial(v.role_name), status=status.HTTP_403_FORBIDDEN)
+            try:
+                services.admin_close(
+                    shift,
+                    actor=v.user,
+                    counted_minor=counted,
+                    reason=str(s.validated_data.get("reason", "")),
+                )
+            except services.AdminCloseRejected as e:
+                if e.code == "shift_closed":
+                    return Response({"detail": "shift_closed"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    Rejected([FieldError(e.field, e.code)]).as_response(),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            row = services.review_row(shift)
+            variance = int(row["variance_minor"]) if row["variance_minor"] else None
+            settle = settle_decision(v, variance, shift.branch_id).allowed
+            return Response({"row": {**row, "can_settle": settle}})
+
+
 class ShiftReviewView(APIView):
     """SHIFT-05: سجل ورديات الأسبوع بفوارقها والمتأخر عنها. المالك يرى كل الفروع؛ غيره يرى فرعه
     («مدير الفرع يرى فرعه») ولا يُسوّي."""
@@ -190,6 +254,13 @@ class ShiftReviewView(APIView):
             for r in rows:
                 variance = int(r["variance_minor"]) if r["variance_minor"] else None
                 r["can_settle"] = settle_decision(v, variance, uuid.UUID(r["branch_id"])).allowed
+                if r["state"] == "open":
+                    # الإقفال الإداري: هل يحقّ له أصلاً، وحدّه للعجز (None = بلا حدّ) — 0005 §٢٩٣
+                    d = permissions.can(v, "close_short", branch_id=uuid.UUID(r["branch_id"]))
+                    r["can_admin_close"] = d.allowed
+                    r["close_limit_minor"] = (
+                        "" if d.limit_minor is None or not d.allowed else str(d.limit_minor)
+                    )
             return Response(
                 {
                     "scope": "all" if v.is_owner else "branch",
