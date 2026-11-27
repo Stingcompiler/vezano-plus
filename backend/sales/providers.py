@@ -15,12 +15,12 @@ from django.utils import timezone
 from catalog import services as catalog_services
 from catalog.models import Item
 from catalog.prices import PRICE_USAGE_PROVIDERS
-from core import home
+from core import approvals, home
 from inventory import services as inventory_services
 from parties import services as party_services
 from parties.models import Party
 from sales.duplicates import reversal_payload
-from sales.models import Sale, SaleLine, SaleReturn, SaleReversal
+from sales.models import CreditOverride, DiscountOverride, Sale, SaleLine, SaleReturn, SaleReversal
 from sales.services import (
     DISCOUNT_USAGE_PROVIDERS,
     apply_credit_override,
@@ -43,6 +43,43 @@ register_applier("sales.Payment", apply_payment)
 register_applier("sales.CreditOverride", apply_credit_override)
 register_applier("sales.SaleReturn", apply_sale_return)
 register_applier("sales.SaleReturnLine", apply_sale_return_line)
+
+
+def _party_name(party_id: uuid.UUID) -> str:
+    p = Party.objects.filter(id=party_id).first()
+    return p.name if p else ""
+
+
+# «طلبات تنتظرك» — الخصم فوق السقف وتجاوز حدّ الائتمان (S-04؛ 0005 §٢٩٣)
+approvals.register_source(
+    approvals.Source(
+        kind="discount",
+        model=DiscountOverride,
+        branch_of=lambda r: r.branch_id,
+        amount_of=lambda r: int(r.discount_minor or (r.value if r.mode == "amount" else 0)),
+        requested_at=lambda r: r.occurred_at,
+        details=lambda r: {
+            "mode": r.mode,
+            "value": r.value,
+            "cart_total_minor": str(r.cart_total_minor),
+        },
+    )
+)
+approvals.register_source(
+    approvals.Source(
+        kind="credit",
+        model=CreditOverride,
+        branch_of=lambda r: r.branch_id,
+        amount_of=lambda r: int(r.balance_after_minor - r.credit_limit_minor),
+        requested_at=lambda r: r.occurred_at,
+        details=lambda r: {
+            "sale_id": str(r.sale_id),
+            "party_name": _party_name(r.party_id),
+            "credit_limit_minor": str(r.credit_limit_minor),
+            "balance_after_minor": str(r.balance_after_minor),
+        },
+    )
+)
 
 
 def _shift_cash(shift: Shift) -> dict[str, int]:

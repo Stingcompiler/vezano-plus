@@ -152,9 +152,9 @@ describe("نقطة البيع محلياً (POS-01/02؛ §٦.٢)", () => {
     );
     expect((await readCartDraft(s)).lines).toEqual(lines);
     expect((await readCartDraft(s)).discount?.value).toBe("800");
-    expect(await holdCart(s, lines, "2026-09-16T10:05:00Z")).toBe(1);
+    expect(await holdCart(s, { lines }, { now: "2026-09-16T10:05:00Z" })).toBe(1);
     expect((await readCartDraft(s)).lines).toEqual([]);
-    expect(await holdCart(s, lines)).toBe(2);
+    expect(await holdCart(s, { lines })).toBe(2);
   });
 
   it("الأرصدة موسومة بآخر مطابقة؛ بلا مطابقة لا رصيد معروف", async () => {

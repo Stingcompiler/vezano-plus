@@ -91,6 +91,24 @@ def _money(payload: Payload, *names: str, unsigned: bool = False) -> None:
             raise KindError(f"{n}: {e.code}") from e
 
 
+#: اعتماد مدير حاضر برمزه عند الصندوق (0005 §٢٩٣) — حقول اختيارية على الطلب نفسه؛ الخادم يعيد
+#: فحصها عند الرفع (`core.approvals.pin_problem`) ويحجر ما لا يصحّ
+APPROVAL_FIELDS = ("approved_by_user_id", "approval_method", "verifier_version")
+
+
+def _validate_approval(p: Payload, approver: str = "approved_by_user_id") -> None:
+    method = p.get("approval_method")
+    if method in (None, ""):
+        if approver == "approved_by_user_id" and p.get(approver):
+            raise KindError("approved_by_user_id requires approval_method")
+        return
+    if method != "pin":
+        raise KindError("approval_method must be pin")
+    _require(p, approver, "verifier_version")
+    if not str(p["verifier_version"]).isdigit():
+        raise KindError("verifier_version must be a positive integer")
+
+
 # ---------------------------------------------------------------- shift_open (§١٠.٣)
 def _validate_shift_opened(p: Payload) -> None:
     _require(
@@ -155,6 +173,7 @@ def _validate_cash_movement(p: Payload) -> None:
     # كل حركة خارج البيع لها سبب مكتوب (SHIFT-03) — الإيداع الافتتاحي في ShiftOpened لا هنا
     if not str(p.get("reason", "")).strip():
         raise KindError("cash movement requires reason")
+    _validate_approval(p, "authorized_by_user_id")
 
 
 CASH_MOVEMENT = EntitySpec(
@@ -171,6 +190,9 @@ CASH_MOVEMENT = EntitySpec(
         "reverses_movement_id",
         "number",
         "occurred_at",
+        "approval_method",
+        "verifier_version",
+        "approval_request_id",
     ),
     required=(
         "movement_id",
@@ -369,6 +391,9 @@ def _validate_discount_override(p: Payload) -> None:
         raise KindError("discount override requires reason")
     if "cart_total_minor" in p:
         _money(p, "cart_total_minor", unsigned=True)
+    if p.get("discount_minor") not in (None, ""):
+        _money(p, "discount_minor", unsigned=True)
+    _validate_approval(p)
 
 
 DISCOUNT_OVERRIDE = EntitySpec(
@@ -383,6 +408,8 @@ DISCOUNT_OVERRIDE = EntitySpec(
         "reason",
         "cart_total_minor",
         "occurred_at",
+        "discount_minor",
+        *APPROVAL_FIELDS,
     ),
     required=("request_id", "branch_id", "mode", "value", "reason", "occurred_at"),
     validate=_validate_discount_override,
@@ -1363,6 +1390,7 @@ def _validate_credit_override(p: Payload) -> None:
         raise KindError("credit override requires reason")
     if int(p["balance_after_minor"]) <= int(p["credit_limit_minor"]):
         raise KindError("balance_after_minor must exceed credit_limit_minor")
+    _validate_approval(p)
 
 
 CREDIT_OVERRIDE = EntitySpec(
@@ -1377,6 +1405,7 @@ CREDIT_OVERRIDE = EntitySpec(
         "balance_after_minor",
         "reason",
         "occurred_at",
+        *APPROVAL_FIELDS,
     ),
     required=(
         "override_id",

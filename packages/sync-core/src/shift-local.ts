@@ -8,6 +8,7 @@ import { type CashTotals, expectedCashMinor } from "@sting/domain";
 import type { StoragePort, StoredOperation } from "@sting/platform";
 
 import { saveOperation } from "./local-save";
+import type { PinApprovalRef } from "./pos-local";
 import type { OperationDraft } from "./types";
 
 export const SHIFT_PREFIX = "entity:shifts.Shift:";
@@ -277,6 +278,10 @@ export interface CashMovementInput {
   /** عكس حركة سابقة: حركة مضادّة تشير إليها — لا حذف ولا تعديل. */
   readonly reversesMovementId?: string | undefined;
   readonly occurredAt: string;
+  /** سحب أذن به المالك برمزه عند الصندوق (0005 §٢٩٣) — صاحب الإذن `authorizedByUserId`. */
+  readonly pinApproval?: PinApprovalRef | undefined;
+  /** سحب وافق عليه المالك في «طلبات تنتظرك» — الطلب نفسه بمبلغه. */
+  readonly approvalRequestId?: string | undefined;
 }
 
 export interface LocalCashMovement {
@@ -331,6 +336,13 @@ export async function saveCashMovement(
           ...(input.authorizedByUserId ? { authorized_by_user_id: input.authorizedByUserId } : {}),
           ...(input.reversesMovementId ? { reverses_movement_id: input.reversesMovementId } : {}),
           occurred_at: input.occurredAt,
+          ...(input.pinApproval
+            ? {
+                approval_method: "pin",
+                verifier_version: String(input.pinApproval.verifierVersion),
+              }
+            : {}),
+          ...(input.approvalRequestId ? { approval_request_id: input.approvalRequestId } : {}),
         },
       },
     ],

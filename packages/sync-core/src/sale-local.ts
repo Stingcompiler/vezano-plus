@@ -12,7 +12,14 @@ import type { StoragePort, StoredOperation } from "@sting/platform";
 import { formatInvoiceNumber, INVOICE_SEQ_META, type InvoiceNumberParts } from "./invoice-number";
 import { saveOperation } from "./local-save";
 import { PARTY_PREFIX } from "./parties-local";
-import { BALANCE_PREFIX, CART_META, type CartDraft, cartTotals } from "./pos-local";
+import {
+  BALANCE_PREFIX,
+  CART_META,
+  type CartDraft,
+  cartTotals,
+  type PinApprovalRef,
+  pinApprovalFields,
+} from "./pos-local";
 import { type LocalReceipt, RECEIPT_PREFIX } from "./receipt-local";
 import type { CashRow, LocalShift } from "./shift-local";
 import type { OperationDraft } from "./types";
@@ -436,6 +443,8 @@ export interface CreditOverrideInput {
   readonly balanceAfterMinor: string;
   readonly reason: string;
   readonly occurredAt: string;
+  /** مدير حاضر اعتمد التجاوز برمزه (0005 §٢٩٣) — وإلا يبقى في «طلبات تنتظرك». */
+  readonly pinApproval?: PinApprovalRef | undefined;
 }
 
 /** «يظهر تنبيه بالمبلغ الزائد ويُطلب سبب، ثم يُكمَل البيع»: حدث تجاوز يُراجع عند الاتصال. */
@@ -462,6 +471,7 @@ export async function recordCreditOverride(
           balance_after_minor: input.balanceAfterMinor,
           reason: input.reason.trim(),
           occurred_at: input.occurredAt,
+          ...pinApprovalFields(input.pinApproval),
         },
       },
     ],

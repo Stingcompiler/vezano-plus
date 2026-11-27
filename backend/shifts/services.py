@@ -103,6 +103,8 @@ def apply_cash_movement(
     actor = User.unscoped.filter(id=payload["actor_user_id"]).first()
     authorized_id = payload.get("authorized_by_user_id") or None
     authorized = User.unscoped.filter(id=authorized_id).first() if authorized_id else None
+    approved_via = _check_movement_approval(tenant_id, shift, payload)
+    request_id = payload.get("approval_request_id") or None
     reverses_id = payload.get("reverses_movement_id") or None
     reverses = (
         ShiftCashMovement.unscoped.filter(tenant_id=tenant_id, id=reverses_id).first()
@@ -123,7 +125,44 @@ def apply_cash_movement(
         reverses=reverses,
         number=str(payload.get("number", "")),
         occurred_at=_dt(payload.get("occurred_at")),
+        approved_via=approved_via,
+        approval_request_id=uuid.UUID(str(request_id)) if request_id else None,
     )
+
+
+def _check_movement_approval(tenant_id: uuid.UUID, shift: Shift, payload: Mapping[str, Any]) -> str:
+    """سحب بإذن (0005 §٢٩٣): برمز المالك عند الصندوق (يُعاد فحصه هنا)، أو بطلب وافق عليه في
+    «طلبات تنتظرك» بالمبلغ نفسه وباسم من أذن. ما لا يصحّ يُحجر `approval_invalid`."""
+    from core import approvals
+    from sync.appliers import BusinessConflict
+
+    amount = abs(int(payload["signed_amount_minor"]))
+    if payload.get("approval_method") == "pin":
+        approvals.check_pin_approval(
+            tenant_id=tenant_id,
+            kind="withdrawal",
+            approver_id=payload.get("authorized_by_user_id"),
+            requester_id=uuid.UUID(str(payload["actor_user_id"])),
+            branch_id=shift.branch_id,
+            amount=amount,
+            verifier_version=payload.get("verifier_version"),
+            occurred_at=payload.get("occurred_at"),
+        )
+        return "pin"
+    request_id = payload.get("approval_request_id") or None
+    if not request_id:
+        return ""
+    req = CashMovementRequest.unscoped.filter(tenant_id=tenant_id, id=request_id).first()
+    ok = (
+        req is not None
+        and req.status == "approved"
+        and req.shift_id == shift.id
+        and req.amount_minor == amount
+        and str(req.decided_by_user_id) == str(payload.get("authorized_by_user_id") or "")
+    )
+    if not ok and not approvals.accepting_now():
+        raise BusinessConflict(approvals.APPROVAL_INVALID, "withdrawal:request_not_approved")
+    return "inbox"
 
 
 def apply_cash_counted(
@@ -424,6 +463,9 @@ def review_row(shift: Shift, *, now: datetime | None = None) -> dict[str, Any]:
         if shift.counted_cash_minor is not None
         else "",
         "counted_by_name": shift.counted_by_name,
+        "close_kind": shift.close_kind,
+        "closed_by_name": shift.closed_by_name,
+        "close_reason": shift.close_reason,
         "variance_minor": str(variance) if variance is not None else "",
         "open_hours": int(open_for.total_seconds() // 3600) if open_for is not None else 0,
         "abandoned": open_for is not None and open_for >= ABANDONED_AFTER,
@@ -524,3 +566,69 @@ def record_review(shift: Shift, *, approver: User, reason: str) -> CashAdjustmen
         ref_id=shift.id,
     )
     return adj
+
+
+# ---------------------------------------------------------------- S-05 الإقفال الإداري
+
+
+class AdminCloseRejected(Exception):
+    def __init__(self, code: str, field: str = "") -> None:
+        super().__init__(code)
+        self.code = code
+        self.field = field
+
+
+def admin_close(shift: Shift, *, actor: User, counted_minor: int, reason: str) -> Shift:
+    """«إقفال إداري بعدّ حاضر» لوردية مهجورة (S-05؛ 0005 §٢٩٣): من حضر عدّ الدرج وكتب المعدود
+    وسببه؛ المتوقَّع لقطة خادمية لحظتها (`expected_source="server"`)، والفارق يُنسب للوردية. ما
+    يصل من جهازها بعد ذلك متأخرٌ كما هو اليوم، وإقفال الجهاز لها بعدها يُحجر `shift_closed_twice`.
+    الصلاحية (حدّ «إغلاق وردية بعجز») يقرّرها العرض قبل النداء."""
+    if shift.state != "open":
+        raise AdminCloseRejected("shift_closed")
+    if not reason.strip():
+        raise AdminCloseRejected("required", "reason")
+    expected = expected_cash_minor(cash_totals(shift))
+    now = timezone.now()
+    shift.state = "closed"
+    shift.closed_at = now
+    shift.expected_cash_at_close_minor = expected
+    shift.expected_source = "server"
+    shift.counted_cash_minor = counted_minor
+    shift.count_status = "counted"
+    shift.counted_by_user_id = actor.id
+    shift.counted_by_name = actor.display_name
+    shift.close_kind = "admin"
+    shift.closed_by_user_id = actor.id
+    shift.closed_by_name = actor.display_name
+    shift.close_reason = reason.strip()
+    shift.save(
+        update_fields=[
+            "state",
+            "closed_at",
+            "expected_cash_at_close_minor",
+            "expected_source",
+            "counted_cash_minor",
+            "count_status",
+            "counted_by_user_id",
+            "counted_by_name",
+            "close_kind",
+            "closed_by_user_id",
+            "closed_by_name",
+            "close_reason",
+        ]
+    )
+    from core import audit
+
+    variance = counted_minor - expected
+    audit.record(
+        kind="shift.admin_closed",
+        title=f"إقفال إداري لوردية {shift.user_name or shift.device_name}"
+        + (f" بفارق {variance / 100:,.2f}" if variance else ""),
+        actor=actor,
+        branch=shift.branch,
+        detail=f"الوردية {shift.id} · المتوقَّع {expected} · المعدود {counted_minor}",
+        reason=reason.strip(),
+        ref_entity="shifts.Shift",
+        ref_id=shift.id,
+    )
+    return shift

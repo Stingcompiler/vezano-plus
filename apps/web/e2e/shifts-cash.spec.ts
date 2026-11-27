@@ -266,7 +266,11 @@ test.describe("SHIFT-03", () => {
     );
     await expect(page.getByRole("button", { name: "سجّل الحركة" })).toBeDisabled();
     await page.getByRole("button", { name: "اطلب من ندى" }).click();
-    await expect(page.locator(".c-notice")).toContainText("أُرسل الطلب إلى ندى");
+    // «أُرسل الطلب إلى ندى» كان يَعِد بما لا يصل؛ الآن الطلب في «طلبات تنتظرك» (0005 §٢٩٣)
+    await expect(page.locator(".c-notice")).toContainText(
+      "الطلب في «طلبات تنتظرك». يظهر القرار هنا.",
+    );
+    await expect(page.locator(".c-notice")).not.toContainText("أُرسل الطلب");
     expect(requests[0]).toEqual({
       kind: "withdrawal",
       amount_minor: "100000",

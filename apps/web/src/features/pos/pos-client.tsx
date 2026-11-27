@@ -22,6 +22,7 @@ import {
   readOpenShift,
   readShiftCash,
   holdCart,
+  readHeldCarts,
   rowByBarcode,
   stepCartLine,
   storeBalances,
@@ -122,6 +123,9 @@ export function PosClient() {
   const [barcodeMiss, setBarcodeMiss] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [held, setHeld] = useState<number | null>(null);
+  // S-03 (0005 §٢٩٣): عدد معلّقات هذا الجهاز واسم اختياري للمعلّقة التالية
+  const [heldCount, setHeldCount] = useState(0);
+  const [holdLabel, setHoldLabel] = useState("");
   // الجهاز نزّل بياناته؟ بدونه كتالوج المتصفح فارغ لأنه لم يصل لا لأن المحل جديد (FIX-02 · 0005 §١٨٣)
   const [deviceReady, setDeviceReady] = useState<boolean | null>(null);
   useEffect(() => {
@@ -139,7 +143,7 @@ export function PosClient() {
     }
     void (async () => {
       const storage = getStorage();
-      const [its, draft, bal, at, s, c, home, p] = await Promise.all([
+      const [its, draft, bal, at, s, c, home, p, hs] = await Promise.all([
         readLocalItems(storage),
         readCartDraft(storage),
         readLocalBalances(storage),
@@ -148,7 +152,9 @@ export function PosClient() {
         readShiftContext(storage, app),
         readHomeCache(),
         countPending(),
+        readHeldCarts(storage),
       ]);
+      setHeldCount(hs.length);
       setItems(its);
       setLines(draft.lines);
       setDiscount(draft.discount);
@@ -325,11 +331,13 @@ export function PosClient() {
     if (looksLikeBarcode(query)) setBarcodeMiss(query.trim());
   };
   const hold = async () => {
-    const n = await holdCart(getStorage(), lines);
+    const n = await holdCart(getStorage(), { lines, discount, customer }, { label: holdLabel });
     setLines([]);
     setDiscount(undefined);
     setCustomer(undefined);
+    setHoldLabel("");
     setHeld(n);
+    setHeldCount(n);
   };
 
   const cartLines: CartLine[] = lines.map((l) => ({
@@ -437,6 +445,16 @@ export function PosClient() {
         <span className="pos-cart__title">السلة</span>
         <span className="acc-choice__note">السلة فارغة — أضف صنفاً من البحث أعلاه.</span>
       </div>
+      {held ? (
+        <p className="acc-choice__note" role="status">
+          عُلّقت — <span className="sting-mono">{held}</span> في المعلّقات
+        </p>
+      ) : null}
+      {heldCount ? (
+        <Button variant="quiet" pos onClick={() => router.push("/pos/held")}>
+          المعلّقات · <span className="sting-mono">{heldCount}</span>
+        </Button>
+      ) : null}
     </aside>
   );
 
@@ -522,6 +540,14 @@ export function PosClient() {
               >
                 {tablet ? "تحصيل" : "متابعة إلى الدفع"}
               </Button>
+              {lines.length ? (
+                <TextField
+                  label="اسم أو ملاحظة (اختياري)"
+                  value={holdLabel}
+                  onChange={(e) => setHoldLabel(e.target.value)}
+                  maxLength={60}
+                />
+              ) : null}
               <div className="pos-cart__secondary">
                 <Button
                   variant="secondary"
@@ -545,6 +571,9 @@ export function PosClient() {
                   عُلّقت — <span className="sting-mono">{held}</span> في المعلّقات
                 </p>
               ) : null}
+              <Button variant="quiet" pos={tablet} onClick={() => router.push("/pos/held")}>
+                المعلّقات · <span className="sting-mono">{heldCount}</span>
+              </Button>
             </div>
           }
         />

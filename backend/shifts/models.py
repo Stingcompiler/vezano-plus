@@ -39,6 +39,12 @@ class Shift(TenantScoped):
     witness_user_id = models.UUIDField(null=True, blank=True)
     witness_name = models.CharField(max_length=200, blank=True, default="")
     denominations = models.JSONField(default=list)
+    #: من أقفلها: «device» بشهادة الكاشير على جهازه، أو «admin» إقفال إداري بعدّ حاضر لوردية مهجورة
+    #: (S-05؛ 0005 §٢٩٣) باسم من عدّ وسببه
+    close_kind = models.CharField(max_length=8, blank=True, default="")
+    closed_by_user_id = models.UUIDField(null=True, blank=True)
+    closed_by_name = models.CharField(max_length=200, blank=True, default="")
+    close_reason = models.CharField(max_length=300, blank=True, default="")
     #: رقم الحدث الأول (ترتيب القبول)
     server_seq = models.BigIntegerField(default=0)
 
@@ -63,6 +69,9 @@ class ShiftCashMovement(TenantScoped):
     actor_name = models.CharField(max_length=200, blank=True, default="")
     authorized_by_user_id = models.UUIDField(null=True, blank=True)
     authorized_by_name = models.CharField(max_length=200, blank=True, default="")
+    #: كيف أذن صاحب الإذن (0005 §٢٩٣): «pin» برمزه عند الصندوق، «inbox» من «طلبات تنتظرك»
+    approved_via = models.CharField(max_length=8, blank=True, default="")
+    approval_request_id = models.UUIDField(null=True, blank=True)
     #: الحركة المعكوسة تبقى ومعها الأصلية مشطوبةً لا محذوفة (SHIFT-03)
     reverses = models.ForeignKey(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversed_by"
@@ -82,8 +91,8 @@ class ShiftCashMovement(TenantScoped):
 
 
 class CashMovementRequest(TenantScoped):
-    """«اطلب من ندى» (SHIFT-03 permission_denied): الكاشير يطلب سحباً بالمبلغ والسبب، فيوافق
-    المالك من جهازه وتُسجَّل باسمه. موافقة المالك غير مرسومة بعد (0005 §١٥)."""
+    """«اطلب من ندى» (SHIFT-03 permission_denied): الكاشير يطلب سحباً بالمبلغ والسبب، فيقرّر المالك
+    في «طلبات تنتظرك» (0005 §٢٩٣) ويعرف الكاشير النتيجة؛ الحركة تُسجَّل باسم من وافق."""
 
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="requests")
     kind = models.CharField(max_length=16)
@@ -93,6 +102,11 @@ class CashMovementRequest(TenantScoped):
     requested_by_name = models.CharField(max_length=200, blank=True, default="")
     requested_at = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=16, default="pending")
+    decided_by_user_id = models.UUIDField(null=True, blank=True)
+    decided_by_name = models.CharField(max_length=200, blank=True, default="")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.CharField(max_length=300, blank=True, default="")
+    approved_via = models.CharField(max_length=8, blank=True, default="")
 
     class Meta:
         constraints = [

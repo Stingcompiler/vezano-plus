@@ -14,6 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core import permissions
 from core.auth.devices import register_device, renew_with_registration
 from core.auth.pin import verifiers_for_device
 from core.auth.tokens import AuthContext
@@ -289,6 +290,10 @@ class VerifierSerializer(serializers.Serializer[dict[str, Any]]):
     branch_name = serializers.CharField()
     encoded = serializers.CharField()
     version = serializers.IntegerField()
+    #: اعتماد المدير الحاضر برمزه (0005 §٢٩٣): الجهاز يقرّر حدّ صاحب الرمز بلا اتصال بخلايا دوره
+    role_code = serializers.CharField()
+    is_owner = serializers.BooleanField()
+    permissions = serializers.DictField(child=serializers.DictField())
 
 
 class DeviceVerifiersView(APIView):
@@ -322,23 +327,33 @@ class DeviceVerifiersView(APIView):
         with tenant_context(auth.tenant_id):
             device = auth.device
             branch = Branch.objects.get(id=device.branch_id)
-            roles = {
-                a.user_id: a.role.name
+            access = {
+                a.user_id: a.role
                 for a in UserBranchAccess.objects.filter(
                     branch=branch, revoked_at__isnull=True
                 ).select_related("role")
             }
-            rows = [
-                {
-                    "user_id": str(v.user_id),
-                    "display_name": v.user.display_name,
-                    "role_name": "مالك" if v.user.is_owner else roles.get(v.user_id, ""),
-                    "branch_name": branch.name,
-                    "encoded": v.encoded,
-                    "version": v.version,
-                }
-                for v in verifiers_for_device(device)
-            ]
+            cells: dict[tuple[bool, str], dict[str, dict[str, Any]]] = {}
+            rows = []
+            for v in verifiers_for_device(device):
+                role = access.get(v.user_id)
+                code = "owner" if v.user.is_owner else (role.code if role else "")
+                key = (v.user.is_owner, code)
+                if key not in cells:
+                    cells[key] = permissions.rules_for(*key)
+                rows.append(
+                    {
+                        "user_id": str(v.user_id),
+                        "display_name": v.user.display_name,
+                        "role_name": "مالك" if v.user.is_owner else (role.name if role else ""),
+                        "branch_name": branch.name,
+                        "encoded": v.encoded,
+                        "version": v.version,
+                        "role_code": code,
+                        "is_owner": v.user.is_owner,
+                        "permissions": cells[key],
+                    }
+                )
             return Response(
                 {
                     "device_id": str(device.id),

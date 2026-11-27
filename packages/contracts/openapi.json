@@ -206,6 +206,130 @@
         }
       }
     },
+    "/api/approvals": {
+      "get": {
+        "operationId": "approvals_retrieve",
+        "tags": ["approvals"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetApprovalsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/approvals/{kind}/{request_id}": {
+      "get": {
+        "operationId": "approvals_retrieve_2",
+        "description": "حالة طلب بعينه — شاشة الكاشير تتابعه حتى يُقرَّر فيه.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["approvals"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetApprovalsByKindByRequestIdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/approvals/{kind}/{request_id}/decide": {
+      "post": {
+        "operationId": "approvals_decide_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["approvals"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecide"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostApprovalsByKindByRequestIdDecideResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          },
+          "409": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/apps/download/{token}": {
       "get": {
         "operationId": "apps_download_retrieve",
@@ -11930,6 +12054,55 @@
         }
       }
     },
+    "/api/shifts/{shift_id}/admin-close": {
+      "post": {
+        "operationId": "shifts_admin_close_create",
+        "description": "«إقفال إداري بعدّ حاضر» لوردية مفتوحة (مهجورة غالباً): المعدود وسببه باسم من عدّ.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "shift_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["shifts"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminClose"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostShiftsByShiftIdAdminCloseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/shifts/{shift_id}/requests": {
       "post": {
         "operationId": "shifts_requests_create",
@@ -12851,6 +13024,19 @@
         },
         "required": ["reasons"]
       },
+      "AdminClose": {
+        "type": "object",
+        "properties": {
+          "counted_cash_minor": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": ["counted_cash_minor"]
+      },
       "AliasAdd": {
         "type": "object",
         "properties": {
@@ -12880,6 +13066,19 @@
           }
         },
         "required": ["latest_version", "notes", "released_at", "schema_version"]
+      },
+      "ApprovalDecide": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/Decision5f1Enum"
+          },
+          "reason": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": ["decision"]
       },
       "BackupCopy": {
         "type": "object",
@@ -13223,7 +13422,7 @@
         "type": "object",
         "properties": {
           "decision": {
-            "$ref": "#/components/schemas/DecisionDecisionEnum"
+            "$ref": "#/components/schemas/Decision5f1Enum"
           },
           "reason": {
             "type": "string",
@@ -13231,6 +13430,11 @@
           }
         },
         "required": ["decision", "reason"]
+      },
+      "Decision5f1Enum": {
+        "enum": ["accept", "reject"],
+        "type": "string",
+        "description": "* `accept` - accept\n* `reject` - reject"
       },
       "DecisionAction": {
         "type": "object",
@@ -13240,11 +13444,6 @@
             "maxLength": 1000
           }
         }
-      },
-      "DecisionDecisionEnum": {
-        "enum": ["accept", "reject"],
-        "type": "string",
-        "description": "* `accept` - accept\n* `reject` - reject"
       },
       "DestinationEnum": {
         "enum": ["quarantine", "write_off"],
@@ -14994,9 +15193,32 @@
           },
           "version": {
             "type": "integer"
+          },
+          "role_code": {
+            "type": "string"
+          },
+          "is_owner": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {}
+            }
           }
         },
-        "required": ["branch_name", "display_name", "encoded", "role_name", "user_id", "version"]
+        "required": [
+          "branch_name",
+          "display_name",
+          "encoded",
+          "is_owner",
+          "permissions",
+          "role_code",
+          "role_name",
+          "user_id",
+          "version"
+        ]
       },
       "VerifyConfirm": {
         "type": "object",
@@ -15122,6 +15344,303 @@
           }
         },
         "required": ["expires_at", "policy", "resend_after_seconds", "resends_left", "sends"]
+      },
+      "GetApprovalsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "branch_name": {
+            "type": "string"
+          },
+          "can_review": {
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "amount_minor": {
+                  "type": "string"
+                },
+                "approved_via": {
+                  "type": "string"
+                },
+                "balance_after_minor": {
+                  "type": "string"
+                },
+                "branch_id": {
+                  "type": "string"
+                },
+                "branch_name": {
+                  "type": "string"
+                },
+                "can_decide": {
+                  "type": "boolean"
+                },
+                "cart_total_minor": {
+                  "type": "string"
+                },
+                "credit_limit_minor": {
+                  "type": "string"
+                },
+                "decided_at": {
+                  "type": "string"
+                },
+                "decided_by_name": {
+                  "type": "string"
+                },
+                "decided_by_user_id": {
+                  "type": "string"
+                },
+                "decision_reason": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "party_name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "requested_at": {
+                  "type": "string"
+                },
+                "requested_by_name": {
+                  "type": "string"
+                },
+                "sale_id": {
+                  "type": "string"
+                },
+                "shift_id": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "status",
+                "amount_minor",
+                "reason",
+                "requested_by_name",
+                "requested_at",
+                "branch_id",
+                "branch_name",
+                "decided_by_name",
+                "decided_at",
+                "decision_reason",
+                "approved_via",
+                "can_decide"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "role_name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          }
+        },
+        "required": ["can_review", "scope", "role_name", "branch_name", "items"],
+        "type": "object"
+      },
+      "GetApprovalsByKindByRequestIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "additionalProperties": false,
+            "properties": {
+              "amount_minor": {
+                "type": "string"
+              },
+              "approved_via": {
+                "type": "string"
+              },
+              "branch_id": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "can_decide": {
+                "type": "boolean"
+              },
+              "cart_total_minor": {
+                "type": "string"
+              },
+              "decided_at": {
+                "type": "string"
+              },
+              "decided_by_name": {
+                "type": "string"
+              },
+              "decided_by_user_id": {
+                "type": "string"
+              },
+              "decision_reason": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "requested_at": {
+                "type": "string"
+              },
+              "requested_by_name": {
+                "type": "string"
+              },
+              "shift_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "status",
+              "amount_minor",
+              "reason",
+              "requested_by_name",
+              "requested_at",
+              "branch_id",
+              "branch_name",
+              "decided_by_name",
+              "decided_at",
+              "decision_reason",
+              "approved_via",
+              "can_decide"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["item"],
+        "type": "object"
+      },
+      "PostApprovalsByKindByRequestIdDecideResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "additionalProperties": false,
+            "properties": {
+              "amount_minor": {
+                "type": "string"
+              },
+              "approved_via": {
+                "type": "string"
+              },
+              "balance_after_minor": {
+                "type": "string"
+              },
+              "branch_id": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "can_decide": {
+                "type": "boolean"
+              },
+              "cart_total_minor": {
+                "type": "string"
+              },
+              "credit_limit_minor": {
+                "type": "string"
+              },
+              "decided_at": {
+                "type": "string"
+              },
+              "decided_by_name": {
+                "type": "string"
+              },
+              "decided_by_user_id": {
+                "type": "string"
+              },
+              "decision_reason": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "party_name": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "requested_at": {
+                "type": "string"
+              },
+              "requested_by_name": {
+                "type": "string"
+              },
+              "sale_id": {
+                "type": "string"
+              },
+              "shift_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "status",
+              "amount_minor",
+              "reason",
+              "requested_by_name",
+              "requested_at",
+              "branch_id",
+              "branch_name",
+              "decided_by_name",
+              "decided_at",
+              "decision_reason",
+              "approved_via",
+              "can_decide"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["item"],
+        "type": "object"
       },
       "GetCampaignsResponse": {
         "additionalProperties": false,
@@ -19633,7 +20152,33 @@
             "type": "object"
           },
           "shift": {
-            "type": "null"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "branch_name": {
+                    "type": "string"
+                  },
+                  "device_name": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "open_since": {
+                    "type": "string"
+                  },
+                  "user_name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "open_since", "user_name", "device_name", "branch_name"],
+                "type": "object"
+              }
+            ]
           },
           "tasks": {
             "items": {},
@@ -60784,6 +61329,114 @@
         ],
         "type": "object"
       },
+      "PostShiftsByShiftIdAdminCloseResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "row": {
+            "additionalProperties": false,
+            "properties": {
+              "abandoned": {
+                "type": "boolean"
+              },
+              "branch_id": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "can_settle": {
+                "type": "boolean"
+              },
+              "close_kind": {
+                "type": "string"
+              },
+              "close_reason": {
+                "type": "string"
+              },
+              "closed_at": {
+                "type": "string"
+              },
+              "closed_by_name": {
+                "type": "string"
+              },
+              "count_status": {
+                "type": "string"
+              },
+              "counted_by_name": {
+                "type": "string"
+              },
+              "counted_cash_minor": {
+                "type": "string"
+              },
+              "device_name": {
+                "type": "string"
+              },
+              "expected_cash_at_close_minor": {
+                "type": "string"
+              },
+              "expected_cash_minor": {
+                "type": "string"
+              },
+              "expected_source": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "late_items": {
+                "items": {},
+                "type": "array"
+              },
+              "open_hours": {
+                "type": "integer"
+              },
+              "opened_at": {
+                "type": "string"
+              },
+              "review": {
+                "type": "null"
+              },
+              "state": {
+                "type": "string"
+              },
+              "user_name": {
+                "type": "string"
+              },
+              "variance_minor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "branch_id",
+              "branch_name",
+              "device_name",
+              "user_name",
+              "opened_at",
+              "closed_at",
+              "state",
+              "count_status",
+              "expected_source",
+              "expected_cash_at_close_minor",
+              "expected_cash_minor",
+              "counted_cash_minor",
+              "counted_by_name",
+              "close_kind",
+              "closed_by_name",
+              "close_reason",
+              "variance_minor",
+              "open_hours",
+              "abandoned",
+              "review",
+              "late_items",
+              "can_settle"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["row"],
+        "type": "object"
+      },
       "PostShiftsByShiftIdRequestsResponse": {
         "additionalProperties": false,
         "properties": {
@@ -60860,7 +61513,16 @@
               "can_settle": {
                 "type": "boolean"
               },
+              "close_kind": {
+                "type": "string"
+              },
+              "close_reason": {
+                "type": "string"
+              },
               "closed_at": {
+                "type": "string"
+              },
+              "closed_by_name": {
                 "type": "string"
               },
               "count_status": {
@@ -61648,10 +62310,25 @@
                 "branch_name": {
                   "type": "string"
                 },
+                "can_admin_close": {
+                  "type": "boolean"
+                },
                 "can_settle": {
                   "type": "boolean"
                 },
+                "close_kind": {
+                  "type": "string"
+                },
+                "close_limit_minor": {
+                  "type": "string"
+                },
+                "close_reason": {
+                  "type": "string"
+                },
                 "closed_at": {
+                  "type": "string"
+                },
+                "closed_by_name": {
                   "type": "string"
                 },
                 "count_status": {
@@ -63082,6 +63759,7 @@
                 "type": "string"
               }
             },
+            "required": [],
             "type": "object"
           },
           "item": {
@@ -63133,10 +63811,22 @@
                         "amount_minor": {
                           "type": "string"
                         },
+                        "approval_method": {
+                          "type": "string"
+                        },
+                        "approved_by_user_id": {
+                          "type": "string"
+                        },
                         "branch_id": {
                           "type": "string"
                         },
                         "business_date": {
+                          "type": "string"
+                        },
+                        "cap": {
+                          "type": "string"
+                        },
+                        "cart_total_minor": {
                           "type": "string"
                         },
                         "condition": {
@@ -63149,6 +63839,9 @@
                           "type": "string"
                         },
                         "device_id": {
+                          "type": "string"
+                        },
+                        "discount_minor": {
                           "type": "string"
                         },
                         "factor_milli": {
@@ -63167,6 +63860,9 @@
                           "type": "string"
                         },
                         "method": {
+                          "type": "string"
+                        },
+                        "mode": {
                           "type": "string"
                         },
                         "movement_id": {
@@ -63191,6 +63887,9 @@
                           "type": "string"
                         },
                         "reference": {
+                          "type": "string"
+                        },
+                        "request_id": {
                           "type": "string"
                         },
                         "return_id": {
@@ -63222,8 +63921,15 @@
                         },
                         "user_id": {
                           "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        },
+                        "verifier_version": {
+                          "type": "string"
                         }
                       },
+                      "required": [],
                       "type": "object"
                     }
                   },

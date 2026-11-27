@@ -102,7 +102,10 @@ def test_inbox_derives_orders_locks_and_expires(ctx: dict[str, Any]) -> None:  #
         headers=h,
     )
     assert (
-        r.status_code == 200 and r.json()["status"] == "ok" and r.json()["href"] == "/shifts/review"
+        r.status_code == 200
+        and r.json()["status"] == "ok"
+        # يفتح «إقفال إداري بعدّ حاضر» لهذه الوردية (0005 §٢٩٣)
+        and r.json()["href"].startswith("/shifts/review?close=")
     )
     assert (
         next(
@@ -118,7 +121,8 @@ def test_inbox_derives_orders_locks_and_expires(ctx: dict[str, Any]) -> None:  #
         content_type="application/json",
         headers=h,
     )
-    assert r.json()["status"] == "link_expired" and r.json()["href"] == "/shifts/review"
+    assert r.json()["status"] == "link_expired"
+    assert r.json()["href"].startswith("/shifts/review?close=")
     # زال السبب: أُقفلت الوردية → يُوسم لا يُمحى
     with tenant_context(ctx["tenant"].id):
         Shift.objects.update(state="closed")

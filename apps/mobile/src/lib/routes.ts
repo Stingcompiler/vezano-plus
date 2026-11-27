@@ -28,6 +28,9 @@ export const ROUTES: readonly Row[] = [
   // M2 — البيع والورديات والأصلية (0005 §١٩٣)
   exact("/pos"),
   exact("/pos/discount"),
+  // المرحلة ٢ من مراجعة البيع (0005 §٢٩٣): المعلّقات و«طلبات تنتظرك»
+  exact("/pos/held"),
+  exact("/approvals"),
   exact("/pos/customer"),
   exact("/pos/pay"),
   exact("/pos/pay/credit", "/pos/pay-credit"),
