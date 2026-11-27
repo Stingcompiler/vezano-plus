@@ -10,8 +10,9 @@ from core.models import TenantScoped
 
 
 class DiscountOverride(TenantScoped):
-    """طلب اعتماد خصم يتجاوز سقف الدور: يُسجَّل باسم الكاشير ويُراجع عند الاتصال؛ الموافقة تُسجَّل
-    باسم من وافق (اعتماد مدير الفرع/المالك غير مرسوم بعد — 0005 §١٨)."""
+    """طلب اعتماد خصم يتجاوز سقف الدور: يُسجَّل باسم الكاشير؛ يعتمده مدير حاضر برمزه عند الصندوق
+    (`approved_via="pin"`) أو المالك/المدير من «طلبات تنتظرك» (`"inbox"`) — باسم من وافق
+    (0005 §٢٩٣)."""
 
     STATUS = (("pending", "بانتظار الاعتماد"), ("approved", "معتمد"), ("rejected", "مرفوض"))
 
@@ -29,6 +30,10 @@ class DiscountOverride(TenantScoped):
     decided_by_user_id = models.UUIDField(null=True, blank=True)
     decided_by_name = models.CharField(max_length=200, blank=True, default="")
     decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.CharField(max_length=300, blank=True, default="")
+    approved_via = models.CharField(max_length=8, blank=True, default="")
+    #: قيمة الخصم بالوحدة الصغرى كما حسبها الجهاز — يُقاس بها حدّ من يعتمد
+    discount_minor = models.BigIntegerField(default=0)
     occurred_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -132,7 +137,7 @@ class Payment(TenantScoped):
 
 class CreditOverride(TenantScoped):
     """تجاوز حدّ ائتمان الطرف بسبب (§٧.٤؛ POS-06): «الحد أداة انتباه لا قفل» — يُسجَّل باسم الكاشير
-    مع الحدّ والرصيد بعد البيع، ويُراجع عند الاتصال."""
+    مع الحدّ والرصيد بعد البيع؛ يعتمده مدير حاضر برمزه أو يقرّر فيه المالك من «طلبات تنتظرك»."""
 
     sale_id = models.UUIDField()
     party_id = models.UUIDField()
@@ -144,6 +149,11 @@ class CreditOverride(TenantScoped):
     balance_after_minor = models.BigIntegerField()
     reason = models.CharField(max_length=300)
     status = models.CharField(max_length=16, default="pending")
+    decided_by_user_id = models.UUIDField(null=True, blank=True)
+    decided_by_name = models.CharField(max_length=200, blank=True, default="")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.CharField(max_length=300, blank=True, default="")
+    approved_via = models.CharField(max_length=8, blank=True, default="")
     occurred_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

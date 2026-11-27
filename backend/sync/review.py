@@ -195,6 +195,8 @@ def detail_payload(q: QuarantinedOperation) -> dict[str, Any]:
         (kind in ("payment_receipt", "refund") and confirmed is not None)
         # مرتجع تجاوز أصله (مراجعة 2026-11-10 ع-٦): القبول يطبّقه موسوماً — النقد خرج فعلاً
         or (kind == "sale_return" and q.code in ACCEPTABLE_RETURN_CODES)
+        # اعتماد برمز لم يصحّ عند الرفع (0005 §٢٩٣): القبول يطبّقه كما أعلنه الجهاز بقرار مسجَّل
+        or (kind in APPROVAL_KINDS and q.code == APPROVAL_INVALID)
     )
     return {
         "item": item_payload(q),
@@ -253,16 +255,21 @@ EXCEEDING_RETURN = "return_exceeds_sale"
 #: الجهاز (نقداً لفاتورة آجلة مثلاً) بقرار مسجَّل بسببه
 REFUND_MISMATCH = "return_refund_mismatch"
 ACCEPTABLE_RETURN_CODES = (EXCEEDING_RETURN, REFUND_MISMATCH)
+#: الطلبات التي يُعتمد فيها برمز المدير الحاضر (0005 §٢٩٣)
+APPROVAL_INVALID = "approval_invalid"
+APPROVAL_KINDS = ("discount_override", "credit_override", "cash_movement")
 
 
 def _accept_exceeding_return(q: QuarantinedOperation, *, actor: User) -> dict[str, Any]:
     """يمرّر المرتجع المحجوز بخطّ PUSH نفسه بهويته ومُدخِله الأصليين، مأذوناً له بتجاوز الأصل:
     يُحفظ موسوماً `exceeds_original` بآثاره (نقد أو ذمّة ومخزون). أي نتيجة غير القبول تُبطل القرار."""
+    from core.approvals import accepting_invalid_approval
     from sales.services import accepting_exceeding_return
     from sync.counter import ensure_state
     from sync.push import PROTOCOL_VERSION, push
 
-    with accepting_exceeding_return():
+    allow = accepting_invalid_approval if q.code == APPROVAL_INVALID else accepting_exceeding_return
+    with allow():
         resp = push(
             device_id=q.device,
             actor_user_id=q.actor_user or actor.id,
@@ -284,7 +291,7 @@ def _accept(q: QuarantinedOperation, *, reason: str, actor: User) -> dict[str, A
     detail = detail_payload(q)
     if not detail["acceptable"]:
         raise ReviewRejected("manual_merge_required")
-    if q.code in ACCEPTABLE_RETURN_CODES:
+    if q.code in (*ACCEPTABLE_RETURN_CODES, APPROVAL_INVALID):
         return _accept_exceeding_return(q, actor=actor)
     head = _head(_members(q.original), "parties.PaymentReceipt")
     chead = _head(detail["confirmed"]["members"], "parties.PaymentReceipt")

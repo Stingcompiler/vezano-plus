@@ -1,5 +1,6 @@
 from django.urls import path
 
+from core.approval_views import ApprovalDecideView, ApprovalItemView, ApprovalsView
 from core.auth.account_views import (
     AccountLoginView,
     AccountRegisterView,
@@ -144,6 +145,15 @@ urlpatterns = [
     path("push/unsubscribe", PushUnsubscribeView.as_view(), name="push-unsubscribe"),
     path("push/test", PushTestView.as_view(), name="push-test"),
     # NOT-01/02 (T2.10)
+    path("approvals", ApprovalsView.as_view(), name="approvals"),
+    path(
+        "approvals/<str:kind>/<uuid:request_id>", ApprovalItemView.as_view(), name="approval-item"
+    ),
+    path(
+        "approvals/<str:kind>/<uuid:request_id>/decide",
+        ApprovalDecideView.as_view(),
+        name="approval-decide",
+    ),
     path("notifications", InboxView.as_view(), name="notifications"),
     path(
         "notifications/<uuid:notification_id>/<str:action>",

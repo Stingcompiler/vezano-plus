@@ -1,4 +1,4 @@
-import { formatMinorShort, hhmm } from "@sting/app-core";
+import { formatMinorShort, hhmm, parseMoneyInput } from "@sting/app-core";
 import { type ClosedShift, readPendingClosedShifts } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
@@ -15,8 +15,8 @@ import {
   useColors,
   ThemedText as Text,
 } from "@sting/ui-native";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useShiftContext } from "@/lib/pos";
 import { useSession } from "@/lib/session";
@@ -40,6 +40,12 @@ interface ServerRow {
   readonly review: { approved_by_name: string; reason: string } | null;
   /** حدّ «إغلاق وردية بعجز» لهذا العجز (0005 §٢٩٢) — غيابه = قرار الشاشة كله. */
   readonly can_settle?: boolean;
+  /** الإقفال الإداري للمفتوحة (S-05؛ 0005 §٢٩٣): هل يحقّ، وحدّ العجز («» = بلا حدّ). */
+  readonly can_admin_close?: boolean;
+  readonly close_limit_minor?: string;
+  readonly expected_cash_minor?: string;
+  readonly close_kind?: string;
+  readonly closed_by_name?: string;
 }
 interface ReviewData {
   readonly scope: "all" | "branch";
@@ -66,6 +72,12 @@ export default function Review() {
   const [selected, setSelected] = useState<ServerRow | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  // S-05: «افتح الإقفال» يفتح الإقفال الإداري لوردية بعينها (`?close=<id>`)
+  const params = useLocalSearchParams<{ close?: string }>();
+  const [closing, setClosing] = useState<ServerRow | null>(null);
+  const [counted, setCounted] = useState("");
+  const [closeDenied, setCloseDenied] = useState(false);
+  const deepLinked = useRef(false);
 
   const load = useCallback(async () => {
     setLocal(await readPendingClosedShifts(await getStorage()));
@@ -84,6 +96,44 @@ export default function Review() {
       void load();
     }, [load]),
   );
+
+  useEffect(() => {
+    if (deepLinked.current || !data || !params.close) return;
+    deepLinked.current = true;
+    const r = data.shifts.find((x) => x.id === params.close && x.can_admin_close);
+    if (r) setClosing(r);
+  }, [data, params.close]);
+
+  const countedMinor = parseMoneyInput(counted);
+  const variance =
+    closing && countedMinor !== null
+      ? BigInt(countedMinor) - BigInt(closing.expected_cash_minor || "0")
+      : null;
+  const shortage = variance !== null && variance < 0n ? -variance : 0n;
+  const overLimit =
+    closeDenied ||
+    (!!closing?.close_limit_minor && shortage > BigInt(closing.close_limit_minor || "0"));
+
+  /** «إقفال إداري بعدّ حاضر» — المعدود وسببه باسم من عدّ، بحدّ «إغلاق وردية بعجز». */
+  const adminClose = async () => {
+    if (!closing || busy || countedMinor === null || !reason.trim() || overLimit) return;
+    setBusy(true);
+    try {
+      const { response } = await api.POST("/api/shifts/{shift_id}/admin-close", {
+        params: { path: { shift_id: closing.id } },
+        body: { counted_cash_minor: countedMinor, reason: reason.trim() },
+      });
+      if (response.status === 403) return setCloseDenied(true);
+      if (response.ok) {
+        setClosing(null);
+        setCounted("");
+        setReason("");
+        await load();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const rows = [...(data?.shifts ?? [])].sort(
     (a, b) => Math.abs(Number(b.variance_minor)) - Math.abs(Number(a.variance_minor)),
@@ -149,9 +199,11 @@ export default function Review() {
                     ? r.abandoned
                       ? tx(T, "وردية مهجورة")
                       : tx(T, "وردية مفتوحة")
-                    : r.count_status === "counted"
-                      ? `${tx(T, "المعدود")} ${formatMinorShort(r.counted_cash_minor)}`
-                      : tx(T, "بلا عدّ — الفارق غير معروف.")
+                    : r.close_kind === "admin"
+                      ? `${tx(T, "مقفلة بإجراء إداري · عدّه:")} ${r.closed_by_name ?? ""}`
+                      : r.count_status === "counted"
+                        ? `${tx(T, "المعدود")} ${formatMinorShort(r.counted_cash_minor)}`
+                        : tx(T, "بلا عدّ — الفارق غير معروف.")
                 }`}
                 trailing={
                   <Text
@@ -164,7 +216,18 @@ export default function Review() {
                     {v === 0n ? tx(T, "مطابقة") : formatMinorShort(v.toString())}
                   </Text>
                 }
-                onPress={r.state === "closed" ? () => setSelected(r) : undefined}
+                onPress={
+                  r.state === "closed"
+                    ? () => setSelected(r)
+                    : r.can_admin_close
+                      ? () => {
+                          setClosing(r);
+                          setCounted("");
+                          setReason("");
+                          setCloseDenied(false);
+                        }
+                      : undefined
+                }
                 last={i === rows.length - 1}
               />
             );
@@ -219,6 +282,69 @@ export default function Review() {
           ) : (
             <AppText variant="note">{tx(T, "التسوية للمالك")}</AppText>
           )}
+        </Sheet>
+      ) : null}
+      {closing ? (
+        <Sheet open title={tx(T, "إقفال إداري بعدّ حاضر")} onClose={() => setClosing(null)}>
+          <AppText variant="secondary" style={{ marginBottom: SPACE["2"] }}>
+            {closing.user_name} · <M>{hhmm(closing.opened_at)}</M>
+          </AppText>
+          <GroupedList>
+            <ListRow
+              title={tx(T, "المتوقع")}
+              trailing={<M>{formatMinorShort(closing.expected_cash_minor || "0")}</M>}
+            />
+            <ListRow
+              title={tx(T, "الفارق")}
+              trailing={<M>{variance === null ? "—" : formatMinorShort(variance.toString())}</M>}
+              last
+            />
+          </GroupedList>
+          <TextField
+            label={tx(T, "المعدود")}
+            value={counted}
+            onChangeText={setCounted}
+            keyboardType="decimal-pad"
+            mono
+            required
+          />
+          <TextField
+            label={tx(T, "السبب")}
+            hint={tx(T, "إلزامي")}
+            value={reason}
+            onChangeText={setReason}
+            required
+          />
+          {overLimit ? (
+            <StateView state="permission_denied" title={tx(T, "العجز فوق حدّك")}>
+              <AppText variant="secondary">
+                {closing.close_limit_minor ? (
+                  <>
+                    {tx(T, "حدّك")} <M>{formatMinorShort(closing.close_limit_minor)}</M>.{" "}
+                  </>
+                ) : null}
+                {tx(T, "يُقفلها المالك.")}
+              </AppText>
+            </StateView>
+          ) : null}
+          <AppText variant="note" muted style={{ marginBottom: SPACE["2"] }}>
+            {tx(T, "يُسجَّل الإقفال باسمك وسببه، وتُوسم الوردية «مقفلة بإجراء إداري».")}
+          </AppText>
+          <Button
+            label={tx(T, "إقفال إداري")}
+            financial
+            loading={busy}
+            disabledReason={
+              overLimit
+                ? tx(T, "العجز فوق حدّك")
+                : countedMinor === null
+                  ? tx(T, "المعدود")
+                  : !reason.trim()
+                    ? tx(T, "السبب")
+                    : undefined
+            }
+            onPress={() => void adminClose()}
+          />
         </Sheet>
       ) : null}
       {ctx ? null : null}

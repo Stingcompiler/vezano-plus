@@ -1,0 +1,50 @@
+/* «طلبات تنتظرك» واعتماد المدير الحاضر (S-04؛ 0005 §٢٩٣) — بطاقة c-card بلا أشرطة ملوّنة. */
+.apr-pin {
+  display: grid;
+  gap: 12px;
+  padding-block: 16px;
+  padding-inline: 16px;
+  margin-block: 12px;
+}
+.apr-pin__title,
+.apr-item__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.apr-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.apr-item {
+  display: grid;
+  gap: 8px;
+  padding-block: 14px;
+  padding-inline: 16px;
+}
+.apr-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.apr-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.apr-item__actions .c-btn {
+  min-block-size: 44px;
+}
+.apr-status {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+}
+.pos-held__label {
+  margin-block-start: 8px;
+}

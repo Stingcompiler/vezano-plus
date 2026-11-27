@@ -1,5 +1,5 @@
 import { formatMinorShort } from "@sting/app-core";
-import { bankReferenceUsed, recordCreditOverride } from "@sting/sync-core";
+import { bankReferenceUsed, type PinVerifierRow, recordCreditOverride } from "@sting/sync-core";
 import { tx } from "@sting/texts";
 import {
   AppText,
@@ -15,7 +15,9 @@ import {
 } from "@sting/ui-native";
 import { useRef, useState } from "react";
 
+import { ApproverPin } from "@/components/approver-pin";
 import { PayMethods, SaleDone } from "@/components/sale-parts";
+import { ApprovalOutcome, useApprovalStatus } from "@/lib/approvals";
 import { newId } from "@/lib/crypto";
 import { useSale } from "@/lib/pos";
 import { getStorage } from "@/lib/storage";
@@ -38,6 +40,11 @@ export default function PayCredit() {
   const [reason, setReason] = useState("");
   const [attempted, setAttempted] = useState(false);
   const overrideIds = useRef({ operationId: "", overrideId: "" });
+  // تجاوز الحدّ: مدير حاضر يعتمده برمزه، وإلا ينتظر في «طلبات تنتظرك» (0005 §٢٩٣)
+  const [pinOpen, setPinOpen] = useState(false);
+  const [approver, setApprover] = useState<PinVerifierRow | null>(null);
+  const [overrideSent, setOverrideSent] = useState<string | null>(null);
+  const decision = useApprovalStatus("credit", approver ? null : overrideSent);
 
   const total = totals.totalMinor;
   const serverBalance = BigInt(party?.balance_minor ?? "0");
@@ -46,7 +53,6 @@ export default function PayCredit() {
   const limit = BigInt(party?.credit_limit_minor ?? "0");
   const overLimit = limit > 0n && after > limit;
   const remaining = limit > 0n ? limit - before : null;
-  void ctx;
 
   const state =
     phase === "saved"
@@ -76,7 +82,11 @@ export default function PayCredit() {
         balanceAfterMinor: after.toString(),
         reason,
         occurredAt: new Date().toISOString(),
+        ...(approver
+          ? { pinApproval: { approverUserId: approver.user_id, verifierVersion: approver.version } }
+          : {}),
       });
+      setOverrideSent(overrideIds.current.overrideId);
     }
     await sale.pushAfterSave();
   };
@@ -84,6 +94,7 @@ export default function PayCredit() {
   if (phase === "saved" && sale.sale)
     return (
       <Screen screenId={T} state={state} title={tx(T, "الدفع الآجل")}>
+        {overrideSent && !approver ? <ApprovalOutcome item={decision} /> : null}
         <SaleDone sale={sale.sale} push={push} />
       </Screen>
     );
@@ -164,7 +175,32 @@ export default function PayCredit() {
                 variant="secondary"
                 onPress={() => sale.router.push("/pos/pay-mixed")}
               />
+              {approver ? (
+                <AppText variant="note">
+                  {tx(T, "اعتمده")} {approver.display_name}.
+                </AppText>
+              ) : !pinOpen ? (
+                <Button
+                  label={tx(T, "اعتماد مدير حاضر")}
+                  variant="secondary"
+                  onPress={() => setPinOpen(true)}
+                />
+              ) : null}
             </StateView>
+          ) : null}
+          {overLimit && pinOpen && !approver && ctx ? (
+            <ApproverPin
+              request={{
+                kind: "credit",
+                amountMinor: after - limit,
+                branchId: ctx.branchId,
+                requesterId: ctx.userId,
+              }}
+              onApproved={(a) => {
+                setApprover(a);
+                setPinOpen(false);
+              }}
+            />
           ) : null}
 
           <Button

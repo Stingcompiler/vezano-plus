@@ -267,6 +267,12 @@
   "POST /api/account/sessions/{session_id}/revoke": [
    "403:permission_denied"
   ],
+  "POST /api/approvals/{kind}/{request_id}/decide": [
+   "400:validation_error",
+   "403:permission_denied",
+   "403:self_approval",
+   "409:already_decided"
+  ],
   "POST /api/auth/account/login": [
    "401:invalid_credentials",
    "429:retry_after"
@@ -844,6 +850,11 @@
    "403:manager_required",
    "409:sale_has_returns"
   ],
+  "POST /api/shifts/{shift_id}/admin-close": [
+   "400:shift_closed",
+   "400:validation_error",
+   "403:permission_denied"
+  ],
   "POST /api/shifts/{shift_id}/requests": [
    "400:validation_error"
   ],
@@ -1133,6 +1144,217 @@
     },
     "required": [
      "sessions"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/approvals": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "branch_name": {
+      "type": "string"
+     },
+     "can_review": {
+      "type": "boolean"
+     },
+     "items": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "amount_minor": {
+         "type": "string"
+        },
+        "approved_via": {
+         "type": "string"
+        },
+        "balance_after_minor": {
+         "type": "string"
+        },
+        "branch_id": {
+         "type": "string"
+        },
+        "branch_name": {
+         "type": "string"
+        },
+        "can_decide": {
+         "type": "boolean"
+        },
+        "cart_total_minor": {
+         "type": "string"
+        },
+        "credit_limit_minor": {
+         "type": "string"
+        },
+        "decided_at": {
+         "type": "string"
+        },
+        "decided_by_name": {
+         "type": "string"
+        },
+        "decided_by_user_id": {
+         "type": "string"
+        },
+        "decision_reason": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "kind": {
+         "type": "string"
+        },
+        "mode": {
+         "type": "string"
+        },
+        "party_name": {
+         "type": "string"
+        },
+        "reason": {
+         "type": "string"
+        },
+        "requested_at": {
+         "type": "string"
+        },
+        "requested_by_name": {
+         "type": "string"
+        },
+        "sale_id": {
+         "type": "string"
+        },
+        "shift_id": {
+         "type": "string"
+        },
+        "status": {
+         "type": "string"
+        },
+        "value": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "kind",
+        "status",
+        "amount_minor",
+        "reason",
+        "requested_by_name",
+        "requested_at",
+        "branch_id",
+        "branch_name",
+        "decided_by_name",
+        "decided_at",
+        "decision_reason",
+        "approved_via",
+        "can_decide"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "role_name": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "can_review",
+     "scope",
+     "role_name",
+     "branch_name",
+     "items"
+    ],
+    "type": "object"
+   }
+  },
+  "GET /api/approvals/{kind}/{request_id}": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "item": {
+      "additionalProperties": false,
+      "properties": {
+       "amount_minor": {
+        "type": "string"
+       },
+       "approved_via": {
+        "type": "string"
+       },
+       "branch_id": {
+        "type": "string"
+       },
+       "branch_name": {
+        "type": "string"
+       },
+       "can_decide": {
+        "type": "boolean"
+       },
+       "cart_total_minor": {
+        "type": "string"
+       },
+       "decided_at": {
+        "type": "string"
+       },
+       "decided_by_name": {
+        "type": "string"
+       },
+       "decided_by_user_id": {
+        "type": "string"
+       },
+       "decision_reason": {
+        "type": "string"
+       },
+       "id": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string"
+       },
+       "mode": {
+        "type": "string"
+       },
+       "reason": {
+        "type": "string"
+       },
+       "requested_at": {
+        "type": "string"
+       },
+       "requested_by_name": {
+        "type": "string"
+       },
+       "shift_id": {
+        "type": "string"
+       },
+       "status": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "kind",
+       "status",
+       "amount_minor",
+       "reason",
+       "requested_by_name",
+       "requested_at",
+       "branch_id",
+       "branch_name",
+       "decided_by_name",
+       "decided_at",
+       "decision_reason",
+       "approved_via",
+       "can_decide"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "item"
     ],
     "type": "object"
    }
@@ -2466,6 +2688,321 @@
         "encoded": {
          "type": "string"
         },
+        "is_owner": {
+         "type": "boolean"
+        },
+        "permissions": {
+         "additionalProperties": false,
+         "properties": {
+          "campaign_approve": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "campaign_create": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "close_short": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "anyOf": [
+              {
+               "type": "string"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "conflict_review": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "cost_margin_view": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "discount": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "anyOf": [
+              {
+               "type": "string"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "market_publish": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "purchase_approve": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "anyOf": [
+              {
+               "type": "string"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "record_payment": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "refund": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "anyOf": [
+              {
+               "type": "string"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "sell": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "stock_adjust": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          },
+          "view_receivables": {
+           "additionalProperties": false,
+           "properties": {
+            "limit_minor": {
+             "type": "null"
+            },
+            "period": {
+             "type": "string"
+            },
+            "value": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "value",
+            "limit_minor",
+            "period"
+           ],
+           "type": "object"
+          }
+         },
+         "required": [
+          "sell",
+          "discount",
+          "refund",
+          "view_receivables",
+          "record_payment",
+          "close_short",
+          "stock_adjust",
+          "campaign_create",
+          "campaign_approve",
+          "purchase_approve",
+          "market_publish",
+          "cost_margin_view",
+          "conflict_review"
+         ],
+         "type": "object"
+        },
+        "role_code": {
+         "type": "string"
+        },
         "role_name": {
          "type": "string"
         },
@@ -3459,7 +3996,39 @@
       "type": "object"
      },
      "shift": {
-      "type": "null"
+      "anyOf": [
+       {
+        "type": "null"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "branch_name": {
+          "type": "string"
+         },
+         "device_name": {
+          "type": "string"
+         },
+         "id": {
+          "type": "string"
+         },
+         "open_since": {
+          "type": "string"
+         },
+         "user_name": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "id",
+         "open_since",
+         "user_name",
+         "device_name",
+         "branch_name"
+        ],
+        "type": "object"
+       }
+      ]
      },
      "tasks": {
       "items": {},
@@ -25590,10 +26159,25 @@
         "branch_name": {
          "type": "string"
         },
+        "can_admin_close": {
+         "type": "boolean"
+        },
         "can_settle": {
          "type": "boolean"
         },
+        "close_kind": {
+         "type": "string"
+        },
+        "close_limit_minor": {
+         "type": "string"
+        },
+        "close_reason": {
+         "type": "string"
+        },
         "closed_at": {
+         "type": "string"
+        },
+        "closed_by_name": {
          "type": "string"
         },
         "count_status": {
@@ -28054,6 +28638,108 @@
      "revoke_after_upload",
      "reported_pending",
      "can_revoke"
+    ],
+    "type": "object"
+   }
+  },
+  "POST /api/approvals/{kind}/{request_id}/decide": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "item": {
+      "additionalProperties": false,
+      "properties": {
+       "amount_minor": {
+        "type": "string"
+       },
+       "approved_via": {
+        "type": "string"
+       },
+       "balance_after_minor": {
+        "type": "string"
+       },
+       "branch_id": {
+        "type": "string"
+       },
+       "branch_name": {
+        "type": "string"
+       },
+       "can_decide": {
+        "type": "boolean"
+       },
+       "cart_total_minor": {
+        "type": "string"
+       },
+       "credit_limit_minor": {
+        "type": "string"
+       },
+       "decided_at": {
+        "type": "string"
+       },
+       "decided_by_name": {
+        "type": "string"
+       },
+       "decided_by_user_id": {
+        "type": "string"
+       },
+       "decision_reason": {
+        "type": "string"
+       },
+       "id": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string"
+       },
+       "mode": {
+        "type": "string"
+       },
+       "party_name": {
+        "type": "string"
+       },
+       "reason": {
+        "type": "string"
+       },
+       "requested_at": {
+        "type": "string"
+       },
+       "requested_by_name": {
+        "type": "string"
+       },
+       "sale_id": {
+        "type": "string"
+       },
+       "shift_id": {
+        "type": "string"
+       },
+       "status": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "kind",
+       "status",
+       "amount_minor",
+       "reason",
+       "requested_by_name",
+       "requested_at",
+       "branch_id",
+       "branch_name",
+       "decided_by_name",
+       "decided_at",
+       "decision_reason",
+       "approved_via",
+       "can_decide"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "item"
     ],
     "type": "object"
    }
@@ -51897,6 +52583,118 @@
     "type": "object"
    }
   },
+  "POST /api/shifts/{shift_id}/admin-close": {
+   "200": {
+    "additionalProperties": false,
+    "properties": {
+     "row": {
+      "additionalProperties": false,
+      "properties": {
+       "abandoned": {
+        "type": "boolean"
+       },
+       "branch_id": {
+        "type": "string"
+       },
+       "branch_name": {
+        "type": "string"
+       },
+       "can_settle": {
+        "type": "boolean"
+       },
+       "close_kind": {
+        "type": "string"
+       },
+       "close_reason": {
+        "type": "string"
+       },
+       "closed_at": {
+        "type": "string"
+       },
+       "closed_by_name": {
+        "type": "string"
+       },
+       "count_status": {
+        "type": "string"
+       },
+       "counted_by_name": {
+        "type": "string"
+       },
+       "counted_cash_minor": {
+        "type": "string"
+       },
+       "device_name": {
+        "type": "string"
+       },
+       "expected_cash_at_close_minor": {
+        "type": "string"
+       },
+       "expected_cash_minor": {
+        "type": "string"
+       },
+       "expected_source": {
+        "type": "string"
+       },
+       "id": {
+        "type": "string"
+       },
+       "late_items": {
+        "items": {},
+        "type": "array"
+       },
+       "open_hours": {
+        "type": "integer"
+       },
+       "opened_at": {
+        "type": "string"
+       },
+       "review": {
+        "type": "null"
+       },
+       "state": {
+        "type": "string"
+       },
+       "user_name": {
+        "type": "string"
+       },
+       "variance_minor": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "branch_id",
+       "branch_name",
+       "device_name",
+       "user_name",
+       "opened_at",
+       "closed_at",
+       "state",
+       "count_status",
+       "expected_source",
+       "expected_cash_at_close_minor",
+       "expected_cash_minor",
+       "counted_cash_minor",
+       "counted_by_name",
+       "close_kind",
+       "closed_by_name",
+       "close_reason",
+       "variance_minor",
+       "open_hours",
+       "abandoned",
+       "review",
+       "late_items",
+       "can_settle"
+      ],
+      "type": "object"
+     }
+    },
+    "required": [
+     "row"
+    ],
+    "type": "object"
+   }
+  },
   "POST /api/shifts/{shift_id}/requests": {
    "201": {
     "additionalProperties": false,
@@ -51976,7 +52774,16 @@
        "can_settle": {
         "type": "boolean"
        },
+       "close_kind": {
+        "type": "string"
+       },
+       "close_reason": {
+        "type": "string"
+       },
        "closed_at": {
+        "type": "string"
+       },
+       "closed_by_name": {
         "type": "string"
        },
        "count_status": {
@@ -52895,6 +53702,7 @@
         "type": "string"
        }
       },
+      "required": [],
       "type": "object"
      },
      "item": {
@@ -52946,10 +53754,22 @@
             "amount_minor": {
              "type": "string"
             },
+            "approval_method": {
+             "type": "string"
+            },
+            "approved_by_user_id": {
+             "type": "string"
+            },
             "branch_id": {
              "type": "string"
             },
             "business_date": {
+             "type": "string"
+            },
+            "cap": {
+             "type": "string"
+            },
+            "cart_total_minor": {
              "type": "string"
             },
             "condition": {
@@ -52962,6 +53782,9 @@
              "type": "string"
             },
             "device_id": {
+             "type": "string"
+            },
+            "discount_minor": {
              "type": "string"
             },
             "factor_milli": {
@@ -52980,6 +53803,9 @@
              "type": "string"
             },
             "method": {
+             "type": "string"
+            },
+            "mode": {
              "type": "string"
             },
             "movement_id": {
@@ -53004,6 +53830,9 @@
              "type": "string"
             },
             "reference": {
+             "type": "string"
+            },
+            "request_id": {
              "type": "string"
             },
             "return_id": {
@@ -53035,8 +53864,15 @@
             },
             "user_id": {
              "type": "string"
+            },
+            "value": {
+             "type": "string"
+            },
+            "verifier_version": {
+             "type": "string"
             }
            },
+           "required": [],
            "type": "object"
           }
          },

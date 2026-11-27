@@ -7,6 +7,8 @@
  */
 import type { StoragePort } from "@sting/platform";
 
+import type { RoleRules } from "./permissions";
+
 export const PIN_ALGORITHM = "pbkdf2_sha256";
 export const PIN_LOCK_POLICY = { maxAttempts: 5, lockMinutes: 15 } as const;
 export const PIN_STATE_KEY = "pin.lock_state";
@@ -21,6 +23,10 @@ export interface PinVerifierRow {
   readonly version: number;
   /** غاب عن آخر قائمة خادمية: سُحب وصوله إلى هذا الجهاز — يُطبَّق عند أول اتصال (34-D26). */
   readonly revoked?: boolean | undefined;
+  /** اعتماد المدير الحاضر (0005 §٢٩٣): دور صاحب الرمز وخلاياه — قائمة مخزَّنة قبلها تخلو منها. */
+  readonly role_code?: string | undefined;
+  readonly is_owner?: boolean | undefined;
+  readonly permissions?: RoleRules | undefined;
 }
 
 export interface DeviceVerifiers {

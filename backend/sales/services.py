@@ -92,10 +92,15 @@ def apply_discount_override(
     occurred = parse_datetime(str(payload.get("occurred_at", ""))) or timezone.now()
     if not timezone.is_aware(occurred):
         occurred = timezone.make_aware(occurred)
+    branch_id = uuid.UUID(str(payload["branch_id"]))
+    discount = discount_minor_of(payload)
+    decision = _pin_decision(
+        tenant_id, "discount", payload, actor_user_id, branch_id, discount, occurred
+    )
     DiscountOverride.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
-        branch_id=uuid.UUID(str(payload["branch_id"])),
+        branch_id=branch_id,
         device_id=device_id,
         requested_by_user_id=actor_user_id,
         requested_by_name=actor.display_name if actor else "",
@@ -104,8 +109,57 @@ def apply_discount_override(
         cap=str(payload.get("cap", "")),
         reason=str(payload.get("reason", "")).strip(),
         cart_total_minor=int(payload.get("cart_total_minor", 0)),
+        discount_minor=discount,
         occurred_at=occurred,
+        **decision,
     )
+
+
+def discount_minor_of(payload: Mapping[str, Any]) -> int:
+    """قيمة الخصم المطلوب: ما حسبه الجهاز، وإلا المبلغ نفسه أو النسبة من المجموع (نصف بعيداً)."""
+    raw = payload.get("discount_minor")
+    if raw not in (None, ""):
+        return int(str(raw))
+    value = int(str(payload["value"]))
+    if payload["mode"] == "amount":
+        return value
+    total = int(payload.get("cart_total_minor", 0) or 0)
+    q, r = divmod(total * value, 100)
+    return q + (1 if r * 2 >= 100 else 0)
+
+
+def _pin_decision(
+    tenant_id: uuid.UUID,
+    kind: str,
+    payload: Mapping[str, Any],
+    requester_id: uuid.UUID,
+    branch_id: uuid.UUID,
+    amount: int,
+    occurred: Any,
+) -> dict[str, Any]:
+    """اعتماد مدير حاضر برمزه (0005 §٢٩٣): يُفحص الآن ويُسجَّل معتمداً باسمه، وإلا تُحجر العملية."""
+    if payload.get("approval_method") != "pin":
+        return {}
+    from core import approvals
+
+    approvals.check_pin_approval(
+        tenant_id=tenant_id,
+        kind=kind,
+        approver_id=payload.get("approved_by_user_id"),
+        requester_id=requester_id,
+        branch_id=branch_id,
+        amount=amount,
+        verifier_version=payload.get("verifier_version"),
+        occurred_at=payload.get("occurred_at"),
+    )
+    approver_id = uuid.UUID(str(payload["approved_by_user_id"]))
+    return {
+        "status": "approved",
+        "decided_by_user_id": approver_id,
+        "decided_by_name": approvals.approver_name(approver_id),
+        "decided_at": occurred,
+        "approved_via": "pin",
+    }
 
 
 # ---------------------------------------------------------------- إسقاط البيع (T1.16)
@@ -272,19 +326,27 @@ def apply_credit_override(
     if CreditOverride.unscoped.filter(tenant_id=tenant_id, id=entity_id).exists():
         return
     actor = User.unscoped.filter(id=actor_user_id).first()
+    branch_id = uuid.UUID(str(payload["branch_id"]))
+    occurred = _dt(payload.get("occurred_at"))
+    limit = int(payload["credit_limit_minor"])
+    after = int(payload["balance_after_minor"])
+    decision = _pin_decision(
+        tenant_id, "credit", payload, actor_user_id, branch_id, after - limit, occurred
+    )
     CreditOverride.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
         sale_id=uuid.UUID(str(payload["sale_id"])),
         party_id=uuid.UUID(str(payload["party_id"])),
-        branch_id=uuid.UUID(str(payload["branch_id"])),
+        branch_id=branch_id,
         device_id=device_id,
         requested_by_user_id=actor_user_id,
         requested_by_name=actor.display_name if actor else "",
-        credit_limit_minor=int(payload["credit_limit_minor"]),
-        balance_after_minor=int(payload["balance_after_minor"]),
+        credit_limit_minor=limit,
+        balance_after_minor=after,
         reason=str(payload["reason"]).strip(),
-        occurred_at=_dt(payload.get("occurred_at")),
+        occurred_at=occurred,
+        **decision,
     )
 
 

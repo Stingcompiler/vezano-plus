@@ -9,6 +9,7 @@ import {
   readReturnCashRows,
   readSaleCashRows,
   readShiftCash,
+  type PinVerifierRow,
   saveCashMovement,
   type ShiftCash,
 } from "@sting/sync-core";
@@ -31,6 +32,8 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
+import { ApproverPin } from "@/components/approver-pin";
+import { ApprovalOutcome, useApprovalStatus } from "@/lib/approvals";
 import { newId } from "@/lib/crypto";
 import { useShiftContext } from "@/lib/pos";
 import { useSession } from "@/lib/session";
@@ -42,6 +45,15 @@ const KINDS: { kind: CashMovementKind; label: string }[] = [
   { kind: "deposit", label: tx(T, "إيداع") },
   { kind: "withdrawal", label: tx(T, "سحب") },
 ];
+
+/** طلب السحب المرسل يبقى معروفاً إن غادر الكاشير الشاشة (0005 §٢٩٣) — المفتاح نفسه في الويب. */
+const PENDING_META = "shift.withdrawal_request";
+interface PendingWithdrawal {
+  readonly request_id: string;
+  readonly shift_id: string;
+  readonly amount_minor: string;
+  readonly reason: string;
+}
 
 function M({ children }: { children: string }) {
   return <Text style={{ fontFamily: FONT.monoMedium, writingDirection: "ltr" }}>{children}</Text>;
@@ -66,6 +78,9 @@ export default function Movements() {
   const [saved, setSaved] = useState<LocalCashMovement | null>(null);
   const [busy, setBusy] = useState(false);
   const [requested, setRequested] = useState(false);
+  const [pending, setPending] = useState<PendingWithdrawal | null>(null);
+  const [pinOpen, setPinOpen] = useState(false);
+  const decision = useApprovalStatus("withdrawal", pending?.request_id ?? null);
   const ids = useRef({ movementId: newId(), operationId: newId() });
 
   const reload = useCallback(async (s: LocalShift) => {
@@ -82,9 +97,17 @@ export default function Movements() {
 
   useEffect(() => {
     void (async () => {
-      const s = await readOpenShift(await getStorage());
+      const storage = await getStorage();
+      const s = await readOpenShift(storage);
       setShift(s);
       if (s) await reload(s);
+      const raw = await storage.read((t) => t.getMeta(PENDING_META));
+      const p = raw ? (JSON.parse(raw) as PendingWithdrawal) : null;
+      if (s && p && p.shift_id === s.id) {
+        setPending(p);
+        setRequested(true);
+        setKind("withdrawal");
+      }
     })();
   }, [reload]);
   useEffect(() => {
@@ -148,11 +171,70 @@ export default function Movements() {
   const requestFromOwner = async () => {
     const minor = parseMoneyInput(amount);
     if (!shift || !minor || !reason.trim()) return setErrors(validate());
-    const { response } = await api.POST("/api/shifts/{shift_id}/requests", {
+    const { data, response } = await api.POST("/api/shifts/{shift_id}/requests", {
       params: { path: { shift_id: shift.id } },
       body: { kind: "withdrawal", amount_minor: minor, reason: reason.trim() },
     });
-    if (response.ok) setRequested(true);
+    const body = data as unknown as { id: string } | undefined;
+    if (response.ok && body) {
+      const p: PendingWithdrawal = {
+        request_id: body.id,
+        shift_id: shift.id,
+        amount_minor: minor,
+        reason: reason.trim(),
+      };
+      const storage = await getStorage();
+      await storage.transaction((t) => t.putMeta(PENDING_META, JSON.stringify(p)));
+      setPending(p);
+      setRequested(true);
+    }
+  };
+
+  /** سحب بإذن المالك: برمزه هنا، أو بطلب وافق عليه في «طلبات تنتظرك» (0005 §٢٩٣). */
+  const recordWithdrawal = async (
+    auth:
+      | { readonly via: "pin"; readonly approver: PinVerifierRow }
+      | { readonly via: "inbox"; readonly request: PendingWithdrawal; readonly by: string },
+  ) => {
+    if (busy || !shift || !ctx) return;
+    const amountMinor = auth.via === "inbox" ? auth.request.amount_minor : parseMoneyInput(amount);
+    if (!amountMinor) return;
+    setBusy(true);
+    try {
+      const storage = await getStorage();
+      const { movement } = await saveCashMovement(storage, {
+        ...ids.current,
+        shift,
+        kind: "withdrawal",
+        amountMinor,
+        reason: auth.via === "inbox" ? auth.request.reason : reason.trim(),
+        actorUserId: ctx.userId,
+        actorName: ctx.userName,
+        authorizedByUserId: auth.via === "pin" ? auth.approver.user_id : auth.by,
+        occurredAt: new Date().toISOString(),
+        ...(auth.via === "pin"
+          ? {
+              pinApproval: {
+                approverUserId: auth.approver.user_id,
+                verifierVersion: auth.approver.version,
+              },
+            }
+          : { approvalRequestId: auth.request.request_id }),
+      });
+      ids.current = { movementId: newId(), operationId: newId() };
+      if (auth.via === "inbox") await storage.transaction((t) => t.putMeta(PENDING_META, ""));
+      setPending(null);
+      setRequested(false);
+      setPinOpen(false);
+      setSaved(movement);
+      setKind("expense");
+      setAmount("");
+      setReason("");
+      await reload(shift);
+      void pushPending({ api, storage, requestId: newId }).catch(() => undefined);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const denied = kind === "withdrawal" && !canWithdraw;
@@ -186,16 +268,54 @@ export default function Movements() {
       {denied ? (
         <StateView state="permission_denied" title={tx(T, "السحب للمالك وحده")}>
           <AppText variant="secondary">{tx(T, "الكاشير يودع ولا يسحب")}</AppText>
-          {requested ? (
-            <AppText variant="note">{tx(T, "أُرسل الطلب إلى")}</AppText>
-          ) : (
+          {requested ? <ApprovalOutcome item={decision} /> : null}
+          {requested && decision?.status !== "rejected" ? null : (
             <Button
               label={`${tx(T, "اطلب من")} ${ctx?.ownerName ?? tx(T, "المالك")}`}
               variant="secondary"
               onPress={() => void requestFromOwner()}
             />
           )}
+          {!pinOpen && !requested ? (
+            <Button
+              label={tx(T, "اعتماد المالك بالرمز")}
+              variant="secondary"
+              onPress={() => setPinOpen(true)}
+            />
+          ) : null}
+          {pending && decision?.status === "approved" ? (
+            <Button
+              label={tx(T, "سجّل السحب المعتمد")}
+              financial
+              loading={busy}
+              onPress={() =>
+                void recordWithdrawal({
+                  via: "inbox",
+                  request: pending,
+                  by: decision.decided_by_user_id,
+                })
+              }
+            />
+          ) : null}
         </StateView>
+      ) : null}
+      {denied && pinOpen && ctx && shift ? (
+        parseMoneyInput(amount) && validate().length === 0 ? (
+          <ApproverPin
+            ownerOnly
+            request={{
+              kind: "withdrawal",
+              amountMinor: BigInt(parseMoneyInput(amount) ?? "0"),
+              branchId: shift.branch_id,
+              requesterId: ctx.userId,
+            }}
+            onApproved={(approver) => recordWithdrawal({ via: "pin", approver })}
+          />
+        ) : (
+          <AppText variant="note" muted>
+            {tx(T, "اكتب المبلغ والسبب أولاً.")}
+          </AppText>
+        )
       ) : null}
 
       <TextField

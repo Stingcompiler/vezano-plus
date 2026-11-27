@@ -111,6 +111,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["approvals_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/approvals/{kind}/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description حالة طلب بعينه — شاشة الكاشير تتابعه حتى يُقرَّر فيه. */
+        get: operations["approvals_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/approvals/{kind}/{request_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approvals_decide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/apps/download/{token}": {
         parameters: {
             query?: never;
@@ -4950,6 +4999,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shifts/{shift_id}/admin-close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description «إقفال إداري بعدّ حاضر» لوردية مفتوحة (مهجورة غالباً): المعدود وسببه باسم من عدّ. */
+        post: operations["shifts_admin_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shifts/{shift_id}/requests": {
         parameters: {
             query?: never;
@@ -5386,6 +5452,11 @@ export interface components {
                 [key: string]: string;
             };
         };
+        AdminClose: {
+            counted_cash_minor: string;
+            /** @default  */
+            reason: string;
+        };
         AliasAdd: {
             aliases: string[];
         };
@@ -5394,6 +5465,11 @@ export interface components {
             notes: string;
             schema_version: number;
             released_at: string;
+        };
+        ApprovalDecide: {
+            decision: components["schemas"]["Decision5f1Enum"];
+            /** @default  */
+            reason: string;
         };
         BackupCopy: {
             file_name: string;
@@ -5549,18 +5625,18 @@ export interface components {
          */
         DecideDecisionEnum: "both_real" | "reverse";
         Decision: {
-            decision: components["schemas"]["DecisionDecisionEnum"];
+            decision: components["schemas"]["Decision5f1Enum"];
             reason: string;
-        };
-        DecisionAction: {
-            acknowledgement?: string;
         };
         /**
          * @description * `accept` - accept
          *     * `reject` - reject
          * @enum {string}
          */
-        DecisionDecisionEnum: "accept" | "reject";
+        Decision5f1Enum: "accept" | "reject";
+        DecisionAction: {
+            acknowledgement?: string;
+        };
         /**
          * @description * `quarantine` - quarantine
          *     * `write_off` - write_off
@@ -6232,6 +6308,13 @@ export interface components {
             branch_name: string;
             encoded: string;
             version: number;
+            role_code: string;
+            is_owner: boolean;
+            permissions: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
         };
         VerifyConfirm: {
             identifier: string;
@@ -6278,6 +6361,87 @@ export interface components {
             resends_left: number;
             sends: number;
             policy: components["schemas"]["VerifyPolicy"];
+        };
+        GetApprovalsResponse: {
+            branch_name: string;
+            can_review: boolean;
+            items: {
+                amount_minor: string;
+                approved_via: string;
+                balance_after_minor?: string;
+                branch_id: string;
+                branch_name: string;
+                can_decide: boolean;
+                cart_total_minor?: string;
+                credit_limit_minor?: string;
+                decided_at: string;
+                decided_by_name: string;
+                decided_by_user_id?: string;
+                decision_reason: string;
+                id: string;
+                kind: string;
+                mode?: string;
+                party_name?: string;
+                reason: string;
+                requested_at: string;
+                requested_by_name: string;
+                sale_id?: string;
+                shift_id?: string;
+                status: string;
+                value?: string;
+            }[];
+            role_name: string;
+            scope: string;
+        };
+        GetApprovalsByKindByRequestIdResponse: {
+            item: {
+                amount_minor: string;
+                approved_via: string;
+                branch_id: string;
+                branch_name: string;
+                can_decide: boolean;
+                cart_total_minor?: string;
+                decided_at: string;
+                decided_by_name: string;
+                decided_by_user_id?: string;
+                decision_reason: string;
+                id: string;
+                kind: string;
+                mode?: string;
+                reason: string;
+                requested_at: string;
+                requested_by_name: string;
+                shift_id?: string;
+                status: string;
+                value?: string;
+            };
+        };
+        PostApprovalsByKindByRequestIdDecideResponse: {
+            item: {
+                amount_minor: string;
+                approved_via: string;
+                balance_after_minor?: string;
+                branch_id: string;
+                branch_name: string;
+                can_decide: boolean;
+                cart_total_minor?: string;
+                credit_limit_minor?: string;
+                decided_at: string;
+                decided_by_name: string;
+                decided_by_user_id?: string;
+                decision_reason: string;
+                id: string;
+                kind: string;
+                mode?: string;
+                party_name?: string;
+                reason: string;
+                requested_at: string;
+                requested_by_name: string;
+                sale_id?: string;
+                shift_id?: string;
+                status: string;
+                value?: string;
+            };
         };
         GetCampaignsResponse: {
             as_of: string;
@@ -7391,7 +7555,13 @@ export interface components {
                 can_choose: boolean;
                 kind: string;
             };
-            shift: null;
+            shift: null | {
+                branch_name: string;
+                device_name: string;
+                id: string;
+                open_since: string;
+                user_name: string;
+            };
             tasks: unknown[];
             tenant_name: string;
             user: {
@@ -17539,6 +17709,33 @@ export interface components {
             variance_minor: string;
             witness_name: string;
         };
+        PostShiftsByShiftIdAdminCloseResponse: {
+            row: {
+                abandoned: boolean;
+                branch_id: string;
+                branch_name: string;
+                can_settle: boolean;
+                close_kind: string;
+                close_reason: string;
+                closed_at: string;
+                closed_by_name: string;
+                count_status: string;
+                counted_by_name: string;
+                counted_cash_minor: string;
+                device_name: string;
+                expected_cash_at_close_minor: string;
+                expected_cash_minor: string;
+                expected_source: string;
+                id: string;
+                late_items: unknown[];
+                open_hours: number;
+                opened_at: string;
+                review: null;
+                state: string;
+                user_name: string;
+                variance_minor: string;
+            };
+        };
         PostShiftsByShiftIdRequestsResponse: {
             amount_minor: string;
             id: string;
@@ -17560,7 +17757,10 @@ export interface components {
                 branch_id: string;
                 branch_name: string;
                 can_settle: boolean;
+                close_kind?: string;
+                close_reason?: string;
                 closed_at: string;
+                closed_by_name?: string;
                 count_status: string;
                 counted_by_name: string;
                 counted_cash_minor: string;
@@ -17740,8 +17940,13 @@ export interface components {
                 abandoned: boolean;
                 branch_id: string;
                 branch_name: string;
+                can_admin_close?: boolean;
                 can_settle: boolean;
+                close_kind?: string;
+                close_limit_minor?: string;
+                close_reason?: string;
                 closed_at: string;
+                closed_by_name?: string;
                 count_status: string;
                 counted_by_name: string;
                 counted_cash_minor: string;
@@ -18125,18 +18330,24 @@ export interface components {
                     id: string;
                     payload: {
                         amount_minor?: string;
+                        approval_method?: string;
+                        approved_by_user_id?: string;
                         branch_id?: string;
                         business_date?: string;
+                        cap?: string;
+                        cart_total_minor?: string;
                         condition?: string;
                         delta_base_qty_milli?: string;
                         destination?: string;
                         device_id?: string;
+                        discount_minor?: string;
                         factor_milli?: string;
                         item_id?: string;
                         kind?: string;
                         line_id?: string;
                         line_total_minor?: string;
                         method?: string;
+                        mode?: string;
                         movement_id?: string;
                         occurred_at?: string;
                         party_id?: string;
@@ -18145,6 +18356,7 @@ export interface components {
                         receipt_id?: string;
                         receipt_number?: string;
                         reference?: string;
+                        request_id?: string;
                         return_id?: string;
                         return_number?: string;
                         sale_id?: string;
@@ -18155,6 +18367,8 @@ export interface components {
                         total_minor?: string;
                         unit_price_minor?: string;
                         user_id?: string;
+                        value?: string;
+                        verifier_version?: string;
                     };
                 }[];
                 operation_id: string;
@@ -18461,6 +18675,125 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AppUpdate"];
                 };
+            };
+        };
+    };
+    approvals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetApprovalsResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    approvals_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetApprovalsByKindByRequestIdResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    approvals_decide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalDecide"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostApprovalsByKindByRequestIdDecideResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -30515,6 +30848,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GetShiftsByShiftIdResponse"];
                 };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    shifts_admin_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shift_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminClose"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostShiftsByShiftIdAdminCloseResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description No response body */
             403: {

@@ -246,6 +246,15 @@ export interface CartDiscount {
   readonly mode: "amount" | "percent";
   readonly value: string;
   readonly reason: string;
+  /** خصم فوق السقف اعتمده مدير برمزه أو من «طلبات تنتظرك» (0005 §٢٩٣) — باسم من وافق. */
+  readonly approval?: DiscountApproval | undefined;
+}
+
+export interface DiscountApproval {
+  readonly request_id: string;
+  readonly approved_by_user_id: string;
+  readonly approved_by_name: string;
+  readonly via: "pin" | "inbox";
 }
 
 /** العميل مطلوب للأثر الآجل فقط — لا عميل وهمي للبيع النقدي (ACC-12). */
@@ -358,6 +367,28 @@ export interface DiscountOverrideInput {
   readonly cap: string;
   readonly cartTotalMinor: string;
   readonly occurredAt: string;
+  /** قيمة الخصم بالوحدة الصغرى — يُقاس بها حدّ من يعتمد. */
+  readonly discountMinor?: string | undefined;
+  /** اعتماد مدير حاضر برمزه (0005 §٢٩٣): الخادم يعيد فحصه عند الرفع. */
+  readonly pinApproval?: PinApprovalRef | undefined;
+}
+
+/** ما يُرفع عن اعتماد برمز: صاحب الرمز وإصدار متحققه الذي طابق — لا الرمز نفسه. */
+export interface PinApprovalRef {
+  readonly approverUserId: string;
+  readonly verifierVersion: number;
+}
+
+export function pinApprovalFields(
+  ref: PinApprovalRef | undefined,
+  approverField = "approved_by_user_id",
+): Record<string, string> {
+  if (!ref) return {};
+  return {
+    approval_method: "pin",
+    [approverField]: ref.approverUserId,
+    verifier_version: String(ref.verifierVersion),
+  };
 }
 
 export function discountOverrideDraft(i: DiscountOverrideInput): OperationDraft {
@@ -380,13 +411,18 @@ export function discountOverrideDraft(i: DiscountOverrideInput): OperationDraft 
           reason: i.discount.reason.trim(),
           cart_total_minor: i.cartTotalMinor,
           occurred_at: i.occurredAt,
+          ...(i.discountMinor ? { discount_minor: i.discountMinor } : {}),
+          ...pinApprovalFields(i.pinApproval),
         },
       },
     ],
   };
 }
 
-/** «طلب اعتماد من مدير الفرع»: حدث تجاوز يُنسب للكاشير ويُراجع عند الاتصال (§٧.٤). */
+/**
+ * «طلب اعتماد من مدير الفرع»: حدث تجاوز يُنسب للكاشير — بانتظار القرار في «طلبات تنتظرك»، أو
+ * معتمداً برمز مدير حاضر (`pinApproval`) يعيد الخادم فحصه عند الرفع (0005 §٢٩٣).
+ */
 export async function requestDiscountOverride(
   storage: StoragePort,
   input: DiscountOverrideInput,
@@ -451,21 +487,110 @@ export async function writeCartDraft(
   );
 }
 
-/** «تعليق الفاتورة»: السلة تُحفظ في قائمة المعلّقات ثم تُفرَّغ — لا تُمحى (R-03). */
+// ─── المعلّقات (S-03؛ 0005 §٢٩٣) ─────────────────────────────────────────────
+
+/**
+ * فاتورة معلّقة على هذا الجهاز: السلة كاملة بخصمها وعميلها، واسم أو ملاحظة اختيارية. على الجهاز وحده
+ * (القرار د-٣) — لا تُرفع ولا تُرى من جهاز آخر في هذه المرحلة.
+ */
+export interface HeldCart {
+  readonly id: string;
+  readonly label: string;
+  readonly held_at: string;
+  readonly lines: readonly CartDraftLine[];
+  readonly discount?: CartDiscount | undefined;
+  readonly customer?: CartCustomer | undefined;
+}
+
+/** قراءة القائمة كما خُزّنت — صفوف ما قبل المعرّفات (السطور ووقت التعليق فقط) تأخذ معرّفاً من وقتها. */
+function parseHeld(raw: string | null | undefined): HeldCart[] {
+  if (!raw) return [];
+  try {
+    const rows = JSON.parse(raw) as Partial<HeldCart>[];
+    return rows.map((r, i) => ({
+      id: r.id ?? `held-${i}-${r.held_at ?? ""}`,
+      label: r.label ?? "",
+      held_at: r.held_at ?? "",
+      lines: r.lines ?? [],
+      discount: r.discount,
+      customer: r.customer,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** «تعليق الفاتورة»: السلة كلها (بخصمها وعميلها) تُحفظ في المعلّقات ثم تُفرَّغ — لا تُمحى (R-03). */
 export async function holdCart(
   storage: StoragePort,
-  lines: readonly CartDraftLine[],
-  now: string = new Date().toISOString(),
+  draft: CartDraftInput,
+  opts: { readonly label?: string; readonly id?: string; readonly now?: string } = {},
 ): Promise<number> {
+  const now = opts.now ?? new Date().toISOString();
+  const entry: HeldCart = {
+    id: opts.id ?? `held-${now}`,
+    label: (opts.label ?? "").trim(),
+    held_at: now,
+    lines: draft.lines,
+    ...(draft.discount ? { discount: draft.discount } : {}),
+    ...(draft.customer ? { customer: draft.customer } : {}),
+  };
   return storage.transaction(async (tx) => {
-    const raw = await tx.getMeta(HELD_META);
-    const held: { lines: readonly CartDraftLine[]; held_at: string }[] = raw
-      ? (JSON.parse(raw) as { lines: readonly CartDraftLine[]; held_at: string }[])
-      : [];
-    held.push({ lines, held_at: now });
+    // كل await على المعاملة مباشرةً (Dexie PrematureCommitError)
+    const held = parseHeld(await tx.getMeta(HELD_META));
+    held.push(entry);
     await tx.putMeta(HELD_META, JSON.stringify(held));
     await tx.putMeta(CART_META, JSON.stringify({ ...EMPTY_DRAFT, updated_at: now }));
     return held.length;
+  });
+}
+
+/** معلّقات هذا الجهاز، الأحدث أولاً. */
+export async function readHeldCarts(storage: StoragePort): Promise<HeldCart[]> {
+  const raw = await storage.read((tx) => tx.getMeta(HELD_META));
+  return parseHeld(raw).sort((a, b) => b.held_at.localeCompare(a.held_at));
+}
+
+export type ResumeOutcome =
+  | { readonly ok: true; readonly cart: CartDraft }
+  | { readonly ok: false; readonly reason: "not_found" | "cart_not_empty" };
+
+/**
+ * «استئناف»: المعلّقة تعود سلةً كما عُلّقت وتخرج من القائمة. السلة الحالية غير الفارغة لا تُستبدل
+ * (لا تضيع فاتورة لتعود أخرى) — تُعلَّق أو تُلغى أولاً.
+ */
+export async function resumeHeldCart(
+  storage: StoragePort,
+  id: string,
+  now: string = new Date().toISOString(),
+): Promise<ResumeOutcome> {
+  return storage.transaction(async (tx) => {
+    const held = parseHeld(await tx.getMeta(HELD_META));
+    const entry = held.find((h) => h.id === id);
+    if (!entry) return { ok: false, reason: "not_found" } as const;
+    const rawCart = await tx.getMeta(CART_META);
+    const current = rawCart ? (JSON.parse(rawCart) as Partial<CartDraft>) : null;
+    if ((current?.lines?.length ?? 0) > 0) return { ok: false, reason: "cart_not_empty" } as const;
+    const cart: CartDraft = {
+      lines: entry.lines,
+      discount: entry.discount,
+      customer: entry.customer,
+      updated_at: now,
+    };
+    await tx.putMeta(CART_META, JSON.stringify(cart));
+    await tx.putMeta(HELD_META, JSON.stringify(held.filter((h) => h.id !== id)));
+    return { ok: true, cart } as const;
+  });
+}
+
+/** «حذف المعلّقة» (بعد تأكيد): تخرج من القائمة ولا أثر لها — لم تكن عملية ولم تُرفع. */
+export async function discardHeldCart(storage: StoragePort, id: string): Promise<boolean> {
+  return storage.transaction(async (tx) => {
+    const held = parseHeld(await tx.getMeta(HELD_META));
+    const next = held.filter((h) => h.id !== id);
+    if (next.length === held.length) return false;
+    await tx.putMeta(HELD_META, JSON.stringify(next));
+    return true;
   });
 }
 

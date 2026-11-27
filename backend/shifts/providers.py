@@ -6,9 +6,9 @@ from typing import Any
 
 from django.utils import timezone
 
-from core import home
+from core import approvals, home
 from core.shift import expected_cash_minor
-from shifts.models import Shift
+from shifts.models import CashMovementRequest, Shift
 from shifts.services import (
     _iso,
     apply_cash_adjustment,
@@ -25,6 +25,18 @@ register_applier("shifts.CashMovement", apply_cash_movement)
 register_applier("shifts.CashCounted", apply_cash_counted)
 register_applier("shifts.ShiftClosed", apply_shift_closed)
 register_applier("shifts.CashAdjustment", apply_cash_adjustment)
+
+# «طلبات تنتظرك» — طلب السحب من الدرج (S-04؛ 0005 §٢٩٣)
+approvals.register_source(
+    approvals.Source(
+        kind="withdrawal",
+        model=CashMovementRequest,
+        branch_of=lambda r: r.shift.branch_id,
+        amount_of=lambda r: int(r.amount_minor),
+        requested_at=lambda r: r.requested_at,
+        details=lambda r: {"shift_id": str(r.shift_id)},
+    )
+)
 
 
 def _home_shift(viewer: home.Viewer, out: dict[str, Any]) -> None:
@@ -94,7 +106,8 @@ def _home_decisions(viewer: home.Viewer, out: dict[str, Any]) -> None:
                     "title": f"وردية {r['user_name']} مفتوحة منذ {r['open_hours']} ساعة",
                     "detail": f"{r['branch_name']} · تُقفل بعدّ حاضر",
                     "action": "افتح الإقفال",
-                    "href": "/shifts/review",
+                    # S-05 (0005 §٢٩٣): يفتح «إقفال إداري بعدّ حاضر» لهذه الوردية
+                    "href": f"/shifts/review?close={r['id']}",
                     "severity": "danger",
                 }
             )
