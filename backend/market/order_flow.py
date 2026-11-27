@@ -205,6 +205,41 @@ def ladder(o: MarketOrder, versions: list[MarketOrderVersion]) -> list[dict[str,
     return out
 
 
+def ledger_payload(o: MarketOrder, side: str) -> dict[str, Any]:
+    """M-01: ما دخل دفتر المشتري من هذا الطلب — الاستلام في السوق لا يُدخل المخزون؛ يدخل بتحويل
+    LINK-03 وحده. لكل شحنة مستلَمة رقم مستند الشراء أو «لم يُحوَّل بعد»، وهل المورد مربوط."""
+    if side != "buyer":
+        return {"m3": False, "supplier_linked": False, "shipments": []}
+    from market.link import m3_enabled
+    from market.models import MarketDocumentLink, MarketPartyLink
+
+    linked = MarketPartyLink.objects.filter(
+        counterparty_tenant_id=o.supplier_tenant_id, status=MarketPartyLink.Status.ACCEPTED
+    ).exists()
+    with platform_context():
+        ships = list(
+            MarketShipment.unscoped.filter(order=o, received_at__isnull=False).order_by("number")
+        )
+    docs = {
+        str(x.shipment_id): x.local_number
+        for x in MarketDocumentLink.objects.filter(
+            order=o, kind=MarketDocumentLink.Kind.RECEIPT, shipment__isnull=False
+        )
+    }
+    return {
+        "m3": m3_enabled(),
+        "supplier_linked": linked,
+        "shipments": [
+            {
+                "shipment_id": str(sh.id),
+                "ref_label": f"SH-{sh.number:02d}",
+                "local_number": docs.get(str(sh.id), ""),
+            }
+            for sh in ships
+        ],
+    }
+
+
 def detail_payload(o: MarketOrder, side: str) -> dict[str, Any]:
     from market.models import MarketDispute
     from market.orders import order_payload
@@ -249,6 +284,7 @@ def detail_payload(o: MarketOrder, side: str) -> dict[str, Any]:
         "gap_value_minor": str(gap_value),
         "ladder_rule": LADDER_RULE,
         "open_disputes": open_disputes,
+        "ledger": ledger_payload(o, side),
     }
 
 

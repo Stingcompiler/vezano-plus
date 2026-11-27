@@ -98,6 +98,54 @@ export interface Detail {
   gap_value_minor: string;
   ladder_rule: string;
   open_disputes?: string[];
+  ledger?: Ledger;
+}
+
+/** M-01: ما دخل دفتر المشتري — الاستلام في السوق لا يُدخل المخزون؛ يدخل بتحويل LINK-03 وحده. */
+export interface Ledger {
+  m3: boolean;
+  supplier_linked: boolean;
+  shipments: { shipment_id: string; ref_label: string; local_number: string }[];
+}
+
+/** الخطوة التالية لإدخال المخزون: التحويل إن رُبط المورد، وإلا الربط؛ ولا شيء حين M3 غير مفعَّل. */
+export function LedgerStep({
+  ledger,
+  shipmentId,
+  onGo,
+}: {
+  ledger: Ledger;
+  shipmentId: string;
+  onGo: (href: string) => void;
+}) {
+  if (!ledger.m3)
+    return (
+      <p className="acc-choice__note">
+        ربط السوق بدفترك غير مفعَّل لمنشأتك بعد، فأدخِل البضاعة مخزونك بمستند شراء.
+      </p>
+    );
+  if (ledger.supplier_linked)
+    return (
+      <div className="acc-actions">
+        <Button
+          pos
+          onClick={() => onGo(`/market/link/receipts?shipment=${encodeURIComponent(shipmentId)}`)}
+        >
+          أدخِل المخزون الآن
+        </Button>
+      </div>
+    );
+  return (
+    <>
+      <p className="acc-choice__note">
+        لإدخال البضاعة المخزون: اربط المورد بمنشأته، ثم طابق الأصناف، ثم حوّل الاستلام إلى مستند
+        شراء.
+      </p>
+      <div className="acc-actions">
+        <Button onClick={() => onGo("/market/link/parties")}>اربط المورد</Button>
+      </div>
+    </>
+  );
 }
 
 const DM = ({ iso }: { iso: string }) => {
@@ -384,7 +432,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                 <p className="acc-choice__note">{d.ladder_rule}</p>
                 <div className="home-kpis">
                   <div className="home-kpi">
-                    <div className="home-kpi__label">قيمة المستلم — تُقيَّد</div>
+                    <div className="home-kpi__label">قيمة المستلم</div>
                     <div className="home-kpi__value sting-mono">
                       {formatMinor(d.received_value_minor)}
                     </div>
@@ -396,6 +444,36 @@ export function OrderDetailClient({ id }: { id: string }) {
                     </div>
                   </div>
                 </div>
+
+                {d.side === "buyer" && d.ledger?.shipments.length ? (
+                  <>
+                    <ul className="cus-list">
+                      {d.ledger.shipments.map((sh) => (
+                        <li key={sh.shipment_id}>
+                          <strong>
+                            <span className="sting-mono">{sh.ref_label}</span> ·{" "}
+                            {sh.local_number ? (
+                              <>
+                                مستند الشراء: <span className="sting-mono">{sh.local_number}</span>
+                              </>
+                            ) : (
+                              "لم يُحوَّل إلى مستند بعد"
+                            )}
+                          </strong>
+                        </li>
+                      ))}
+                    </ul>
+                    {d.ledger.shipments.some((sh) => !sh.local_number) ? (
+                      <LedgerStep
+                        ledger={d.ledger}
+                        shipmentId={
+                          d.ledger.shipments.find((sh) => !sh.local_number)?.shipment_id ?? ""
+                        }
+                        onGo={(href) => router.push(href)}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
 
                 <h3 className="cat-head__title">
                   سجل الإصدارات — النسخة المقبولة مثبَّتة لا مرجع متحرّك

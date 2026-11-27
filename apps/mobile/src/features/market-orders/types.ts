@@ -141,4 +141,12 @@ export interface Detail {
   gap_value_minor: string;
   ladder_rule: string;
   open_disputes?: string[];
+  ledger?: Ledger;
+}
+
+/** M-01: ما دخل دفتر المشتري — الاستلام في السوق لا يُدخل المخزون؛ يدخل بتحويل LINK-03 وحده. */
+export interface Ledger {
+  m3: boolean;
+  supplier_linked: boolean;
+  shipments: { shipment_id: string; ref_label: string; local_number: string }[];
 }

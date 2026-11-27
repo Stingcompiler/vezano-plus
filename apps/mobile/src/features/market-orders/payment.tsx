@@ -1,4 +1,4 @@
-import { dayMonth, formatMinor, hhmm } from "@sting/app-core";
+import { dayMonth, formatMinor, hhmm, minorToInput, moneyInputToMinor } from "@sting/app-core";
 import { AppText, Button, GroupedList, StateView, TextField } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -78,8 +78,6 @@ function WhenDay({ iso }: { iso: string }) {
   );
 }
 
-const digits = (s: string) => s.replace(/\D/g, "");
-
 /** ORD-13 — إثبات دفع ومتابعة المطابقة (10-D6 stale · 41-D33 ready/validation_error/partial/success): الإيصال ليس تحصيلاً. */
 export default function PaymentPage() {
   const router = useRouter();
@@ -111,24 +109,32 @@ export default function PaymentPage() {
     if (doc.notFound) router.replace(`/market/orders/${id}`);
   }, [doc.notFound, router, id]);
   useEffect(() => {
-    if (p) setAmount((cur) => cur || p.due_minor);
+    if (p) setAmount((cur) => cur || minorToInput(p.due_minor));
   }, [p]);
 
   const submit = async () => {
     if (busy) return;
-    setBusy("record");
     setErr(null);
+    // M-03: المبلغ والتوزيع بالجنيه بمنزلتين — يُحوَّلان إلى القروش هنا وحده
+    const amountMinor = moneyInputToMinor(amount);
+    const allocMinor = split
+      ? Object.entries(alloc).map(([order_id, v]) => ({
+          order_id,
+          amount_minor: moneyInputToMinor(v),
+        }))
+      : [];
+    if (!amountMinor || allocMinor.some((a) => a.amount_minor === null)) {
+      setErr({ code: "money_invalid", extra: {} });
+      return;
+    }
+    setBusy("record");
     try {
-      const allocations = split
-        ? Object.entries(alloc)
-            .filter(([, v]) => Number(v || 0) > 0)
-            .map(([order_id, v]) => ({ order_id, amount_minor: v }))
-        : [];
+      const allocations = allocMinor.filter((a) => a.amount_minor && BigInt(a.amount_minor) > 0n);
       const r = await safePost<Payload | { detail?: string; extra?: Record<string, unknown> }>(() =>
         api.POST("/api/market/orders/{order_id}/payments", {
           params: { path: { order_id: id } },
           body: {
-            amount_minor: amount,
+            amount_minor: amountMinor,
             transfer_ref: ref,
             transferred_on: on,
             allocations,
@@ -191,7 +197,10 @@ export default function PaymentPage() {
               ? "partial"
               : "ready";
   const openAlloc = p?.open_orders ?? [];
-  const allocTotal = Object.values(alloc).reduce((a, v) => a + Number(v || 0), 0);
+  const allocTotal = Object.values(alloc).reduce(
+    (a, v) => a + BigInt(moneyInputToMinor(v) || "0"),
+    0n,
+  );
   const lock = doc.fromCache ? MO_TEXTS.needsServer : undefined;
   const toDetail = () => router.push(`/market/orders/${id}`);
 
@@ -219,7 +228,9 @@ export default function PaymentPage() {
       {state === "validation_error" && err ? (
         <StateView state="validation_error" title={t("مبلغ مخالف أو تحويل مستهلك")}>
           <Para>
-            {err.code === "reference_used" ? (
+            {err.code === "money_invalid" ? (
+              t("اكتب المبلغ بالجنيه بمنزلتين على الأكثر.")
+            ) : err.code === "reference_used" ? (
               <>
                 {t("الإيصال نفسه استُخدم في طلب سابق (")}
                 {err.extra.order_number_label ?? ""} · {err.extra.payment ?? ""})
@@ -418,11 +429,12 @@ export default function PaymentPage() {
                 {t("الرفع لا يُسدّد")} {t("· الذمّة لا تنقص برفع إيصال.")}
               </Note>
               <TextField
-                label={t("المبلغ (بالقرش)")}
+                label={t("المبلغ")}
                 mono
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
+                hint={t("بالجنيه")}
                 value={amount}
-                onChangeText={(x) => setAmount(digits(x))}
+                onChangeText={setAmount}
               />
               <TextField label={t("مرجع التحويل")} mono value={ref} onChangeText={setRef} />
               <TextField
@@ -444,23 +456,25 @@ export default function PaymentPage() {
                   <TextField
                     label={`${t("على هذا الطلب")} ${p.order.number_label}`}
                     mono
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
+                    hint={t("بالجنيه")}
                     value={alloc[id] ?? ""}
-                    onChangeText={(x) => setAlloc((c) => ({ ...c, [id]: digits(x) }))}
+                    onChangeText={(x) => setAlloc((c) => ({ ...c, [id]: x }))}
                   />
                   {openAlloc.map((o) => (
                     <TextField
                       key={o.id}
                       label={`${t("على")} ${o.number_label} ${t("(مستحقّه")} ${formatMinor(o.due_minor)})`}
                       mono
-                      keyboardType="number-pad"
+                      keyboardType="decimal-pad"
+                      hint={t("بالجنيه")}
                       value={alloc[o.id] ?? ""}
-                      onChangeText={(x) => setAlloc((c) => ({ ...c, [o.id]: digits(x) }))}
+                      onChangeText={(x) => setAlloc((c) => ({ ...c, [o.id]: x }))}
                     />
                   ))}
                   <Note>
-                    {t("مجموع التوزيع")} <M>{formatMinor(String(allocTotal))}</M> {t("من")}{" "}
-                    <M>{formatMinor(amount || "0")}</M>
+                    {t("مجموع التوزيع")} <M>{formatMinor(allocTotal)}</M> {t("من")}{" "}
+                    <M>{formatMinor(moneyInputToMinor(amount) || "0")}</M>
                   </Note>
                 </>
               ) : null}

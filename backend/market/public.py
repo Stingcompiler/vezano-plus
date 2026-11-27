@@ -47,6 +47,7 @@ def _public_offers(tenant_ids: list[Any]) -> list[MarketOffer]:
                 status=MarketOffer.Status.PUBLISHED,
                 audience=MarketOffer.Audience.PUBLIC,
                 valid_until__gte=today,
+                suspended_at__isnull=True,  # PLT-07/M-09: المعلَّق لا يُعرض ولا يُطلب
             ).order_by("public_name")
         )
 

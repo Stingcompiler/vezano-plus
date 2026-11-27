@@ -14,6 +14,7 @@ import {
   StatusWord,
 } from "@/components/market-orders/parts";
 import { num, type Rejection, safeGet, safePost } from "@/features/market-orders/lib";
+import { LedgerStep } from "@/features/market-orders/ledger-step";
 import { MO_TEXTS, tOf } from "@/features/market-orders/texts";
 import type { Detail, OrderRow } from "@/features/market-orders/types";
 import { useDoc } from "@/features/market-orders/use-doc";
@@ -59,7 +60,12 @@ interface Edit {
   reason: string;
 }
 
-type Done = Detail & { received: string; gap: number; dispute_opened: boolean };
+type Done = Detail & {
+  received: string;
+  shipment_id?: string;
+  gap: number;
+  dispute_opened: boolean;
+};
 
 const ordinal = (n: number) =>
   ["", t("الأولى"), t("الثانية"), t("الثالثة"), t("الرابعة"), t("الخامسة")][n] ??
@@ -195,8 +201,7 @@ export default function Receive() {
       {state === "success" && done ? (
         <StateView state="success" title={t("سُجّل الاستلام")}>
           <Para>
-            {t("ما دخل المخزون، وما رُفض ومصيره: مرتجعٌ للمورد أو حجرٌ حتى القرار.")}{" "}
-            <M>{done.received}</M>
+            {t("سُجّل الاستلام في السوق. لم يدخل المخزون بعد.")} <M>{done.received}</M>
             {done.gap ? (
               <>
                 {" "}
@@ -210,10 +215,17 @@ export default function Receive() {
           <Note>
             {t("الذمّة من المستلم")}{" "}
             {t(
-              "· تُقيَّد قيمة ما استُلم فقط. والمرفوض لا يُقيَّد ولا يُحذف — يبقى بندَ مطالبة. قيمة المستلم",
+              "· حين يدخل المخزون تُقيَّد قيمة ما استُلم فقط. والمرفوض لا يُقيَّد ولا يُحذف — يبقى بندَ مطالبة. قيمة المستلم",
             )}{" "}
             <M>{formatMinor(done.received_value_minor)}</M>.
           </Note>
+          {done.ledger && done.shipment_id ? (
+            <LedgerStep
+              ledger={done.ledger}
+              shipmentId={done.shipment_id}
+              onGo={(href) => router.push(href)}
+            />
+          ) : null}
           <Button label={t("تفاصيل الطلب")} onPress={toDetail} />
         </StateView>
       ) : null}
@@ -358,10 +370,10 @@ export default function Receive() {
               );
             })}
           </GroupedList>
-          <AppText variant="bodyStrong">{t("ما يكتبه هذا الإجراء في دفترك:")}</AppText>
+          <AppText variant="bodyStrong">{t("ما يكتبه هذا الإجراء:")}</AppText>
           <Note>
             {t(
-              "إدخال مخزون بالكميات المستلمة فعلاً، وذمة للمورد بقيمة المستلم وحده. المشحون غير المستلم لا يُخصم من مخزونك ولا يُحتسب عليك.",
+              "يسجّل في السوق ما استلمته فعلاً وما رفضته. لا يُدخل المخزون ولا يكتب ذمّة في دفترك — يدخلان حين تحوّل الاستلام إلى مستند شراء بعد ربط المورد بمنشأته. المشحون غير المستلم لا يُحتسب عليك.",
             )}
           </Note>
           <AppText variant="bodyStrong">{t("ما لا يكتبه:")}</AppText>

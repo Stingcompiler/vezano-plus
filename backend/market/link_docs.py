@@ -170,7 +170,7 @@ def receipt_row(sh: MarketShipment, link: MarketDocumentLink | None) -> dict[str
         "shipment_id": str(sh.id),
         "ref_label": f"SH-{sh.number:02d}",
         "order_id": str(o.id),
-        "order_label": f"ORD-{o.number}",
+        "order_label": f"PO-{o.number}",
         "supplier_name": o.supplier_name,
         "received_at": _iso(sh.received_at),
         "received_by_name": sh.received_by_name,
@@ -271,7 +271,7 @@ def _doc_link_payload(link: MarketDocumentLink) -> dict[str, Any]:
         "kind_label": MarketDocumentLink.Kind(link.kind).label,
         "mode": link.mode,
         "order_id": str(link.order_id),
-        "order_label": f"ORD-{link.order.number}",
+        "order_label": f"PO-{link.order.number}",
         "shipment_id": str(link.shipment_id) if link.shipment_id else "",
         "shipment_label": f"SH-{link.shipment.number:02d}" if link.shipment else "",
         "return_id": str(link.market_return_id) if link.market_return_id else "",
@@ -386,7 +386,7 @@ def convert(
             supplier_id=party_link.party_id,
             supplier_name=party_link.party_name,
             branch=branch,
-            supplier_invoice_number=f"SH-{sh.number:02d} / ORD-{o.number}",
+            supplier_invoice_number=f"SH-{sh.number:02d} / PO-{o.number}",
             note=f"من شحنة السوق SH-{sh.number:02d} — مصدر واحد معلَن",
             created_by_user_id=actor.id,
             created_by_name=actor.display_name,
@@ -471,7 +471,7 @@ def documents_payload(viewer: home.Viewer) -> dict[str, Any]:
         {
             "id": str(p.id),
             "ref_label": f"PAY-{p.number}",
-            "order_label": f"ORD-{p.order.number}",
+            "order_label": f"PO-{p.order.number}",
             "amount_minor": str(p.amount_minor),
             "path": PAYMENT_PATH,
         }
@@ -484,7 +484,8 @@ def documents_payload(viewer: home.Viewer) -> dict[str, Any]:
         "links": rows,
         "payments": payments,
         "linked_count": len(rows),
-        "diff_count": len(diffs) + len(payments),
+        # M-15: العدّاد فروق المستندات وحدها — المتطابق لا يُعدّ، وإثبات الدفع بلا مقابل قائمة مستقلة
+        "diff_count": len(diffs),
     }
 
 
@@ -561,7 +562,7 @@ def return_row(r: MarketReturn, link: MarketDocumentLink | None) -> dict[str, An
         "return_id": str(r.id),
         "ref_label": f"RT-{r.number:02d}",
         "order_id": str(o.id),
-        "order_label": f"ORD-{o.number}",
+        "order_label": f"PO-{o.number}",
         "supplier_name": o.supplier_name,
         "status": r.status,
         "status_label": MarketReturn.Status(r.status).label,

@@ -56,11 +56,23 @@ BULK_SUPPLIER_OWED_PROVIDERS: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID
 BULK_LAST_SALE_PROVIDERS: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, datetime]]] = []
 
 
+#: هويات الأطراف المربوطة بمنشأة سوق بربط مقبول (LINK-01) — تسجّله `market`؛ بلا سوق لا ربط
+MARKET_LINKED_PROVIDERS: list[Callable[[list[uuid.UUID]], set[uuid.UUID]]] = []
+
+
+def market_linked_ids(ids: list[uuid.UUID]) -> set[uuid.UUID]:
+    out: set[uuid.UUID] = set()
+    for prov in MARKET_LINKED_PROVIDERS:
+        out |= prov(ids)
+    return out
+
+
 @dataclass(frozen=True)
 class PartyFigures:
     balance_minor: int
     supplier_owed_minor: int
     last_sale_at: datetime | None
+    market_linked: bool = False
 
 
 def identity_map(parties: list[Party]) -> dict[uuid.UUID, list[uuid.UUID]]:
@@ -94,13 +106,19 @@ def party_figures(parties: list[Party]) -> dict[uuid.UUID, PartyFigures]:
         and len(BULK_SUPPLIER_OWED_PROVIDERS) == len(SUPPLIER_OWED_PROVIDERS)
         and len(BULK_LAST_SALE_PROVIDERS) == len(LAST_SALE_PROVIDERS)
     )
-    if not complete:
-        return {
-            p.id: PartyFigures(balance_minor(p), supplier_owed_minor(p), last_sale_at(p))
-            for p in parties
-        }
     identity = identity_map(parties)
     all_ids = sorted({i for ids in identity.values() for i in ids})
+    linked = market_linked_ids(all_ids)
+    if not complete:
+        return {
+            p.id: PartyFigures(
+                balance_minor(p),
+                supplier_owed_minor(p),
+                last_sale_at(p),
+                any(i in linked for i in identity[p.id]),
+            )
+            for p in parties
+        }
 
     def fold(
         providers: list[Callable[[list[uuid.UUID]], Mapping[uuid.UUID, int]]],
@@ -121,7 +139,9 @@ def party_figures(parties: list[Party]) -> dict[uuid.UUID, PartyFigures]:
     out: dict[uuid.UUID, PartyFigures] = {}
     for pid, ids in identity.items():
         seen = [stamps[i] for i in ids if i in stamps]
-        out[pid] = PartyFigures(due[pid], owed[pid], max(seen) if seen else None)
+        out[pid] = PartyFigures(
+            due[pid], owed[pid], max(seen) if seen else None, any(i in linked for i in ids)
+        )
     return out
 
 
@@ -285,8 +305,10 @@ def list_payload(
     owed = figures.supplier_owed_minor if figures else supplier_owed_minor(party)
     row["supplier_owed_minor"] = str(owed) if with_balances else ""
     row["last_movement_at"] = row["last_sale_at"]
-    # صلة السوق: لا ربط تلقائي بالاسم (ACC-118) — تأتي مع MP-08
-    row["market_linked"] = False
+    # صلة السوق (M-11): ربط مقبول في LINK-01 وحده — لا ربط تلقائي بالاسم (ACC-118)
+    row["market_linked"] = (
+        figures.market_linked if figures else bool(market_linked_ids(identity_ids(party)))
+    )
     return row
 
 

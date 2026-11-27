@@ -316,7 +316,21 @@ test.describe("ORD-05", () => {
     let released = false;
     await page.route(/\/api\/market\/orders\/po1$/, async (route) => {
       if (!released) await held;
-      return route.fulfill(json(200, DETAIL()));
+      return route.fulfill(
+        json(
+          200,
+          DETAIL({
+            ledger: {
+              m3: true,
+              supplier_linked: true,
+              shipments: [
+                { shipment_id: "sh1", ref_label: "SH-01", local_number: "PD-3" },
+                { shipment_id: "sh2", ref_label: "SH-02", local_number: "" },
+              ],
+            },
+          }),
+        ),
+      );
     });
     await login(page, "/market/orders/po1", /\/market\/orders\/po1$/);
     await expectFrame(page, info, {
@@ -345,7 +359,6 @@ test.describe("ORD-05", () => {
         "مستلم",
         "فارق",
         "وضع السطر",
-        "قيمة المستلم — تُقيَّد",
         "1,840.00",
         "قيمة الفارق — محجوزة",
         "260.00",
@@ -370,6 +383,13 @@ test.describe("ORD-05", () => {
     await expect(root).toContainText("هذه نسخة الاتفاق المثبَّتة");
     await expect(root).toContainText("أُرسل الطلب");
     await expect(root).toContainText("قُبل الإصدار");
+    // M-01: «قيمة المستلم» بلا «تُقيَّد» (الاستلام في السوق لا يكتب ذمّة)، ومستند الشراء لكل شحنة
+    await expect(root).toContainText("قيمة المستلم");
+    await expect(root).not.toContainText("قيمة المستلم — تُقيَّد");
+    await expect(root).toContainText("SH-01 · مستند الشراء: PD-3");
+    await expect(root).toContainText("SH-02 · لم يُحوَّل إلى مستند بعد");
+    await page.getByRole("button", { name: "أدخِل المخزون الآن" }).click();
+    await expect(page).toHaveURL(/\/market\/link\/receipts\?shipment=sh2$/);
   });
 
   test("conflict: إصداران متوازيان — الاتفاق هو المشار إليه في القبول لا الأحدث، والإصداران معروضان معاً", async ({
@@ -580,6 +600,50 @@ test.describe("ORD-06", () => {
       ]),
     });
     await expect(root).toContainText("الإصدار 2 · صالح حتى 31/12");
+  });
+
+  test("M-03: السعر ورسوم النقل بالجنيه بمنزلتين — 18,000.00 يُكتب فيصل المشتري 18,000.00 لا 180.00", async ({
+    page,
+  }) => {
+    const posted: { delivery_fee_minor: string | null; lines: { price_minor: string }[] }[] = [];
+    await page.route(/\/api\/market\/orders\/po1\/quote$/, (route) => {
+      if (route.request().method() === "GET")
+        return route.fulfill(
+          json(
+            200,
+            QUOTE({
+              request: {
+                ...VERSIONS[0],
+                lines: [vline({ qty_confirmed: null, price_minor: "1700000" })],
+                delivery_fee_minor: "6000",
+              },
+            }),
+          ),
+        );
+      posted.push(route.request().postDataJSON() as (typeof posted)[number]);
+      return route.fulfill(
+        json(200, { version: { ...VERSIONS[1], number: 2 }, order: ORDER({ status: "quoted" }) }),
+      );
+    });
+    await login(page, "/market/orders/po1/quote", /\/market\/orders\/po1\/quote$/);
+    const root = page.locator('[data-screen="ORD-06"]');
+    const price = page.getByLabel("السعر — سكر أبيض");
+    await expect(price).toHaveValue("17000.00");
+    await expect(page.getByLabel("رسوم النقل")).toHaveValue("60.00");
+    await expect(root).toContainText("بالجنيه");
+    await price.fill("18,000.00");
+    await expect(root).toContainText("السعر 17,000.00 ← 18,000.00");
+    await price.fill("18000.005");
+    await page.getByRole("button", { name: "أرسل العرض" }).click();
+    await expect(root).toHaveAttribute("data-state", "validation_error");
+    await expect(root).toContainText("اكتب المبلغ بالجنيه بمنزلتين على الأكثر.");
+    expect(posted).toHaveLength(0);
+    await price.fill("18,000.00");
+    await page.getByLabel("رسوم النقل").fill("75.5");
+    await page.getByRole("button", { name: "أرسل العرض" }).click();
+    await expect(root).toHaveAttribute("data-state", "success");
+    expect(posted[0]?.lines[0]?.price_minor).toBe("1800000");
+    expect(posted[0]?.delivery_fee_minor).toBe("7550");
   });
 
   test("expired: انتهت صلاحية سعر الكتالوج أثناء التحرير — لا تجديد تلقائي (ACC-144)", async ({

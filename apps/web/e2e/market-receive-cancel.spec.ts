@@ -92,8 +92,10 @@ const DETAIL_AFTER = (o: Record<string, unknown> = {}) => ({
   gap_value_minor: "118000",
   ladder_rule: "",
   received: "SH-118",
+  shipment_id: "sh2",
   gap: 1,
   dispute_opened: true,
+  ledger: { m3: true, supplier_linked: false, shipments: [] },
   ...o,
 });
 
@@ -208,8 +210,6 @@ test.describe("ORD-09", () => {
         "مشحون",
         "مستلم فعلاً",
         "الفارق وسببه",
-        "ما يكتبه هذا الإجراء في دفترك:",
-        "إدخال مخزون بالكميات المستلمة فعلاً، وذمة للمورد بقيمة المستلم وحده. المشحون غير المستلم لا يُخصم من مخزونك ولا يُحتسب عليك.",
         "ما لا يكتبه:",
         "تسجيل الاستلام وفتح خلاف الفارق",
         "تسجيل الاستلام دون خلاف",
@@ -217,6 +217,12 @@ test.describe("ORD-09", () => {
       ]),
     });
     await expect(root).toContainText("الشحنة الثانية · مخزن البركة — تجريبي · المستلم:");
+    // M-01 (د-١): الاستلام في السوق لا يُدخل المخزون ولا يكتب ذمّة — النص يقول ذلك
+    await expect(root).toContainText("ما يكتبه هذا الإجراء:");
+    await expect(root).toContainText(
+      "يسجّل في السوق ما استلمته فعلاً وما رفضته. لا يُدخل المخزون ولا يكتب ذمّة في دفترك — يدخلان حين تحوّل الاستلام إلى مستند شراء بعد ربط المورد بمنشأته. المشحون غير المستلم لا يُحتسب عليك.",
+    );
+    await expect(root).not.toContainText("إدخال مخزون بالكميات المستلمة فعلاً");
     await expect(root).toContainText(
       "هو يقول «شحنت 8»، وأنت تقول «استلمت 7». الرقمان يبقيان، ويُفتح خلاف في «الخلافات»",
     );
@@ -253,12 +259,20 @@ test.describe("ORD-09", () => {
       state: "success",
       texts: fromFrame("ORD-09", "success", [
         "سُجّل الاستلام",
-        "ما دخل المخزون، وما رُفض ومصيره: مرتجعٌ للمورد أو حجرٌ حتى القرار.",
         "الذمّة من المستلم",
         "تُقيَّد قيمة ما استُلم فقط. والمرفوض لا يُقيَّد ولا يُحذف — يبقى بندَ مطالبة.",
       ]),
     });
-    await expect(root).toContainText("SH-118 · الفارق 1 — فُتح خلاف الفارق");
+    await expect(root).toContainText(
+      "سُجّل الاستلام في السوق. لم يدخل المخزون بعد. SH-118 · الفارق 1 — فُتح خلاف الفارق",
+    );
+    await expect(root).not.toContainText("ما دخل المخزون");
+    // المورد غير مربوط: خطوات الربط لا زر تحويل
+    await expect(root).toContainText(
+      "لإدخال البضاعة المخزون: اربط المورد بمنشأته، ثم طابق الأصناف، ثم حوّل الاستلام إلى مستند شراء.",
+    );
+    await expect(page.getByRole("button", { name: "أدخِل المخزون الآن" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "اربط المورد" })).toBeVisible();
     await expect(root).toContainText("قيمة المستلم 8,260.00");
     const sent = posted[0] as {
       open_dispute: boolean;

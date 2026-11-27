@@ -1238,6 +1238,7 @@ class MarketOrderReceiveView(APIView):
                 {
                     **flow_svc.detail_payload(o, "buyer"),
                     "received": f"SH-{sh.number:02d}",
+                    "shipment_id": str(sh.id),
                     "gap": gap,
                     "dispute_opened": sh.dispute_opened,
                 }

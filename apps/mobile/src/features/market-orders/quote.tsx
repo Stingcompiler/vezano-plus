@@ -1,4 +1,4 @@
-import { formatMinor } from "@sting/app-core";
+import { formatMinor, minorToInput, moneyInputToMinor } from "@sting/app-core";
 import { AppText, Button, GroupedList, SPACE, StateView, TextField } from "@sting/ui-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -97,12 +97,12 @@ export default function Quote() {
           requested: rl.qty_requested,
           requested_price: rl.price_minor,
           confirmed: String(dl?.qty_confirmed ?? rl.qty_requested),
-          price: dl?.price_minor || rl.price_minor || "",
+          price: minorToInput(dl?.price_minor || rl.price_minor || ""),
           reason: dl?.increase_reason ?? "",
         };
       }),
     );
-    setFee(base?.delivery_fee_minor ?? "");
+    setFee(minorToInput(base?.delivery_fee_minor ?? ""));
     setValidUntil(p.draft?.valid_until || p.default_valid_until);
     setNote(p.draft?.note ?? "");
   }, [p, id, doc.fromCache]);
@@ -110,7 +110,10 @@ export default function Quote() {
   const today = new Date().toISOString().slice(0, 10);
   const validityPast = Boolean(validUntil) && validUntil < today;
   const increases = lines.filter((l) => num(l.confirmed) > l.requested && !l.reason.trim());
-  const invalid = validityPast || increases.length > 0 || !validUntil;
+  // M-03: المال بالجنيه بمنزلتين — يُحوَّل إلى القروش عند الإرسال وحده
+  const feeMinor = moneyInputToMinor(fee);
+  const badMoney = feeMinor === null || lines.some((l) => moneyInputToMinor(l.price) === null);
+  const invalid = validityPast || increases.length > 0 || !validUntil || badMoney;
   const partial = lines.some((l) => num(l.confirmed) > 0 && num(l.confirmed) < l.requested);
   const catalogExpired = p?.catalog_expired ?? [];
   const lock = doc.fromCache ? MO_TEXTS.needsServer : undefined;
@@ -121,7 +124,7 @@ export default function Quote() {
   const submit = async (send: boolean) => {
     setAttempted(true);
     setServerError("");
-    if (send && invalid) return;
+    if ((send && invalid) || badMoney) return;
     if (busy) return;
     setBusy(send ? "send" : "draft");
     try {
@@ -130,13 +133,13 @@ export default function Quote() {
           params: { path: { order_id: id } },
           body: {
             send,
-            delivery_fee_minor: fee || null,
+            delivery_fee_minor: feeMinor || null,
             valid_until: validUntil,
             note,
             lines: lines.map((l) => ({
               offer_id: l.offer_id,
               qty_confirmed: num(l.confirmed),
-              price_minor: l.price,
+              price_minor: moneyInputToMinor(l.price) ?? "",
               increase_reason: l.reason,
             })),
           } as never,
@@ -232,13 +235,15 @@ export default function Quote() {
       {state === "validation_error" ? (
         <StateView state="validation_error" title={t("صلاحية في الماضي أو كمية تفوق المطلوب")}>
           <Para>
-            {validityPast && increases.length
-              ? t("تاريخ صلاحية أمس، وسطرٌ بكمية أكبر من طلب المشتري.")
-              : validityPast
-                ? t("تاريخ صلاحية في الماضي.")
-                : !validUntil
-                  ? t("حدّد صلاحية العرض.")
-                  : t("سطرٌ بكمية أكبر من طلب المشتري بلا سبب.")}
+            {badMoney
+              ? t("اكتب المبلغ بالجنيه بمنزلتين على الأكثر.")
+              : validityPast && increases.length
+                ? t("تاريخ صلاحية أمس، وسطرٌ بكمية أكبر من طلب المشتري.")
+                : validityPast
+                  ? t("تاريخ صلاحية في الماضي.")
+                  : !validUntil
+                    ? t("حدّد صلاحية العرض.")
+                    : t("سطرٌ بكمية أكبر من طلب المشتري بلا سبب.")}
           </Para>
           <Note>
             {t("الزيادة تحتاج سبباً")}{" "}
@@ -287,6 +292,7 @@ export default function Quote() {
             {lines.map((l, i) => {
               const conf = num(l.confirmed);
               const diff = conf - l.requested;
+              const priceMinor = moneyInputToMinor(l.price);
               const expiredLine = catalogExpired.includes(l.offer_id);
               return (
                 <Row
@@ -320,13 +326,19 @@ export default function Quote() {
                   <TextField
                     label={`${t("السعر —")} ${l.public_name}`}
                     mono
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
+                    hint={t("بالجنيه")}
                     value={l.price}
-                    onChangeText={(x) => setLine(l.offer_id, { price: digits(x) })}
+                    onChangeText={(x) => setLine(l.offer_id, { price: x })}
+                    error={
+                      attempted && priceMinor === null
+                        ? t("اكتب المبلغ بالجنيه بمنزلتين على الأكثر.")
+                        : undefined
+                    }
                   />
                   {conf === 0 ? (
                     <StatusWord tone="expired" label={t("غير متوفر")} />
-                  ) : diff === 0 && l.price === l.requested_price ? (
+                  ) : diff === 0 && priceMinor === l.requested_price ? (
                     <Note>{t("كما طُلب")}</Note>
                   ) : (
                     <>
@@ -335,11 +347,11 @@ export default function Quote() {
                           {t("الكمية")} <M>{diff > 0 ? `+${diff}` : String(diff)}</M>
                         </Note>
                       ) : null}
-                      {l.price !== l.requested_price ? (
+                      {priceMinor !== l.requested_price ? (
                         <Note>
                           {t("السعر")}{" "}
                           <M>{l.requested_price ? formatMinor(l.requested_price) : "—"}</M> ←{" "}
-                          <M>{l.price ? formatMinor(l.price) : "—"}</M>
+                          <M>{priceMinor ? formatMinor(priceMinor) : "—"}</M>
                         </Note>
                       ) : null}
                     </>
@@ -349,11 +361,17 @@ export default function Quote() {
             })}
           </GroupedList>
           <TextField
-            label={t("رسوم النقل (بالقرش)")}
+            label={t("رسوم النقل")}
             mono
-            keyboardType="number-pad"
+            keyboardType="decimal-pad"
+            hint={t("بالجنيه")}
             value={fee}
-            onChangeText={(x) => setFee(digits(x))}
+            onChangeText={setFee}
+            error={
+              attempted && feeMinor === null
+                ? t("اكتب المبلغ بالجنيه بمنزلتين على الأكثر.")
+                : undefined
+            }
           />
           <TextField
             label={t("صلاحية العرض")}

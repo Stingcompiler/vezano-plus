@@ -58,6 +58,24 @@ export function parseMoneyInput(text: string, exponent = 2): string | null {
 }
 
 /**
+ * حقل مال بالجنيه (M-03): الوحدة الصغرى ← نص الحقل بمنزلتين بلا فواصل («1800000» ← «18000.00»)،
+ * والفارغ فارغ (سعر «اطلب تأكيداً»).
+ */
+export function minorToInput(minor: string | null | undefined, exponent = 2): string {
+  return minor ? formatMinor(minor, exponent, false).replace("−", "-") : "";
+}
+
+/**
+ * نص حقل مال بالجنيه ← الوحدة الصغرى كنص قانوني (M-03): الفارغ «» والسالب أو غير المقروء أو ما زاد
+ * على المنازل `null` (لا تقريب) — كي لا يُرسل «18000» قروشاً.
+ */
+export function moneyInputToMinor(text: string, exponent = 2): string | null {
+  if (!text.trim()) return "";
+  const minor = parseMoneyInput(text, exponent);
+  return minor === null || minor.startsWith("-") ? null : minor;
+}
+
+/**
  * أسعار الباقات بالجنيه الصحيح (0005 §١٢٧): «45,000» لا «45,000.00» — الكسر العشري ضجيج في سعر
  * لا قروش فيه. غير الصحيح يبقى بخانتيه. العملة «ج.س» تُكتب بجانبه.
  */

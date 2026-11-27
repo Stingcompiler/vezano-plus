@@ -59,6 +59,12 @@ def test_convert_receipt_documents_and_return(
     r = _post(c, h, f"/api/market/link/parties/{party.id}/request", {"counterparty_tenant_id": sid})
     link_id = r.json()["link"]["id"]
     assert _post(c, hb, f"/api/market/link/incoming/{link_id}/accept").status_code == 200
+    # M-11: الطرف المربوط بربط مقبول «مرتبط بمنشأة سوق» في القائمة والبطاقة
+    from parties.services import list_payload, party_figures
+
+    with tenant_context(ctx["tenant"].id):
+        assert list_payload(party, with_balances=True)["market_linked"] is True
+        assert party_figures([party])[party.id].market_linked is True
     r = _post(
         c,
         h,
@@ -116,6 +122,16 @@ def test_convert_receipt_documents_and_return(
         },
     )
     assert r.status_code == 200
+    # M-01: الاستلام في السوق لا يُدخل المخزون — الرد يقول إن الشحنة لم تُحوَّل بعد والمورد مربوط
+    assert r.json()["shipment_id"] == sh
+    assert r.json()["ledger"] == {
+        "m3": True,
+        "supplier_linked": True,
+        "shipments": [{"shipment_id": sh, "ref_label": "SH-01", "local_number": ""}],
+    }
+    # M-15: الرقم نفسه «PO-n» في السوق وفي الربط
+    po_label = r.json()["order"]["number_label"]
+    assert po_label.startswith("PO-")
     # ---- LINK-03: القائمة والمعاينة — لا شيء يحدث قبل الإقرار
     lst = c.get("/api/market/link/receipts", headers=h).json()
     assert (
@@ -199,9 +215,26 @@ def test_convert_receipt_documents_and_return(
         assert PurchaseDocument.objects.count() == 1 and MarketDocumentLink.objects.count() == 1
     lst = c.get("/api/market/link/receipts", headers=h).json()
     assert lst["pending_count"] == 0 and lst["shipments"][0]["local_number"] == link["local_number"]
+    assert lst["shipments"][0]["order_label"] == po_label and link["order_label"] == po_label
+    with tenant_context(ctx["tenant"].id):
+        assert PurchaseDocument.objects.get().supplier_invoice_number == f"SH-01 / {po_label}"
+    # M-01: تفاصيل الطلب تذكر مستند الشراء بعد التحويل
+    det = c.get(f"/api/market/orders/{oid}", headers=h).json()
+    assert det["ledger"]["shipments"][0]["local_number"] == link["local_number"]
+    # M-11: LINK-01 يقرأ «له علينا» ومستندات كشف المورد — لا رصيد العميل
+    lp = c.get("/api/market/link/parties", headers=h).json()
+    row = next(x for x in lp["parties"] if x["party_id"] == str(party.id))
+    assert row["balance_minor"] == str(7 * 118000) and row["documents"] >= 1
+    # M-15: إثبات دفع بلا مقابل قائمة مستقلة لا يُعدّ فرقاً
+    due = c.get(f"/api/market/orders/{oid}/payments", headers=h).json()["due_minor"]
+    pay = _post(
+        c, h, f"/api/market/orders/{oid}/payments", {"amount_minor": due, "transfer_ref": "TRX-M15"}
+    )
+    assert pay.status_code == 201, pay.content
     # ---- LINK-04: الفرق كرتونة (8 مشحونة / 7 مستلَمة) بلا ترجيح؛ التسوية لمن له حدّ مالي
     d = c.get("/api/market/link/documents", headers=h).json()
-    assert d["linked_count"] == 1 and d["diff_count"] == 1
+    assert d["linked_count"] == 1 and d["diff_count"] == 1 and len(d["payments"]) == 1
+    assert d["payments"][0]["order_label"] == po_label
     row = d["links"][0]
     assert row["diff_minor"] == str(118000) and "فتح خلاف موثَّق أو اتفاق" in row["path"]
     assert "الرقم الصحيح" not in str(d)
@@ -220,6 +253,7 @@ def test_convert_receipt_documents_and_return(
     assert r.status_code == 200 and r.json()["link"]["settled_by_name"]
     d = c.get("/api/market/link/documents", headers=h).json()
     assert d["diff_count"] == 0 and d["links"][0]["settled"] is True
+    assert len(d["payments"]) == 1  # الإيصال المعلّق لا يجعل المتطابق «فرقاً بانتظار مسار»
     with tenant_context(ctx["tenant"].id):
         assert supplier_owed_from_purchases(party) == 7 * 118000  # التسوية لا تحرّك رقماً
     # ---- LINK-05: مرتجع 3 يوافق المورد على 2 → مستند عكسي بـ2 فقط والباقي بند معلّق

@@ -19,6 +19,7 @@ import {
   When,
 } from "@/components/market-orders/parts";
 import { dm, safeGet, safePost } from "@/features/market-orders/lib";
+import { LedgerStep } from "@/features/market-orders/ledger-step";
 import { MO_TEXTS, tOf } from "@/features/market-orders/texts";
 import type { Detail } from "@/features/market-orders/types";
 import { useDoc } from "@/features/market-orders/use-doc";
@@ -278,7 +279,7 @@ export default function OrderDetail() {
           <Note>{d.ladder_rule}</Note>
           <GroupedList>
             <Row
-              title={t("قيمة المستلم — تُقيَّد")}
+              title={t("قيمة المستلم")}
               trailing={<M>{formatMinor(d.received_value_minor)}</M>}
             />
             <Row
@@ -287,6 +288,36 @@ export default function OrderDetail() {
               last
             />
           </GroupedList>
+
+          {d.side === "buyer" && d.ledger?.shipments.length ? (
+            <>
+              <GroupedList>
+                {d.ledger.shipments.map((sh, i, all) => (
+                  <Row
+                    key={sh.shipment_id}
+                    title={<M>{sh.ref_label}</M>}
+                    last={i === all.length - 1}
+                    trailing={
+                      sh.local_number ? (
+                        <>
+                          {t("مستند الشراء:")} <M>{sh.local_number}</M>
+                        </>
+                      ) : (
+                        t("لم يُحوَّل إلى مستند بعد")
+                      )
+                    }
+                  />
+                ))}
+              </GroupedList>
+              {d.ledger.shipments.some((sh) => !sh.local_number) ? (
+                <LedgerStep
+                  ledger={d.ledger}
+                  shipmentId={d.ledger.shipments.find((sh) => !sh.local_number)?.shipment_id ?? ""}
+                  onGo={(href) => router.push(href)}
+                />
+              ) : null}
+            </>
+          ) : null}
 
           <Heading>{t("سجل الإصدارات — النسخة المقبولة مثبَّتة لا مرجع متحرّك")}</Heading>
           <GroupedList>

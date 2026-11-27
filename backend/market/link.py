@@ -71,12 +71,12 @@ def can_link(viewer: home.Viewer) -> bool:
 
 # ------------------------------------------------------------------ LINK-01 الأطراف
 def _party_stats(party: Party) -> dict[str, Any]:
-    """الرصيد وعدد المستندات من كشف الطرف نفسه — لا يتغيّران بالربط."""
-    from parties.services import balance_minor, statement_lines
+    """«له علينا» وعدد المستندات من كشف المورد نفسه (M-11) — لا رصيد العميل؛ لا يتغيّران بالربط."""
+    from parties.services import supplier_owed_minor, supplier_statement_lines
 
     return {
-        "balance_minor": str(balance_minor(party)),
-        "documents": len(statement_lines(party)),
+        "balance_minor": str(supplier_owed_minor(party)),
+        "documents": len(supplier_statement_lines(party)),
     }
 
 

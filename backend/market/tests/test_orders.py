@@ -219,3 +219,90 @@ def test_lists_and_no_reply_resend(
     assert r.json()["order"]["no_reply"] is False
     with platform_context():
         assert MarketOrder.unscoped.count() == 1
+
+
+def test_suspended_and_audience_offers_not_orderable(
+    ctx: dict[str, Any],  # noqa: F811
+    two_tenants: TwoTenants,
+) -> None:
+    """M-09: العرض المعلَّق (PLT-07) لا يُعرض ولا يُطلب؛ الخاص لعضو نشط في قائمته وحده، وللمتابعين
+    لمتابع نشط وحده — في التحقق وفي الإرسال، وبالرد نفسه كغير الموجود (لا سعر يتسرّب)."""
+    from market import public
+    from market.models import MarketFollow, MarketPriceList, MarketPriceListMember
+
+    c, h = Client(), _h(ctx["tokens"]["owner"])
+    sugar, _rice = _seed(two_tenants.b)
+    sid = str(two_tenants.b.id)
+    buyer = ctx["tenant"]
+    with platform_context():
+        private = MarketOffer.unscoped.get(id=sugar.id)
+        private.pk = None
+        private.id = uuid.uuid4()
+        private.public_name = "زيت خاص"
+        private.audience = "private"
+        private.save()
+        fol = MarketOffer.unscoped.get(id=sugar.id)
+        fol.pk = None
+        fol.id = uuid.uuid4()
+        fol.public_name = "دقيق للمتابعين"
+        fol.audience = "followers"
+        fol.save()
+
+    def verify(offer: MarketOffer) -> dict[str, Any]:
+        r = _post(
+            c,
+            h,
+            "/api/market/orders/verify",
+            {"lines": [{"offer_id": str(offer.id), "qty": 6, "price_minor": "118000"}]},
+        )
+        assert r.status_code == 200
+        line: dict[str, Any] = r.json()["lines"][0]
+        return line
+
+    def send(offer: MarketOffer) -> Any:
+        return _post(
+            c,
+            h,
+            "/api/market/orders",
+            {
+                "op_id": str(uuid.uuid4()),
+                "supplier_tenant_id": sid,
+                "kind": "order",
+                "lines": [{"offer_id": str(offer.id), "qty": 6, "price_minor": "118000"}],
+            },
+        )
+
+    # العام يُطلب؛ ثم يُعلَّق فيختفي من الصفحة العامة ويُسحب من التحقق ويُرفض في الإرسال
+    assert verify(sugar)["status"] == "confirmed"
+    assert public.home()["offers_count"] == 1
+    with platform_context():
+        MarketOffer.unscoped.filter(id=sugar.id).update(suspended_at=timezone.now())
+    assert public.home()["offers_count"] == 0
+    v = verify(sugar)
+    assert v["status"] == "withdrawn" and v["current_price_minor"] == ""
+    r = send(sugar)
+    assert r.status_code == 409 and r.json()["detail"] == "line_expired"
+    assert r.json()["extra"]["offer_ids"] == [str(sugar.id)]
+    # الخاص: غير العضو لا يرى سعره ولا يطلبه؛ العضو النشط يطلبه
+    v = verify(private)
+    assert v["status"] == "withdrawn" and "public_name" not in v
+    assert send(private).status_code == 409
+    with platform_context():
+        pl = MarketPriceList.unscoped.create(tenant=two_tenants.b, name="جملة", offer=private)
+        MarketPriceListMember.unscoped.create(
+            tenant=two_tenants.b,
+            price_list=pl,
+            buyer_tenant_id=buyer.id,
+            buyer_name=buyer.name,
+            status="active",
+        )
+    assert verify(private)["status"] == "confirmed"
+    # للمتابعين: غير المتابع لا يطلب؛ المتابع النشط يطلب
+    assert verify(fol)["status"] == "withdrawn"
+    with platform_context():
+        MarketFollow.unscoped.create(
+            tenant=buyer, supplier_tenant_id=two_tenants.b.id, supplier_name="مخزن البركة"
+        )
+    assert verify(fol)["status"] == "confirmed"
+    with platform_context():
+        assert MarketOrder.unscoped.count() == 0

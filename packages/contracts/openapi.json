@@ -29916,6 +29916,38 @@
           "latest_version": {
             "type": "integer"
           },
+          "ledger": {
+            "additionalProperties": false,
+            "properties": {
+              "m3": {
+                "type": "boolean"
+              },
+              "shipments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "local_number": {
+                      "type": "string"
+                    },
+                    "ref_label": {
+                      "type": "string"
+                    },
+                    "shipment_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["shipment_id", "ref_label", "local_number"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "supplier_linked": {
+                "type": "boolean"
+              }
+            },
+            "required": ["m3", "supplier_linked", "shipments"],
+            "type": "object"
+          },
           "open_disputes": {
             "items": {
               "type": "string"
@@ -30306,7 +30338,8 @@
           "received_value_minor",
           "gap_value_minor",
           "ladder_rule",
-          "open_disputes"
+          "open_disputes",
+          "ledger"
         ],
         "type": "object"
       },
@@ -30413,6 +30446,38 @@
           },
           "latest_version": {
             "type": "integer"
+          },
+          "ledger": {
+            "additionalProperties": false,
+            "properties": {
+              "m3": {
+                "type": "boolean"
+              },
+              "shipments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "local_number": {
+                      "type": "string"
+                    },
+                    "ref_label": {
+                      "type": "string"
+                    },
+                    "shipment_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["shipment_id", "ref_label", "local_number"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "supplier_linked": {
+                "type": "boolean"
+              }
+            },
+            "required": ["m3", "supplier_linked", "shipments"],
+            "type": "object"
           },
           "open_disputes": {
             "items": {},
@@ -30790,7 +30855,8 @@
           "received_value_minor",
           "gap_value_minor",
           "ladder_rule",
-          "open_disputes"
+          "open_disputes",
+          "ledger"
         ],
         "type": "object"
       },
@@ -35719,6 +35785,38 @@
           "latest_version": {
             "type": "integer"
           },
+          "ledger": {
+            "additionalProperties": false,
+            "properties": {
+              "m3": {
+                "type": "boolean"
+              },
+              "shipments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "local_number": {
+                      "type": "string"
+                    },
+                    "ref_label": {
+                      "type": "string"
+                    },
+                    "shipment_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["shipment_id", "ref_label", "local_number"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "supplier_linked": {
+                "type": "boolean"
+              }
+            },
+            "required": ["m3", "supplier_linked", "shipments"],
+            "type": "object"
+          },
           "open_disputes": {
             "items": {
               "type": "string"
@@ -35962,6 +36060,9 @@
           "received_value_minor": {
             "type": "string"
           },
+          "shipment_id": {
+            "type": "string"
+          },
           "side": {
             "type": "string"
           },
@@ -36108,7 +36209,9 @@
           "open_disputes",
           "received",
           "gap",
-          "dispute_opened"
+          "dispute_opened",
+          "shipment_id",
+          "ledger"
         ],
         "type": "object"
       },
@@ -36215,6 +36318,38 @@
           },
           "latest_version": {
             "type": "integer"
+          },
+          "ledger": {
+            "additionalProperties": false,
+            "properties": {
+              "m3": {
+                "type": "boolean"
+              },
+              "shipments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "local_number": {
+                      "type": "string"
+                    },
+                    "ref_label": {
+                      "type": "string"
+                    },
+                    "shipment_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["shipment_id", "ref_label", "local_number"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "supplier_linked": {
+                "type": "boolean"
+              }
+            },
+            "required": ["m3", "supplier_linked", "shipments"],
+            "type": "object"
           },
           "open_disputes": {
             "items": {},
@@ -36592,7 +36727,8 @@
           "received_value_minor",
           "gap_value_minor",
           "ladder_rule",
-          "open_disputes"
+          "open_disputes",
+          "ledger"
         ],
         "type": "object"
       },
@@ -40251,7 +40387,14 @@
                   "type": "string"
                 },
                 "min_order_qty": {
-                  "type": "integer"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "offer_id": {
                   "type": "string"
@@ -40289,25 +40432,15 @@
               },
               "required": [
                 "offer_id",
-                "seller_tenant_id",
-                "seller_name",
-                "public_name",
-                "pack_label",
-                "unit_name",
                 "qty",
                 "draft_price_minor",
                 "current_price_minor",
                 "changed",
                 "expired",
                 "status",
-                "confirmed_at",
-                "valid_until",
+                "unit_name",
                 "min_order_qty",
-                "short",
-                "fees_decided",
-                "fees_label",
-                "currency",
-                "supplier_suspended"
+                "short"
               ],
               "type": "object"
             },

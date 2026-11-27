@@ -168,6 +168,18 @@ def _authorized_tiers(offer: MarketOffer, buyer_tenant_id: Any) -> list[dict[str
     return None
 
 
+def audience_allows(offer: MarketOffer, buyer_tenant_id: Any) -> bool:
+    """جمهور العرض: العام لأي مشترٍ؛ الخاص لعضو نشط في قائمته؛ المتابعون لمتابع نشط (M-09)."""
+    if offer.audience == MarketOffer.Audience.PRIVATE:
+        return _authorized_tiers(offer, buyer_tenant_id) is not None
+    if offer.audience == MarketOffer.Audience.FOLLOWERS:
+        return bool(
+            buyer_tenant_id
+            and is_follower(follower_tenant_id=buyer_tenant_id, supplier_tenant_id=offer.tenant_id)
+        )
+    return True
+
+
 def offer_detail(*, offer_id: uuid.UUID, buyer_tenant_id: Any) -> dict[str, Any] | None:
     """العرض بشروطه كاملة: عام لأي زائر؛ خاص/للمتابعين لمن خُوِّل — وإلا لا شيء (كغير الموجود)؛
     المخفي/المحذوف «سُحب» بعروض الناشر القائمة؛ المنتهي بآخر سعر معروف بلا تأكيد."""
