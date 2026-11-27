@@ -206,10 +206,12 @@ test.describe("ORD-13", () => {
     });
     await expect(root).toContainText("الإيصال نفسه استُخدم في طلب سابق (PO-1990 · PAY-3).");
     await page.getByLabel("مرجع التحويل").fill("TRX-7781");
-    await page.getByLabel("المبلغ (بالقرش)").fill("1244000");
+    // M-03: المبلغ والتوزيع بالجنيه بمنزلتين؛ يُرسلان بالقروش
+    await expect(page.getByLabel("المبلغ", { exact: true })).toHaveValue("9440.00");
+    await page.getByLabel("المبلغ", { exact: true }).fill("12,440.00");
     await page.getByRole("button", { name: "تحويل واحد على طلبين؟ وزّعه صراحةً" }).click();
-    await page.getByLabel("على هذا الطلب PO-2041").fill("944000");
-    await page.getByLabel(/على PO-2077/).fill("300000");
+    await page.getByLabel("على هذا الطلب PO-2041").fill("9440");
+    await page.getByLabel(/على PO-2077/).fill("3,000.00");
     await expect(root).toContainText("مجموع التوزيع 12,440.00 من 12,440.00");
     await page.getByRole("button", { name: "ارفع الإيصال — مسجَّل لا مسدَّد" }).click();
     await expectFrame(page, info, {

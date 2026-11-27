@@ -10117,6 +10117,15 @@ export interface components {
             }[];
             ladder_rule: string;
             latest_version: number;
+            ledger: {
+                m3: boolean;
+                shipments: {
+                    local_number: string;
+                    ref_label: string;
+                    shipment_id: string;
+                }[];
+                supplier_linked: boolean;
+            };
             open_disputes: string[];
             order: {
                 buyer_name: string;
@@ -10234,6 +10243,15 @@ export interface components {
             }[];
             ladder_rule: string;
             latest_version: number;
+            ledger: {
+                m3: boolean;
+                shipments: {
+                    local_number: string;
+                    ref_label: string;
+                    shipment_id: string;
+                }[];
+                supplier_linked: boolean;
+            };
             open_disputes: unknown[];
             order: {
                 buyer_name: string;
@@ -11510,6 +11528,15 @@ export interface components {
             }[];
             ladder_rule: string;
             latest_version: number;
+            ledger: {
+                m3: boolean;
+                shipments: {
+                    local_number: string;
+                    ref_label: string;
+                    shipment_id: string;
+                }[];
+                supplier_linked: boolean;
+            };
             open_disputes: string[];
             order: {
                 buyer_name: string;
@@ -11569,6 +11596,7 @@ export interface components {
             partial: boolean;
             received: string;
             received_value_minor: string;
+            shipment_id: string;
             side: string;
             versions: {
                 accepted_at: string;
@@ -11627,6 +11655,15 @@ export interface components {
             }[];
             ladder_rule: string;
             latest_version: number;
+            ledger: {
+                m3: boolean;
+                shipments: {
+                    local_number: string;
+                    ref_label: string;
+                    shipment_id: string;
+                }[];
+                supplier_linked: boolean;
+            };
             open_disputes: unknown[];
             order: {
                 buyer_name: string;
@@ -12582,25 +12619,25 @@ export interface components {
         PostMarketOrdersVerifyResponse: {
             lines: {
                 changed: boolean;
-                confirmed_at: string;
-                currency: string;
+                confirmed_at?: string;
+                currency?: string;
                 current_price_minor: string;
                 draft_price_minor: string;
                 expired: boolean;
-                fees_decided: boolean;
-                fees_label: string;
-                min_order_qty: number;
+                fees_decided?: boolean;
+                fees_label?: string;
+                min_order_qty: number | null;
                 offer_id: string;
-                pack_label: string;
-                public_name: string;
+                pack_label?: string;
+                public_name?: string;
                 qty: number;
-                seller_name: string;
-                seller_tenant_id: string;
+                seller_name?: string;
+                seller_tenant_id?: string;
                 short: number;
                 status: string;
-                supplier_suspended: boolean;
+                supplier_suspended?: boolean;
                 unit_name: string;
-                valid_until: string;
+                valid_until?: string;
             }[];
             response_hours: number;
             responsibilities: {

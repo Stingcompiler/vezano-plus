@@ -1,6 +1,15 @@
 "use client";
 
-import { Button, formatMinor, Frame, Notice, Status, TextField } from "@sting/ui-web";
+import {
+  Button,
+  formatMinor,
+  Frame,
+  minorToInput,
+  moneyInputToMinor,
+  Notice,
+  Status,
+  TextField,
+} from "@sting/ui-web";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -103,7 +112,7 @@ export function PaymentClient({ id }: { id: string }) {
     const body = data as unknown as Payload | undefined;
     if (response.ok && body) {
       setP(body);
-      setAmount((cur) => cur || body.due_minor);
+      setAmount((cur) => cur || minorToInput(body.due_minor));
     }
   }, [id, router]);
 
@@ -118,17 +127,30 @@ export function PaymentClient({ id }: { id: string }) {
 
   const submit = async () => {
     if (busy) return;
-    setBusy("record");
     setErr(null);
+    // M-03: المبلغ والتوزيع بالجنيه بمنزلتين — يُحوَّلان إلى القروش هنا وحده
+    const amountMinor = moneyInputToMinor(amount);
+    const allocMinor = split
+      ? Object.entries(alloc).map(([order_id, v]) => ({
+          order_id,
+          amount_minor: moneyInputToMinor(v),
+        }))
+      : [];
+    if (!amountMinor || allocMinor.some((a) => a.amount_minor === null)) {
+      setErr({ code: "money_invalid", extra: {} });
+      return;
+    }
+    setBusy("record");
     try {
-      const allocations = split
-        ? Object.entries(alloc)
-            .filter(([, v]) => Number(v || 0) > 0)
-            .map(([order_id, v]) => ({ order_id, amount_minor: v }))
-        : [];
+      const allocations = allocMinor.filter((a) => a.amount_minor && BigInt(a.amount_minor) > 0n);
       const r = await api().POST("/api/market/orders/{order_id}/payments", {
         params: { path: { order_id: id } },
-        body: { amount_minor: amount, transfer_ref: ref, transferred_on: on, allocations } as never,
+        body: {
+          amount_minor: amountMinor,
+          transfer_ref: ref,
+          transferred_on: on,
+          allocations,
+        } as never,
       });
       const b = (r.data ?? r.error) as unknown as
         Payload | { detail?: string; extra?: Record<string, unknown> } | undefined;
@@ -179,7 +201,10 @@ export function PaymentClient({ id }: { id: string }) {
             ? "partial"
             : "ready";
   const openAlloc = p?.open_orders ?? [];
-  const allocTotal = Object.values(alloc).reduce((a, v) => a + Number(v || 0), 0);
+  const allocTotal = Object.values(alloc).reduce(
+    (a, v) => a + BigInt(moneyInputToMinor(v) || "0"),
+    0n,
+  );
 
   return (
     <Frame
@@ -214,13 +239,15 @@ export function PaymentClient({ id }: { id: string }) {
             {state === "validation_error" && err ? (
               <Notice kind="warning" title="مبلغ مخالف أو تحويل مستهلك">
                 <p className="acc-lead">
-                  {err.code === "reference_used"
-                    ? `الإيصال نفسه استُخدم في طلب سابق (${err.extra.order_number_label ?? ""} · ${err.extra.payment ?? ""}).`
-                    : err.code === "amount_mismatch"
-                      ? `المبلغ ${formatMinor(err.extra.amount_minor ?? "0")} يخالف المستحقّ ${formatMinor(err.extra.due_minor ?? "0")} بلا بيان.`
-                      : err.code === "allocation_mismatch"
-                        ? `مجموع التوزيع ${formatMinor(err.extra.allocated_minor ?? "0")} لا يساوي المبلغ ${formatMinor(err.extra.amount_minor ?? "0")}.`
-                        : "تعذّر تسجيل الإيصال."}
+                  {err.code === "money_invalid"
+                    ? "اكتب المبلغ بالجنيه بمنزلتين على الأكثر."
+                    : err.code === "reference_used"
+                      ? `الإيصال نفسه استُخدم في طلب سابق (${err.extra.order_number_label ?? ""} · ${err.extra.payment ?? ""}).`
+                      : err.code === "amount_mismatch"
+                        ? `المبلغ ${formatMinor(err.extra.amount_minor ?? "0")} يخالف المستحقّ ${formatMinor(err.extra.due_minor ?? "0")} بلا بيان.`
+                        : err.code === "allocation_mismatch"
+                          ? `مجموع التوزيع ${formatMinor(err.extra.allocated_minor ?? "0")} لا يساوي المبلغ ${formatMinor(err.extra.amount_minor ?? "0")}.`
+                          : "تعذّر تسجيل الإيصال."}
                 </p>
                 <p className="acc-choice__note">
                   <strong>لا استخدام مكرر</strong> · مرجع التحويل يُطابَق مرة واحدة. والفرق عن
@@ -405,9 +432,9 @@ export function PaymentClient({ id }: { id: string }) {
                       <strong>الرفع لا يُسدّد</strong> · الذمّة لا تنقص برفع إيصال.
                     </p>
                     <TextField
-                      label="المبلغ (بالقرش)"
-                      kind="number"
+                      label="المبلغ"
                       mono
+                      hint="بالجنيه"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                     />
@@ -438,8 +465,8 @@ export function PaymentClient({ id }: { id: string }) {
                       <>
                         <TextField
                           label={`على هذا الطلب ${p.order.number_label}`}
-                          kind="number"
                           mono
+                          hint="بالجنيه"
                           value={alloc[id] ?? ""}
                           onChange={(e) => setAlloc((c) => ({ ...c, [id]: e.target.value }))}
                         />
@@ -447,16 +474,18 @@ export function PaymentClient({ id }: { id: string }) {
                           <TextField
                             key={o.id}
                             label={`على ${o.number_label} (مستحقّه ${formatMinor(o.due_minor)})`}
-                            kind="number"
                             mono
+                            hint="بالجنيه"
                             value={alloc[o.id] ?? ""}
                             onChange={(e) => setAlloc((c) => ({ ...c, [o.id]: e.target.value }))}
                           />
                         ))}
                         <p className="acc-choice__note">
                           مجموع التوزيع{" "}
-                          <span className="sting-mono">{formatMinor(String(allocTotal))}</span> من{" "}
-                          <span className="sting-mono">{formatMinor(amount || "0")}</span>
+                          <span className="sting-mono">{formatMinor(allocTotal)}</span> من{" "}
+                          <span className="sting-mono">
+                            {formatMinor(moneyInputToMinor(amount) || "0")}
+                          </span>
                         </p>
                       </>
                     ) : null}

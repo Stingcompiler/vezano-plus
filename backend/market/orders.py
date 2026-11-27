@@ -18,6 +18,7 @@ from django.utils import timezone
 from core import audit, home, permissions
 from core.models import Tenant, User
 from core.tenancy import platform_context, require_tenant
+from market.follows import audience_allows
 from market.models import MarketAccount, MarketOffer, MarketOrder, MarketProfile
 from market.public import _fees, tenant_name
 from market.services import MarketRejected, badge_of
@@ -57,6 +58,7 @@ def verify_lines(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """كل بند بحاله الخادمي الآن: السعر الحالي، الوحدة، الحدّ الأدنى، الصلاحية — لا تقدير محلي."""
     out: list[dict[str, Any]] = []
     today = timezone.localdate()
+    buyer_tid = require_tenant()
     with platform_context():
         for raw in lines:
             try:
@@ -66,7 +68,13 @@ def verify_lines(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
             o = MarketOffer.unscoped.filter(id=oid).first()
             qty = int(raw.get("qty") or 0)
             draft_price = str(raw.get("price_minor") or "")
-            if o is None or o.status in {MarketOffer.Status.DRAFT, MarketOffer.Status.HIDDEN}:
+            # M-09: المعلَّق (PLT-07) وما لا يُخوَّل المشتري لجمهوره «سُحب» كغير الموجود — لا سعر ولا طلب
+            if (
+                o is None
+                or o.status in {MarketOffer.Status.DRAFT, MarketOffer.Status.HIDDEN}
+                or o.suspended_at is not None
+                or not audience_allows(o, buyer_tid)
+            ):
                 out.append(
                     {
                         "offer_id": str(oid),
@@ -342,6 +350,10 @@ def submit(*, actor: User, viewer: home.Viewer, body: dict[str, Any]) -> tuple[M
     verified = verify_lines([x for x in raw_lines if isinstance(x, dict)])
     if not verified:
         raise MarketRejected("lines_required", "lines")
+    withdrawn = [v["offer_id"] for v in verified if v["status"] == "withdrawn"]
+    if withdrawn:
+        # M-09: المسحوب والمعلَّق وما خارج جمهور المشتري لا يُرسل — يُستبعد كالمنتهي ويُعاد التحقق
+        raise MarketRejected("line_expired", "lines", {"offer_ids": withdrawn})
     foreign = [v["offer_id"] for v in verified if v.get("seller_tenant_id") != str(sid)]
     if foreign:
         raise MarketRejected("one_supplier_per_order", "lines", {"offer_ids": foreign})

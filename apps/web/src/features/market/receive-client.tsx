@@ -14,7 +14,7 @@ import "@/features/public/public.css";
 import "./market.css";
 import { LinesTable } from "./lines-table";
 import { AppNav } from "@/features/home/app-nav";
-import type { Detail } from "@/features/market/order-detail-client";
+import { type Detail, LedgerStep } from "@/features/market/order-detail-client";
 import type { OrderRow } from "@/features/market/orders-client";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/app-context";
@@ -55,6 +55,13 @@ interface Edit {
   reason: string;
 }
 
+type Done = Detail & {
+  received: string;
+  shipment_id?: string;
+  gap: number;
+  dispute_opened: boolean;
+};
+
 const ordinal = (n: number) =>
   ["", "الأولى", "الثانية", "الثالثة", "الرابعة", "الخامسة"][n] ?? `رقم ${n}`;
 
@@ -72,9 +79,7 @@ export function ReceiveClient({ id }: { id: string }) {
   const [serverError, setServerError] = useState<{ code: string; max: number | undefined } | null>(
     null,
   );
-  const [done, setDone] = useState<
-    (Detail & { received: string; gap: number; dispute_opened: boolean }) | null
-  >(null);
+  const [done, setDone] = useState<Done | null>(null);
   const appRef = useRef(app);
   appRef.current = app;
 
@@ -149,9 +154,7 @@ export function ReceiveClient({ id }: { id: string }) {
         } as never,
       });
       const b = (r.data ?? r.error) as unknown as
-        | (Detail & { received: string; gap: number; dispute_opened: boolean })
-        | { detail?: string; extra?: { max?: number } }
-        | undefined;
+        Done | { detail?: string; extra?: { max?: number } } | undefined;
       if (r.response.ok && b && "order" in b) setDone(b);
       else {
         const err = b as { detail?: string; extra?: { max?: number } } | undefined;
@@ -194,7 +197,7 @@ export function ReceiveClient({ id }: { id: string }) {
                 }
               >
                 <p className="acc-lead">
-                  ما دخل المخزون، وما رُفض ومصيره: مرتجعٌ للمورد أو حجرٌ حتى القرار.{" "}
+                  سُجّل الاستلام في السوق. لم يدخل المخزون بعد.{" "}
                   <span className="sting-mono">{done.received}</span>
                   {done.gap ? (
                     <>
@@ -207,10 +210,17 @@ export function ReceiveClient({ id }: { id: string }) {
                   )}
                 </p>
                 <p className="acc-choice__note">
-                  <strong>الذمّة من المستلم</strong> · تُقيَّد قيمة ما استُلم فقط. والمرفوض لا
-                  يُقيَّد ولا يُحذف — يبقى بندَ مطالبة. قيمة المستلم{" "}
+                  <strong>الذمّة من المستلم</strong> · حين يدخل المخزون تُقيَّد قيمة ما استُلم فقط.
+                  والمرفوض لا يُقيَّد ولا يُحذف — يبقى بندَ مطالبة. قيمة المستلم{" "}
                   <span className="sting-mono">{formatMinor(done.received_value_minor)}</span>.
                 </p>
+                {done.ledger && done.shipment_id ? (
+                  <LedgerStep
+                    ledger={done.ledger}
+                    shipmentId={done.shipment_id}
+                    onGo={(href) => router.push(href)}
+                  />
+                ) : null}
               </Notice>
             ) : null}
             {state === "validation_error" ? (
@@ -377,10 +387,11 @@ export function ReceiveClient({ id }: { id: string }) {
                 </LinesTable>
                 <div className="pub-cols">
                   <div>
-                    <strong>ما يكتبه هذا الإجراء في دفترك:</strong>
+                    <strong>ما يكتبه هذا الإجراء:</strong>
                     <p className="acc-choice__note">
-                      إدخال مخزون بالكميات المستلمة فعلاً، وذمة للمورد بقيمة المستلم وحده. المشحون
-                      غير المستلم لا يُخصم من مخزونك ولا يُحتسب عليك.
+                      يسجّل في السوق ما استلمته فعلاً وما رفضته. لا يُدخل المخزون ولا يكتب ذمّة في
+                      دفترك — يدخلان حين تحوّل الاستلام إلى مستند شراء بعد ربط المورد بمنشأته.
+                      المشحون غير المستلم لا يُحتسب عليك.
                     </p>
                   </div>
                   <div>

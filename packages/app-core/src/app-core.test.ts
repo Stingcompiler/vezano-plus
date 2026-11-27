@@ -9,6 +9,8 @@ import {
   formatMinorShort,
   isEmailLike,
   isValidDemoWhatsapp,
+  minorToInput,
+  moneyInputToMinor,
   normalizeContactPhone,
   parseMoneyInput,
   planLines,
@@ -28,6 +30,19 @@ describe("التنسيق", () => {
     expect(parseMoneyInput("١٬٢٣٤٫٥")).toBeNull(); // الفاصل «٬» ليس مقبولاً
     expect(parseMoneyInput("١،٢٣٤٫٥")).toBe("123450");
     expect(parseMoneyInput("1.234")).toBeNull(); // لا تقريب
+  });
+  it("حقل مال السوق بالجنيه (M-03): 18,000.00 يُكتب فيصل 18,000.00 لا 180.00", () => {
+    const minor = moneyInputToMinor("18,000.00");
+    expect(minor).toBe("1800000");
+    expect(formatMinor(minor!)).toBe("18,000.00");
+    expect(moneyInputToMinor("18000")).toBe("1800000");
+    expect(minorToInput("1700000")).toBe("17000.00");
+    expect(moneyInputToMinor(minorToInput("1700000"))).toBe("1700000");
+    expect(minorToInput("")).toBe("");
+    expect(moneyInputToMinor("")).toBe("");
+    expect(moneyInputToMinor("12.345")).toBeNull(); // لا تقريب
+    expect(moneyInputToMinor("-5")).toBeNull();
+    expect(moneyInputToMinor("abc")).toBeNull();
   });
   it("سطور الباقة: الفروع ثم بنود الوصف", () => {
     expect(planLines({ max_branches: 1, max_devices: 3, blurb: "3 أجهزة · تقارير كاملة" })).toEqual(
