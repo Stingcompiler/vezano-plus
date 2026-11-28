@@ -336,12 +336,17 @@ export function StockClient() {
             </span>
           ) : null}
           {r.quarantineMilli > 0n ? (
-            <span className="acc-choice__note">
+            // I-06 (0005 §٢٩٥): الحجر له مخرج — يفتح أفعاله الثلاثة
+            <Button
+              variant="quiet"
+              className="shift-row__open"
+              onClick={() => router.push(`/inventory/items/${r.id}/quarantine`)}
+            >
               حجر — قابل للمراجعة{" "}
               <span className="sting-mono">
                 {formatQty(r.quarantineMilli, r.saleUnit.decimal_places)}
               </span>
-            </span>
+            </Button>
           ) : null}
           {state === "stale" || state === "offline" ? (
             <span className="acc-choice__note">
@@ -484,6 +489,13 @@ export function StockClient() {
                 </Button>
                 <Button variant="quiet" onClick={() => router.push("/inventory/transfers")}>
                   التحويلات
+                </Button>
+                {/* I-02 وI-10 (0005 §٢٩٥) */}
+                <Button variant="quiet" onClick={() => router.push("/inventory/receipts")}>
+                  الاستلامات
+                </Button>
+                <Button variant="quiet" onClick={() => router.push("/inventory/count/sessions")}>
+                  جلسات الجرد
                 </Button>
               </span>
             </div>

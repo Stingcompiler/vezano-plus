@@ -34,6 +34,7 @@ import { PosNav } from "@/features/pos/pos-nav";
 import { parseAmount, today } from "@/features/pos/use-sale";
 import { type ShiftContext, readShiftContext } from "@/features/shifts/context";
 import { useApp } from "@/lib/app-context";
+import { api } from "@/lib/api";
 import { useOnline } from "@/lib/online";
 import { getStorage } from "@/lib/storage";
 import { pushPending } from "@/lib/sync";
@@ -48,6 +49,21 @@ interface LineDraft {
   readonly unitKey: string;
   readonly qty: string;
   readonly cost: string;
+}
+
+/** أمر شراء مفتوح يُستلم عليه (I-02، 0005 §٢٩٥) — كمياته بلا أسعار لأمين المخزن. */
+interface OpenOrder {
+  readonly id: string;
+  readonly number: string;
+  readonly branch_id: string;
+  readonly supplier_name: string;
+  readonly lines: readonly {
+    readonly item_id: string;
+    readonly unit_code: string;
+    readonly factor_milli: string;
+    readonly base_qty_milli: string;
+    readonly received_base_qty_milli: string;
+  }[];
 }
 
 const emptyLine = (): LineDraft => ({
@@ -78,6 +94,10 @@ export function ReceiveClient() {
   const [phase, setPhase] = useState<"idle" | "saving" | "saved">("idle");
   const [push, setPush] = useState<"none" | "synced" | "pending" | "failed">("none");
   const [saved, setSaved] = useState<LocalGoodsReceipt | null>(null);
+  const [orders, setOrders] = useState<OpenOrder[]>([]);
+  const [orderId, setOrderId] = useState("");
+  const [canConvert, setCanConvert] = useState(false);
+  const [converting, setConverting] = useState(false);
   const ids = useRef<{ operationId: string; receiptId: string } | null>(null);
   const newSupplierIds = useRef<{ operationId: string; partyId: string } | null>(null);
   const appRef = useRef(app);
@@ -107,8 +127,61 @@ export function ReceiveClient() {
             ...(p.operation_id ? { op: p.operation_id } : {}),
           })),
       );
+      // الأوامر المفتوحة للفرع — بالشبكة وحدها؛ بلا شبكة يُستلم بلا أمر كما كان
+      if (!navigator.onLine) return;
+      try {
+        const { data, response } = await api().GET("/api/inventory/purchasing/orders", {
+          params: { query: { scope: "open" } },
+        });
+        const body = data as unknown as { orders: OpenOrder[]; can_create: boolean } | undefined;
+        if (!response.ok || !body) return;
+        setOrders(body.orders.filter((o) => !c?.branchId || o.branch_id === c.branchId));
+        setCanConvert(body.can_create);
+      } catch {
+        /* بلا أوامر — الاستلام لا ينتظرها */
+      }
     })();
   }, [router]);
+
+  /** اختيار أمر يملأ المورد والباقي من سطوره بوحدة الأمر — يُعدَّل بما وصل فعلاً. */
+  const pickOrder = (id: string) => {
+    setOrderId(id);
+    const o = orders.find((x) => x.id === id);
+    if (!o) return;
+    setSupplier(o.supplier_name);
+    newSupplierIds.current = null;
+    const next = o.lines
+      .map((ol) => {
+        const rest = BigInt(ol.base_qty_milli) - BigInt(ol.received_base_qty_milli);
+        const it = items.find((i) => i.id === ol.item_id);
+        if (!it || rest <= 0n) return null;
+        const u = unitOptions(it).find((x) => x.code === ol.unit_code);
+        const factor = BigInt(u?.factorMilli || "1000") || 1000n;
+        return {
+          ...emptyLine(),
+          itemId: it.id,
+          unitKey: u?.key ?? "",
+          qty: formatQty((rest * 1000n) / factor, u?.decimalPlaces ?? 0).replace(/,/g, ""),
+        };
+      })
+      .filter((x): x is LineDraft => x !== null);
+    if (next.length) setLines(next);
+  };
+
+  /** «حوّل إلى مستند شراء» — للمالك والمدير بعد رفع الاستلام: الأسعار والذمّة بلا مخزون ثانٍ. */
+  const convert = async () => {
+    if (!saved || converting) return;
+    setConverting(true);
+    try {
+      const { data, response } = await api().POST("/api/inventory/receipts/{receipt_id}/document", {
+        params: { path: { receipt_id: saved.id } },
+      });
+      const body = data as unknown as { document: { id: string } } | undefined;
+      if (response.ok && body) router.push(`/purchasing/documents/${body.document.id}`);
+    } finally {
+      setConverting(false);
+    }
+  };
 
   const itemOf = (id: string) => items.find((i) => i.id === id);
   const unitOf = (ln: LineDraft): UnitOption | undefined => {
@@ -185,6 +258,7 @@ export function ReceiveClient() {
       partyOperationId: match?.op,
       supplierName: supplier,
       reference,
+      ...(orderId ? { purchaseOrderId: orderId } : {}),
       lines: lines.map((ln) => {
         const it = itemOf(ln.itemId)!;
         const u = unitOf(ln)!;
@@ -235,6 +309,7 @@ export function ReceiveClient() {
     setAttempted(false);
     setSupplier("");
     setReference("");
+    setOrderId("");
     setLines([emptyLine()]);
   };
 
@@ -320,6 +395,11 @@ export function ReceiveClient() {
                   }
                 />
                 <div className="cat-form__actions">
+                  {canConvert && push === "synced" ? (
+                    <Button financial onClick={() => void convert()} loading={converting}>
+                      حوّل إلى مستند شراء
+                    </Button>
+                  ) : null}
                   <Button pos onClick={reset}>
                     استلام آخر
                   </Button>
@@ -332,6 +412,20 @@ export function ReceiveClient() {
 
             {phase !== "saved" ? (
               <>
+                {orders.length ? (
+                  <SelectField
+                    label="أمر الشراء — اختياري"
+                    value={orderId}
+                    onChange={(e) => pickOrder(e.target.value)}
+                    options={[
+                      { value: "", label: "بلا أمر" },
+                      ...orders.map((o) => ({
+                        value: o.id,
+                        label: `أمر ${o.number} — ${o.supplier_name}`,
+                      })),
+                    ]}
+                  />
+                ) : null}
                 <TextField
                   label="المورد"
                   value={supplier}
@@ -351,10 +445,10 @@ export function ReceiveClient() {
                 {supplier.trim() && !suppliers.some((s) => s.name === supplier.trim()) ? (
                   <p className="acc-choice__note">مورد جديد — يُضاف إلى «الموردون» عند الحفظ.</p>
                 ) : null}
-                {/* د-١ (0005 §٢٨٩، يحلّ محلّ نصّ §٢٨٥): الاستلام وحده يُدخل المخزون، والمستند يضيف
-                    السعر والذمّة — يُربط بالاستلام فلا تدخل الشحنة مرتين */}
+                {/* د-١ كاملاً (0005 §٢٩٥، يحلّ محلّ نصّ §٢٨٩): الاستلام وحده يُدخل المخزون، ويُحوَّل
+                    هو نفسه إلى مستند الشراء فتُضاف الأسعار والذمّة بلا مخزون ثانٍ */}
                 <p className="acc-choice__note">
-                  الاستلام يُدخل المخزون وحده. للذمّة سجّل مستند الشراء واربطه بهذا الاستلام.
+                  الاستلام يُدخل المخزون فقط. للذمّة حوّله إلى مستند شراء — لا تسجّله مرة ثانية.
                 </p>
                 <TextField
                   label="مرجع المستند"

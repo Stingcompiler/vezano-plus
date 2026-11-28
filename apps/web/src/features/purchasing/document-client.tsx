@@ -286,12 +286,15 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
       — لا يدخل مرة ثانية.
     </p>
   ) : null;
+  // المستند من استلام بلا أمر (I-02، 0005 §٢٩٥): لا أمر يُقارن به
   const lineNote = (l: DocLine) =>
-    l.diff === "qty"
-      ? `${qty(l.ordered_qty_milli)} ${l.unit_name}`
-      : l.diff === "price"
-        ? `سعر ${l.unit_name}`
-        : "كما في الأمر";
+    !doc?.order_id && l.diff === ""
+      ? ""
+      : l.diff === "qty"
+        ? `${qty(l.ordered_qty_milli)} ${l.unit_name}`
+        : l.diff === "price"
+          ? `سعر ${l.unit_name}`
+          : "كما في الأمر";
 
   return (
     <Frame title="المشتريات" nav={<AppNav currentId="purchasing" />} footer={null}>
@@ -550,7 +553,8 @@ export function DocumentClient({ documentId, orderId }: { documentId?: string; o
                       return (
                         <tr key={l.id} className={ex && attempted ? "pur-line--error" : undefined}>
                           <td>
-                            <strong>{l.item_name}</strong> — {lineNote(l)}
+                            <strong>{l.item_name}</strong>
+                            {lineNote(l) ? <> — {lineNote(l)}</> : null}
                           </td>
                           <td>
                             {doc.status === "approved" || linkedNumbers.length ? (

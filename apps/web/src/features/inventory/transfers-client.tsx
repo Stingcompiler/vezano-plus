@@ -156,6 +156,21 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
     }
   };
 
+  /** قرار المالك على باقي التحويل الجزئي (I-08، 0005 §٢٩٥) */
+  const settle = async (id: string, outcome: "lost" | "returned", reason: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { response } = await api().POST("/api/inventory/transfers/{transfer_id}/settle", {
+        params: { path: { transfer_id: id } },
+        body: { outcome, reason } as never,
+      });
+      if (response.ok) await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const columns = [
     {
       key: "number",
@@ -199,7 +214,7 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
                   ? "empty"
                   : "pending_sync"
           }
-          label={r.pending ? "معلّق هذا الجهاز" : STATUS_LABEL[r.status]}
+          label={r.pending ? "معلّق هذا الجهاز" : r.settlement_label || STATUS_LABEL[r.status]}
           dot={false}
         />
       ),
@@ -294,6 +309,12 @@ export function TransfersClient({ selectedId }: { selectedId: string }) {
                     : undefined
                 }
                 cancelDisabledReason={selected.pending ? "بانتظار الرفع" : undefined}
+                onSettle={
+                  !selected.pending && isOwner
+                    ? (outcome, reason) => void settle(selected.id, outcome, reason)
+                    : undefined
+                }
+                settling={busy}
               />
             ) : null}
 

@@ -36,6 +36,8 @@ interface RetLine {
   line_total_minor: string;
   reason: string;
   accepted_qty_milli: string;
+  rejected_qty_milli?: string;
+  from_quarantine?: boolean;
   supplier_note: string;
 }
 
@@ -52,6 +54,10 @@ interface Ret {
   supplier_note: string;
   lines: RetLine[];
   responded_at: string;
+  /** I-07 (0005 §٢٩٥): مصير المرفوض — فارغ = لم يُقرَّر بعد */
+  rejected_destination?: "" | "stock" | "quarantine";
+  rejected_reason?: string;
+  rejected_by_name?: string;
 }
 
 interface Detail {
@@ -63,7 +69,16 @@ interface Detail {
 /** «8 كراتين» · «6 كراتين» */
 const qtyUnit = (milli: string, unit: string) => `${qty(milli)} ${unit}`;
 
-export function ReturnClient({ documentId, returnId }: { documentId?: string; returnId?: string }) {
+export function ReturnClient({
+  documentId,
+  returnId,
+  fromQuarantine = false,
+}: {
+  documentId?: string;
+  returnId?: string;
+  /** «أرجع للمورد» من الحجر (I-06): المرتجع يخرج من الحجر لا من المتاح للبيع */
+  fromQuarantine?: boolean;
+}) {
   const router = useRouter();
   const app = useApp();
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -74,6 +89,10 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
   const [viewing, setViewing] = useState<Ret | null>(null);
   const [resp, setResp] = useState<Record<string, string>>({});
   const [respNote, setRespNote] = useState("");
+  const [rejReason, setRejReason] = useState("");
+  const [rejAttempted, setRejAttempted] = useState(false);
+  /** حدّ الحجر من الخادم لكل سطر تجاوزه (I-06) */
+  const [overQuarantine, setOverQuarantine] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const appRef = useRef(app);
   appRef.current = app;
@@ -143,7 +162,7 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
     if (anyError || !activeLines.length) return;
     setBusy(true);
     try {
-      const { data, response } = await api().POST(
+      const { data, error, response } = await api().POST(
         "/api/inventory/purchasing/documents/{document_id}/{action}",
         {
           params: { path: { document_id: doc.id, action: "return" } },
@@ -152,6 +171,7 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
               document_line_id: l.id,
               qty_milli: String(qtyMilli(draftOf(l.id).qty)),
               reason: draftOf(l.id).reason.trim(),
+              ...(fromQuarantine ? { from_quarantine: true } : {}),
             })),
           } as never,
         },
@@ -160,7 +180,21 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
       if (response.ok && body) {
         setSaved(body.return);
         setViewing(body.return);
+        return;
       }
+      const errs =
+        (
+          error as
+            | { extra?: { errors?: { line_id: string; code: string; max_qty_milli?: string }[] } }
+            | undefined
+        )?.extra?.errors ?? [];
+      setOverQuarantine(
+        Object.fromEntries(
+          errs
+            .filter((x) => x.code === "exceeds_quarantine")
+            .map((x) => [x.line_id, x.max_qty_milli ?? "0"]),
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -186,6 +220,28 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
         setViewing(body.return);
         setSaved(null);
       }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» — بسبب مكتوب، مرة واحدة. */
+  const settleRejected = async (destination: "stock" | "quarantine") => {
+    const r = viewing;
+    if (!r || busy) return;
+    setRejAttempted(true);
+    if (!rejReason.trim()) return;
+    setBusy(true);
+    try {
+      const { data, response } = await api().POST(
+        "/api/inventory/purchasing/returns/{return_id}/rejected",
+        {
+          params: { path: { return_id: r.id } },
+          body: { destination, reason: rejReason.trim() } as never,
+        },
+      );
+      const body = data as unknown as { return: Ret } | undefined;
+      if (response.ok && body) setViewing(body.return);
     } finally {
       setBusy(false);
     }
@@ -295,6 +351,36 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                   المرفوض (<span className="sting-mono">{formatMinor(viewing.rejected_minor)}</span>
                   ) لا يُخصم ولا يعود للمخزون قبل قرارك: تحتفظ به أو تتصعّد.
                 </p>
+                {viewing.rejected_destination ? (
+                  <p className="acc-choice__note">
+                    {viewing.rejected_destination === "stock"
+                      ? "أعد المرفوض إلى المخزون"
+                      : "انقله إلى الحجر"}{" "}
+                    · {viewing.rejected_by_name} · {viewing.rejected_reason}
+                  </p>
+                ) : (
+                  <>
+                    <TextField
+                      label="السبب — إلزامي"
+                      value={rejReason}
+                      onChange={(ev) => setRejReason(ev.target.value)}
+                      error={rejAttempted && !rejReason.trim() ? "السبب — إلزامي" : undefined}
+                      required
+                    />
+                    <div className="acc-actions">
+                      <Button pos onClick={() => void settleRejected("stock")} loading={busy}>
+                        أعد المرفوض إلى المخزون
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => void settleRejected("quarantine")}
+                        loading={busy}
+                      >
+                        انقله إلى الحجر
+                      </Button>
+                    </div>
+                  </>
+                )}
               </Notice>
             ) : null}
 
@@ -413,6 +499,11 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                   </strong>
                   <span className="acc-choice__note">الأسعار مثبّتة من المستند الأصلي</span>
                 </div>
+                {fromQuarantine ? (
+                  <p className="acc-lead">
+                    <strong>أرجع للمورد</strong> · من الحجر — لا يُنقص المتاح للبيع.
+                  </p>
+                ) : null}
                 <table className="pur-lines">
                   <thead>
                     <tr>
@@ -455,7 +546,9 @@ export function ReturnClient({ documentId, returnId }: { documentId?: string; re
                               error={
                                 attempted && e.exceeds
                                   ? `لا يُردّ ما لم يُستلم — الحدّ ${qty(String(max))} ${l.unit_name}.`
-                                  : undefined
+                                  : overQuarantine[l.id] !== undefined
+                                    ? `فوق ما في الحجر — الحدّ ${qty(overQuarantine[l.id] ?? "0")} ${l.unit_name}.`
+                                    : undefined
                               }
                             />
                           </td>
