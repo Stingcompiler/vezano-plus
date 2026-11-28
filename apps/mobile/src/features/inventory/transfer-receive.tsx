@@ -107,20 +107,35 @@ export function TransferReceiveScreen({ transferId }: { transferId: string }) {
     if (transfer === null) router.replace("/inventory/transfers");
   }, [transfer, router]);
 
-  const rows: Row[] = (transfer?.lines ?? []).map((l) => {
-    const sent = BigInt(l.base_qty_milli);
-    const draft = drafts[l.id] ?? formatQty(sent, 0);
-    return {
-      id: l.id,
-      itemId: l.item_id,
-      name: l.item_name,
-      unit: l.unit_name,
-      sentMilli: sent,
-      draft,
-      receivedMilli: parseQtyInput(draft),
-      valueMinor: sent > 0n ? BigInt(l.value_minor ?? "0") : 0n,
-    };
-  });
+  // «استلم الباقي» (I-08، 0005 §٢٩٥): تحويل استُلم جزئياً يُكمَل باستلام ثانٍ حتى الباقي وحده
+  const completing = transfer?.status === "partially_received";
+  const rows: Row[] = (transfer?.lines ?? [])
+    .map((l) => {
+      const base = BigInt(l.base_qty_milli);
+      const sent = completing
+        ? BigInt(
+            l.remaining_base_milli ??
+              (
+                base -
+                BigInt(l.received_base_milli) -
+                BigInt(l.settled_base_milli ?? "0")
+              ).toString(),
+          )
+        : base;
+      const draft = drafts[l.id] ?? formatQty(sent, 0);
+      const val = BigInt(l.value_minor ?? "0");
+      return {
+        id: l.id,
+        itemId: l.item_id,
+        name: l.item_name,
+        unit: l.unit_name,
+        sentMilli: sent,
+        draft,
+        receivedMilli: parseQtyInput(draft),
+        valueMinor: base > 0n ? (val * sent) / base : 0n,
+      };
+    })
+    .filter((r) => !completing || r.sentMilli > 0n);
   const sentTotal = rows.reduce((a, r) => a + r.sentMilli, 0n);
   const receivedTotal = rows.reduce((a, r) => a + (r.receivedMilli ?? 0n), 0n);
   const diff = receivedTotal - sentTotal;
@@ -138,18 +153,17 @@ export function TransferReceiveScreen({ transferId }: { transferId: string }) {
   const errors: Record<string, string> = {};
   if (invalidQty) errors["qty"] = tx(T, "المستلم فعلياً");
   if (variance && !reason.trim()) errors["reason"] = tx(T, "سبب الفرق — إلزامي");
+  // الإكمال حتى الباقي وحده — الزيادة فوقه لا تُقبل ولو بسبب
+  if (completing && excess.length > 0) errors["qty"] = tx(T, "استلام يتجاوز الباقي");
   const invalid = Object.keys(errors).length > 0;
-  const alreadyReceived =
-    transfer?.status === "received" ||
-    transfer?.status === "partially_received" ||
-    transfer?.status === "cancelled";
+  const alreadyReceived = transfer?.status === "received" || transfer?.status === "cancelled";
 
   const state: State =
     phase === "saved"
       ? variance
         ? "conflict"
         : "success"
-      : excess.length > 0 && !reason.trim()
+      : excess.length > 0 && (completing || !reason.trim())
         ? "validation_error"
         : variance
           ? "partial"
@@ -234,7 +248,10 @@ export function TransferReceiveScreen({ transferId }: { transferId: string }) {
       ) : null}
 
       <GroupedList>
-        <ListRow title={tx(T, "مُرسَل")} trailing={<M>{formatQty(sentTotal, 0)}</M>} />
+        <ListRow
+          title={completing ? tx(T, "المتبقّي") : tx(T, "مُرسَل")}
+          trailing={<M>{formatQty(sentTotal, 0)}</M>}
+        />
         <ListRow title={tx(T, "مستلم الآن")} trailing={<M>{formatQty(receivedTotal, 0)}</M>} />
         <ListRow
           title={tx(T, "فرق")}
@@ -249,7 +266,15 @@ export function TransferReceiveScreen({ transferId }: { transferId: string }) {
         />
       </GroupedList>
 
-      {state === "validation_error" && excess.length > 0 ? (
+      {state === "validation_error" && excess.length > 0 && completing ? (
+        <StateView state="validation_error" title={tx(T, "استلام يتجاوز الباقي")}>
+          <AppText variant="secondary">
+            {tx(T, "عدُّ")} <M>{formatQty(excess[0].receivedMilli ?? 0n, 0)}</M> {tx(T, "والباقي")}{" "}
+            <M>{formatQty(excess[0].sentMilli, 0)}</M>.
+          </AppText>
+        </StateView>
+      ) : null}
+      {state === "validation_error" && excess.length > 0 && !completing ? (
         <StateView state="validation_error" title={tx(T, "استلام يتجاوز المرسل")}>
           <AppText variant="secondary">
             {tx(T, "عدُّ")} <M>{formatQty(excess[0].receivedMilli ?? 0n, 0)}</M> {tx(T, "والمرسل")}{" "}

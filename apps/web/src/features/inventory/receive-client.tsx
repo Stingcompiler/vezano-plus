@@ -55,6 +55,7 @@ interface LineDraft {
 interface OpenOrder {
   readonly id: string;
   readonly number: string;
+  readonly items_summary: string;
   readonly branch_id: string;
   readonly supplier_name: string;
   readonly lines: readonly {
@@ -421,7 +422,8 @@ export function ReceiveClient() {
                       { value: "", label: "بلا أمر" },
                       ...orders.map((o) => ({
                         value: o.id,
-                        label: `أمر ${o.number} — ${o.supplier_name}`,
+                        // بلا رقم الأمر: الأرقام اللاتينية داخل mono وحده، والخيار نصّ عادي
+                        label: `${o.supplier_name} — ${o.items_summary}`,
                       })),
                     ]}
                   />

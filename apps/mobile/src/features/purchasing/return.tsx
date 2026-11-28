@@ -47,6 +47,8 @@ interface RetLine {
   line_total_minor: string;
   reason: string;
   accepted_qty_milli: string;
+  rejected_qty_milli?: string;
+  from_quarantine?: boolean;
   supplier_note: string;
 }
 
@@ -63,6 +65,10 @@ interface Ret {
   supplier_note: string;
   lines: RetLine[];
   responded_at: string;
+  /** I-07 (0005 §٢٩٥): مصير المرفوض — فارغ = لم يُقرَّر بعد */
+  rejected_destination?: "" | "stock" | "quarantine";
+  rejected_reason?: string;
+  rejected_by_name?: string;
 }
 
 interface Detail {
@@ -98,9 +104,12 @@ const QtyUnit = ({ milli, unit }: { milli: string; unit: string }) => (
 export function ReturnScreen({
   documentId,
   returnId,
+  fromQuarantine = false,
 }: {
   documentId?: string | undefined;
   returnId?: string | undefined;
+  /** «أرجع للمورد» من الحجر (I-06): المرتجع يخرج من الحجر لا من المتاح للبيع */
+  fromQuarantine?: boolean | undefined;
 }) {
   const router = useRouter();
   const { api } = useSession();
@@ -135,6 +144,10 @@ export function ReturnScreen({
   const [respNote, setRespNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [netFail, setNetFail] = useState(false);
+  const [rejReason, setRejReason] = useState("");
+  const [rejAttempted, setRejAttempted] = useState(false);
+  /** حدّ الحجر من الخادم لكل سطر تجاوزه (I-06) */
+  const [overQuarantine, setOverQuarantine] = useState<Record<string, string>>({});
 
   const loadedFor = data?.viewing?.id;
   useEffect(() => {
@@ -177,24 +190,59 @@ export function ReturnScreen({
     setAttempted(true);
     if (anyError || !activeLines.length) return;
     void run(async () => {
-      const { data: d, response } = await api.POST(
-        "/api/inventory/purchasing/documents/{document_id}/{action}",
-        {
-          params: { path: { document_id: doc.id, action: "return" } },
-          body: {
-            lines: activeLines.map((l) => ({
-              document_line_id: l.id,
-              qty_milli: String(toMilli(draftOf(l.id).qty)),
-              reason: draftOf(l.id).reason.trim(),
-            })),
-          } as never,
-        },
-      );
+      const {
+        data: d,
+        error,
+        response,
+      } = await api.POST("/api/inventory/purchasing/documents/{document_id}/{action}", {
+        params: { path: { document_id: doc.id, action: "return" } },
+        body: {
+          lines: activeLines.map((l) => ({
+            document_line_id: l.id,
+            qty_milli: String(toMilli(draftOf(l.id).qty)),
+            reason: draftOf(l.id).reason.trim(),
+            ...(fromQuarantine ? { from_quarantine: true } : {}),
+          })),
+        } as never,
+      });
       const body = d as unknown as { return: Ret } | undefined;
       if (response.ok && body) {
         setSaved(body.return);
         setViewing(body.return);
+        return;
       }
+      const errs =
+        (
+          error as
+            | { extra?: { errors?: { line_id: string; code: string; max_qty_milli?: string }[] } }
+            | undefined
+        )?.extra?.errors ?? [];
+      setOverQuarantine(
+        Object.fromEntries(
+          errs
+            .filter((x) => x.code === "exceeds_quarantine")
+            .map((x) => [x.line_id, x.max_qty_milli ?? "0"]),
+        ),
+      );
+    });
+  };
+
+  /** «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» — بسبب مكتوب، مرة واحدة. */
+  const settleRejected = (destination: "stock" | "quarantine") => {
+    const r = viewing;
+    if (!r || busy) return;
+    setRejAttempted(true);
+    if (!rejReason.trim()) return;
+    void run(async () => {
+      const { data: d, response } = await api.POST(
+        "/api/inventory/purchasing/returns/{return_id}/rejected",
+        {
+          params: { path: { return_id: r.id } },
+          body: { destination, reason: rejReason.trim() } as never,
+        },
+      );
+      const body = d as unknown as { return: Ret } | undefined;
+      if (response.ok && body) setViewing(body.return);
     });
   };
 
@@ -354,6 +402,38 @@ export function ReturnScreen({
             <M>{formatMinor(viewing.rejected_minor)}</M>
             {tx(T, ") لا يُخصم ولا يعود للمخزون قبل قرارك: تحتفظ به أو تتصعّد.")}
           </Lead>
+          {viewing.rejected_destination ? (
+            <Note>
+              {viewing.rejected_destination === "stock"
+                ? tx(T, "أعد المرفوض إلى المخزون")
+                : tx(T, "انقله إلى الحجر")}{" "}
+              · {viewing.rejected_by_name} · {viewing.rejected_reason}
+            </Note>
+          ) : (
+            <View style={{ gap: SPACE["2"] }}>
+              <TextField
+                label={tx(T, "السبب — إلزامي")}
+                value={rejReason}
+                onChangeText={setRejReason}
+                error={rejAttempted && !rejReason.trim() ? tx(T, "السبب — إلزامي") : undefined}
+                required
+              />
+              <Button
+                label={tx(T, "أعد المرفوض إلى المخزون")}
+                financial
+                loading={busy}
+                disabledReason={offlineReason}
+                onPress={() => settleRejected("stock")}
+              />
+              <Button
+                label={tx(T, "انقله إلى الحجر")}
+                variant="secondary"
+                loading={busy}
+                disabledReason={offlineReason}
+                onPress={() => settleRejected("quarantine")}
+              />
+            </View>
+          )}
         </Notice>
       ) : null}
 
@@ -480,6 +560,11 @@ export function ReturnScreen({
             {tx(T, "مرتجع على مستند")} <M>{doc.number}</M>
           </AppText>
           <Note>{tx(T, "الأسعار مثبّتة من المستند الأصلي")}</Note>
+          {fromQuarantine ? (
+            <Lead>
+              <Strong>{tx(T, "أرجع للمورد")}</Strong> {tx(T, "· من الحجر — لا يُنقص المتاح للبيع.")}
+            </Lead>
+          ) : null}
           {doc.lines.map((l) => {
             const d = draftOf(l.id);
             const e = lineErrors(l);
@@ -506,6 +591,11 @@ export function ReturnScreen({
                   <ErrorText>
                     {tx(T, "لا يُردّ ما لم يُستلم — الحدّ")}{" "}
                     <QtyUnit milli={String(max)} unit={l.unit_name} />.
+                  </ErrorText>
+                ) : overQuarantine[l.id] !== undefined ? (
+                  <ErrorText>
+                    {tx(T, "فوق ما في الحجر — الحدّ")}{" "}
+                    <QtyUnit milli={overQuarantine[l.id] ?? "0"} unit={l.unit_name} />.
                   </ErrorText>
                 ) : null}
                 <AppText variant="secondary" muted>

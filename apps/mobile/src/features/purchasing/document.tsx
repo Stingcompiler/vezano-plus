@@ -285,8 +285,9 @@ export function DocumentScreen({
       {tx(T, "— لا يدخل مرة ثانية.")}
     </Lead>
   ) : null;
+  // المستند من استلام بلا أمر (I-02، 0005 §٢٩٥): لا أمر يُقارن به
   const lineNote = (l: DocLine): ReactNode =>
-    l.diff === "qty" ? (
+    !doc?.order_id && l.diff === "" ? null : l.diff === "qty" ? (
       <>
         <M>{qty(l.ordered_qty_milli)}</M> {l.unit_name}
       </>
@@ -563,7 +564,8 @@ export function DocumentScreen({
               return (
                 <Block key={l.id}>
                   <AppText variant="bodyStrong">
-                    {l.item_name} — {lineNote(l)}
+                    {l.item_name}
+                    {lineNote(l) !== null ? <> — {lineNote(l)}</> : null}
                   </AppText>
                   {doc.status === "approved" ? (
                     <>
