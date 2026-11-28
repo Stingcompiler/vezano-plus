@@ -90,6 +90,43 @@ def _home_decisions(viewer: _home.Viewer, out: dict[str, Any]) -> None:
                 "severity": "warn",
             }
         )
+    # I-02 (0005 §٢٩٥): استلام دخل المخزون ولم يدخل الذمّة — «حوّل إلى مستند شراء»
+    from inventory.purchase_docs import unpriced_receipts
+    from inventory.purchasing import can_create
+
+    if can_create(viewer):
+        for rc in unpriced_receipts(viewer)[:3]:
+            out["decisions"].append(
+                {
+                    "id": f"receipt-unpriced:{rc.id}",
+                    "title": f"استلام {rc.receipt_number} ينتظر مستند الشراء",
+                    "detail": f"{rc.supplier_name} · {rc.user_name}".strip(" ·"),
+                    "action": "حوّل إلى مستند شراء",
+                    "href": f"/inventory/receipts/{rc.id}",
+                    "severity": "warn",
+                }
+            )
+    # I-10 (0005 §٢٩٥): جرد أُغلق ولم يُسوَّ — لمن يسوّي في فرعه (خلية «تسوية جرد»)
+    from core.permissions import can
+    from inventory.models import CountSession
+
+    for cs in (
+        CountSession.objects.filter(status="closed").select_related("branch").order_by("closed_at")
+    ):
+        if not can(viewer, "stock_adjust", branch_id=cs.branch_id).allowed:
+            continue
+        out["decisions"].append(
+            {
+                "id": f"count-pending:{cs.id}",
+                "title": "جرد ينتظر التسوية",
+                "detail": f"{cs.session_number} · {cs.branch.name} · {cs.user_name}".strip(" ·"),
+                "action": "مراجعة الفروق",
+                "href": f"/inventory/count/{cs.id}/review",
+                "severity": "warn",
+            }
+        )
+        if sum(1 for d in out["decisions"] if str(d["id"]).startswith("count-pending:")) >= 3:
+            break
     branches = (
         [viewer.branch]
         if not viewer.is_owner and viewer.branch is not None

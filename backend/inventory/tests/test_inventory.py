@@ -832,14 +832,20 @@ def test_transfer_receipt_partial_and_idempotent(
     with tenant_context(ctx["tenant"].id):
         assert catalog_services.branch_balances(to.id) == {sugar: "7000"}
         assert TransferReceipt.objects.count() == 1
-    # استلام ثانٍ بمعرّف آخر لتحويل استُلم: يُسجَّل مكرَّراً بلا أثر — الباقي لا يتضاعف
+    # «استلم الباقي» (I-08، 0005 §٢٩٥): استلام ثانٍ بمعرّف آخر لتحويل استُلم جزئياً يكمله حتى
+    # الباقي — وبعد الاستلام الكامل يُسجَّل الثالث مكرَّراً بلا أثر، فالباقي لا يتضاعف
     again = _receipt_of_transfer(ctx, t, to, {sugar: "3000"}, reason="وصل الباقي")
     assert do_push(dev_to, again) == ["accepted"]
     with tenant_context(ctx["tenant"].id):
-        assert catalog_services.branch_balances(to.id) == {sugar: "7000"}
-        assert TransferReceipt.objects.filter(duplicate=True).count() == 1
+        assert catalog_services.branch_balances(to.id) == {sugar: "10000"}
+        assert TransferReceipt.objects.filter(completes=True).count() == 1
     t3 = c.get(f"/api/inventory/transfers/{t['id']}", **h).json()["transfer"]  # type: ignore[arg-type]
-    assert t3["in_transit_milli"] == "3000"
+    assert t3["in_transit_milli"] == "0" and t3["status"] == "received"
+    third = _receipt_of_transfer(ctx, t, to, {sugar: "3000"}, reason="مكرَّر")
+    assert do_push(dev_to, third) == ["accepted"]
+    with tenant_context(ctx["tenant"].id):
+        assert catalog_services.branch_balances(to.id) == {sugar: "10000"}
+        assert TransferReceipt.objects.filter(duplicate=True).count() == 1
     # INV-02 في الوجهة: «تحويل وارد» من المخزن الرئيسي
     cc, ch = _cashier(ctx, to)
     rows = cc.get(f"/api/inventory/items/{sugar}/movements", **ch).json()["rows"]  # type: ignore[arg-type]
@@ -849,4 +855,4 @@ def test_transfer_receipt_partial_and_idempotent(
     wrong = _receipt_of_transfer(ctx, t, ctx["branch"], {sugar: "10000"})
     assert do_push(ctx, wrong) == ["accepted"]
     with tenant_context(ctx["tenant"].id):
-        assert TransferReceipt.objects.count() == 2
+        assert TransferReceipt.objects.count() == 3

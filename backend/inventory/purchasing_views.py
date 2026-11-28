@@ -17,7 +17,7 @@ from core.auth.tokens import AuthContext
 from core.models import Branch
 from core.tenancy import tenant_context
 from inventory import cost_margin, purchase_docs, purchasing
-from inventory.models import PurchaseDocument, PurchaseOrder, PurchaseReturn
+from inventory.models import GoodsReceipt, PurchaseDocument, PurchaseOrder, PurchaseReturn
 
 
 def _tenant(auth: Any) -> Any:
@@ -362,6 +362,138 @@ class PurchaseReturnDetailView(APIView):
                 return _reject_doc(e)
             r.refresh_from_db()
             return Response({"return": purchase_docs.return_payload(r)})
+
+
+class PurchaseReturnRejectedView(APIView):
+    """I-07 (0005 §٢٩٥): مصير المرفوض — «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» بسبب."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 400: None, 403: None, 404: None})
+    def post(self, request: Request, return_id: uuid.UUID) -> Response:
+        auth = request.auth
+        tid = _tenant(auth)
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        with tenant_context(tid):
+            v = _viewer(auth)
+            r = PurchaseReturn.objects.filter(id=return_id).first()
+            if r is None:
+                return Response({"detail": "not_found"}, status=404)
+            try:
+                purchase_docs.settle_rejected(
+                    actor=auth.user,
+                    viewer=v,
+                    purchase_return=r,
+                    destination=str(body.get("destination", "")),
+                    reason=str(body.get("reason", "")),
+                )
+            except purchasing.OrderRejected as e:
+                return _reject_doc(e)
+            r.refresh_from_db()
+            return Response({"return": purchase_docs.return_payload(r)})
+
+
+# ------------------------------------------- INV-11 الاستلامات و«حوّل إلى مستند شراء» (I-02)
+
+
+def _receipt_branch(v: home.Viewer, raw: Any) -> uuid.UUID | None:
+    if not v.is_owner or not raw:
+        return None
+    try:
+        return uuid.UUID(str(raw))
+    except ValueError:
+        return None
+
+
+class ReceiptsView(APIView):
+    """الاستلامات المسجَّلة (INV-04) بمستند شرائها أو بلا مستند — المالك والمدير وأمين المخزن."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("scope", str, OpenApiParameter.QUERY, required=False),
+            OpenApiParameter("branch_id", str, OpenApiParameter.QUERY, required=False),
+        ],
+        responses={200: None, 403: None},
+    )
+    def get(self, request: Request) -> Response:
+        tid = _tenant(request.auth)
+        if tid is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        q = request.query_params
+        with tenant_context(tid):
+            v = _viewer(request.auth)
+            if not purchasing.can_view(v):
+                return Response(
+                    {"detail": "permission_denied", "role_name": v.role_name}, status=403
+                )
+            branch_id = _receipt_branch(v, q.get("branch_id"))
+            scope = "all" if str(q.get("scope", "")) == "all" else "unpriced"
+            unpriced = purchase_docs.unpriced_receipts(v, branch_id)
+            rows = (
+                unpriced[:50]
+                if scope == "unpriced"
+                else list(purchase_docs.visible_receipts(v, branch_id)[:50])
+            )
+            market = purchase_docs._market_receipt_ids()
+            return Response(
+                {
+                    "scope": scope,
+                    "unpriced_count": len(unpriced),
+                    "can_convert": purchasing.can_create(v),
+                    "receipts": [
+                        purchase_docs.receipt_payload(rc, v, market=market) for rc in rows
+                    ],
+                }
+            )
+
+
+class ReceiptDetailView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(responses={200: None, 403: None, 404: None})
+    def get(self, request: Request, receipt_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        if tid is None:
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(tid):
+            v = _viewer(request.auth)
+            if not purchasing.can_view(v):
+                return Response(
+                    {"detail": "permission_denied", "role_name": v.role_name}, status=403
+                )
+            rc = purchase_docs.visible_receipts(v, None).filter(id=receipt_id).first()
+            if rc is None:
+                return Response({"detail": "not_found"}, status=404)
+            return Response({"receipt": purchase_docs.receipt_payload(rc, v)})
+
+
+class ReceiptDocumentView(APIView):
+    """«حوّل إلى مستند شراء» — يعيد المستند المربوط بالاستلام (أو ينشئه)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 400: None, 403: None, 404: None})
+    def post(self, request: Request, receipt_id: uuid.UUID) -> Response:
+        auth = request.auth
+        tid = _tenant(auth)
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(tid):
+            v = _viewer(auth)
+            rc: GoodsReceipt | None = (
+                purchase_docs.visible_receipts(v, None).filter(id=receipt_id).first()
+            )
+            if rc is None:
+                return Response({"detail": "not_found"}, status=404)
+            try:
+                d = purchase_docs.document_from_receipt(actor=auth.user, viewer=v, receipt=rc)
+            except purchasing.OrderRejected as e:
+                return _reject_doc(e)
+            return Response({"document": purchase_docs.document_payload(d, v)})
 
 
 # ------------------------------------------------------------------ PUR-05 (T2.15)

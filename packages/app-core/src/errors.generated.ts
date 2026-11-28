@@ -1,6 +1,6 @@
 /* مولَّد آلياً من backend/core/api_contract.json (pnpm --filter @sting/app-core generate) — لا يُحرَّر يدوياً. */
 
-/** كل رموز `detail` التي رُصدت من الخادم (234 رمزاً). */
+/** كل رموز `detail` التي رُصدت من الخادم (236 رمزاً). */
 export const API_ERROR_CODES = [
   "account_exists",
   "ack_dropped",
@@ -134,6 +134,7 @@ export const API_ERROR_CODES = [
   "not_supplier",
   "not_the_new_owner",
   "note_required",
+  "nothing_rejected",
   "nothing_to_cancel",
   "nothing_to_change",
   "notice_too_short",
@@ -180,6 +181,7 @@ export const API_ERROR_CODES = [
   "reference_required",
   "reference_used",
   "reject_reason_required",
+  "rejected_decided",
   "release_exists",
   "reply_required",
   "reply_too_long",
@@ -317,6 +319,12 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     },
   ],
   "GET /api/inventory/purchasing/orders": [
+    {
+      status: 403,
+      code: "permission_denied",
+    },
+  ],
+  "GET /api/inventory/receipts": [
     {
       status: 403,
       code: "permission_denied",
@@ -1050,6 +1058,20 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "owner_required",
     },
   ],
+  "POST /api/inventory/items/{item_id}/quarantine": [
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "owner_required",
+    },
+    {
+      status: 403,
+      code: "permission_denied",
+    },
+  ],
   "POST /api/inventory/openings": [
     {
       status: 400,
@@ -1118,6 +1140,36 @@ export const API_ERRORS_BY_OPERATION: Readonly<
       code: "send_failed",
     },
   ],
+  "POST /api/inventory/purchasing/returns/{return_id}": [
+    {
+      status: 400,
+      code: "rejected_decided",
+    },
+  ],
+  "POST /api/inventory/purchasing/returns/{return_id}/rejected": [
+    {
+      status: 400,
+      code: "nothing_rejected",
+    },
+    {
+      status: 400,
+      code: "reason_required",
+    },
+    {
+      status: 400,
+      code: "rejected_decided",
+    },
+  ],
+  "POST /api/inventory/receipts/{receipt_id}/document": [
+    {
+      status: 403,
+      code: "permission_denied",
+    },
+    {
+      status: 404,
+      code: "not_found",
+    },
+  ],
   "POST /api/inventory/transfers/{transfer_id}/cancel": [
     {
       status: 400,
@@ -1126,6 +1178,16 @@ export const API_ERRORS_BY_OPERATION: Readonly<
     {
       status: 403,
       code: "sender_required",
+    },
+  ],
+  "POST /api/inventory/transfers/{transfer_id}/settle": [
+    {
+      status: 400,
+      code: "validation_error",
+    },
+    {
+      status: 403,
+      code: "owner_required",
     },
   ],
   "POST /api/market/account/verification/submit": [
