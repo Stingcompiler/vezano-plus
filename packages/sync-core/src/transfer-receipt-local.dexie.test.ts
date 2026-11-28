@@ -83,6 +83,29 @@ it("يدخل المستلم فعلاً رصيد الوجهة، والباقي ي
   // إعادة الضغط بالمعرّف نفسه لا تضاعف
   expect((await saveTransferReceiptLocally(s, input())).alreadySaved).toBe(true);
   expect((await readLocalBalances(s)).get("flour")?.qty_milli).toBe("7000");
+  // «استلم الباقي» (I-08، 0005 §٢٩٥): استلام ثانٍ بالباقي يضيف ولا يكتب فوق الأول
+  await saveTransferReceiptLocally(
+    s,
+    input({
+      operationId: "op-trn-2",
+      receiptId: "trn-2",
+      reason: "",
+      lines: [
+        {
+          lineId: "rl-2",
+          movementId: "rm-2",
+          transferLineId: "ln-1",
+          itemId: "flour",
+          sentBaseMilli: "3000",
+          receivedBaseMilli: "3000",
+        },
+      ],
+    }),
+  );
+  const done = (await readLocalTransfers(s)).find((x) => x.id === "trf-1")!;
+  expect(done.lines[0]!.received_base_milli).toBe("10000");
+  expect(done.status).toBe("received");
+  expect((await readLocalBalances(s)).get("flour")?.qty_milli).toBe("10000");
 });
 
 it("الفرق يحتاج سبباً مكتوباً؛ الاستلام الكامل لا يحتاجه", () => {

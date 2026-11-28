@@ -36,6 +36,7 @@ from inventory.models import (
     PurchaseOrder,
     PurchaseReturn,
     PurchaseReturnLine,
+    QuarantineMovement,
     StockMovement,
 )
 from inventory.purchasing import OrderRejected, can_create
@@ -117,16 +118,19 @@ def receipt_candidates(d: PurchaseDocument) -> list[GoodsReceipt]:
         )
     )
     base = d.order.created_at if d.order is not None else d.created_at
+    by_supplier = Q(
+        occurred_at__gte=base - timedelta(days=CANDIDATE_WINDOW_DAYS),
+        purchase_order_id__isnull=True,
+    ) & (
+        Q(party_id__in=_supplier_identity(d))
+        | Q(party_id__isnull=True, supplier_name=d.supplier_name)
+    )
+    # استلام على أمر بعينه (I-02، 0005 §٢٩٥) مرشّح لمستند ذلك الأمر وحده، بلا نافذة زمنية
+    on_order = Q(purchase_order_id=d.order_id) if d.order_id else Q(pk__in=[])
     out: list[GoodsReceipt] = []
     for rc in (
-        GoodsReceipt.objects.filter(
-            branch_id=d.branch_id,
-            occurred_at__gte=base - timedelta(days=CANDIDATE_WINDOW_DAYS),
-        )
-        .filter(
-            Q(party_id__in=_supplier_identity(d))
-            | Q(party_id__isnull=True, supplier_name=d.supplier_name)
-        )
+        GoodsReceipt.objects.filter(branch_id=d.branch_id)
+        .filter(by_supplier | on_order)
         .exclude(receipt_number__startswith="PD-")
         .exclude(id__in=decided | market)
         .order_by("occurred_at", "id")
@@ -236,6 +240,245 @@ def link_receipts(
     return document
 
 
+# ------------------------------------------------ I-02 كاملاً: «حوّل إلى مستند شراء» (0005 §٢٩٥)
+
+
+def _market_receipt_ids() -> set[uuid.UUID]:
+    from market.models import MarketDocumentLink
+
+    return set(
+        MarketDocumentLink.objects.filter(local_entity="inventory.GoodsReceipt").values_list(
+            "local_id", flat=True
+        )
+    )
+
+
+def receipt_document(rc: GoodsReceipt) -> PurchaseDocument | None:
+    """مستند الشراء المربوط بالاستلام (الأحدث) — أو لا شيء: الاستلام «بلا مستند شراء» بعدُ."""
+    link = (
+        rc.document_links.filter(kind=LINKED)
+        .select_related("document")
+        .order_by("-decided_at")
+        .first()
+    )
+    return link.document if link is not None else None
+
+
+def receipt_payload(
+    rc: GoodsReceipt, viewer: home.Viewer, *, market: set[uuid.UUID] | None = None
+) -> dict[str, Any]:
+    """الاستلام المسجَّل كما كتبه أمين المخزن — بكمياته، وبتكلفته لمن يرى المال وحده — ومستنده إن
+    وُجد، وهل يُحوَّل. أمين المخزن يرى ولا يحوّل (الاعتماد توقيع على مبلغ)."""
+    from core.models import Unit
+
+    show_value = can_create(viewer)
+    names = dict(Unit.objects.values_list("code", "name"))
+    doc = receipt_document(rc)
+    order = (
+        PurchaseOrder.objects.filter(id=rc.purchase_order_id).first()
+        if rc.purchase_order_id
+        else None
+    )
+    in_market = rc.id in (market if market is not None else _market_receipt_ids())
+    convertible = not rc.receipt_number.startswith("PD-") and not in_market
+    return {
+        "id": str(rc.id),
+        "receipt_number": rc.receipt_number,
+        "branch_id": str(rc.branch_id),
+        "branch_name": rc.branch.name,
+        "supplier_name": rc.supplier_name,
+        "party_id": str(rc.party_id) if rc.party_id else "",
+        "reference": rc.reference,
+        "user_name": rc.user_name,
+        "occurred_at": _iso(rc.occurred_at),
+        "order_id": str(order.id) if order is not None else "",
+        "order_number": order.number if order is not None else "",
+        "lines": [
+            {
+                "id": str(ln.id),
+                "item_id": str(ln.item_id),
+                "item_name": ln.item_name,
+                "unit_code": ln.unit_code,
+                "unit_name": names.get(ln.unit_code, ln.unit_code),
+                "factor_milli": str(ln.factor_milli),
+                "qty_milli": str(ln.qty_milli),
+                "base_qty_milli": str(ln.base_qty_milli),
+                "unit_cost_minor": (
+                    str(ln.unit_cost_minor) if show_value and ln.unit_cost_minor is not None else ""
+                ),
+            }
+            for ln in rc.lines.order_by("id")
+        ],
+        "document": (
+            {
+                "id": str(doc.id),
+                "number": doc.number,
+                "status": doc.status,
+                "status_label": PurchaseDocument.Status(doc.status).label,
+            }
+            if doc is not None
+            else None
+        ),
+        "can_convert": show_value and convertible,
+    }
+
+
+def visible_receipts(viewer: home.Viewer, branch_id: uuid.UUID | None) -> Any:
+    """الاستلامات اليدوية (INV-04) للفرع — المالك أي فرع، وغيره فرعه. استلام المستندات (`PD-`)
+    خارجها: هو سطر تكلفة المستند لا شحنة."""
+    qs = (
+        GoodsReceipt.objects.exclude(receipt_number__startswith="PD-")
+        .select_related("branch")
+        .order_by("-occurred_at", "-id")
+    )
+    if viewer.is_owner:
+        return qs.filter(branch_id=branch_id) if branch_id is not None else qs
+    own = viewer.branch.id if viewer.branch is not None else None
+    return qs.filter(branch_id=own) if own is not None else qs.none()
+
+
+def unpriced_receipts(
+    viewer: home.Viewer, branch_id: uuid.UUID | None = None
+) -> list[GoodsReceipt]:
+    """استلامات بلا مستند شراء معتمد ولا مسوّدة مربوطة — دخلت المخزون ولم تدخل الذمّة بعد."""
+    market = _market_receipt_ids()
+    return [
+        rc
+        for rc in visible_receipts(viewer, branch_id).exclude(id__in=market)
+        if not rc.document_links.filter(kind=LINKED).exists()
+    ]
+
+
+def _supplier_of_receipt(rc: GoodsReceipt) -> Any:
+    from parties.models import Party
+
+    party = Party.objects.filter(id=rc.party_id).first() if rc.party_id else None
+    if party is None:
+        party = Party.objects.filter(
+            is_supplier=True, merged_into__isnull=True, name=rc.supplier_name.strip()
+        ).first()
+    seen: set[uuid.UUID] = set()
+    while party is not None and party.merged_into_id is not None and party.id not in seen:
+        seen.add(party.id)
+        party = Party.objects.filter(id=party.merged_into_id).first()
+    return party
+
+
+def _add_receipt_lines(d: PurchaseDocument, rc: GoodsReceipt) -> None:
+    """أصناف في الاستلام ليست في المستند تُضاف سطوراً بلا أمر (بوحدة الاستلام وتكلفته إن كُتبت، وإلا
+    آخر سعر شراء) — فما وصل يُسعَّر كله، لا ما طُلب وحده."""
+    from core.models import Unit
+    from inventory.purchasing import last_purchase_prices
+
+    have = set(d.lines.values_list("item_id", flat=True))
+    new = [ln for ln in rc.lines.order_by("id") if ln.item_id not in have]
+    if not new:
+        return
+    names = dict(Unit.objects.values_list("code", "name"))
+    prices = last_purchase_prices([ln.item_id for ln in new])
+    no = (d.lines.order_by("-line_no").values_list("line_no", flat=True).first() or 0) + 1
+    seen: set[uuid.UUID] = set()
+    for ln in new:
+        if ln.item_id in seen:
+            continue
+        seen.add(ln.item_id)
+        price = (
+            int(ln.unit_cost_minor)
+            if ln.unit_cost_minor is not None
+            else prices.get((ln.item_id, ln.unit_code), 0)
+        )
+        PurchaseDocumentLine.objects.create(
+            tenant_id=d.tenant_id,
+            document=d,
+            item_id=ln.item_id,
+            item_name=ln.item_name,
+            unit_code=ln.unit_code,
+            unit_name=names.get(ln.unit_code, ln.unit_code),
+            factor_milli=ln.factor_milli,
+            ordered_qty_milli=0,
+            received_qty_milli=ln.qty_milli,
+            base_qty_milli=ln.base_qty_milli,
+            unit_price_minor=price,
+            line_no=no,
+        )
+        no += 1
+
+
+def document_from_receipt(
+    *, actor: User, viewer: home.Viewer, receipt: GoodsReceipt
+) -> PurchaseDocument:
+    """«حوّل إلى مستند شراء» (د-١ كاملاً): يفتح المدير استلام أمين المخزن فيصير مستند شراء مربوطاً
+    به — يضيف الأسعار ورقم الفاتورة ويعتمد، فترتفع الذمّة ويُحدَّث الأمر **بلا حركة مخزون ثانية**.
+
+    الاستلام على أمر مفتوح يُربط بمسوّدة ذلك الأمر (أو مسوّدة جديدة بباقيه)؛ وإلا مستند بلا أمر
+    بمورد الاستلام وأصنافه. الاستلام المربوط سابقاً يعيد مستنده — لا مستند ثانٍ للشحنة نفسها."""
+    if not can_create(viewer):
+        raise OrderRejected("permission_denied")
+    if receipt.receipt_number.startswith("PD-"):
+        raise OrderRejected("receipt_is_document")
+    if receipt.id in _market_receipt_ids():
+        raise OrderRejected("receipt_market")
+    existing = receipt_document(receipt)
+    if existing is not None:
+        return existing
+    order = (
+        PurchaseOrder.objects.filter(id=receipt.purchase_order_id)
+        .exclude(status=PurchaseOrder.Status.CANCELLED)
+        .first()
+        if receipt.purchase_order_id
+        else None
+    )
+    supplier = None
+    if order is None:
+        supplier = _supplier_of_receipt(receipt)
+        if supplier is None:
+            raise OrderRejected("supplier_required", "supplier")
+    with transaction.atomic():
+        d: PurchaseDocument | None = None
+        if order is not None:
+            d = order.documents.exclude(status=PurchaseDocument.Status.APPROVED).first()
+            if d is None and any(
+                ol.base_qty_milli > ol.received_base_qty_milli for ol in order.lines.all()
+            ):
+                d = draft_from_order(actor=actor, viewer=viewer, order=order)
+            if d is None:
+                supplier = _supplier_of_receipt(receipt)
+        if d is None:
+            if supplier is None:
+                raise OrderRejected("supplier_required", "supplier")
+            d = PurchaseDocument.objects.create(
+                tenant_id=require_tenant(),
+                number=_doc_number(),
+                supplier_id=supplier.id,
+                supplier_name=supplier.name,
+                branch=receipt.branch,
+                created_by_user_id=actor.id,
+                created_by_name=actor.display_name,
+            )
+        _add_receipt_lines(d, receipt)
+        PurchaseDocumentReceipt.objects.update_or_create(
+            document=d,
+            receipt=receipt,
+            defaults={
+                "tenant_id": d.tenant_id,
+                "kind": LINKED,
+                "decided_by_name": actor.display_name,
+                "decided_at": timezone.now(),
+            },
+        )
+        _apply_linked_quantities(d)
+    audit.record(
+        kind="purchase_document.from_receipt",
+        title=f"حُوّل الاستلام {receipt.receipt_number} إلى مستند الشراء {d.number}",
+        actor=actor,
+        branch=receipt.branch,
+        detail="المخزون دخل من الاستلام — الاعتماد لا يُدخله مرة ثانية",
+        ref_entity="inventory.PurchaseDocument",
+        ref_id=d.id,
+    )
+    return d
+
+
 # ------------------------------------------------------------------------ PUR-03 المستند
 
 
@@ -264,9 +507,11 @@ def line_payload(ln: PurchaseDocumentLine) -> dict[str, Any]:
         "excess_reason": ln.excess_reason,
         "is_gift": ln.is_gift,
         "returned_qty_milli": str(int(returned)),
-        # الفرق عن الأمر: كمية أو سعر
+        # الفرق عن الأمر: كمية أو سعر — المستند بلا أمر (من استلام) لا فرق له
         "diff": (
-            "qty"
+            ""
+            if ln.order_line_id is None and ln.ordered_qty_milli == 0
+            else "qty"
             if ln.received_qty_milli != ln.ordered_qty_milli
             else (
                 "price"
@@ -667,6 +912,8 @@ def return_line_payload(ln: PurchaseReturnLine) -> dict[str, Any]:
         "unit_price_minor": str(ln.unit_price_minor),
         "line_total_minor": str(ln.unit_price_minor * ln.qty_milli // 1000),
         "reason": ln.reason,
+        "from_quarantine": ln.from_quarantine,
+        "rejected_qty_milli": str(_rejected_qty(ln)),
         "accepted_qty_milli": str(ln.accepted_qty_milli)
         if ln.accepted_qty_milli is not None
         else "",
@@ -690,11 +937,23 @@ def return_payload(r: PurchaseReturn) -> dict[str, Any]:
         if r.status in {PurchaseReturn.Status.PARTIAL, PurchaseReturn.Status.REJECTED}
         else "0",
         "supplier_note": r.supplier_note,
+        # I-07 (0005 §٢٩٥): مصير المرفوض — بفاعل وسبب؛ فارغ = لم يُقرَّر بعد
+        "rejected_destination": r.rejected_destination,
+        "rejected_reason": r.rejected_reason,
+        "rejected_by_name": r.rejected_by_name,
+        "rejected_at": _iso(r.rejected_at),
         "lines": [return_line_payload(ln) for ln in r.lines.order_by("line_no")],
         "created_by_name": r.created_by_name,
         "created_at": _iso(r.created_at),
         "responded_at": _iso(r.responded_at),
     }
+
+
+def _rejected_qty(ln: PurchaseReturnLine) -> int:
+    """ما رفضه المورد من السطر (بوحدة السطر): المُرتجَع ناقص المقبول — قبل الردّ صفر."""
+    if ln.accepted_qty_milli is None:
+        return 0
+    return max(0, ln.qty_milli - ln.accepted_qty_milli)
 
 
 def return_limits(document: PurchaseDocument) -> dict[str, int]:
@@ -716,10 +975,14 @@ def record_return(
         raise OrderRejected("permission_denied")
     if document.status != PurchaseDocument.Status.APPROVED:
         raise OrderRejected("document_not_approved")
+    from inventory.services import branch_quarantine
+
     limits = return_limits(document)
     by_id = {str(ln.id): ln for ln in document.lines.all()}
     errors: list[dict[str, Any]] = []
-    resolved: list[tuple[PurchaseDocumentLine, int, str]] = []
+    resolved: list[tuple[PurchaseDocumentLine, int, str, bool]] = []
+    held = branch_quarantine(document.branch_id)
+    from_q: dict[uuid.UUID, int] = {}
     for raw in lines:
         lid = str(raw.get("document_line_id", ""))
         ln = by_id.get(lid)
@@ -743,7 +1006,22 @@ def record_return(
             )
         if not reason:
             errors.append({"line_id": lid, "code": "reason_required", "item_name": ln.item_name})
-        resolved.append((ln, qty, reason))
+        quarantined = raw.get("from_quarantine") in (True, 1, "1", "true")
+        if quarantined:
+            # «أرجع للمورد» من الحجر (I-06): الحدّ ما في الحجر من الصنف في فرع المستند
+            from_q[ln.item_id] = from_q.get(ln.item_id, 0) + qty * ln.factor_milli // 1000
+            if from_q[ln.item_id] > held.get(ln.item_id, 0):
+                errors.append(
+                    {
+                        "line_id": lid,
+                        "code": "exceeds_quarantine",
+                        "max_qty_milli": str(
+                            held.get(ln.item_id, 0) * 1000 // max(int(ln.factor_milli), 1)
+                        ),
+                        "item_name": ln.item_name,
+                    }
+                )
+        resolved.append((ln, qty, reason, quarantined))
     if errors:
         raise OrderRejected("lines_invalid", "lines", {"errors": errors})
     if not resolved:
@@ -761,7 +1039,7 @@ def record_return(
             created_by_name=actor.display_name,
         )
         total = 0
-        for i, (ln, qty, reason) in enumerate(resolved, start=1):
+        for i, (ln, qty, reason, quarantined) in enumerate(resolved, start=1):
             base = qty * ln.factor_milli // 1000
             PurchaseReturnLine.objects.create(
                 tenant_id=document.tenant_id,
@@ -776,20 +1054,34 @@ def record_return(
                 base_qty_milli=base,
                 unit_price_minor=ln.unit_price_minor,  # مثبّت من المستند الأصلي
                 reason=reason,
+                from_quarantine=quarantined,
                 line_no=i,
             )
-            # خرجت الكميات من المخزون — بسعر المستند نفسه فالمتوسط المرجّح لا يتأثر
-            StockMovement.objects.create(
-                tenant_id=document.tenant_id,
-                branch=document.branch,
-                item_id=ln.item_id,
-                delta_base_qty_milli=-base,
-                reason="purchase_return",
-                source_entity="inventory.PurchaseReturn",
-                source_id=r.id,
-                note=reason,
-                occurred_at=now,
-            )
+            if quarantined:
+                # التالف المحجور يخرج من الحجر — لا يُنقص المتاح للبيع مرة ثانية (I-06)
+                QuarantineMovement.objects.create(
+                    tenant_id=document.tenant_id,
+                    branch=document.branch,
+                    item_id=ln.item_id,
+                    base_qty_milli=-base,
+                    reason="purchase_return",
+                    source_entity="inventory.PurchaseReturn",
+                    source_id=r.id,
+                    occurred_at=now,
+                )
+            else:
+                # خرجت الكميات من المخزون — بسعر المستند نفسه فالمتوسط المرجّح لا يتأثر
+                StockMovement.objects.create(
+                    tenant_id=document.tenant_id,
+                    branch=document.branch,
+                    item_id=ln.item_id,
+                    delta_base_qty_milli=-base,
+                    reason="purchase_return",
+                    source_entity="inventory.PurchaseReturn",
+                    source_id=r.id,
+                    note=reason,
+                    occurred_at=now,
+                )
             total += ln.unit_price_minor * qty // 1000
         r.total_minor = total
         r.accepted_minor = total  # إشعار دائن بكامله حتى يردّ المورد
@@ -818,6 +1110,9 @@ def respond(
     قبل قرارك."""
     if not can_create(viewer):
         raise OrderRejected("permission_denied")
+    if purchase_return.rejected_destination:
+        # المرفوض عاد إلى المخزون أو الحجر — تغيير الردّ بعده يُفسد ما تحرّك (I-07)
+        raise OrderRejected("rejected_decided")
     by_id = {str(ln.id): ln for ln in purchase_return.lines.all()}
     accepted_total = 0
     with transaction.atomic():
@@ -851,6 +1146,83 @@ def respond(
         title=f"ردّ المورد على المرتجع {purchase_return.number}",
         actor=actor,
         detail=f"المقبول {accepted_total} من {purchase_return.total_minor} · {note.strip()}",
+        ref_entity="inventory.PurchaseReturn",
+        ref_id=purchase_return.id,
+    )
+    return purchase_return
+
+
+def settle_rejected(
+    *,
+    actor: User,
+    viewer: home.Viewer,
+    purchase_return: PurchaseReturn,
+    destination: str,
+    reason: str,
+) -> PurchaseReturn:
+    """مصير ما رفضه المورد (I-07، 0005 §٢٩٥): خرج من المخزون عند تسجيل المرتجع، والمورد ردّه — فهو في
+    يد المحل. «أعد المرفوض إلى المخزون» يُدخله المتاح للبيع، و«انقله إلى الحجر» يُدخله الحجر. قرار
+    واحد للمرتجع بفاعله وسببه ووقته؛ لا يُعاد."""
+    if not can_create(viewer):
+        raise OrderRejected("permission_denied")
+    if destination not in ("stock", "quarantine"):
+        raise OrderRejected("destination_invalid", "destination")
+    if not reason.strip():
+        raise OrderRejected("reason_required", "reason")
+    if purchase_return.rejected_destination:
+        raise OrderRejected("rejected_decided")
+    lines = [(ln, _rejected_qty(ln)) for ln in purchase_return.lines.order_by("line_no")]
+    lines = [(ln, q) for ln, q in lines if q > 0]
+    if not lines:
+        raise OrderRejected("nothing_rejected")
+    now = timezone.now()
+    with transaction.atomic():
+        for ln, q in lines:
+            base = q * ln.factor_milli // 1000
+            if destination == "stock":
+                StockMovement.objects.create(
+                    tenant_id=purchase_return.tenant_id,
+                    branch=purchase_return.branch,
+                    item_id=ln.item_id,
+                    delta_base_qty_milli=base,
+                    reason="return_rejected",
+                    source_entity="inventory.PurchaseReturn",
+                    source_id=purchase_return.id,
+                    note=reason.strip()[:300],
+                    occurred_at=now,
+                )
+            else:
+                QuarantineMovement.objects.create(
+                    tenant_id=purchase_return.tenant_id,
+                    branch=purchase_return.branch,
+                    item_id=ln.item_id,
+                    base_qty_milli=base,
+                    reason="return_rejected",
+                    source_entity="inventory.PurchaseReturn",
+                    source_id=purchase_return.id,
+                    occurred_at=now,
+                )
+        purchase_return.rejected_destination = destination
+        purchase_return.rejected_reason = reason.strip()[:300]
+        purchase_return.rejected_by_name = actor.display_name
+        purchase_return.rejected_at = now
+        purchase_return.save(
+            update_fields=[
+                "rejected_destination",
+                "rejected_reason",
+                "rejected_by_name",
+                "rejected_at",
+            ]
+        )
+    audit.record(
+        kind="purchase_return.rejected_settled",
+        title=(
+            f"المرفوض من المرتجع {purchase_return.number} "
+            + ("أُعيد إلى المخزون" if destination == "stock" else "نُقل إلى الحجر")
+        ),
+        actor=actor,
+        branch=purchase_return.branch,
+        detail=reason.strip(),
         ref_entity="inventory.PurchaseReturn",
         ref_id=purchase_return.id,
     )

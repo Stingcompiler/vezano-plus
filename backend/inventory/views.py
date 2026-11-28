@@ -549,3 +549,158 @@ class TransferCancelView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             return Response({"transfer": services.transfer_payload(t)})
+
+
+class TransferSettleView(APIView):
+    """I-08 (د-٤، 0005 §٢٩٥): قرار المالك على باقي التحويل المستلَم جزئياً — «فُقد في الطريق» أو
+    «يعود للمرسل» بسبب مكتوب. لا عودة تلقائية بالإلغاء."""
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(request=None, responses={200: None, 400: None, 403: None, 404: None})
+    def post(self, request: Request, transfer_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        body: dict[str, Any] = request.data if isinstance(request.data, dict) else {}
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            t = services.visible_transfers(viewer, None).filter(id=transfer_id).first()
+            if t is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            if not viewer.is_owner:
+                return Response({"detail": "owner_required"}, status=status.HTTP_403_FORBIDDEN)
+            try:
+                services.settle_transfer(
+                    t,
+                    outcome=str(body.get("outcome", "")),
+                    reason=str(body.get("reason", "")),
+                    actor=viewer.user,
+                )
+            except services.TransferRejected as e:
+                field = "reason" if e.code == "reason_required" else "status"
+                return Response(
+                    {"detail": "validation_error", "errors": [{"field": field, "code": e.code}]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            t.refresh_from_db()
+            return Response({"transfer": services.transfer_payload(t)})
+
+
+class ItemQuarantineView(APIView):
+    """INV-11 الحجر (I-06، 0005 §٢٩٥): ما في الحجر من الصنف وأفعاله الثلاثة — «أعد إلى المتاح»
+    و«أهلك» هنا، و«أرجع للمورد» مرتجع شراء من الحجر على أحد مستندات الصنف (PUR-04)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    class ActionSerializer(serializers.Serializer[dict[str, Any]]):
+        branch_id = serializers.CharField(required=False, allow_blank=True, default="")
+        unit_code = serializers.CharField(required=False, allow_blank=True, default="")
+        unit_name = serializers.CharField(required=False, allow_blank=True, default="")
+        factor_milli = serializers.CharField(required=False, allow_blank=True, default="1000")
+        qty_milli = serializers.CharField()
+        action = serializers.ChoiceField(choices=("release", "write_off"))
+        reason = serializers.CharField(allow_blank=True, required=False, default="", max_length=300)
+
+    def _state(self, viewer: home.Viewer, branch: Branch, item: Item) -> dict[str, Any]:
+        from inventory.purchasing import can_create
+
+        return {
+            "item_id": str(item.id),
+            "item_name": item.name,
+            "branch_id": str(branch.id),
+            "quarantine_milli": str(services.branch_quarantine(branch.id).get(item.id, 0)),
+            "balance_milli": str(services.branch_balances(branch.id).get(item.id, 0)),
+            "documents": services.item_documents(branch.id, item.id),
+            "can_release": can_create(viewer),
+            "can_return": can_create(viewer),
+            "write_off_cap_minor": "" if viewer.is_owner else str(services.WRITE_OFF_CAP_MINOR),
+        }
+
+    @extend_schema(
+        parameters=[OpenApiParameter("branch_id", str, OpenApiParameter.QUERY, required=False)],
+        responses={200: None, 400: None, 403: None, 404: None},
+    )
+    def get(self, request: Request, item_id: uuid.UUID) -> Response:
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            branch_id, err = _resolve_branch(request, viewer)
+            if err is not None or branch_id is None:
+                return err or Response(status=status.HTTP_400_BAD_REQUEST)
+            branch = Branch.objects.get(id=branch_id)
+            item = Item.objects.filter(id=item_id).select_related("base_unit").first()
+            if item is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(self._state(viewer, branch, item))
+
+    @extend_schema(request=ActionSerializer, responses={201: None, 400: None, 403: None, 404: None})
+    def post(self, request: Request, item_id: uuid.UUID) -> Response:
+        from inventory.purchasing import can_create
+
+        tid = _tenant(request.auth)
+        auth = request.auth
+        if tid is None or not isinstance(auth, AuthContext):
+            return Response({"detail": "tenant_session_required"}, status=status.HTTP_403_FORBIDDEN)
+        ser = self.ActionSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        d = ser.validated_data
+        with tenant_context(tid):
+            viewer = home.viewer_for(auth.user, auth.device)
+            own = viewer.branch.id if viewer.branch is not None else None
+            wanted = _uuid(d.get("branch_id")) or own
+            if wanted is None:
+                return Response({"detail": "branch_required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not viewer.is_owner and wanted != own:
+                return Response({"detail": "branch_forbidden"}, status=status.HTTP_403_FORBIDDEN)
+            branch = Branch.objects.filter(id=wanted).first()
+            item = Item.objects.filter(id=item_id).select_related("base_unit").first()
+            if branch is None or item is None:
+                return Response({"detail": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            # الإعادة إلى المتاح تزيد ما يُباع: للمالك والمدير؛ الإهلاك بحدّ الهالك كتسجيل التالف
+            if d["action"] == "release" and not can_create(viewer):
+                return Response({"detail": "permission_denied"}, status=status.HTTP_403_FORBIDDEN)
+            try:
+                qty = int(str(d["qty_milli"]))
+                factor = int(str(d.get("factor_milli") or "1000"))
+            except ValueError:
+                return Response(
+                    {
+                        "detail": "validation_error",
+                        "errors": [{"field": "qty_milli", "code": "invalid"}],
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                rec = services.quarantine_action(
+                    branch=branch,
+                    item=item,
+                    unit_code=str(d.get("unit_code", "")),
+                    unit_name=str(d.get("unit_name", "")),
+                    factor_milli=factor,
+                    qty_milli=qty,
+                    action=str(d["action"]),
+                    reason=str(d.get("reason", "")),
+                    actor=viewer.user,
+                    is_owner=viewer.is_owner,
+                )
+            except services.DamageRejected as e:
+                if e.code == "owner_required":
+                    return Response(
+                        {"detail": "owner_required", **e.extra}, status=status.HTTP_403_FORBIDDEN
+                    )
+                return Response(
+                    {
+                        "detail": "validation_error",
+                        "errors": [{"field": e.field, "code": e.code, **e.extra}],
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {"damage": services.damage_payload(rec), **self._state(viewer, branch, item)},
+                status=status.HTTP_201_CREATED,
+            )

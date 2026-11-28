@@ -199,12 +199,24 @@ export async function saveTransferReceiptLocally(
         status?: string;
         lines?: { id: string; base_qty_milli: string; received_base_milli: string }[];
       };
+      // «استلم الباقي» (I-08، 0005 §٢٩٥): الاستلام يضيف إلى ما استُلم — الأول من صفر، والثاني
+      // يكمل الباقي
       const got = new Map(input.lines.map((l) => [l.transferLineId, l.receivedBaseMilli]));
-      const lines = (t.lines ?? []).map((l) => ({
-        ...l,
-        received_base_milli: got.get(l.id) ?? l.received_base_milli,
-      }));
-      const full = lines.every((l) => l.received_base_milli === l.base_qty_milli);
+      const lines = (t.lines ?? []).map((l) => {
+        const add = got.get(l.id);
+        return add === undefined
+          ? l
+          : {
+              ...l,
+              received_base_milli: (BigInt(l.received_base_milli || "0") + BigInt(add)).toString(),
+            };
+      });
+      const full = lines.every(
+        (l) =>
+          BigInt(l.received_base_milli || "0") +
+            BigInt((l as { settled_base_milli?: string }).settled_base_milli || "0") >=
+          BigInt(l.base_qty_milli),
+      );
       await tx.putProjection({
         key: TRANSFER_PREFIX + input.transferId,
         value: { ...t, lines, status: full ? "received" : "partially_received" },

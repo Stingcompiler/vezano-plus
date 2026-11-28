@@ -125,22 +125,36 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
     if (transfer === null) router.replace("/inventory/transfers");
   }, [transfer, router]);
 
-  const rows: Row[] = (transfer?.lines ?? []).map((l) => {
-    const sent = BigInt(l.base_qty_milli);
-    const draft = drafts[l.id] ?? formatQty(sent, 0);
-    const q = parseQtyInput(draft);
-    const val = BigInt(l.value_minor ?? "0");
-    return {
-      id: l.id,
-      itemId: l.item_id,
-      name: l.item_name,
-      unit: l.unit_name,
-      sentMilli: sent,
-      draft,
-      receivedMilli: q,
-      valueMinor: sent > 0n ? val : 0n,
-    };
-  });
+  // «استلم الباقي» (I-08، 0005 §٢٩٥): تحويل استُلم جزئياً يُكمَل باستلام ثانٍ حتى الباقي وحده
+  const completing = transfer?.status === "partially_received";
+  const rows: Row[] = (transfer?.lines ?? [])
+    .map((l) => {
+      const base = BigInt(l.base_qty_milli);
+      const sent = completing
+        ? BigInt(
+            l.remaining_base_milli ??
+              (
+                base -
+                BigInt(l.received_base_milli) -
+                BigInt(l.settled_base_milli ?? "0")
+              ).toString(),
+          )
+        : base;
+      const draft = drafts[l.id] ?? formatQty(sent, 0);
+      const q = parseQtyInput(draft);
+      const val = BigInt(l.value_minor ?? "0");
+      return {
+        id: l.id,
+        itemId: l.item_id,
+        name: l.item_name,
+        unit: l.unit_name,
+        sentMilli: sent,
+        draft,
+        receivedMilli: q,
+        valueMinor: base > 0n ? (val * sent) / base : 0n,
+      };
+    })
+    .filter((r) => !completing || r.sentMilli > 0n);
   const sentTotal = rows.reduce((a, r) => a + r.sentMilli, 0n);
   const receivedTotal = rows.reduce((a, r) => a + (r.receivedMilli ?? 0n), 0n);
   const diff = receivedTotal - sentTotal;
@@ -158,18 +172,17 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
   const errors: Record<string, string> = {};
   if (invalidQty) errors["qty"] = "المستلم فعلياً";
   if (variance && !reason.trim()) errors["reason"] = "سبب الفرق — إلزامي";
+  // الإكمال حتى الباقي وحده — الزيادة فوقه لا تُقبل ولو بسبب
+  if (completing && excess.length > 0) errors["qty"] = "استلام يتجاوز الباقي";
   const invalid = Object.keys(errors).length > 0;
-  const alreadyReceived =
-    transfer?.status === "received" ||
-    transfer?.status === "partially_received" ||
-    transfer?.status === "cancelled";
+  const alreadyReceived = transfer?.status === "received" || transfer?.status === "cancelled";
 
   const state: State =
     phase === "saved"
       ? variance
         ? "conflict"
         : "success"
-      : excess.length > 0 && !reason.trim()
+      : excess.length > 0 && (completing || !reason.trim())
         ? "validation_error"
         : variance
           ? "partial"
@@ -320,7 +333,7 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
             ) : null}
             <div className="inv-tiles">
               <div className="inv-tile">
-                <div className="acc-choice__note">مُرسَل</div>
+                <div className="acc-choice__note">{completing ? "المتبقّي" : "مُرسَل"}</div>
                 <div className="sting-mono inv-tile__v">{formatQty(sentTotal, 0)}</div>
               </div>
               <div className="inv-tile inv-tile--ok">
@@ -336,7 +349,16 @@ export function TransferReceiveClient({ transferId }: { transferId: string }) {
               </div>
             </div>
 
-            {state === "validation_error" && excess.length > 0 ? (
+            {state === "validation_error" && excess.length > 0 && completing ? (
+              <Notice kind="error" title="استلام يتجاوز الباقي">
+                <p className="acc-lead">
+                  عدُّ{" "}
+                  <span className="sting-mono">{formatQty(excess[0]!.receivedMilli ?? 0n, 0)}</span>{" "}
+                  والباقي <span className="sting-mono">{formatQty(excess[0]!.sentMilli, 0)}</span>.
+                </p>
+              </Notice>
+            ) : null}
+            {state === "validation_error" && excess.length > 0 && !completing ? (
               <Notice kind="error" title="استلام يتجاوز المرسل">
                 <p className="acc-lead">
                   عدُّ{" "}

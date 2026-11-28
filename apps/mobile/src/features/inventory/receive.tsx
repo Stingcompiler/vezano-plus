@@ -58,6 +58,22 @@ interface LineDraft {
 }
 const emptyLine = (): LineDraft => ({ key: newId(), itemId: "", unitKey: "", qty: "", cost: "" });
 
+/** أمر شراء مفتوح يُستلم عليه (I-02، 0005 §٢٩٥) — كمياته بلا أسعار لأمين المخزن. */
+interface OpenOrder {
+  readonly id: string;
+  readonly number: string;
+  readonly items_summary: string;
+  readonly branch_id: string;
+  readonly supplier_name: string;
+  readonly lines: readonly {
+    readonly item_id: string;
+    readonly unit_code: string;
+    readonly factor_milli: string;
+    readonly base_qty_milli: string;
+    readonly received_base_qty_milli: string;
+  }[];
+}
+
 /**
  * INV-04 — استلام بضاعة (خطة الجوال M3): المورد والمرجع والكمية مطلوبة والتكلفة اختيارية — لا نفرض وحدة
  * تكلفة؛ الكمية بوحدة معرَّفة بمعاملها المعلن والتحويل إلى وحدة المخزون صريح — لا تخمين؛ يُحفظ محلياً
@@ -79,6 +95,10 @@ export function ReceiveScreen() {
   const [push, setPush] = useState<PushResult>("none");
   const [saved, setSaved] = useState<LocalGoodsReceipt | null>(null);
   const [missed, setMissed] = useState(false);
+  const [orders, setOrders] = useState<OpenOrder[]>([]);
+  const [orderId, setOrderId] = useState("");
+  const [canConvert, setCanConvert] = useState(false);
+  const [converting, setConverting] = useState(false);
   const ids = useRef<{ operationId: string; receiptId: string } | null>(null);
   const newSupplierIds = useRef<{ operationId: string; partyId: string } | null>(null);
 
@@ -101,6 +121,66 @@ export function ReceiveScreen() {
       );
     })();
   }, []);
+
+  // الأوامر المفتوحة للفرع — بالشبكة وحدها؛ بلا شبكة يُستلم بلا أمر كما كان
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { data, response } = await api.GET("/api/inventory/purchasing/orders", {
+          params: { query: { scope: "open" } },
+        });
+        const body = data as unknown as { orders: OpenOrder[]; can_create: boolean } | undefined;
+        if (!response.ok || !body) return;
+        setOrders(body.orders.filter((o) => !ctx?.branchId || o.branch_id === ctx.branchId));
+        setCanConvert(body.can_create);
+      } catch {
+        /* بلا أوامر — الاستلام لا ينتظرها */
+      }
+    })();
+  }, [api, ctx?.branchId]);
+
+  /** اختيار أمر يملأ المورد والباقي من سطوره بوحدة الأمر — يُعدَّل بما وصل فعلاً. */
+  const pickOrder = (id: string) => {
+    setOrderId(id);
+    const o = orders.find((x) => x.id === id);
+    if (!o) return;
+    setSupplier(o.supplier_name);
+    newSupplierIds.current = null;
+    const next = o.lines
+      .map((ol) => {
+        const rest = BigInt(ol.base_qty_milli) - BigInt(ol.received_base_qty_milli);
+        const it = items.find((i) => i.id === ol.item_id);
+        if (!it || rest <= 0n) return null;
+        const u = unitOptions(it).find((x) => x.code === ol.unit_code);
+        const factor = BigInt(u?.factorMilli || "1000") || 1000n;
+        return {
+          ...emptyLine(),
+          itemId: it.id,
+          unitKey: u?.key ?? "",
+          qty: formatQty((rest * 1000n) / factor, u?.decimalPlaces ?? 0).replace(/,/g, ""),
+        };
+      })
+      .filter((x): x is LineDraft => x !== null);
+    if (next.length) setLines(next);
+  };
+
+  /** «حوّل إلى مستند شراء» — للمالك والمدير بعد رفع الاستلام: الأسعار والذمّة بلا مخزون ثانٍ. */
+  const convert = async () => {
+    if (!saved || converting) return;
+    setConverting(true);
+    try {
+      const { data, response } = await api.POST("/api/inventory/receipts/{receipt_id}/document", {
+        params: { path: { receipt_id: saved.id } },
+      });
+      const body = data as unknown as { document: { id: string } } | undefined;
+      if (response.ok && body)
+        router.push({ pathname: "/purchasing/documents/[id]", params: { id: body.document.id } });
+    } catch {
+      /* بلا شبكة: يبقى الزرّ */
+    } finally {
+      setConverting(false);
+    }
+  };
 
   const itemOf = (id: string) => items.find((i) => i.id === id);
   const unitOf = (ln: LineDraft): UnitOption | undefined => {
@@ -197,6 +277,7 @@ export function ReceiveScreen() {
       partyOperationId: match?.op,
       supplierName: supplier,
       reference,
+      ...(orderId ? { purchaseOrderId: orderId } : {}),
       lines: lines.map((ln) => {
         const it = itemOf(ln.itemId)!;
         const u = unitOf(ln)!;
@@ -235,6 +316,7 @@ export function ReceiveScreen() {
     setAttempted(false);
     setSupplier("");
     setReference("");
+    setOrderId("");
     setLines([emptyLine()]);
   };
   const update = (key: string, patch: Partial<LineDraft>) =>
@@ -327,6 +409,14 @@ export function ReceiveScreen() {
               {tx(T, "عملية واحدة معلقة من هذا الجهاز")}
             </AppText>
           ) : null}
+          {canConvert && push === "synced" ? (
+            <Button
+              label={tx(T, "حوّل إلى مستند شراء")}
+              financial
+              loading={converting}
+              onPress={() => void convert()}
+            />
+          ) : null}
           <Button label={tx(T, "استلام آخر")} financial onPress={reset} />
           <Button
             label={tx(T, "أرصدة المخزون")}
@@ -338,6 +428,21 @@ export function ReceiveScreen() {
 
       {phase !== "saved" ? (
         <>
+          {orders.length ? (
+            <Block title={tx(T, "أمر الشراء — اختياري")}>
+              <Wrap>
+                <Chip label={tx(T, "بلا أمر")} on={!orderId} onPress={() => setOrderId("")} />
+                {orders.map((o) => (
+                  <Chip
+                    key={o.id}
+                    label={`${o.supplier_name} — ${o.items_summary}`}
+                    on={orderId === o.id}
+                    onPress={() => pickOrder(o.id)}
+                  />
+                ))}
+              </Wrap>
+            </Block>
+          ) : null}
           <Block>
             <TextField
               label={tx(T, "المورد")}
@@ -355,7 +460,10 @@ export function ReceiveScreen() {
               </AppText>
             ) : null}
             <AppText variant="note" muted>
-              {tx(T, "الاستلام يُدخل المخزون وحده. للذمّة سجّل مستند الشراء واربطه بهذا الاستلام.")}
+              {tx(
+                T,
+                "الاستلام يُدخل المخزون فقط. للذمّة حوّله إلى مستند شراء — لا تسجّله مرة ثانية.",
+              )}
             </AppText>
             {hints.length > 0 ? (
               <Wrap>

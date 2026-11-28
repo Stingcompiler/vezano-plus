@@ -1,6 +1,15 @@
 import { formatMinor, formatQty, hhmm } from "@sting/app-core";
 import { tx } from "@sting/texts";
-import { AppText, Button, GroupedList, ListRow, SPACE, useColors } from "@sting/ui-native";
+import {
+  AppText,
+  Button,
+  GroupedList,
+  ListRow,
+  SPACE,
+  TextField,
+  useColors,
+} from "@sting/ui-native";
+import { useState } from "react";
 import { View } from "react-native";
 
 import { dayLabel } from "@/lib/invoices";
@@ -20,6 +29,10 @@ export interface TransferLineView {
   readonly qty_milli: string;
   readonly base_qty_milli: string;
   readonly received_base_milli: string;
+  /** ما حسمه قرار المالك من الباقي (I-08) */
+  readonly settled_base_milli?: string;
+  /** الباقي في الطريق — المُرسل ناقص المستلَم والمحسوم */
+  readonly remaining_base_milli?: string;
   readonly value_minor?: string;
 }
 
@@ -36,6 +49,11 @@ export interface TransferView {
   readonly late?: boolean;
   readonly in_transit_milli?: string;
   readonly in_transit_value_minor?: string;
+  /** قرار المالك على الباقي (د-٤، 0005 §٢٩٥): «فُقد في الطريق» أو «يعود للمرسل» */
+  readonly settlement?: "" | "lost" | "returned";
+  readonly settlement_label?: string;
+  readonly settled_reason?: string;
+  readonly settled_by_name?: string;
   readonly lines: readonly TransferLineView[];
 }
 
@@ -83,6 +101,8 @@ export function TransferCard({
   onRemind,
   onCancel,
   cancelDisabledReason,
+  onSettle,
+  settling = false,
 }: {
   t: TransferView;
   pending: boolean;
@@ -90,13 +110,24 @@ export function TransferCard({
   onRemind?: (() => void) | undefined;
   onCancel?: (() => void) | undefined;
   cancelDisabledReason?: string | undefined;
+  /** قرار المالك على باقي التحويل الجزئي — للمالك وحده */
+  onSettle?: ((outcome: "lost" | "returned", reason: string) => void) | undefined;
+  settling?: boolean | undefined;
 }) {
   const c = useColors();
+  const [reason, setReason] = useState("");
+  const [tried, setTried] = useState(false);
   const sent = t.lines.reduce((a, l) => a + BigInt(l.base_qty_milli), 0n);
   const received = t.lines.reduce((a, l) => a + BigInt(l.received_base_milli), 0n);
   const inTransit = t.in_transit_milli !== undefined ? BigInt(t.in_transit_milli) : sent - received;
   const value = t.in_transit_value_minor ?? "0";
   const open = t.status === "sent" || t.status === "partially_received";
+  const partial = t.status === "partially_received";
+  const settle = (outcome: "lost" | "returned") => {
+    setTried(true);
+    if (!reason.trim() || !onSettle) return;
+    onSettle(outcome, reason.trim());
+  };
   const day = dayLabel(t.sent_at);
   const tone = pending
     ? "pending_sync"
@@ -109,7 +140,7 @@ export function TransferCard({
     ? tx(TC, "معلّق هذا الجهاز")
     : t.status === "sent"
       ? tx(TC, "في الطريق — لم يُستلم بعد")
-      : STATUS_LABEL[t.status];
+      : t.settlement_label || STATUS_LABEL[t.status];
   return (
     <View testID={`transfer-${t.id}`} style={{ marginBottom: SPACE["4"] }}>
       <AppText variant="title">
@@ -215,10 +246,40 @@ export function TransferCard({
         </AppText>
       ) : null}
 
+      {t.settlement ? (
+        <AppText variant="note" muted style={{ marginBottom: SPACE["3"] }}>
+          {t.settlement_label} · {t.settled_by_name} · {t.settled_reason}
+        </AppText>
+      ) : null}
+      {partial && onSettle ? (
+        <View style={{ gap: SPACE["2"], marginBottom: SPACE["3"] }}>
+          <TextField
+            label={tx(TC, "السبب — إلزامي")}
+            value={reason}
+            onChangeText={setReason}
+            error={tried && !reason.trim() ? tx(TC, "السبب — إلزامي") : undefined}
+            required
+          />
+          <Button
+            label={tx(TC, "فُقد في الطريق")}
+            variant="secondary"
+            loading={settling}
+            onPress={() => settle("lost")}
+          />
+          <Button
+            label={tx(TC, "يعود للمرسل")}
+            variant="secondary"
+            loading={settling}
+            onPress={() => settle("returned")}
+          />
+        </View>
+      ) : null}
       {open ? (
         <View style={{ gap: SPACE["2"] }}>
           <Button
-            label={`${tx(TC, "تسجيل استلام")} ${t.branch_to_name}`}
+            label={
+              partial ? tx(TC, "استلم الباقي") : `${tx(TC, "تسجيل استلام")} ${t.branch_to_name}`
+            }
             financial
             onPress={onReceive ?? (() => undefined)}
             disabledReason={onReceive ? undefined : tx(TC, "الاستلام من الفرع المستقبل")}
@@ -229,14 +290,17 @@ export function TransferCard({
             onPress={onRemind ?? (() => undefined)}
             disabledReason={onRemind ? undefined : tx(TC, "التذكير مع N-01")}
           />
-          <Button
-            label={`${tx(TC, "إلغاء التحويل — يرجع")} ${li(t.branch_from_name)}`}
-            variant="secondary"
-            onPress={onCancel ?? (() => undefined)}
-            disabledReason={
-              cancelDisabledReason ?? (onCancel ? undefined : tx(TC, "الإلغاء للمرسِل"))
-            }
-          />
+          {/* د-٤ (0005 §٢٩٥): الباقي بعد استلام جزئي لا يعود بالإلغاء — يُستلم أو يقرّره المالك */}
+          {!partial ? (
+            <Button
+              label={`${tx(TC, "إلغاء التحويل — يرجع")} ${li(t.branch_from_name)}`}
+              variant="secondary"
+              onPress={onCancel ?? (() => undefined)}
+              disabledReason={
+                cancelDisabledReason ?? (onCancel ? undefined : tx(TC, "الإلغاء للمرسِل"))
+              }
+            />
+          ) : null}
         </View>
       ) : null}
     </View>

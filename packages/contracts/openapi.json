@@ -2871,6 +2871,99 @@
         }
       }
     },
+    "/api/inventory/items/{item_id}/quarantine": {
+      "get": {
+        "operationId": "inventory_items_quarantine_retrieve",
+        "description": "INV-11 الحجر (I-06، 0005 §٢٩٥): ما في الحجر من الصنف وأفعاله الثلاثة — «أعد إلى المتاح»\nو«أهلك» هنا، و«أرجع للمورد» مرتجع شراء من الحجر على أحد مستندات الصنف (PUR-04).",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "branch_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInventoryItemsByItemIdQuarantineResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      },
+      "post": {
+        "operationId": "inventory_items_quarantine_create",
+        "description": "INV-11 الحجر (I-06، 0005 §٢٩٥): ما في الحجر من الصنف وأفعاله الثلاثة — «أعد إلى المتاح»\nو«أهلك» هنا، و«أرجع للمورد» مرتجع شراء من الحجر على أحد مستندات الصنف (PUR-04).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Action"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostInventoryItemsByItemIdQuarantineResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/inventory/openings": {
       "get": {
         "operationId": "inventory_openings_retrieve",
@@ -3417,6 +3510,157 @@
         }
       }
     },
+    "/api/inventory/purchasing/returns/{return_id}/rejected": {
+      "post": {
+        "operationId": "inventory_purchasing_returns_rejected_create",
+        "description": "I-07 (0005 §٢٩٥): مصير المرفوض — «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» بسبب.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "return_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostInventoryPurchasingReturnsByReturnIdRejectedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/inventory/receipts": {
+      "get": {
+        "operationId": "inventory_receipts_retrieve",
+        "description": "الاستلامات المسجَّلة (INV-04) بمستند شرائها أو بلا مستند — المالك والمدير وأمين المخزن.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "branch_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInventoryReceiptsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/inventory/receipts/{receipt_id}": {
+      "get": {
+        "operationId": "inventory_receipts_retrieve_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetInventoryReceiptsByReceiptIdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/inventory/receipts/{receipt_id}/document": {
+      "post": {
+        "operationId": "inventory_receipts_document_create",
+        "description": "«حوّل إلى مستند شراء» — يعيد المستند المربوط بالاستلام (أو ينشئه).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostInventoryReceiptsByReceiptIdDocumentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/inventory/transfers": {
       "get": {
         "operationId": "inventory_transfers_retrieve",
@@ -3506,6 +3750,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PostInventoryTransfersByTransferIdCancelResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No response body"
+          },
+          "403": {
+            "description": "No response body"
+          },
+          "404": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/inventory/transfers/{transfer_id}/settle": {
+      "post": {
+        "operationId": "inventory_transfers_settle_create",
+        "description": "I-08 (د-٤، 0005 §٢٩٥): قرار المالك على باقي التحويل المستلَم جزئياً — «فُقد في الطريق» أو\n«يعود للمرسل» بسبب مكتوب. لا عودة تلقائية بالإلغاء.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transfer_id",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true
+          }
+        ],
+        "tags": ["inventory"],
+        "responses": {
+          "200": {
+            "description": "No response body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostInventoryTransfersByTransferIdSettleResponse"
                 }
               }
             }
@@ -13002,10 +13285,43 @@
         },
         "required": ["password", "verified_ticket"]
       },
-      "ActionEnum": {
-        "enum": ["disable", "revoke_branch", "wipe_device"],
+      "Action": {
+        "type": "object",
+        "properties": {
+          "branch_id": {
+            "type": "string",
+            "default": ""
+          },
+          "unit_code": {
+            "type": "string",
+            "default": ""
+          },
+          "unit_name": {
+            "type": "string",
+            "default": ""
+          },
+          "factor_milli": {
+            "type": "string",
+            "default": "1000"
+          },
+          "qty_milli": {
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/components/schemas/ActionActionEnum"
+          },
+          "reason": {
+            "type": "string",
+            "default": "",
+            "maxLength": 300
+          }
+        },
+        "required": ["action", "qty_milli"]
+      },
+      "ActionActionEnum": {
+        "enum": ["release", "write_off"],
         "type": "string",
-        "description": "* `disable` - disable\n* `revoke_branch` - revoke_branch\n* `wipe_device` - wipe_device"
+        "description": "* `release` - release\n* `write_off` - write_off"
       },
       "AddonKindEnum": {
         "enum": ["devices", "users", "branches"],
@@ -14276,7 +14592,7 @@
         "type": "object",
         "properties": {
           "action": {
-            "$ref": "#/components/schemas/ActionEnum"
+            "$ref": "#/components/schemas/OrgRevokeActionEnum"
           },
           "mode": {
             "allOf": [
@@ -14304,6 +14620,11 @@
           }
         },
         "required": ["action"]
+      },
+      "OrgRevokeActionEnum": {
+        "enum": ["disable", "revoke_branch", "wipe_device"],
+        "type": "string",
+        "description": "* `disable` - disable\n* `revoke_branch` - revoke_branch\n* `wipe_device` - wipe_device"
       },
       "OrgSettings": {
         "type": "object",
@@ -21526,6 +21847,9 @@
               "reason": {
                 "type": "string"
               },
+              "source": {
+                "type": "string"
+              },
               "unit_name": {
                 "type": "string"
               },
@@ -21545,7 +21869,8 @@
               "reason",
               "value_minor",
               "decided_by_name",
-              "occurred_at"
+              "occurred_at",
+              "source"
             ],
             "type": "object"
           },
@@ -21671,6 +21996,193 @@
           "branch_name",
           "range",
           "as_of"
+        ],
+        "type": "object"
+      },
+      "GetInventoryItemsByItemIdQuarantineResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "balance_milli": {
+            "type": "string"
+          },
+          "branch_id": {
+            "type": "string"
+          },
+          "can_release": {
+            "type": "boolean"
+          },
+          "can_return": {
+            "type": "boolean"
+          },
+          "documents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "approved_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "supplier_name": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "number", "supplier_name", "approved_at"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "quarantine_milli": {
+            "type": "string"
+          },
+          "write_off_cap_minor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_name",
+          "branch_id",
+          "quarantine_milli",
+          "balance_milli",
+          "documents",
+          "can_release",
+          "can_return",
+          "write_off_cap_minor"
+        ],
+        "type": "object"
+      },
+      "PostInventoryItemsByItemIdQuarantineResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "balance_milli": {
+            "type": "string"
+          },
+          "branch_id": {
+            "type": "string"
+          },
+          "can_release": {
+            "type": "boolean"
+          },
+          "can_return": {
+            "type": "boolean"
+          },
+          "damage": {
+            "additionalProperties": false,
+            "properties": {
+              "base_qty_milli": {
+                "type": "string"
+              },
+              "damage_number": {
+                "type": "string"
+              },
+              "decided_by_name": {
+                "type": "string"
+              },
+              "destination": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "item_id": {
+                "type": "string"
+              },
+              "item_name": {
+                "type": "string"
+              },
+              "occurred_at": {
+                "type": "string"
+              },
+              "qty_milli": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "unit_name": {
+                "type": "string"
+              },
+              "value_minor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "damage_number",
+              "item_id",
+              "item_name",
+              "unit_name",
+              "qty_milli",
+              "base_qty_milli",
+              "destination",
+              "source",
+              "reason",
+              "value_minor",
+              "decided_by_name",
+              "occurred_at"
+            ],
+            "type": "object"
+          },
+          "documents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "approved_at": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "supplier_name": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "number", "supplier_name", "approved_at"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "item_name": {
+            "type": "string"
+          },
+          "quarantine_milli": {
+            "type": "string"
+          },
+          "write_off_cap_minor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "damage",
+          "item_id",
+          "item_name",
+          "branch_id",
+          "quarantine_milli",
+          "balance_milli",
+          "documents",
+          "can_release",
+          "can_return",
+          "write_off_cap_minor"
         ],
         "type": "object"
       },
@@ -22457,6 +22969,7 @@
             "additionalProperties": {
               "type": "integer"
             },
+            "properties": {},
             "type": "object"
           },
           "returns": {
@@ -22491,6 +23004,9 @@
                       "document_line_id": {
                         "type": "string"
                       },
+                      "from_quarantine": {
+                        "type": "boolean"
+                      },
                       "id": {
                         "type": "string"
                       },
@@ -22510,6 +23026,9 @@
                         "type": "string"
                       },
                       "reason": {
+                        "type": "string"
+                      },
+                      "rejected_qty_milli": {
                         "type": "string"
                       },
                       "supplier_note": {
@@ -22538,7 +23057,9 @@
                       "reason",
                       "accepted_qty_milli",
                       "supplier_note",
-                      "line_no"
+                      "line_no",
+                      "from_quarantine",
+                      "rejected_qty_milli"
                     ],
                     "type": "object"
                   },
@@ -22547,7 +23068,19 @@
                 "number": {
                   "type": "string"
                 },
+                "rejected_at": {
+                  "type": "string"
+                },
+                "rejected_by_name": {
+                  "type": "string"
+                },
+                "rejected_destination": {
+                  "type": "string"
+                },
                 "rejected_minor": {
+                  "type": "string"
+                },
+                "rejected_reason": {
                   "type": "string"
                 },
                 "responded_at": {
@@ -22584,7 +23117,11 @@
                 "lines",
                 "created_by_name",
                 "created_at",
-                "responded_at"
+                "responded_at",
+                "rejected_destination",
+                "rejected_reason",
+                "rejected_by_name",
+                "rejected_at"
               ],
               "type": "object"
             },
@@ -23259,6 +23796,9 @@
                     "document_line_id": {
                       "type": "string"
                     },
+                    "from_quarantine": {
+                      "type": "boolean"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -23278,6 +23818,9 @@
                       "type": "string"
                     },
                     "reason": {
+                      "type": "string"
+                    },
+                    "rejected_qty_milli": {
                       "type": "string"
                     },
                     "supplier_note": {
@@ -23306,7 +23849,9 @@
                     "reason",
                     "accepted_qty_milli",
                     "supplier_note",
-                    "line_no"
+                    "line_no",
+                    "from_quarantine",
+                    "rejected_qty_milli"
                   ],
                   "type": "object"
                 },
@@ -23315,7 +23860,19 @@
               "number": {
                 "type": "string"
               },
+              "rejected_at": {
+                "type": "string"
+              },
+              "rejected_by_name": {
+                "type": "string"
+              },
+              "rejected_destination": {
+                "type": "string"
+              },
               "rejected_minor": {
+                "type": "string"
+              },
+              "rejected_reason": {
                 "type": "string"
               },
               "responded_at": {
@@ -23352,7 +23909,11 @@
               "lines",
               "created_by_name",
               "created_at",
-              "responded_at"
+              "responded_at",
+              "rejected_destination",
+              "rejected_reason",
+              "rejected_by_name",
+              "rejected_at"
             ],
             "type": "object"
           }
@@ -24537,6 +25098,9 @@
                     "document_line_id": {
                       "type": "string"
                     },
+                    "from_quarantine": {
+                      "type": "boolean"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -24556,6 +25120,9 @@
                       "type": "string"
                     },
                     "reason": {
+                      "type": "string"
+                    },
+                    "rejected_qty_milli": {
                       "type": "string"
                     },
                     "supplier_note": {
@@ -24584,7 +25151,9 @@
                     "reason",
                     "accepted_qty_milli",
                     "supplier_note",
-                    "line_no"
+                    "line_no",
+                    "from_quarantine",
+                    "rejected_qty_milli"
                   ],
                   "type": "object"
                 },
@@ -24593,7 +25162,19 @@
               "number": {
                 "type": "string"
               },
+              "rejected_at": {
+                "type": "string"
+              },
+              "rejected_by_name": {
+                "type": "string"
+              },
+              "rejected_destination": {
+                "type": "string"
+              },
               "rejected_minor": {
+                "type": "string"
+              },
+              "rejected_reason": {
                 "type": "string"
               },
               "responded_at": {
@@ -24630,12 +25211,744 @@
               "lines",
               "created_by_name",
               "created_at",
+              "responded_at",
+              "rejected_destination",
+              "rejected_reason",
+              "rejected_by_name",
+              "rejected_at"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["return"],
+        "type": "object"
+      },
+      "PostInventoryPurchasingReturnsByReturnIdRejectedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "return": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_minor": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "created_by_name": {
+                "type": "string"
+              },
+              "document_id": {
+                "type": "string"
+              },
+              "document_number": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "lines": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted_qty_milli": {
+                      "type": "string"
+                    },
+                    "document_line_id": {
+                      "type": "string"
+                    },
+                    "from_quarantine": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "item_id": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "line_no": {
+                      "type": "integer"
+                    },
+                    "line_total_minor": {
+                      "type": "string"
+                    },
+                    "qty_milli": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "rejected_qty_milli": {
+                      "type": "string"
+                    },
+                    "supplier_note": {
+                      "type": "string"
+                    },
+                    "unit_code": {
+                      "type": "string"
+                    },
+                    "unit_name": {
+                      "type": "string"
+                    },
+                    "unit_price_minor": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "document_line_id",
+                    "item_id",
+                    "item_name",
+                    "unit_code",
+                    "unit_name",
+                    "qty_milli",
+                    "unit_price_minor",
+                    "line_total_minor",
+                    "reason",
+                    "from_quarantine",
+                    "rejected_qty_milli",
+                    "accepted_qty_milli",
+                    "supplier_note",
+                    "line_no"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "number": {
+                "type": "string"
+              },
+              "rejected_at": {
+                "type": "string"
+              },
+              "rejected_by_name": {
+                "type": "string"
+              },
+              "rejected_destination": {
+                "type": "string"
+              },
+              "rejected_minor": {
+                "type": "string"
+              },
+              "rejected_reason": {
+                "type": "string"
+              },
+              "responded_at": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "status_label": {
+                "type": "string"
+              },
+              "supplier_name": {
+                "type": "string"
+              },
+              "supplier_note": {
+                "type": "string"
+              },
+              "total_minor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "number",
+              "document_id",
+              "document_number",
+              "supplier_name",
+              "status",
+              "status_label",
+              "total_minor",
+              "accepted_minor",
+              "rejected_minor",
+              "supplier_note",
+              "rejected_destination",
+              "rejected_reason",
+              "rejected_by_name",
+              "rejected_at",
+              "lines",
+              "created_by_name",
+              "created_at",
               "responded_at"
             ],
             "type": "object"
           }
         },
         "required": ["return"],
+        "type": "object"
+      },
+      "GetInventoryReceiptsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "can_convert": {
+            "type": "boolean"
+          },
+          "receipts": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "branch_id": {
+                  "type": "string"
+                },
+                "branch_name": {
+                  "type": "string"
+                },
+                "can_convert": {
+                  "type": "boolean"
+                },
+                "document": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "status_label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "number", "status", "status_label"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "lines": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "base_qty_milli": {
+                        "type": "string"
+                      },
+                      "factor_milli": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "item_id": {
+                        "type": "string"
+                      },
+                      "item_name": {
+                        "type": "string"
+                      },
+                      "qty_milli": {
+                        "type": "string"
+                      },
+                      "unit_code": {
+                        "type": "string"
+                      },
+                      "unit_cost_minor": {
+                        "type": "string"
+                      },
+                      "unit_name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "item_id",
+                      "item_name",
+                      "unit_code",
+                      "unit_name",
+                      "factor_milli",
+                      "qty_milli",
+                      "base_qty_milli",
+                      "unit_cost_minor"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "occurred_at": {
+                  "type": "string"
+                },
+                "order_id": {
+                  "type": "string"
+                },
+                "order_number": {
+                  "type": "string"
+                },
+                "party_id": {
+                  "type": "string"
+                },
+                "receipt_number": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "supplier_name": {
+                  "type": "string"
+                },
+                "user_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "receipt_number",
+                "branch_id",
+                "branch_name",
+                "supplier_name",
+                "party_id",
+                "reference",
+                "user_name",
+                "occurred_at",
+                "order_id",
+                "order_number",
+                "lines",
+                "document",
+                "can_convert"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "unpriced_count": {
+            "type": "integer"
+          }
+        },
+        "required": ["scope", "unpriced_count", "can_convert", "receipts"],
+        "type": "object"
+      },
+      "GetInventoryReceiptsByReceiptIdResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "receipt": {
+            "additionalProperties": false,
+            "properties": {
+              "branch_id": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "can_convert": {
+                "type": "boolean"
+              },
+              "document": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "number": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "status_label": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "number", "status", "status_label"],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "lines": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "base_qty_milli": {
+                      "type": "string"
+                    },
+                    "factor_milli": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "item_id": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "qty_milli": {
+                      "type": "string"
+                    },
+                    "unit_code": {
+                      "type": "string"
+                    },
+                    "unit_cost_minor": {
+                      "type": "string"
+                    },
+                    "unit_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "item_id",
+                    "item_name",
+                    "unit_code",
+                    "unit_name",
+                    "factor_milli",
+                    "qty_milli",
+                    "base_qty_milli",
+                    "unit_cost_minor"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "occurred_at": {
+                "type": "string"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "order_number": {
+                "type": "string"
+              },
+              "party_id": {
+                "type": "string"
+              },
+              "receipt_number": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "supplier_name": {
+                "type": "string"
+              },
+              "user_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "receipt_number",
+              "branch_id",
+              "branch_name",
+              "supplier_name",
+              "party_id",
+              "reference",
+              "user_name",
+              "occurred_at",
+              "order_id",
+              "order_number",
+              "lines",
+              "document",
+              "can_convert"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["receipt"],
+        "type": "object"
+      },
+      "PostInventoryReceiptsByReceiptIdDocumentResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "additionalProperties": false,
+            "properties": {
+              "approval": {
+                "additionalProperties": false,
+                "properties": {
+                  "can_approve": {
+                    "type": "boolean"
+                  },
+                  "limit_minor": {
+                    "type": "string"
+                  },
+                  "over_limit": {
+                    "type": "boolean"
+                  },
+                  "viewer_name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["viewer_name", "limit_minor", "over_limit", "can_approve"],
+                "type": "object"
+              },
+              "approved_at": {
+                "type": "string"
+              },
+              "approved_by_name": {
+                "type": "string"
+              },
+              "blockers": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "line_id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["code", "title"],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "branch_id": {
+                "type": "string"
+              },
+              "branch_name": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "created_by_name": {
+                "type": "string"
+              },
+              "diff_count": {
+                "type": "integer"
+              },
+              "due_at": {
+                "type": "string"
+              },
+              "due_days": {
+                "type": "integer"
+              },
+              "effects": {
+                "additionalProperties": false,
+                "properties": {},
+                "type": "object"
+              },
+              "id": {
+                "type": "string"
+              },
+              "lines": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "base_qty_milli": {
+                      "type": "string"
+                    },
+                    "diff": {
+                      "type": "string"
+                    },
+                    "est_total_minor": {
+                      "type": "string"
+                    },
+                    "est_unit_price_minor": {
+                      "type": "string"
+                    },
+                    "excess_reason": {
+                      "type": "string"
+                    },
+                    "factor_milli": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "is_gift": {
+                      "type": "boolean"
+                    },
+                    "item_id": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "line_no": {
+                      "type": "integer"
+                    },
+                    "line_total_minor": {
+                      "type": "string"
+                    },
+                    "ordered_qty_milli": {
+                      "type": "string"
+                    },
+                    "received_qty_milli": {
+                      "type": "string"
+                    },
+                    "returned_qty_milli": {
+                      "type": "string"
+                    },
+                    "unit_code": {
+                      "type": "string"
+                    },
+                    "unit_name": {
+                      "type": "string"
+                    },
+                    "unit_price_minor": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "item_id",
+                    "item_name",
+                    "unit_code",
+                    "unit_name",
+                    "factor_milli",
+                    "ordered_qty_milli",
+                    "received_qty_milli",
+                    "base_qty_milli",
+                    "unit_price_minor",
+                    "est_unit_price_minor",
+                    "line_total_minor",
+                    "est_total_minor",
+                    "excess_reason",
+                    "is_gift",
+                    "returned_qty_milli",
+                    "diff",
+                    "line_no"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "linked_receipts": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "occurred_at": {
+                      "type": "string"
+                    },
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_number": {
+                      "type": "string"
+                    },
+                    "supplier_name": {
+                      "type": "string"
+                    },
+                    "user_name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "receipt_id",
+                    "receipt_number",
+                    "supplier_name",
+                    "user_name",
+                    "occurred_at"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "note": {
+                "type": "string"
+              },
+              "number": {
+                "type": "string"
+              },
+              "order_estimated_minor": {
+                "type": "string"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "order_number": {
+                "type": "string"
+              },
+              "receipt_candidates": {
+                "items": {},
+                "type": "array"
+              },
+              "receipt_number": {
+                "type": "string"
+              },
+              "referred_at": {
+                "type": "string"
+              },
+              "referred_to_name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "status_label": {
+                "type": "string"
+              },
+              "supplier_id": {
+                "type": "string"
+              },
+              "supplier_invoice_number": {
+                "type": "string"
+              },
+              "supplier_name": {
+                "type": "string"
+              },
+              "total_minor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "number",
+              "order_id",
+              "order_number",
+              "supplier_id",
+              "supplier_name",
+              "branch_id",
+              "branch_name",
+              "supplier_invoice_number",
+              "status",
+              "status_label",
+              "total_minor",
+              "order_estimated_minor",
+              "diff_count",
+              "due_days",
+              "due_at",
+              "note",
+              "lines",
+              "created_by_name",
+              "created_at",
+              "approved_by_name",
+              "approved_at",
+              "referred_to_name",
+              "referred_at",
+              "receipt_number",
+              "effects",
+              "linked_receipts",
+              "receipt_candidates",
+              "blockers",
+              "approval"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["document"],
         "type": "object"
       },
       "GetInventoryTransfersResponse": {
@@ -24731,6 +26044,12 @@
                       "received_base_milli": {
                         "type": "string"
                       },
+                      "remaining_base_milli": {
+                        "type": "string"
+                      },
+                      "settled_base_milli": {
+                        "type": "string"
+                      },
                       "unit_name": {
                         "type": "string"
                       },
@@ -24747,7 +26066,9 @@
                       "qty_milli",
                       "base_qty_milli",
                       "received_base_milli",
-                      "value_minor"
+                      "value_minor",
+                      "settled_base_milli",
+                      "remaining_base_milli"
                     ],
                     "type": "object"
                   },
@@ -24766,6 +26087,21 @@
                   "type": "string"
                 },
                 "sent_at": {
+                  "type": "string"
+                },
+                "settled_at": {
+                  "type": "string"
+                },
+                "settled_by_name": {
+                  "type": "string"
+                },
+                "settled_reason": {
+                  "type": "string"
+                },
+                "settlement": {
+                  "type": "string"
+                },
+                "settlement_label": {
                   "type": "string"
                 },
                 "status": {
@@ -24797,7 +26133,12 @@
                 "in_transit_milli",
                 "in_transit_value_minor",
                 "line_count",
-                "lines"
+                "lines",
+                "settlement",
+                "settlement_label",
+                "settled_reason",
+                "settled_by_name",
+                "settled_at"
               ],
               "type": "object"
             },
@@ -24876,6 +26217,12 @@
                     "received_base_milli": {
                       "type": "string"
                     },
+                    "remaining_base_milli": {
+                      "type": "string"
+                    },
+                    "settled_base_milli": {
+                      "type": "string"
+                    },
                     "unit_name": {
                       "type": "string"
                     },
@@ -24892,7 +26239,9 @@
                     "qty_milli",
                     "base_qty_milli",
                     "received_base_milli",
-                    "value_minor"
+                    "value_minor",
+                    "settled_base_milli",
+                    "remaining_base_milli"
                   ],
                   "type": "object"
                 },
@@ -24911,6 +26260,21 @@
                 "type": "string"
               },
               "sent_at": {
+                "type": "string"
+              },
+              "settled_at": {
+                "type": "string"
+              },
+              "settled_by_name": {
+                "type": "string"
+              },
+              "settled_reason": {
+                "type": "string"
+              },
+              "settlement": {
+                "type": "string"
+              },
+              "settlement_label": {
                 "type": "string"
               },
               "status": {
@@ -24942,7 +26306,12 @@
               "in_transit_milli",
               "in_transit_value_minor",
               "line_count",
-              "lines"
+              "lines",
+              "settlement",
+              "settlement_label",
+              "settled_reason",
+              "settled_by_name",
+              "settled_at"
             ],
             "type": "object"
           }
@@ -25011,6 +26380,12 @@
                     "received_base_milli": {
                       "type": "string"
                     },
+                    "remaining_base_milli": {
+                      "type": "string"
+                    },
+                    "settled_base_milli": {
+                      "type": "string"
+                    },
                     "unit_name": {
                       "type": "string"
                     },
@@ -25027,7 +26402,9 @@
                     "qty_milli",
                     "base_qty_milli",
                     "received_base_milli",
-                    "value_minor"
+                    "value_minor",
+                    "settled_base_milli",
+                    "remaining_base_milli"
                   ],
                   "type": "object"
                 },
@@ -25046,6 +26423,21 @@
                 "type": "string"
               },
               "sent_at": {
+                "type": "string"
+              },
+              "settled_at": {
+                "type": "string"
+              },
+              "settled_by_name": {
+                "type": "string"
+              },
+              "settled_reason": {
+                "type": "string"
+              },
+              "settlement": {
+                "type": "string"
+              },
+              "settlement_label": {
                 "type": "string"
               },
               "status": {
@@ -25073,6 +26465,174 @@
               "sent_at",
               "received_at",
               "cancelled_at",
+              "late",
+              "in_transit_milli",
+              "in_transit_value_minor",
+              "line_count",
+              "lines",
+              "settlement",
+              "settlement_label",
+              "settled_reason",
+              "settled_by_name",
+              "settled_at"
+            ],
+            "type": "object"
+          }
+        },
+        "required": ["transfer"],
+        "type": "object"
+      },
+      "PostInventoryTransfersByTransferIdSettleResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "transfer": {
+            "additionalProperties": false,
+            "properties": {
+              "branch_from_id": {
+                "type": "string"
+              },
+              "branch_from_name": {
+                "type": "string"
+              },
+              "branch_to_id": {
+                "type": "string"
+              },
+              "branch_to_name": {
+                "type": "string"
+              },
+              "cancelled_at": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "in_transit_milli": {
+                "type": "string"
+              },
+              "in_transit_value_minor": {
+                "type": "string"
+              },
+              "late": {
+                "type": "boolean"
+              },
+              "line_count": {
+                "type": "integer"
+              },
+              "lines": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "base_qty_milli": {
+                      "type": "string"
+                    },
+                    "factor_milli": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "item_id": {
+                      "type": "string"
+                    },
+                    "item_name": {
+                      "type": "string"
+                    },
+                    "qty_milli": {
+                      "type": "string"
+                    },
+                    "received_base_milli": {
+                      "type": "string"
+                    },
+                    "remaining_base_milli": {
+                      "type": "string"
+                    },
+                    "settled_base_milli": {
+                      "type": "string"
+                    },
+                    "unit_name": {
+                      "type": "string"
+                    },
+                    "value_minor": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "item_id",
+                    "item_name",
+                    "unit_name",
+                    "factor_milli",
+                    "qty_milli",
+                    "base_qty_milli",
+                    "received_base_milli",
+                    "settled_base_milli",
+                    "remaining_base_milli",
+                    "value_minor"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "note": {
+                "type": "string"
+              },
+              "receipt_count": {
+                "type": "integer"
+              },
+              "receipt_reason": {
+                "type": "string"
+              },
+              "received_at": {
+                "type": "string"
+              },
+              "sent_at": {
+                "type": "string"
+              },
+              "settled_at": {
+                "type": "string"
+              },
+              "settled_by_name": {
+                "type": "string"
+              },
+              "settled_reason": {
+                "type": "string"
+              },
+              "settlement": {
+                "type": "string"
+              },
+              "settlement_label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "transfer_number": {
+                "type": "string"
+              },
+              "user_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "transfer_number",
+              "receipt_count",
+              "receipt_reason",
+              "branch_from_id",
+              "branch_from_name",
+              "branch_to_id",
+              "branch_to_name",
+              "status",
+              "user_name",
+              "note",
+              "sent_at",
+              "received_at",
+              "cancelled_at",
+              "settlement",
+              "settlement_label",
+              "settled_reason",
+              "settled_by_name",
+              "settled_at",
               "late",
               "in_transit_milli",
               "in_transit_value_minor",

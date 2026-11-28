@@ -264,6 +264,15 @@ export function DamageClient({ itemId }: { itemId: string }) {
                   >
                     سجل حركة الصنف
                   </Button>
+                  {/* I-06 (0005 §٢٩٥): الحجر له مخرج */}
+                  {done.destination === "quarantine" ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => router.push(`/inventory/items/${item.id}/quarantine`)}
+                    >
+                      الحجر
+                    </Button>
+                  ) : null}
                   <Button variant="quiet" onClick={() => router.push("/inventory")}>
                     أرصدة المخزون
                   </Button>

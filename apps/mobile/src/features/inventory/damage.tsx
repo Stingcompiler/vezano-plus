@@ -248,6 +248,19 @@ export function DamageScreen({ itemId }: { itemId: string }) {
             />
           </GroupedList>
           <Button label={tx(T, "سجل حركة الصنف")} financial onPress={toMovements} />
+          {/* I-06 (0005 §٢٩٥): الحجر له مخرج */}
+          {done.destination === "quarantine" ? (
+            <Button
+              label={tx(T, "الحجر")}
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: "/inventory/items/[id]/quarantine",
+                  params: { id: itemId },
+                })
+              }
+            />
+          ) : null}
           <Button
             label={tx(T, "أرصدة المخزون")}
             variant="quiet"

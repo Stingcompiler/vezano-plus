@@ -11,17 +11,23 @@ from inventory.purchasing_views import (
     PurchaseOrderPreviewView,
     PurchaseOrdersView,
     PurchaseReturnDetailView,
+    PurchaseReturnRejectedView,
+    ReceiptDetailView,
+    ReceiptDocumentView,
+    ReceiptsView,
 )
 from inventory.views import (
     CountSessionReviewView,
     CountSessionsView,
     ItemDamageView,
     ItemMovementsView,
+    ItemQuarantineView,
     OpeningApproveView,
     OpeningsView,
     StockBalancesView,
     TransferCancelView,
     TransferDetailView,
+    TransferSettleView,
     TransfersView,
 )
 
@@ -41,6 +47,23 @@ urlpatterns = [
         name="inventory-transfer-cancel",
     ),
     path(
+        "inventory/transfers/<uuid:transfer_id>/settle",
+        TransferSettleView.as_view(),
+        name="inventory-transfer-settle",
+    ),
+    # INV-11 الاستلامات و«حوّل إلى مستند شراء» (I-02، 0005 §٢٩٥)
+    path("inventory/receipts", ReceiptsView.as_view(), name="inventory-receipts"),
+    path(
+        "inventory/receipts/<uuid:receipt_id>",
+        ReceiptDetailView.as_view(),
+        name="inventory-receipt",
+    ),
+    path(
+        "inventory/receipts/<uuid:receipt_id>/document",
+        ReceiptDocumentView.as_view(),
+        name="inventory-receipt-document",
+    ),
+    path(
         "inventory/count-sessions/<uuid:session_id>",
         CountSessionReviewView.as_view(),
         name="inventory-count-review",
@@ -54,6 +77,11 @@ urlpatterns = [
         "inventory/items/<uuid:item_id>/damage",
         ItemDamageView.as_view(),
         name="inventory-item-damage",
+    ),
+    path(
+        "inventory/items/<uuid:item_id>/quarantine",
+        ItemQuarantineView.as_view(),
+        name="inventory-item-quarantine",
     ),
     path(
         "inventory/items/<uuid:item_id>/movements",
@@ -99,6 +127,11 @@ urlpatterns = [
         "inventory/purchasing/returns/<uuid:return_id>",
         PurchaseReturnDetailView.as_view(),
         name="purchase-return",
+    ),
+    path(
+        "inventory/purchasing/returns/<uuid:return_id>/rejected",
+        PurchaseReturnRejectedView.as_view(),
+        name="purchase-return-rejected",
     ),
     # GROW-01/02 (M4 — T3.27)
     path("grow/replenish", GrowReplenishView.as_view(), name="grow-replenish"),

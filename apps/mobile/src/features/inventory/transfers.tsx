@@ -145,6 +145,23 @@ export function TransfersScreen({ selectedId }: { selectedId: string }) {
     }
   };
 
+  /** قرار المالك على باقي التحويل الجزئي (I-08، 0005 §٢٩٥) */
+  const settle = async (id: string, outcome: "lost" | "returned", reason: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { response } = await api.POST("/api/inventory/transfers/{transfer_id}/settle", {
+        params: { path: { transfer_id: id } },
+        body: { outcome, reason } as never,
+      });
+      if (response.ok) await load();
+    } catch {
+      /* بلا اتصال: القرار أونلاين */
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const isOwner = ctx?.roleCode === "owner";
   const goNew = () => router.push("/inventory/transfers/new");
 
@@ -206,6 +223,12 @@ export function TransfersScreen({ selectedId }: { selectedId: string }) {
               : undefined
           }
           cancelDisabledReason={selected.pending ? tx(T, "بانتظار الرفع") : undefined}
+          onSettle={
+            !selected.pending && isOwner
+              ? (outcome, reason) => void settle(selected.id, outcome, reason)
+              : undefined
+          }
+          settling={busy}
         />
       ) : null}
 
@@ -246,7 +269,9 @@ export function TransfersScreen({ selectedId }: { selectedId: string }) {
                 </AppText>
                 <AppText variant="note" style={{ color: c.state[tone].fg }}>
                   {tx(T, "المرحلة")}{" "}
-                  {r.pending ? tx(T, "معلّق هذا الجهاز") : STATUS_LABEL[r.status]}
+                  {r.pending
+                    ? tx(T, "معلّق هذا الجهاز")
+                    : r.settlement_label || STATUS_LABEL[r.status]}
                 </AppText>
                 <AppText variant="note" muted>
                   {tx(T, "في الطريق")} <M>{formatQty(transit, 0)}</M>

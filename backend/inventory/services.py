@@ -132,6 +132,9 @@ REASON_LABELS = {
     "quarantine": "حجر — قابل للمراجعة",
     "write_off": "هالك — خروج نهائي",
     "purchase_return": "مرتجع مشتريات",
+    # I-06/I-07 (0005 §٢٩٥)
+    "release": "أعد إلى المتاح",
+    "return_rejected": "أعد المرفوض إلى المخزون",
 }
 
 
@@ -274,7 +277,21 @@ def apply_goods_receipt(
     branch = Branch.unscoped.filter(tenant_id=tenant_id, id=payload["branch_id"]).first()
     if branch is None:
         return
+    from inventory.models import PurchaseOrder
+
     user = User.unscoped.filter(id=payload["user_id"]).first()
+    # أمر الشراء (stock_receipt@2، I-02): يُحفظ إن كان أمراً مفتوحاً للفرع نفسه، وإلا يُهمل بلا رفض —
+    # البضاعة دخلت فعلاً، والأمر الملغى أو أمر فرع آخر لا يُفسد الاستلام
+    order_id: uuid.UUID | None = None
+    if payload.get("purchase_order_id"):
+        order = (
+            PurchaseOrder.unscoped.filter(
+                tenant_id=tenant_id, id=payload["purchase_order_id"], branch_id=branch.id
+            )
+            .exclude(status=PurchaseOrder.Status.CANCELLED)
+            .first()
+        )
+        order_id = order.id if order is not None else None
     GoodsReceipt.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
@@ -283,6 +300,7 @@ def apply_goods_receipt(
         party_id=uuid.UUID(str(payload["party_id"])) if payload.get("party_id") else None,
         supplier_name=str(payload["supplier_name"]),
         reference=str(payload["reference"]),
+        purchase_order_id=order_id,
         device_id=device_id,
         user_id=uuid.UUID(str(payload["user_id"])),
         user_name=user.display_name if user else "",
@@ -924,6 +942,7 @@ def damage_payload(rec: Any) -> dict[str, Any]:
         "qty_milli": str(rec.qty_milli),
         "base_qty_milli": str(rec.base_qty_milli),
         "destination": rec.destination,
+        "source": rec.source,
         "reason": rec.reason,
         "value_minor": str(rec.value_minor),
         "decided_by_name": rec.decided_by_name,
@@ -937,6 +956,120 @@ def damage_sources(ids: list[uuid.UUID]) -> dict[uuid.UUID, tuple[str, str]]:
     return {
         r.id: (r.damage_number, r.decided_by_name) for r in DamageRecord.objects.filter(id__in=ids)
     }
+
+
+def item_documents(branch_id: uuid.UUID, item_id: uuid.UUID) -> list[dict[str, Any]]:
+    """مستندات الشراء المعتمدة في الفرع التي فيها الصنف — «أرجع للمورد» من الحجر يُبنى على أحدها
+    (المرتجع على مستند بعينه وبسعره، ACC-128)."""
+    from inventory.models import PurchaseDocument
+
+    out: list[dict[str, Any]] = []
+    for d in (
+        PurchaseDocument.objects.filter(
+            branch_id=branch_id, status="approved", lines__item_id=item_id
+        )
+        .distinct()
+        .order_by("-approved_at")[:5]
+    ):
+        out.append(
+            {
+                "id": str(d.id),
+                "number": d.number,
+                "supplier_name": d.supplier_name,
+                "approved_at": _iso(d.approved_at),
+            }
+        )
+    return out
+
+
+def quarantine_action(
+    *,
+    branch: Branch,
+    item: Any,
+    unit_code: str,
+    unit_name: str,
+    factor_milli: int,
+    qty_milli: int,
+    action: str,
+    reason: str,
+    actor: Any,
+    is_owner: bool,
+) -> Any:
+    """فعلان على الحجر (I-06، 0005 §٢٩٥) — والثالث «أرجع للمورد» مرتجع شراء من الحجر (PUR-04):
+
+    - «أعد إلى المتاح» (`release`): يخرج من الحجر ويدخل المتاح للبيع بسبب مكتوب.
+    - «أهلك» (`write_off`): يخرج من الحجر نهائياً، بحدّ الهالك نفسه لغير المالك.
+
+    الحدّ ما في الحجر من الصنف في الفرع؛ السبب إلزامي؛ سجلّ بمستند وفاعل (`DMG-n`، مصدره «الحجر»)."""
+    from django.db import transaction
+
+    from core.tenancy import require_tenant
+    from inventory.models import DamageRecord, QuarantineMovement
+    from sync.reference import log_reference
+
+    if action not in ("release", "write_off"):
+        raise DamageRejected("invalid", "action")
+    if qty_milli <= 0:
+        raise DamageRejected("min", "qty_milli")
+    if factor_milli <= 0:
+        raise DamageRejected("undefined", "factor_milli")
+    if not reason.strip():
+        raise DamageRejected("required", "reason")
+    base = qty_milli * factor_milli // 1000
+    held = branch_quarantine(branch.id).get(item.id, 0)
+    if base > held:
+        raise DamageRejected("exceeds_quarantine", "qty_milli", quarantine_milli=str(held))
+    value = base * int(item.sale_price_minor) // 1000
+    if action == "write_off" and not is_owner and value > WRITE_OFF_CAP_MINOR:
+        raise DamageRejected(
+            "owner_required",
+            "action",
+            cap_minor=str(WRITE_OFF_CAP_MINOR),
+            value_minor=str(value),
+        )
+    with transaction.atomic():
+        rec: DamageRecord = DamageRecord.objects.create(
+            tenant_id=require_tenant(),
+            branch=branch,
+            damage_number=_next_damage_number(),
+            item_id=item.id,
+            item_name=item.name,
+            unit_code=unit_code or item.base_unit.code,
+            unit_name=unit_name or item.base_unit.name,
+            factor_milli=factor_milli,
+            qty_milli=qty_milli,
+            base_qty_milli=base,
+            destination=action,
+            source="quarantine",
+            reason=reason.strip(),
+            value_minor=value,
+            decided_by_user_id=actor.id,
+            decided_by_name=actor.display_name,
+        )
+        QuarantineMovement.objects.create(
+            tenant_id=require_tenant(),
+            branch=branch,
+            item_id=item.id,
+            base_qty_milli=-base,
+            reason=action,
+            source_entity="inventory.DamageRecord",
+            source_id=rec.id,
+            occurred_at=rec.occurred_at,
+        )
+        if action == "release":
+            StockMovement.objects.create(
+                tenant_id=require_tenant(),
+                branch=branch,
+                item_id=item.id,
+                delta_base_qty_milli=base,
+                reason="release",
+                source_entity="inventory.DamageRecord",
+                source_id=rec.id,
+                note=reason.strip(),
+                occurred_at=rec.occurred_at,
+            )
+        log_reference(require_tenant(), "inventory.DamageRecord", rec.id)
+    return rec
 
 
 # ---------------------------------------------------------------------------
@@ -1014,13 +1147,9 @@ def apply_stock_transfer_line(
 
 def transfer_payload(t: Any) -> dict[str, Any]:
     lines = list(t.lines.order_by("line_no", "id"))
-    in_transit = sum(max(0, ln.base_qty_milli - ln.received_base_milli) for ln in lines)
+    in_transit = sum(_remaining(ln) for ln in lines)
     in_transit_value = sum(
-        (
-            max(0, ln.base_qty_milli - ln.received_base_milli) * ln.value_minor // ln.base_qty_milli
-            if ln.base_qty_milli
-            else 0
-        )
+        (_remaining(ln) * ln.value_minor // ln.base_qty_milli if ln.base_qty_milli else 0)
         for ln in lines
     )
     late = (
@@ -1043,6 +1172,11 @@ def transfer_payload(t: Any) -> dict[str, Any]:
         "sent_at": _iso(t.sent_at),
         "received_at": _iso(t.received_at),
         "cancelled_at": _iso(t.cancelled_at),
+        "settlement": t.settlement,
+        "settlement_label": t.get_settlement_display() if t.settlement else "",
+        "settled_reason": t.settled_reason,
+        "settled_by_name": t.settled_by_name,
+        "settled_at": _iso(t.settled_at),
         "late": late,
         "in_transit_milli": str(in_transit),
         "in_transit_value_minor": str(in_transit_value),
@@ -1057,11 +1191,18 @@ def transfer_payload(t: Any) -> dict[str, Any]:
                 "qty_milli": str(ln.qty_milli),
                 "base_qty_milli": str(ln.base_qty_milli),
                 "received_base_milli": str(ln.received_base_milli),
+                "settled_base_milli": str(ln.settled_base_milli),
+                "remaining_base_milli": str(_remaining(ln)),
                 "value_minor": str(ln.value_minor),
             }
             for ln in lines
         ],
     }
+
+
+def _remaining(ln: Any) -> int:
+    """الباقي في الطريق لسطر: المُرسل ناقص المستلَم وما حسمه المالك — لا يقلّ عن صفر."""
+    return max(0, int(ln.base_qty_milli - ln.received_base_milli - ln.settled_base_milli))
 
 
 def visible_transfers(viewer: Any, branch_id: uuid.UUID | None) -> Any:
@@ -1097,6 +1238,9 @@ def cancel_transfer(t: Any, *, actor: Any) -> Any:
 
     if t.status in ("received", "cancelled"):
         raise TransferRejected(f"already_{t.status}")
+    if t.status == "partially_received":
+        # د-٤ (0005 §٢٩٥): لا عودة تلقائية للباقي بالإلغاء — يُستلم أو يقرّر المالك مصيره
+        raise TransferRejected("settle_required")
     with transaction.atomic():
         for ln in t.lines.all():
             remaining = ln.base_qty_milli - ln.received_base_milli
@@ -1122,6 +1266,99 @@ def cancel_transfer(t: Any, *, actor: Any) -> Any:
     return t
 
 
+def settle_transfer(t: Any, *, outcome: str, reason: str, actor: Any) -> Any:
+    """قرار المالك على باقي التحويل المستلَم جزئياً (د-٤، I-08 — 0005 §٢٩٥):
+
+    - «فُقد في الطريق» (`lost`): الباقي يُهلك من الطريق — سجلّ هالك لكل صنف مصدره «الطريق»، بلا حركة
+      مخزون (خرج من رصيد المرسِل عند الإرسال ولم يدخل رصيد المستلم).
+    - «يعود للمرسل» (`returned`): الباقي يعود إلى رصيد المرسِل بحركة `transfer_in` بمستند التحويل.
+
+    السبب إلزامي، والقرار باسم صاحبه ووقته؛ ما استُلم لا يُمسّ. بعده يُغلق التحويل ويخرج من «الطريق»."""
+    from django.db import transaction
+
+    from core.tenancy import require_tenant
+    from inventory.models import DamageRecord
+    from sync.reference import log_reference
+
+    if outcome not in ("lost", "returned"):
+        raise TransferRejected("invalid_outcome")
+    if not reason.strip():
+        raise TransferRejected("reason_required")
+    if t.status != "partially_received":
+        raise TransferRejected("not_partial")
+    lines = [ln for ln in t.lines.order_by("line_no", "id") if _remaining(ln) > 0]
+    if not lines:
+        raise TransferRejected("nothing_remaining")
+    now = timezone.now()
+    label = "فُقد في الطريق" if outcome == "lost" else "يعود للمرسل"
+    with transaction.atomic():
+        for ln in lines:
+            rest = _remaining(ln)
+            if outcome == "returned":
+                StockMovement.objects.create(
+                    tenant_id=require_tenant(),
+                    branch=t.branch_from,
+                    item_id=ln.item_id,
+                    delta_base_qty_milli=rest,
+                    reason="transfer_in",
+                    source_entity="inventory.StockTransfer",
+                    source_id=t.id,
+                    note=f"{label} — {reason.strip()}"[:300],
+                    occurred_at=now,
+                )
+            else:
+                rec = DamageRecord.objects.create(
+                    tenant_id=require_tenant(),
+                    branch=t.branch_from,
+                    damage_number=_next_damage_number(),
+                    item_id=ln.item_id,
+                    item_name=ln.item_name,
+                    unit_code=ln.unit_code,
+                    unit_name=ln.unit_name,
+                    factor_milli=1000,
+                    qty_milli=rest,
+                    base_qty_milli=rest,
+                    destination="write_off",
+                    source="transit",
+                    reason=f"{label} — {t.transfer_number} — {reason.strip()}"[:300],
+                    value_minor=rest * ln.value_minor // ln.base_qty_milli
+                    if ln.base_qty_milli
+                    else 0,
+                    decided_by_user_id=actor.id,
+                    decided_by_name=actor.display_name,
+                )
+                log_reference(require_tenant(), "inventory.DamageRecord", rec.id)
+            ln.settled_base_milli += rest
+            ln.save(update_fields=["settled_base_milli"])
+        t.settlement = outcome
+        t.settled_reason = reason.strip()[:300]
+        t.settled_by_name = actor.display_name
+        t.settled_at = now
+        t.status = "received"
+        t.save(
+            update_fields=[
+                "settlement",
+                "settled_reason",
+                "settled_by_name",
+                "settled_at",
+                "status",
+            ]
+        )
+        log_reference(require_tenant(), "inventory.StockTransfer", t.id)
+    from core import audit
+
+    audit.record(
+        kind="stock_transfer.settled",
+        title=f"باقي التحويل {t.transfer_number}: {label}",
+        actor=actor,
+        branch=t.branch_from,
+        detail=reason.strip(),
+        ref_entity="inventory.StockTransfer",
+        ref_id=t.id,
+    )
+    return t
+
+
 def in_transit_out(branch_id: uuid.UUID) -> dict[uuid.UUID, int]:
     """ما خرج من الفرع ولم يُستلم بعد — لكل صنف (INV-01 «في الطريق»)."""
     from inventory.models import StockTransferLine
@@ -1130,7 +1367,7 @@ def in_transit_out(branch_id: uuid.UUID) -> dict[uuid.UUID, int]:
     for ln in StockTransferLine.objects.filter(
         transfer__branch_from_id=branch_id, transfer__status__in=("sent", "partially_received")
     ):
-        remaining = ln.base_qty_milli - ln.received_base_milli
+        remaining = _remaining(ln)
         if remaining > 0:
             out[ln.item_id] = out.get(ln.item_id, 0) + remaining
     return out
@@ -1170,7 +1407,10 @@ def apply_transfer_receipt(
     if transfer is None or branch is None or transfer.branch_to_id != branch.id:
         return
     user = User.unscoped.filter(id=payload["user_id"]).first()
-    duplicate = transfer.status in ("received", "partially_received", "cancelled")
+    # «استلم الباقي» (I-08، 0005 §٢٩٥): استلام لتحويل استُلم جزئياً يكمله حتى الباقي؛ المستلَم كاملاً
+    # أو الملغى يبقى مكرَّراً بلا أثر (ACC-18)
+    duplicate = transfer.status in ("received", "cancelled")
+    completes = transfer.status == "partially_received"
     TransferReceipt.unscoped.create(
         tenant_id=tenant_id,
         id=entity_id,
@@ -1182,6 +1422,7 @@ def apply_transfer_receipt(
         user_name=user.display_name if user else "",
         reason=str(payload.get("reason", "")),
         duplicate=duplicate,
+        completes=completes,
         received_at=_dt(payload.get("received_at")),
     )
 
@@ -1217,7 +1458,15 @@ def apply_transfer_receipt_line(
     )
     if receipt.duplicate:
         return
-    tline.received_base_milli = received
+    if receipt.completes:
+        # الإكمال يضيف إلى ما استُلم، حتى الباقي وحده — زيادة فوقه تُحجر للمراجعة لا تُقبل صامتة
+        from sync.appliers import BusinessConflict
+
+        if received > _remaining(tline):
+            raise BusinessConflict("transfer_receipt_exceeds_remaining", str(tline.id))
+        tline.received_base_milli += received
+    else:
+        tline.received_base_milli = received
     tline.save(update_fields=["received_base_milli"])
     _settle_transfer_status(receipt.transfer_id, tenant_id)
 
@@ -1230,7 +1479,7 @@ def _settle_transfer_status(transfer_id: uuid.UUID, tenant_id: uuid.UUID) -> Non
     if t is None:
         return
     lines = list(t.lines.all())
-    if all(ln.received_base_milli == ln.base_qty_milli for ln in lines):
+    if all(ln.received_base_milli + ln.settled_base_milli == ln.base_qty_milli for ln in lines):
         t.status = "received"
     else:
         t.status = "partially_received"

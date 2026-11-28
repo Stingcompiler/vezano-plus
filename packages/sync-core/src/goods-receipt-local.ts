@@ -42,6 +42,8 @@ export interface GoodsReceiptInput {
   readonly supplierName: string;
   readonly reference: string;
   readonly note?: string | undefined;
+  /** أمر الشراء المفتوح الذي استُلم عليه (I-02، 0005 §٢٩٥) — يُرفع بـ`stock_receipt@2` */
+  readonly purchaseOrderId?: string | undefined;
   readonly lines: readonly GoodsReceiptLineInput[];
   readonly businessDate: string;
   readonly occurredAt: string;
@@ -66,6 +68,7 @@ export interface LocalGoodsReceipt {
   readonly party_id: string;
   readonly supplier_name: string;
   readonly reference: string;
+  readonly purchase_order_id?: string | undefined;
   readonly user_name: string;
   readonly lines: readonly LocalGoodsReceiptLine[];
   readonly business_date: string;
@@ -103,17 +106,20 @@ export function goodsReceiptDraft(input: GoodsReceiptInput, number: string): Ope
     if (BigInt(ln.qtyMilli || "0") <= 0n) throw new Error("qty_required");
     if (BigInt(ln.factorMilli || "0") <= 0n) throw new Error("unit_factor_undefined");
   }
+  // الإصدار ٢ يحمل أمر الشراء؛ بلا أمر يبقى الإصدار ١ كما كان (الأجهزة والخوادم الأقدم تفهمه)
+  const order = (input.purchaseOrderId ?? "").trim();
   return {
     operationId: input.operationId,
     kind: "stock_receipt",
-    opVersion: 1,
+    opVersion: order ? 2 : 1,
     dependencies: input.partyOperationId ? [input.partyOperationId] : [],
     members: [
       {
         entity: "inventory.GoodsReceipt",
         id: input.receiptId,
-        schemaVersion: 1,
+        schemaVersion: order ? 2 : 1,
         payload: {
+          ...(order ? { purchase_order_id: order } : {}),
           receipt_id: input.receiptId,
           receipt_number: number,
           branch_id: input.branchId,
@@ -194,6 +200,7 @@ export async function saveGoodsReceiptLocally(
       party_id: input.partyId ?? "",
       supplier_name: input.supplierName.trim(),
       reference: input.reference.trim(),
+      ...(input.purchaseOrderId ? { purchase_order_id: input.purchaseOrderId } : {}),
       user_name: input.userName,
       lines: input.lines.map((ln) => ({
         id: ln.lineId,

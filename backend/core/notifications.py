@@ -206,6 +206,9 @@ def refresh() -> None:
     #    موعد استحقاق للفاتورة في النظام، فالمستحق = أقدم دين غير مسدَّد مضى عليه CREDIT_DUE_DAYS
     _credit_due_alerts(now)
     _promise_alerts(now)
+    # ٨) تحويل لم يُستلم (كاملاً) بعد 72 ساعة من إرساله — وعد بطاقة التحويل (INV-08): «لو تأخر
+    #    الاستلام فوق 72 ساعة يظهر تنبيه للمالك.» (I-08، 0005 §٢٩٥). يزول حين يُستلم أو يُحسم
+    _transfer_late_alerts(now)
     # ٥) تسويقي: باقة الفروع المتعددة — قابل للإيقاف، لا يُنبَّه به بعد انتهاء العرض (ACC-110)
     # 0005 §١٧٠ — بالميزة لا برمز الباقة: التجريبية قد تُبنى على باقة الفروع المتعددة نفسها
     if "multi_branch" not in plan_of(sub).features:
@@ -244,6 +247,33 @@ def _approval_alerts() -> None:
             dedupe_key=key,
         )
     _resolve_stale("approval_pending", live)
+
+
+def _transfer_late_alerts(now: Any) -> None:
+    from inventory.models import StockTransfer
+    from inventory.services import TRANSFER_LATE_HOURS
+
+    live: set[str] = set()
+    for t in StockTransfer.objects.filter(
+        status__in=("sent", "partially_received"),
+        sent_at__lt=now - timedelta(hours=TRANSFER_LATE_HOURS),
+    ).select_related("branch_from", "branch_to"):
+        key = f"transfer_late:{t.id}"
+        live.add(key)
+        emit(
+            kind="transfer_late",
+            category="operational",
+            title=f"تحويل {t.transfer_number} — تأخّر فوق 72 ساعة",
+            body=f"{t.branch_from.name} ← {t.branch_to.name}",
+            href=f"/inventory/transfers?id={t.id}",
+            screen="INV-08",
+            needs_action=True,
+            owner_only=True,
+            branch_id=t.branch_to_id,
+            dedupe_key=key,
+            occurred_at=t.sent_at + timedelta(hours=TRANSFER_LATE_HOURS),
+        )
+    _resolve_stale("transfer_late", live)
 
 
 #: مراحل تذكير التجديد بالأيام المتبقية — كل مرحلة إشعار واحد يحلّ محل سابقه

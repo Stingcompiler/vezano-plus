@@ -1213,6 +1213,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/items/{item_id}/quarantine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description INV-11 الحجر (I-06، 0005 §٢٩٥): ما في الحجر من الصنف وأفعاله الثلاثة — «أعد إلى المتاح»
+         *     و«أهلك» هنا، و«أرجع للمورد» مرتجع شراء من الحجر على أحد مستندات الصنف (PUR-04).
+         */
+        get: operations["inventory_items_quarantine_retrieve"];
+        put?: never;
+        /**
+         * @description INV-11 الحجر (I-06، 0005 §٢٩٥): ما في الحجر من الصنف وأفعاله الثلاثة — «أعد إلى المتاح»
+         *     و«أهلك» هنا، و«أرجع للمورد» مرتجع شراء من الحجر على أحد مستندات الصنف (PUR-04).
+         */
+        post: operations["inventory_items_quarantine_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/openings": {
         parameters: {
             query?: never;
@@ -1402,6 +1426,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inventory/purchasing/returns/{return_id}/rejected": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description I-07 (0005 §٢٩٥): مصير المرفوض — «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» بسبب. */
+        post: operations["inventory_purchasing_returns_rejected_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description الاستلامات المسجَّلة (INV-04) بمستند شرائها أو بلا مستند — المالك والمدير وأمين المخزن. */
+        get: operations["inventory_receipts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventory_receipts_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/receipts/{receipt_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description «حوّل إلى مستند شراء» — يعيد المستند المربوط بالاستلام (أو ينشئه). */
+        post: operations["inventory_receipts_document_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/inventory/transfers": {
         parameters: {
             query?: never;
@@ -1446,6 +1537,26 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["inventory_transfers_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/transfers/{transfer_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description I-08 (د-٤، 0005 §٢٩٥): قرار المالك على باقي التحويل المستلَم جزئياً — «فُقد في الطريق» أو
+         *     «يعود للمرسل» بسبب مكتوب. لا عودة تلقائية بالإلغاء.
+         */
+        post: operations["inventory_transfers_settle_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5433,13 +5544,26 @@ export interface components {
             /** @default  */
             display_name: string;
         };
+        Action: {
+            /** @default  */
+            branch_id: string;
+            /** @default  */
+            unit_code: string;
+            /** @default  */
+            unit_name: string;
+            /** @default 1000 */
+            factor_milli: string;
+            qty_milli: string;
+            action: components["schemas"]["ActionActionEnum"];
+            /** @default  */
+            reason: string;
+        };
         /**
-         * @description * `disable` - disable
-         *     * `revoke_branch` - revoke_branch
-         *     * `wipe_device` - wipe_device
+         * @description * `release` - release
+         *     * `write_off` - write_off
          * @enum {string}
          */
-        ActionEnum: "disable" | "revoke_branch" | "wipe_device";
+        ActionActionEnum: "release" | "write_off";
         /**
          * @description * `devices` - devices
          *     * `users` - users
@@ -5959,7 +6083,7 @@ export interface components {
          */
         OrgProofKindEnum: "renewal" | "upgrade" | "addon";
         OrgRevoke: {
-            action: components["schemas"]["ActionEnum"];
+            action: components["schemas"]["OrgRevokeActionEnum"];
             /** @default now */
             mode: components["schemas"]["ModeEnum"];
             /** Format: uuid */
@@ -5969,6 +6093,13 @@ export interface components {
             acknowledgement?: string;
             reason?: string;
         };
+        /**
+         * @description * `disable` - disable
+         *     * `revoke_branch` - revoke_branch
+         *     * `wipe_device` - wipe_device
+         * @enum {string}
+         */
+        OrgRevokeActionEnum: "disable" | "revoke_branch" | "wipe_device";
         OrgSettings: {
             version: number;
             name?: string;
@@ -7918,6 +8049,7 @@ export interface components {
                 occurred_at: string;
                 qty_milli: string;
                 reason: string;
+                source: string;
                 unit_name: string;
                 value_minor: string;
             };
@@ -7952,6 +8084,53 @@ export interface components {
                 source_id: string;
             }[];
             total_count: number;
+        };
+        GetInventoryItemsByItemIdQuarantineResponse: {
+            balance_milli: string;
+            branch_id: string;
+            can_release: boolean;
+            can_return: boolean;
+            documents: {
+                approved_at: string;
+                id: string;
+                number: string;
+                supplier_name: string;
+            }[];
+            item_id: string;
+            item_name: string;
+            quarantine_milli: string;
+            write_off_cap_minor: string;
+        };
+        PostInventoryItemsByItemIdQuarantineResponse: {
+            balance_milli: string;
+            branch_id: string;
+            can_release: boolean;
+            can_return: boolean;
+            damage: {
+                base_qty_milli: string;
+                damage_number: string;
+                decided_by_name: string;
+                destination: string;
+                id: string;
+                item_id: string;
+                item_name: string;
+                occurred_at: string;
+                qty_milli: string;
+                reason: string;
+                source: string;
+                unit_name: string;
+                value_minor: string;
+            };
+            documents: {
+                approved_at: string;
+                id: string;
+                number: string;
+                supplier_name: string;
+            }[];
+            item_id: string;
+            item_name: string;
+            quarantine_milli: string;
+            write_off_cap_minor: string;
         };
         GetInventoryOpeningsResponse: {
             branch_id: string;
@@ -8159,6 +8338,7 @@ export interface components {
                 lines: {
                     accepted_qty_milli: string;
                     document_line_id: string;
+                    from_quarantine: boolean;
                     id: string;
                     item_id: string;
                     item_name: string;
@@ -8166,13 +8346,18 @@ export interface components {
                     line_total_minor: string;
                     qty_milli: string;
                     reason: string;
+                    rejected_qty_milli: string;
                     supplier_note: string;
                     unit_code: string;
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
                 number: string;
+                rejected_at: string;
+                rejected_by_name: string;
+                rejected_destination: string;
                 rejected_minor: string;
+                rejected_reason: string;
                 responded_at: string;
                 status: string;
                 status_label: string;
@@ -8350,6 +8535,7 @@ export interface components {
                 lines: {
                     accepted_qty_milli: string;
                     document_line_id: string;
+                    from_quarantine: boolean;
                     id: string;
                     item_id: string;
                     item_name: string;
@@ -8357,13 +8543,18 @@ export interface components {
                     line_total_minor: string;
                     qty_milli: string;
                     reason: string;
+                    rejected_qty_milli: string;
                     supplier_note: string;
                     unit_code: string;
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
                 number: string;
+                rejected_at: string;
+                rejected_by_name: string;
+                rejected_destination: string;
                 rejected_minor: string;
+                rejected_reason: string;
                 responded_at: string;
                 status: string;
                 status_label: string;
@@ -8665,6 +8856,7 @@ export interface components {
                 lines: {
                     accepted_qty_milli: string;
                     document_line_id: string;
+                    from_quarantine: boolean;
                     id: string;
                     item_id: string;
                     item_name: string;
@@ -8672,18 +8864,200 @@ export interface components {
                     line_total_minor: string;
                     qty_milli: string;
                     reason: string;
+                    rejected_qty_milli: string;
                     supplier_note: string;
                     unit_code: string;
                     unit_name: string;
                     unit_price_minor: string;
                 }[];
                 number: string;
+                rejected_at: string;
+                rejected_by_name: string;
+                rejected_destination: string;
                 rejected_minor: string;
+                rejected_reason: string;
                 responded_at: string;
                 status: string;
                 status_label: string;
                 supplier_name: string;
                 supplier_note: string;
+                total_minor: string;
+            };
+        };
+        PostInventoryPurchasingReturnsByReturnIdRejectedResponse: {
+            return: {
+                accepted_minor: string;
+                created_at: string;
+                created_by_name: string;
+                document_id: string;
+                document_number: string;
+                id: string;
+                lines: {
+                    accepted_qty_milli: string;
+                    document_line_id: string;
+                    from_quarantine: boolean;
+                    id: string;
+                    item_id: string;
+                    item_name: string;
+                    line_no: number;
+                    line_total_minor: string;
+                    qty_milli: string;
+                    reason: string;
+                    rejected_qty_milli: string;
+                    supplier_note: string;
+                    unit_code: string;
+                    unit_name: string;
+                    unit_price_minor: string;
+                }[];
+                number: string;
+                rejected_at: string;
+                rejected_by_name: string;
+                rejected_destination: string;
+                rejected_minor: string;
+                rejected_reason: string;
+                responded_at: string;
+                status: string;
+                status_label: string;
+                supplier_name: string;
+                supplier_note: string;
+                total_minor: string;
+            };
+        };
+        GetInventoryReceiptsResponse: {
+            can_convert: boolean;
+            receipts: {
+                branch_id: string;
+                branch_name: string;
+                can_convert: boolean;
+                document: {
+                    id: string;
+                    number: string;
+                    status: string;
+                    status_label: string;
+                } | null;
+                id: string;
+                lines: {
+                    base_qty_milli: string;
+                    factor_milli: string;
+                    id: string;
+                    item_id: string;
+                    item_name: string;
+                    qty_milli: string;
+                    unit_code: string;
+                    unit_cost_minor: string;
+                    unit_name: string;
+                }[];
+                occurred_at: string;
+                order_id: string;
+                order_number: string;
+                party_id: string;
+                receipt_number: string;
+                reference: string;
+                supplier_name: string;
+                user_name: string;
+            }[];
+            scope: string;
+            unpriced_count: number;
+        };
+        GetInventoryReceiptsByReceiptIdResponse: {
+            receipt: {
+                branch_id: string;
+                branch_name: string;
+                can_convert: boolean;
+                document: {
+                    id: string;
+                    number: string;
+                    status: string;
+                    status_label: string;
+                } | null;
+                id: string;
+                lines: {
+                    base_qty_milli: string;
+                    factor_milli: string;
+                    id: string;
+                    item_id: string;
+                    item_name: string;
+                    qty_milli: string;
+                    unit_code: string;
+                    unit_cost_minor: string;
+                    unit_name: string;
+                }[];
+                occurred_at: string;
+                order_id: string;
+                order_number: string;
+                party_id: string;
+                receipt_number: string;
+                reference: string;
+                supplier_name: string;
+                user_name: string;
+            };
+        };
+        PostInventoryReceiptsByReceiptIdDocumentResponse: {
+            document: {
+                approval: {
+                    can_approve: boolean;
+                    limit_minor: string;
+                    over_limit: boolean;
+                    viewer_name: string;
+                };
+                approved_at: string;
+                approved_by_name: string;
+                blockers: {
+                    code: string;
+                    item_name?: string;
+                    line_id?: string;
+                    title: string;
+                }[];
+                branch_id: string;
+                branch_name: string;
+                created_at: string;
+                created_by_name: string;
+                diff_count: number;
+                due_at: string;
+                due_days: number;
+                effects: Record<string, never>;
+                id: string;
+                lines: {
+                    base_qty_milli: string;
+                    diff: string;
+                    est_total_minor: string;
+                    est_unit_price_minor: string;
+                    excess_reason: string;
+                    factor_milli: string;
+                    id: string;
+                    is_gift: boolean;
+                    item_id: string;
+                    item_name: string;
+                    line_no: number;
+                    line_total_minor: string;
+                    ordered_qty_milli: string;
+                    received_qty_milli: string;
+                    returned_qty_milli: string;
+                    unit_code: string;
+                    unit_name: string;
+                    unit_price_minor: string;
+                }[];
+                linked_receipts: {
+                    occurred_at: string;
+                    receipt_id: string;
+                    receipt_number: string;
+                    supplier_name: string;
+                    user_name: string;
+                }[];
+                note: string;
+                number: string;
+                order_estimated_minor: string;
+                order_id: string;
+                order_number: string;
+                receipt_candidates: unknown[];
+                receipt_number: string;
+                referred_at: string;
+                referred_to_name: string;
+                status: string;
+                status_label: string;
+                supplier_id: string;
+                supplier_invoice_number: string;
+                supplier_name: string;
                 total_minor: string;
             };
         };
@@ -8716,6 +9090,8 @@ export interface components {
                     item_name: string;
                     qty_milli: string;
                     received_base_milli: string;
+                    remaining_base_milli: string;
+                    settled_base_milli: string;
                     unit_name: string;
                     value_minor: string;
                 }[];
@@ -8724,6 +9100,11 @@ export interface components {
                 receipt_reason: string;
                 received_at: string;
                 sent_at: string;
+                settled_at: string;
+                settled_by_name: string;
+                settled_reason: string;
+                settlement: string;
+                settlement_label: string;
                 status: string;
                 transfer_number: string;
                 user_name: string;
@@ -8749,6 +9130,8 @@ export interface components {
                     item_name: string;
                     qty_milli: string;
                     received_base_milli: string;
+                    remaining_base_milli: string;
+                    settled_base_milli: string;
                     unit_name: string;
                     value_minor: string;
                 }[];
@@ -8757,6 +9140,11 @@ export interface components {
                 receipt_reason: string;
                 received_at: string;
                 sent_at: string;
+                settled_at: string;
+                settled_by_name: string;
+                settled_reason: string;
+                settlement: string;
+                settlement_label: string;
                 status: string;
                 transfer_number: string;
                 user_name: string;
@@ -8782,6 +9170,8 @@ export interface components {
                     item_name: string;
                     qty_milli: string;
                     received_base_milli: string;
+                    remaining_base_milli: string;
+                    settled_base_milli: string;
                     unit_name: string;
                     value_minor: string;
                 }[];
@@ -8790,6 +9180,51 @@ export interface components {
                 receipt_reason: string;
                 received_at: string;
                 sent_at: string;
+                settled_at: string;
+                settled_by_name: string;
+                settled_reason: string;
+                settlement: string;
+                settlement_label: string;
+                status: string;
+                transfer_number: string;
+                user_name: string;
+            };
+        };
+        PostInventoryTransfersByTransferIdSettleResponse: {
+            transfer: {
+                branch_from_id: string;
+                branch_from_name: string;
+                branch_to_id: string;
+                branch_to_name: string;
+                cancelled_at: string;
+                id: string;
+                in_transit_milli: string;
+                in_transit_value_minor: string;
+                late: boolean;
+                line_count: number;
+                lines: {
+                    base_qty_milli: string;
+                    factor_milli: string;
+                    id: string;
+                    item_id: string;
+                    item_name: string;
+                    qty_milli: string;
+                    received_base_milli: string;
+                    remaining_base_milli: string;
+                    settled_base_milli: string;
+                    unit_name: string;
+                    value_minor: string;
+                }[];
+                note: string;
+                receipt_count: number;
+                receipt_reason: string;
+                received_at: string;
+                sent_at: string;
+                settled_at: string;
+                settled_by_name: string;
+                settled_reason: string;
+                settlement: string;
+                settlement_label: string;
                 status: string;
                 transfer_number: string;
                 user_name: string;
@@ -21415,6 +21850,98 @@ export interface operations {
             };
         };
     };
+    inventory_items_quarantine_retrieve: {
+        parameters: {
+            query?: {
+                branch_id?: string;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetInventoryItemsByItemIdQuarantineResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_items_quarantine_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Action"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostInventoryItemsByItemIdQuarantineResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     inventory_openings_retrieve: {
         parameters: {
             query?: {
@@ -22023,6 +22550,158 @@ export interface operations {
             };
         };
     };
+    inventory_purchasing_returns_rejected_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                return_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostInventoryPurchasingReturnsByReturnIdRejectedResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_receipts_retrieve: {
+        parameters: {
+            query?: {
+                branch_id?: string;
+                scope?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetInventoryReceiptsResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_receipts_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetInventoryReceiptsByReceiptIdResponse"];
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_receipts_document_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostInventoryReceiptsByReceiptIdDocumentResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     inventory_transfers_retrieve: {
         parameters: {
             query?: {
@@ -22106,6 +22785,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostInventoryTransfersByTransferIdCancelResponse"];
+                };
+            };
+            /** @description No response body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_transfers_settle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostInventoryTransfersByTransferIdSettleResponse"];
                 };
             };
             /** @description No response body */

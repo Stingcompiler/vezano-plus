@@ -416,6 +416,17 @@ export function StockScreen() {
           variant="quiet"
           onPress={() => router.push("/inventory/transfers")}
         />
+        {/* I-02 وI-10 (0005 §٢٩٥) */}
+        <Button
+          label={tx(T, "الاستلامات")}
+          variant="quiet"
+          onPress={() => router.push("/inventory/receipts")}
+        />
+        <Button
+          label={tx(T, "جلسات الجرد")}
+          variant="quiet"
+          onPress={() => router.push("/inventory/count/sessions")}
+        />
       </View>
 
       {state === "loading" && othersPending ? (
@@ -543,9 +554,21 @@ export function StockScreen() {
                   </AppText>
                 ) : null}
                 {r.quarantineMilli > 0n ? (
-                  <AppText variant="note" muted>
-                    {tx(T, "حجر — قابل للمراجعة")} <M>{formatQty(r.quarantineMilli, dp)}</M>
-                  </AppText>
+                  // I-06 (0005 §٢٩٥): الحجر له مخرج — يفتح أفعاله الثلاثة
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() =>
+                      router.push({
+                        pathname: "/inventory/items/[id]/quarantine",
+                        params: { id: r.id },
+                      })
+                    }
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <AppText variant="note" style={{ color: c.brandStrong }}>
+                      {tx(T, "حجر — قابل للمراجعة")} <M>{formatQty(r.quarantineMilli, dp)}</M>
+                    </AppText>
+                  </Pressable>
                 ) : null}
                 {state === "stale" || state === "offline" ? (
                   <AppText variant="note" muted>

@@ -1004,6 +1004,35 @@ register(
     )
 )
 
+#: الإصدار ٢ (I-02، 0005 §٢٩٥): الاستلام يحمل أمر الشراء المفتوح الذي استُلم عليه (اختياري)، فيُربط
+#: مستند الشراء به وحده. الإصدار ١ باقٍ للأجهزة التي لم تُحدَّث بعد — حقوله وتجزئته كما كانت.
+GOODS_RECEIPT_V2 = EntitySpec(
+    entity="inventory.GoodsReceipt",
+    schema_version=2,
+    fields=(*GOODS_RECEIPT.fields, "purchase_order_id"),
+    required=GOODS_RECEIPT.required,
+    validate=_validate_goods_receipt,
+)
+
+register(
+    KindSpec(
+        kind="stock_receipt",
+        op_version=2,
+        members={
+            GOODS_RECEIPT_V2.entity: (1, 1),
+            GOODS_RECEIPT_LINE.entity: (1, None),
+            STOCK_MOVEMENT.entity: (1, None),
+        },
+        entities={
+            GOODS_RECEIPT_V2.entity: GOODS_RECEIPT_V2,
+            GOODS_RECEIPT_LINE.entity: GOODS_RECEIPT_LINE,
+            STOCK_MOVEMENT.entity: STOCK_MOVEMENT,
+        },
+        validate_operation=_validate_stock_receipt_operation,
+        dependency_entities=("parties.PartyCreated",),
+    )
+)
+
 
 # ---------------------------------------------------------------- count_session (§٣.٣؛ INV-05)
 def _validate_count_session(p: Payload) -> None:

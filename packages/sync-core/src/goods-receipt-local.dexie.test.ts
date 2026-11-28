@@ -73,3 +73,14 @@ it("المورد والمرجع والكمية مطلوبة، والوحدة ب�
     goodsReceiptDraft(input({ lines: [{ ...input().lines[0]!, factorMilli: "0" }] }), "x"),
   ).toThrow("unit_factor_undefined");
 });
+
+it("أمر الشراء المفتوح (I-02، 0005 §٢٩٥): يُرفع بـstock_receipt@2 ويُحفظ في الإسقاط؛ بلا أمر يبقى الإصدار ١", () => {
+  const withOrder = goodsReceiptDraft(input({ purchaseOrderId: "po-1" }), "RCV-KRT-A2-26-000001");
+  expect(withOrder.opVersion).toBe(2);
+  expect(withOrder.members[0]!.schemaVersion).toBe(2);
+  expect(withOrder.members[0]!.payload["purchase_order_id"]).toBe("po-1");
+  const plain = goodsReceiptDraft(input(), "RCV-KRT-A2-26-000001");
+  expect(plain.opVersion).toBe(1);
+  expect(plain.members[0]!.schemaVersion).toBe(1);
+  expect("purchase_order_id" in plain.members[0]!.payload).toBe(false);
+});

@@ -81,6 +81,11 @@ export const ROUTES: readonly Row[] = [
   param("/inventory/items/:id/damage", (id) => `/inventory/items/${id}/damage`),
   param("/inventory/count/:id/review", (id) => `/inventory/count/${id}/review`),
   param("/inventory/transfers/:id/receive", (id) => `/inventory/transfers/${id}/receive`),
+  // المرحلة ٢ من مراجعة المشتريات والمخزون (0005 §٢٩٥): الاستلامات والحجر وجلسات الجرد
+  exact("/inventory/receipts"),
+  param("/inventory/receipts/:id", (id) => `/inventory/receipts/${id}`),
+  param("/inventory/items/:id/quarantine", (id) => `/inventory/items/${id}/quarantine`),
+  exact("/inventory/count/sessions"),
   // مولَّدة من ملفات المسارات (M3–M6)
   exact("/account/sessions"),
   param("/catalog/:id", (id) => `/catalog/${id}`),

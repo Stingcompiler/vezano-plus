@@ -74,6 +74,8 @@ class GoodsReceipt(TenantScoped):
     party_id = models.UUIDField(null=True, blank=True)
     supplier_name = models.CharField(max_length=200)
     reference = models.CharField(max_length=120)
+    #: أمر الشراء المفتوح الذي استُلم عليه (I-02، 0005 §٢٩٥) — اختياري؛ يُربط مستنده به وحده
+    purchase_order_id = models.UUIDField(null=True, blank=True)
     device_id = models.UUIDField()
     user_id = models.UUIDField()
     user_name = models.CharField(max_length=200, blank=True, default="")
@@ -268,7 +270,13 @@ class DamageRecord(TenantScoped):
     """تالف (INV-07): الوجهة حجر (يخرج من المتاح ويبقى في المخزون الفعلي موسوماً — قد يُرتجع
     للمورد) أو هالك (خروج نهائي). لا يزيد المتاح للبيع أبداً (ACC-10)؛ الحدّ من الرصيد."""
 
-    DESTINATION = (("quarantine", "حجر — قابل للمراجعة"), ("write_off", "هالك — خروج نهائي"))
+    DESTINATION = (
+        ("quarantine", "حجر — قابل للمراجعة"),
+        ("write_off", "هالك — خروج نهائي"),
+        ("release", "أعد إلى المتاح"),
+    )
+    #: من أين خرج (I-06/I-08، 0005 §٢٩٥): المتاح (الافتراضي)، أو الحجر، أو «فُقد في الطريق»
+    SOURCE = (("", "المتاح"), ("quarantine", "الحجر"), ("transit", "الطريق"))
 
     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="+")
     damage_number = models.CharField(max_length=40)
@@ -280,6 +288,7 @@ class DamageRecord(TenantScoped):
     qty_milli = models.BigIntegerField()
     base_qty_milli = models.BigIntegerField()
     destination = models.CharField(max_length=12, choices=DESTINATION)
+    source = models.CharField(max_length=12, choices=SOURCE, blank=True, default="")
     reason = models.CharField(max_length=300)
     #: القيمة بسعر البيع وقت التسجيل — للحدّ المالي (افتراض حتى تُبنى التكلفة)
     value_minor = models.BigIntegerField(default=0)
@@ -322,6 +331,12 @@ class StockTransfer(TenantScoped):
     received_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancelled_by_name = models.CharField(max_length=200, blank=True, default="")
+    #: قرار المالك على باقي التحويل الجزئي (د-٤، I-08): «فُقد في الطريق» أو «يعود للمرسل»
+    SETTLEMENT = (("lost", "فُقد في الطريق"), ("returned", "يعود للمرسل"))
+    settlement = models.CharField(max_length=10, choices=SETTLEMENT, blank=True, default="")
+    settled_reason = models.CharField(max_length=300, blank=True, default="")
+    settled_by_name = models.CharField(max_length=200, blank=True, default="")
+    settled_at = models.DateTimeField(null=True, blank=True)
     received_at_server = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -348,6 +363,8 @@ class StockTransferLine(TenantScoped):
     qty_milli = models.BigIntegerField()
     base_qty_milli = models.BigIntegerField()
     received_base_milli = models.BigIntegerField(default=0)
+    #: ما حسمه قرار المالك من الباقي (فُقد أو عاد للمرسل) — يخرج من «الطريق»
+    settled_base_milli = models.BigIntegerField(default=0)
     #: قيمة السطر بسعر البيع وقت الإرسال — «بضاعة في الطريق» بقيمتها (افتراض حتى التكلفة)
     value_minor = models.BigIntegerField(default=0)
 
@@ -376,6 +393,8 @@ class TransferReceipt(TenantScoped):
     reason = models.CharField(max_length=300, blank=True, default="")
     #: استلام ثانٍ لتحويل استُلم — سُجّل بلا أثر (ACC-18)
     duplicate = models.BooleanField(default=False)
+    #: «استلم الباقي» (I-08): استلام يكمل تحويلاً استُلم جزئياً — يضيف إلى المستلَم حتى الباقي
+    completes = models.BooleanField(default=False)
     received_at = models.DateTimeField(default=timezone.now)
     received_at_server = models.DateTimeField(default=timezone.now)
 
@@ -613,6 +632,14 @@ class PurchaseReturn(TenantScoped):
     created_by_name = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)
+    #: مصير المرفوض (I-07، 0005 §٢٩٥): «أعد المرفوض إلى المخزون» أو «انقله إلى الحجر» بفاعل وسبب
+    REJECTED_DESTINATION = (("stock", "المخزون"), ("quarantine", "الحجر"))
+    rejected_destination = models.CharField(
+        max_length=12, choices=REJECTED_DESTINATION, blank=True, default=""
+    )
+    rejected_reason = models.CharField(max_length=300, blank=True, default="")
+    rejected_by_name = models.CharField(max_length=200, blank=True, default="")
+    rejected_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -640,6 +667,8 @@ class PurchaseReturnLine(TenantScoped):
     base_qty_milli = models.BigIntegerField()
     unit_price_minor = models.BigIntegerField()
     reason = models.CharField(max_length=300)
+    #: «أرجع للمورد» من الحجر (I-06): يخرج من الحجر لا من المتاح للبيع
+    from_quarantine = models.BooleanField(default=False)
     accepted_qty_milli = models.BigIntegerField(null=True, blank=True)
     supplier_note = models.CharField(max_length=300, blank=True, default="")
     line_no = models.PositiveIntegerField(default=1)
